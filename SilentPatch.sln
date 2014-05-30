@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IIIFix", "IIIFix\IIIFix.vcxproj", "{652975D8-60B0-48E4-A973-4F10BA54FFCB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VCFix", "VCFix\VCFix.vcxproj", "{374D4CB4-548A-4DA0-AB68-8EA356424626}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SAFix", "SAFix\SAFix.vcxproj", "{D3E18BC0-A120-451D-A16A-F77072625D66}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{652975D8-60B0-48E4-A973-4F10BA54FFCB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{652975D8-60B0-48E4-A973-4F10BA54FFCB}.Debug|Win32.Build.0 = Debug|Win32
+		{652975D8-60B0-48E4-A973-4F10BA54FFCB}.Release|Win32.ActiveCfg = Release|Win32
+		{652975D8-60B0-48E4-A973-4F10BA54FFCB}.Release|Win32.Build.0 = Release|Win32
+		{374D4CB4-548A-4DA0-AB68-8EA356424626}.Debug|Win32.ActiveCfg = Debug|Win32
+		{374D4CB4-548A-4DA0-AB68-8EA356424626}.Debug|Win32.Build.0 = Debug|Win32
+		{374D4CB4-548A-4DA0-AB68-8EA356424626}.Release|Win32.ActiveCfg = Release|Win32
+		{374D4CB4-548A-4DA0-AB68-8EA356424626}.Release|Win32.Build.0 = Release|Win32
+		{D3E18BC0-A120-451D-A16A-F77072625D66}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D3E18BC0-A120-451D-A16A-F77072625D66}.Debug|Win32.Build.0 = Debug|Win32
+		{D3E18BC0-A120-451D-A16A-F77072625D66}.Release|Win32.ActiveCfg = Release|Win32
+		{D3E18BC0-A120-451D-A16A-F77072625D66}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
