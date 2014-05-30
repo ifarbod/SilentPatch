@@ -196,8 +196,7 @@ RpMaterial* AlphaTest(RpMaterial* pMaterial, void* pData)
 {
 	if ( RpMaterialGetTexture(pMaterial) )
 	{
-		BOOL	bHasAlpha = ((BOOL(*)(RwTexture*))0x4C9EA0)(RpMaterialGetTexture(pMaterial));
-		if ( bHasAlpha )
+		if ( ((BOOL(*)(RwTexture*))0x4C9EA0)(RpMaterialGetTexture(pMaterial)) )
 		{
 			*static_cast<BOOL*>(pData) = TRUE;
 			return nullptr;
@@ -207,6 +206,27 @@ RpMaterial* AlphaTest(RpMaterial* pMaterial, void* pData)
 	{
 		*static_cast<BOOL*>(pData) = TRUE;
 		return nullptr;
+	}
+
+	return pMaterial;
+}
+
+RpMaterial* AlphaTestAndPush(RpMaterial* pMaterial, void* pData)
+{
+	if ( RpMaterialGetTexture(pMaterial) )
+	{
+		if ( !((BOOL(*)(RwTexture*))0x4C9EA0)(RpMaterialGetTexture(pMaterial)) )
+		{
+			auto	pStack = static_cast<std::pair<void*,int>**>(pData);
+			*((*pStack)++) = std::make_pair(&pMaterial->color, *reinterpret_cast<int*>(&pMaterial->color));
+			pMaterial->color.alpha = 0;
+		}
+	}
+	else if ( RpMaterialGetColor(pMaterial)->alpha == 255 )
+	{
+		auto	pStack = static_cast<std::pair<void*,int>**>(pData);
+		*((*pStack)++) = std::make_pair(&pMaterial->color, *reinterpret_cast<int*>(&pMaterial->color));
+		pMaterial->color.alpha = 0;
 	}
 
 	return pMaterial;
@@ -232,15 +252,20 @@ RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
 
 	// 2nd pass
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(0));
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
 
-	AtomicDefaultRenderCallBack(atomic);
+	// Push materials
+	std::pair<void*,int>		MatsCache[16];
+	auto*						pMats = MatsCache;
 
-	/*RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, 0);
-	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
-	auto* pAtomic = AtomicDefaultRenderCallBack(atomic);*/
+	RpGeometryForAllMaterials(RpAtomicGetGeometry(atomic), AlphaTestAndPush, &pMats);
+	AtomicDefaultRenderCallBack(atomic);
+	pMats->first = nullptr;
+
+	for ( auto i = MatsCache; i->first; i++ )
+		*static_cast<int*>(i->first) = i->second;
+
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
