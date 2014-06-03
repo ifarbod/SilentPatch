@@ -36,9 +36,21 @@ WRAPPER RwFrame* RwFrameForAllObjects(RwFrame* frame, RwObjectCallBack callBack,
 WRAPPER RpClump* RpClumpForAllAtomics(RpClump* clump, RpAtomicCallBack callback, void* pData) { WRAPARG(clump); WRAPARG(callback); WRAPARG(pData); EAXJMP(0x749B70); }
 WRAPPER RpGeometry* RpGeometryForAllMaterials(RpGeometry* geometry, RpMaterialCallBack fpCallBack, void* pData) { WRAPARG(geometry); WRAPARG(fpCallBack); WRAPARG(pData); EAXJMP(0x74C790); }
 WRAPPER RpAtomic* AtomicDefaultRenderCallBack(RpAtomic* atomic) { WRAPARG(atomic); EAXJMP(0x7491C0); }
-WRAPPER void RwD3D9SetRenderState(RwUInt32 state, RwUInt32 value) { WRAPARG(state); WRAPARG(value); EAXJMP(0x7FC2D0); }
 
+#ifndef SA_STEAM_TEST
+
+WRAPPER void RwD3D9SetRenderState(RwUInt32 state, RwUInt32 value) { WRAPARG(state); WRAPARG(value); EAXJMP(0x7FC2D0); }
 WRAPPER void RenderOneXLUSprite(float x, float y, float z, float width, float height, int r, int g, int b, int a, float w, char, char, char) { EAXJMP(0x70D000); }
+
+#else
+
+WRAPPER void RwD3D9SetRenderState(RwUInt32 state, RwUInt32 value) { EAXJMP(0x836290); }
+WRAPPER void RenderOneXLUSprite(float x, float y, float z, float width, float height, int r, int g, int b, int a, float w, char, char, char) { EAXJMP(0x7592C0); }
+
+#endif
+
+WRAPPER const char* GetFrameNodeName(RwFrame* pFrame) { WRAPARG(pFrame); EAXJMP(0x72FB30); }
+
 
 #if defined SILENTPATCH_VC_VER
 
@@ -165,8 +177,11 @@ void __stdcall Recalculate(float& fX, float& fY, signed int nShadow)
 static CLinkList<AlphaObjectInfo>&		m_alphaList = **(CLinkList<AlphaObjectInfo>**)0x733A4D;
 static CLinkList<CEntity*>&				ms_weaponPedsForPC = **(CLinkList<CEntity*>**)0x53EACA;
 
-
+#ifndef SA_STEAM_TEST
 void**									rwengine = *(void***)0x58FFC0;
+#else
+void**									rwengine = (void**)0xD22E34;
+#endif
 
 static inline void	RenderOrderedList(CLinkList<AlphaObjectInfo>& list)
 { 
@@ -176,14 +191,14 @@ static inline void	RenderOrderedList(CLinkList<AlphaObjectInfo>& list)
 
 void RenderAlphaAtomics()
 {
-	int		nPushedAlpha;
+	int		nPushedAlpha = 140;
 
 	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, 0);
-	//RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
+
 	RenderOrderedList(m_alphaList);
+
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
-	//RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(TRUE));
 }
 
 RpAtomic* RenderAtomic(RpAtomic* pAtomic, float fComp)
@@ -211,25 +226,47 @@ RpMaterial* AlphaTest(RpMaterial* pMaterial, void* pData)
 	return pMaterial;
 }
 
+#include <cassert>
+
 RpMaterial* AlphaTestAndPush(RpMaterial* pMaterial, void* pData)
 {
 	if ( RpMaterialGetTexture(pMaterial) )
 	{
 		if ( !((BOOL(*)(RwTexture*))0x4C9EA0)(RpMaterialGetTexture(pMaterial)) )
 		{
-			auto	pStack = static_cast<std::pair<void*,int>**>(pData);
-			*((*pStack)++) = std::make_pair(&pMaterial->color, *reinterpret_cast<int*>(&pMaterial->color));
-			pMaterial->color.alpha = 0;
+			auto	pStack = static_cast<std::pair<std::pair<void*,int>*,int>*>(pData);
+			if ( pStack->second++ < 32 )
+			{
+				*(pStack->first)++ = std::make_pair(&pMaterial->color, *reinterpret_cast<int*>(&pMaterial->color));
+				pMaterial->color.alpha = 0;
+			}
 		}
 	}
 	else if ( RpMaterialGetColor(pMaterial)->alpha == 255 )
 	{
-		auto	pStack = static_cast<std::pair<void*,int>**>(pData);
-		*((*pStack)++) = std::make_pair(&pMaterial->color, *reinterpret_cast<int*>(&pMaterial->color));
-		pMaterial->color.alpha = 0;
+		auto	pStack = static_cast<std::pair<std::pair<void*,int>*,int>*>(pData);
+		if ( pStack->second++ < 32 )
+		{
+			*(pStack->first)++ = std::make_pair(&pMaterial->color, *reinterpret_cast<int*>(&pMaterial->color));
+			pMaterial->color.alpha = 0;
+		}
 	}
 
 	return pMaterial;
+}
+
+RpAtomic* OnePassAlphaRender(RpAtomic* atomic)
+{
+	int		nAlphaBlending;
+
+	RwRenderStateGet(rwRENDERSTATEVERTEXALPHAENABLE, &nAlphaBlending);
+
+	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
+	auto* pAtomic = AtomicDefaultRenderCallBack(atomic);
+
+	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
+
+	return pAtomic;
 }
 
 RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
@@ -256,15 +293,21 @@ RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
 
 	// Push materials
-	std::pair<void*,int>		MatsCache[16];
-	auto*						pMats = MatsCache;
+#if defined HIDE_MATERIALS
+	std::pair<void*,int>					MatsCache[32];
+	std::pair<std::pair<void*,int>*,int>	ParamPair = std::make_pair(MatsCache, 0);
 
-	RpGeometryForAllMaterials(RpAtomicGetGeometry(atomic), AlphaTestAndPush, &pMats);
+	RpGeometryForAllMaterials(RpAtomicGetGeometry(atomic), AlphaTestAndPush, &ParamPair);
 	AtomicDefaultRenderCallBack(atomic);
-	pMats->first = nullptr;
+	ParamPair.first->first = 0;
+
+	assert(ParamPair.second <= 32);
 
 	for ( auto i = MatsCache; i->first; i++ )
 		*static_cast<int*>(i->first) = i->second;
+#else
+	AtomicDefaultRenderCallBack(atomic);
+#endif
 
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
@@ -272,6 +315,35 @@ RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
 
 	return pAtomic;
+	//return nullptr;
+}
+
+RpAtomic* StaticPropellerRender(RpAtomic* pAtomic)
+{
+	int		nPushedAlpha;
+
+	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
+
+	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, 0);
+	auto* pReturnAtomic = AtomicDefaultRenderCallBack(pAtomic);
+
+	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
+	return pReturnAtomic;
+}
+
+RpAtomic* RenderBigVehicleActomic(RpAtomic* pAtomic, float fComp)
+{
+	UNREFERENCED_PARAMETER(fComp);
+
+	const char*		pNodeName = GetFrameNodeName(RpAtomicGetFrame(pAtomic));
+
+	if ( !strncmp(pNodeName, "moving_prop", 11) )
+		return TwoPassAlphaRender(pAtomic);
+
+	if ( !strncmp(pNodeName, "static_prop", 11) )
+		return StaticPropellerRender(pAtomic);
+
+	return AtomicDefaultRenderCallBack(pAtomic);
 }
 
 void RenderWeapon(CEntity* pEntity)
@@ -889,6 +961,8 @@ void RenderVehicleHiDetailAlphaCB_HunterDoor(RpAtomic* pAtomic)
 #include <d3d9.h>
 
 // TODO: EXEs
+#ifndef SA_STEAM_TEST
+
 static unsigned char&		nGameClockDays = **(unsigned char**)0x4E841D;
 static float&				fFarClipZ = **(float**)0x70D21F;
 static RwTexture** const	gpCoronaTexture = *(RwTexture***)0x6FAA8C;
@@ -896,6 +970,18 @@ static int&					MoonSize = **(int**)0x713B0C;
 
 // TODO: Load it from an embedded PNG
 static RwTexture*&			gpMoonMask = *(RwTexture**)0xC6AA74;
+
+#else
+
+static unsigned char&		nGameClockDays = *(unsigned char*)0xBFCC60;
+static float&				fFarClipZ = *(float*)0xCCE6F8;
+static RwTexture** const	gpCoronaTexture = (RwTexture**)0xCCD768;
+static int&					MoonSize = *(int*)0x9499F4;
+
+// TODO: Load it from an embedded PNG
+static RwTexture*&			gpMoonMask = *(RwTexture**)0xCC9874;
+
+#endif
 
 // By NTAuthority
 void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float sizeY)
@@ -908,7 +994,7 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 	RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDSRCALPHA);
 	RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDONE);
 
-	float a10 = 1.0 / fFarClipZ;
+	float a10 = 1.0f / fFarClipZ;
 	float size = (MoonSize * 2) + 4.0f;
 
 	RwD3D9SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA);
@@ -919,10 +1005,10 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 	RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDINVSRCCOLOR);
 	RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDINVSRCCOLOR);
 	
-	float maskX = (sizeX * size) * 5.40 * (currentDayFraction - 0.5) + screenPos[0];
-	float maskY = screenPos[1] + ((sizeY * size) * 0.7);
+	float maskX = (sizeX * size) * 5.4f * (currentDayFraction - 0.5f) + screenPos[0];
+	float maskY = screenPos[1] + ((sizeY * size) * 0.7f);
 
-	RenderOneXLUSprite(maskX, maskY, fFarClipZ, sizeX * size * 1.7, sizeY * size * 1.7, 0, 0, 0, 255, a10, -1, 0, 0);
+	RenderOneXLUSprite(maskX, maskY, fFarClipZ, sizeX * size * 1.7f, sizeY * size * 1.7f, 0, 0, 0, 255, a10, -1, 0, 0);
 
 	RwD3D9SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED);
 
@@ -994,8 +1080,51 @@ static unsigned int		nCachedCRC;
 void __declspec(naked) HunterTest()
 {
 	static const char	aDoorDummy[] = "door_lf_ok";
+	static const char	aStaticRotor[] = "static_rotor";
+	static const char	aStaticRotor2[] = "static_rotor2";
+	static const char	aWidescreen[] = "widescreen";
+	//static bool			bToPleaseFuckingCargobob;
 	_asm
 	{
+		//setnz	di
+		setnz	al
+		movzx	di, al
+		//mov	bToPleaseFuckingCargobob, al
+
+		push	10
+		push	offset aWidescreen
+		push	ebp
+		call	strncmp
+		add		esp, 0Ch
+		test	eax, eax
+		jz		HunterTest_RegularAlpha
+
+		push	13
+		push	offset aStaticRotor2
+		push	ebp
+		call	strncmp
+		add		esp, 0Ch
+		test	eax, eax
+		jz		HunterTest_StaticRotor2AlphaSet
+
+		push	12
+		push	offset aStaticRotor
+		push	ebp
+		call	strncmp
+		add		esp, 0Ch
+		test	eax, eax
+		jz		HunterTest_StaticRotorAlphaSet
+
+		test	di, di
+		//mov		al, bToPleaseFuckingCargobob
+		//test	al, al
+		jnz		HunterTest_DoorTest
+
+		push	733240h
+		mov		eax, 4C7914h
+		jmp		eax
+
+HunterTest_DoorTest:
 		cmp		nCachedCRC, 0x45D0B41C
 		jnz		HunterTest_RegularAlpha
 		push	10
@@ -1007,10 +1136,20 @@ void __declspec(naked) HunterTest()
 		jnz		HunterTest_RegularAlpha
 		push	RenderVehicleHiDetailAlphaCB_HunterDoor
 		mov		eax, 4C7914h
-		jmp		eax
+		jmp		eax	
 
 HunterTest_RegularAlpha:
 		push	733F80h
+		mov		eax, 4C7914h
+		jmp		eax
+
+HunterTest_StaticRotorAlphaSet:
+		push	7340B0h
+		mov		eax, 4C7914h
+		jmp		eax
+
+HunterTest_StaticRotor2AlphaSet:
+		push	734170h
 		mov		eax, 4C7914h
 		jmp		eax
 	}
@@ -1023,6 +1162,33 @@ void __declspec(naked) CacheCRC32()
 		mov		eax, [ecx+4]
 		mov		nCachedCRC, eax
 		mov		eax, 4C7B10h
+		jmp		eax
+	}
+}
+
+void __declspec(naked) PlaneAtomicRendererSetup()
+{
+	static const char	aStaticProp[] = "static_prop";
+	_asm
+	{
+		mov     eax, [esi+4]
+		push	eax
+		call	GetFrameNodeName
+		push	11
+		push	offset aStaticProp
+		push	eax
+		call	strncmp
+		add		esp, 10h
+		test	eax, eax
+		jnz		PlaneAtomicRendererSetup_NoAlpha
+		push	734370h
+		jmp		PlaneAtomicRendererSetup_Return
+
+PlaneAtomicRendererSetup_NoAlpha:
+		push	733420h
+
+PlaneAtomicRendererSetup_Return:
+		mov		eax, 4C7986h
 		jmp		eax
 	}
 }
@@ -1106,14 +1272,256 @@ DarkVehiclesFix4_MakeItDark:
 	}
 }
 
+void __declspec(naked) ResetAlphaFuncRefAfterRender()
+{
+	_asm
+	{
+		mov		edx, [rwengine]
+		mov		edx, [edx]
+		mov		ecx, [esp+7Ch-74h]
+		push	ecx
+		push	rwRENDERSTATEALPHATESTFUNCTIONREF
+		call    dword ptr [edx+20h]
+		add		esp, 8
+		pop		edi
+		pop		esi
+		add     esp, 74h
+		retn
+	}
+}
+
+bool		bUseTwoPass = false;
+
 void SetRendererForAtomic(RpAtomic* pAtomic)
 {
 	BOOL	bHasAlpha = FALSE;
 
 	RpGeometryForAllMaterials(RpAtomicGetGeometry(pAtomic), AlphaTest, &bHasAlpha);
 	if ( bHasAlpha )
-		RpAtomicSetRenderCallBack(pAtomic, TwoPassAlphaRender);
+		RpAtomicSetRenderCallBack(pAtomic, bUseTwoPass ? TwoPassAlphaRender : OnePassAlphaRender);
 }
+
+//#define DO_MAP_DUMP
+
+#ifdef DO_MAP_DUMP
+
+#include <rtquat.h>
+#include <string>
+#include <vector>
+#include <algorithm>
+
+class CFileObjectInstance
+{
+public:
+	CVector	position;
+	RtQuat	rotation;
+	int		modelID;
+	int		interiorID;
+	int		lod;
+};
+
+typedef CFileObjectInstance				tContainer;
+
+static std::string				strFileName;
+static std::vector<tContainer>	aEntries;
+
+#define COMPARED_AREA		"vegasE"
+//#define DUMP_FILENAME		COMPARED_AREA"_pc.dat"
+
+void DumpIPL(const CFileObjectInstance* pInst, const char* pName)
+{
+	if ( strFileName.find(COMPARED_AREA) != std::string::npos )
+		aEntries.push_back(*pInst);
+}
+
+void DumpIPLName(const char* pName)
+{
+	strFileName = pName;
+
+	if ( !aEntries.empty() )
+	{
+#if defined DUMP_FILENAME
+		std::sort(aEntries.begin(), aEntries.end(), [] (const tContainer& left, const tContainer& right) -> bool
+		{
+			if ( left.modelID < right.modelID )
+				return true;
+
+			if ( left.modelID > right.modelID )
+				return false;
+
+			if ( left.position.x < right.position.x )
+				return true;
+
+			if ( left.position.x > right.position.x )
+				return false;
+
+			if ( left.position.y < right.position.y )
+				return true;
+
+			if ( left.position.y > right.position.y )
+				return false;
+
+			if ( left.position.z < right.position.z )
+				return true;
+
+			if ( left.position.z > right.position.z )
+				return false;
+
+			if ( left.rotation.imag.x < right.rotation.imag.x )
+				return true;
+
+			if ( left.rotation.imag.x > right.rotation.imag.x )
+				return false;
+
+			if ( left.rotation.imag.y < right.rotation.imag.y )
+				return true;
+
+			if ( left.rotation.imag.y > right.rotation.imag.y )
+				return false;
+
+			if ( left.rotation.imag.z < right.rotation.imag.z )
+				return true;
+
+			if ( left.rotation.imag.z > right.rotation.imag.z )
+				return false;
+
+			if ( left.rotation.real < right.rotation.real )
+				return true;
+
+			if ( left.rotation.real > right.rotation.real )
+				return false;
+
+			if ( left.interiorID < right.interiorID )
+				return true;
+
+			if ( left.interiorID > right.interiorID )
+				return false;
+
+			if ( left.lod < right.lod )
+				return true;
+
+			return false;
+		});
+
+		if ( FILE* hFile = fopen(DUMP_FILENAME, "wb") )
+		{
+			/*for ( auto it = aEntries.cbegin(); it != aEntries.cend(); it++ )
+			{
+				fprintf(hFile, "%d, %s, %d, %f, %f, %f, %f, %f, %f, %f, %d\n", it->first.modelID, it->second.c_str(), it->first.interiorID,
+					it->first.position.x, it->first.position.y, it->first.position.z,
+					it->first.rotation.imag.x, it->first.rotation.imag.y, it->first.rotation.imag.z, it->first.rotation.real,
+					it->first.lod);
+			}*/
+			size_t		size = aEntries.size();
+			fwrite(&size, sizeof(size_t), 1, hFile);
+			fwrite(aEntries.data(), size * sizeof(tContainer), 1, hFile);
+
+			fclose(hFile);
+		}
+#else
+		// Instead, compare
+		 if ( FILE* hPCFile = fopen(COMPARED_AREA"_pc.dat", "rb") )
+		 {
+			 if ( FILE* hPS2File = fopen(COMPARED_AREA"_ps2.dat", "rb") )
+			 {
+				 size_t						PCsize, PS2size;
+				 std::vector<tContainer>	vecPC, vecPS2;
+
+
+				 fread(&PCsize, sizeof(size_t), 1, hPCFile);
+				 fread(&PS2size, sizeof(size_t), 1, hPS2File);
+
+				 vecPC.resize(PCsize);
+				 vecPS2.resize(PS2size);
+
+				 fread(vecPC.data(), PCsize * sizeof(tContainer), 1, hPCFile);
+				 fread(vecPS2.data(), PS2size * sizeof(tContainer), 1, hPS2File);
+
+				 // Scan for differences
+				 bool		bBreak = true;
+				 while ( bBreak )
+				 {
+					 bool		bBreakThisLoop = false;
+					 for ( auto PCit = vecPC.begin(); PCit != vecPC.end(); PCit++ )
+					 {
+						 for ( auto PS2it = vecPS2.begin(); PS2it != vecPS2.end(); PS2it++ )
+						 {
+							 if ( PS2it->modelID == PCit->modelID && PS2it->interiorID == PCit->interiorID &&
+								 PS2it->position.x == PCit->position.x &&
+								 PS2it->position.y == PCit->position.y && PS2it->position.z == PCit->position.z &&
+								 PS2it->rotation.imag.x == PCit->rotation.imag.x && PS2it->rotation.imag.y == PCit->rotation.imag.y &&
+								 PS2it->rotation.imag.z == PCit->rotation.imag.z && PS2it->rotation.real == PCit->rotation.real )
+							 {
+								 if ( !((PS2it->lod == -1 && PCit->lod != -1) || (PS2it->lod != -1 && PCit->lod == -1)) )
+								 {
+									 bBreakThisLoop = true;
+									 vecPS2.erase(PS2it);
+									 vecPC.erase(PCit);
+									 break;
+								 }
+							 }
+						 }
+						 if ( bBreakThisLoop )
+							 break;
+					}
+					if ( !bBreakThisLoop )
+						break;
+					
+				 }
+				 fclose(hPS2File);
+
+					if ( FILE* hFile = fopen(COMPARED_AREA"_pc.ipl", "w") )
+					{
+						for ( auto it = vecPC.cbegin(); it != vecPC.cend(); it++ )
+						{
+							fprintf(hFile, "%d, %d, %f, %f, %f, %f, %f, %f, %f, %d\n", it->modelID, it->interiorID,
+								it->position.x, it->position.y, it->position.z, it->rotation.imag.x, it->rotation.imag.y, it->rotation.imag.z,
+								it->rotation.real, it->lod);
+						}
+						fclose(hFile);
+					}
+
+					if ( FILE* hFile = fopen(COMPARED_AREA"_ps2.ipl", "w") )
+					{
+						for ( auto it = vecPS2.cbegin(); it != vecPS2.cend(); it++ )
+						{
+							fprintf(hFile, "%d, %d, %f, %f, %f, %f, %f, %f, %f, %d\n", it->modelID, it->interiorID,
+								it->position.x, it->position.y, it->position.z, it->rotation.imag.x, it->rotation.imag.y, it->rotation.imag.z,
+								it->rotation.real, it->lod);
+						}
+						fclose(hFile);
+					}
+
+			 }
+			 fclose(hPCFile);
+		 }
+
+#endif
+
+		aEntries.clear();
+	}
+
+	((void(*)(const char*))0x5B8700)(pName);
+}
+
+void __declspec(naked) DumpIPLStub()
+{
+	_asm
+	{
+		push	[esp+8]
+		push	[esp+4+4]
+		call	DumpIPL
+		add		esp, 8
+
+		push	0FFFFFFFFh
+		push	83C931h
+		
+		push	538097h
+		retn
+	}
+}
+
+#endif
 
 __forceinline void Patch_SA_10()
 {
@@ -1128,7 +1536,11 @@ __forceinline void Patch_SA_10()
 	//InjectHook(0x553318, RenderAlphaAtomics);
 	Patch<const void*>(0x7341D9, TwoPassAlphaRender);
 	Patch<const void*>(0x734127, TwoPassAlphaRender);
+	Patch<const void*>(0x73445E, RenderBigVehicleActomic);
 	//Patch<const void*>(0x73406E, TwoPassAlphaRender);
+
+	// Plane rotors
+	InjectHook(0x4C7981, PlaneAtomicRendererSetup, PATCH_JUMP);
 
 	// DOUBLE_RWHEELS
 	Patch<WORD>(0x4C9290, 0xE281);
@@ -1166,8 +1578,8 @@ __forceinline void Patch_SA_10()
 	Nop(0x732FA6, 6);
 	//Nop(0x5E46DA, 2);
 
-	// Hunter interior
-	InjectHook(0x4C7908, HunterTest, PATCH_JUMP);
+	// Hunter interior & static_rotor for helis
+	InjectHook(0x4C78F2, HunterTest, PATCH_JUMP);
 	InjectHook(0x4C9618, CacheCRC32);
 
 	// Fixed blown up car rendering
@@ -1205,6 +1617,57 @@ __forceinline void Patch_SA_10()
 	InjectHook(0x4C441F, SetRendererForAtomic, PATCH_CALL);
 	Patch<DWORD>(0x4C4424, 0x5F04C483);
 	Patch<DWORD>(0x4C4428, 0x0004C25E);
+
+	// Lightbeam fix
+	Patch<WORD>(0x6A2E88, 0x0EEB);
+	Nop(0x6A2E9C, 3);
+	Patch<WORD>(0x6E0F63, 0x0AEB);
+	Patch<WORD>(0x6E0F7C, 0x0BEB);
+	Patch<WORD>(0x6E0F95, 0x0BEB);
+	Patch<WORD>(0x6E0FAF, 0x1AEB);
+
+	Patch<WORD>(0x6E13D5, 0x09EB);
+	Patch<WORD>(0x6E13ED, 0x17EB);
+	Patch<WORD>(0x6E141F, 0x0AEB);
+
+	Patch<BYTE>(0x6E0FE0, 0x28);
+	Patch<BYTE>(0x6E142D, 0x18);
+	Patch<BYTE>(0x6E0FDB, 0xC8-0x7C);
+	//InjectHook(0x6A2EDA, CullTest);
+
+	InjectHook(0x6A2EF7, ResetAlphaFuncRefAfterRender, PATCH_JUMP);
+
+	// PS2 SUN!!!!!!!!!!!!!!!!!
+	static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
+
+	Nop(0x6FB17C, 3);
+	Patch<const void*>(0x6FC5B0, &fSunMult);
+	//Patch<WORD>(0x6FB172, 0x0BEB);
+	//Patch<BYTE>(0x6FB1A7, 8);
+
+#if defined EXPAND_ALPHA_ENTITY_LISTS
+	// Bigger alpha entity lists
+	Patch<DWORD>(0x733B05, EXPAND_ALPHA_ENTITY_LISTS * 20);
+	Patch<DWORD>(0x733B55, EXPAND_ALPHA_ENTITY_LISTS * 20);
+#endif
+
+	// Fixed police scanner names
+	char*			pScannerNames = *(char**)0x4E72D4;
+	strncpy(pScannerNames + (8*113), "WESTP", 8);
+	strncpy(pScannerNames + (8*134), "????", 8);
+
+	// TEMP - dumping IPL data
+#ifdef DO_MAP_DUMP
+	InjectHook(0x538090, DumpIPLStub, PATCH_JUMP);
+	InjectHook(0x5B92C7, DumpIPLName);
+#endif
+}
+
+__forceinline void Patch_SA_Steam()
+{
+	using namespace MemoryVP;
+
+	InjectHook(0x72F058, HandleMoonStuffStub_Steam, PATCH_JUMP);
 }
 
 #endif
@@ -1225,7 +1688,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			else if(*(DWORD*)0x667C40 == 0x53E58955) Patch_VC_11();
 				else if (*(DWORD*)0x666BA0 == 0x53E58955) Patch_VC_Steam();
 #elif defined SILENTPATCH_SA_VER
-		Patch_SA_10();
+		if (*(DWORD*)0x82457C == 0x94BF || *(DWORD*)0x8245BC == 0x94BF) Patch_SA_10();
+		//else if (*(DWORD*)0x8252FC == 0x94BF || *(DWORD*)0x82533C == 0x94BF) Patch_SA_11();
+		else if (*(DWORD*)0x85EC4A == 0x94BF) Patch_SA_Steam();
 #endif
 	}
 	return TRUE;

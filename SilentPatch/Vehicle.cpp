@@ -9,13 +9,18 @@ WRAPPER void CVehicle::Render() { EAXJMP(0x6D0E60); }
 static RwObject* GetCurrentAtomicObjectCB(RwObject* pObject, void* data)
 {
 	if ( RpAtomicGetFlags(pObject) & rpATOMICRENDER )
+	{
 		*static_cast<RwObject**>(data) = pObject;
+		return nullptr;
+	}
 	return pObject;
 }
 
 void CHeli::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
+	bool		bHasMovingRotor = m_pCarNode[12] != nullptr;
+	bool		bHasMovingRotor2 = m_pCarNode[14] != nullptr;
 
 	m_nTimeTillWeNeedThisCar = *CTimer::m_snTimeInMilliseconds + 3000;
 
@@ -36,7 +41,7 @@ void CHeli::Render()
 		RpAtomic*	pOutAtomic = nullptr;
 		RwFrameForAllObjects(m_pCarNode[11], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
-			SetComponentAtomicAlpha(pOutAtomic, nStaticRotorAlpha);
+			SetComponentAtomicAlpha(pOutAtomic, bHasMovingRotor ? nStaticRotorAlpha : 255);
 	}
 
 	if ( m_pCarNode[13] )
@@ -44,10 +49,10 @@ void CHeli::Render()
 		RpAtomic*	pOutAtomic = nullptr;
 		RwFrameForAllObjects(m_pCarNode[13], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
-			SetComponentAtomicAlpha(pOutAtomic, nStaticRotorAlpha);
+			SetComponentAtomicAlpha(pOutAtomic, bHasMovingRotor2 ? nStaticRotorAlpha : 255);
 	}
 
-	if ( m_pCarNode[12] )
+	if ( bHasMovingRotor )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
 		RwFrameForAllObjects(m_pCarNode[12], GetCurrentAtomicObjectCB, &pOutAtomic);
@@ -55,7 +60,7 @@ void CHeli::Render()
 			SetComponentAtomicAlpha(pOutAtomic, nMovingRotorAlpha);
 	}
 
-	if ( m_pCarNode[14] )
+	if ( bHasMovingRotor2 )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
 		RwFrameForAllObjects(m_pCarNode[14], GetCurrentAtomicObjectCB, &pOutAtomic);

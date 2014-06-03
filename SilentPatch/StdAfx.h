@@ -23,3 +23,8 @@
 
 #include "MemoryMgr.h"
 #include "Maths.h"
+
+//#define HIDE_MATERIAL
+//#define EXPAND_ALPHA_ENTITY_LISTS		800
+
+//#define SA_STEAM_TEST
