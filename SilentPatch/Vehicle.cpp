@@ -74,6 +74,8 @@ void CHeli::Render()
 void CPlane::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
+	bool		bHasMovingProp = m_pCarNode[12] != nullptr;
+	bool		bHasMovingProp2 = m_pCarNode[14] != nullptr;
 
 	m_nTimeTillWeNeedThisCar = *CTimer::m_snTimeInMilliseconds + 3000;
 
@@ -94,7 +96,7 @@ void CPlane::Render()
 		RpAtomic*	pOutAtomic = nullptr;
 		RwFrameForAllObjects(m_pCarNode[11], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
-			SetComponentAtomicAlpha(pOutAtomic, nStaticRotorAlpha);
+			SetComponentAtomicAlpha(pOutAtomic, bHasMovingProp ? nStaticRotorAlpha : 255);
 	}
 
 	if ( m_pCarNode[13] )
@@ -102,10 +104,10 @@ void CPlane::Render()
 		RpAtomic*	pOutAtomic = nullptr;
 		RwFrameForAllObjects(m_pCarNode[13], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
-			SetComponentAtomicAlpha(pOutAtomic, nStaticRotorAlpha);
+			SetComponentAtomicAlpha(pOutAtomic, bHasMovingProp2 ? nStaticRotorAlpha : 255);
 	}
 
-	if ( m_pCarNode[12] )
+	if ( bHasMovingProp )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
 		RwFrameForAllObjects(m_pCarNode[12], GetCurrentAtomicObjectCB, &pOutAtomic);
@@ -113,7 +115,7 @@ void CPlane::Render()
 			SetComponentAtomicAlpha(pOutAtomic, nMovingRotorAlpha);
 	}
 
-	if ( m_pCarNode[14] )
+	if ( bHasMovingProp2 )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
 		RwFrameForAllObjects(m_pCarNode[14], GetCurrentAtomicObjectCB, &pOutAtomic);

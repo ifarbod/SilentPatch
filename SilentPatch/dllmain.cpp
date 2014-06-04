@@ -1290,7 +1290,7 @@ void __declspec(naked) ResetAlphaFuncRefAfterRender()
 	}
 }
 
-bool		bUseTwoPass = false;
+static bool		bUseTwoPass = false;
 
 void SetRendererForAtomic(RpAtomic* pAtomic)
 {
@@ -1523,9 +1523,205 @@ void __declspec(naked) DumpIPLStub()
 
 #endif
 
+#include <d3d9.h>
+
+#include "nvc.h"
+
+static IDirect3DVertexShader9*	pNVCShader = nullptr;
+static bool						bRenderNVC;
+static RpAtomic*				pRenderedAtomic;
+
+WRAPPER void _rwD3D9SetVertexShader(void *shader) { EAXJMP(0x7F9FB0); }
+WRAPPER RwBool RwD3D9CreateVertexShader(const RwUInt32 *function, void **shader) { EAXJMP(0x7FAC60); }
+WRAPPER void RwD3D9DeleteVertexShader(void *shader) { EAXJMP(0x7FAC90); }
+WRAPPER void _rwD3D9VSGetComposedTransformMatrix(void *transformMatrix) { EAXJMP(0x7646E0); }
+WRAPPER void _rwD3D9VSSetActiveWorldMatrix(const RwMatrix *worldMatrix) { EAXJMP(0x764650); }
+WRAPPER RwMatrix* RwFrameGetLTM(RwFrame* frame) { EAXJMP(0x7F0990); }
+WRAPPER void _rwD3D9SetVertexShaderConstant(RwUInt32 registerAddress,
+                               const void *constantData,
+							   RwUInt32  constantCount) { EAXJMP(0x7FACA0); }
+
+WRAPPER RwBool _rpD3D9VertexDeclarationInstColor(RwUInt8 *mem,
+                                  const RwRGBA *color,
+                                  RwInt32 numVerts,
+								  RwUInt32 stride) { EAXJMP(0x754AE0); }
+
+void CompileShader()
+{
+	static bool		bCompiledYet = false;
+
+	if ( !bCompiledYet )
+	{
+		bCompiledYet = true;
+		RwD3D9CreateVertexShader(reinterpret_cast<const RwUInt32*>(g_vs20_NVC_vertex_shader), reinterpret_cast<void**>(&pNVCShader));
+	}
+}
+
+void SetShader(void* shader)
+{
+	if ( bRenderNVC )
+	{
+		// TODO: Daynight balance var
+		D3DMATRIX		outMat;
+		float			fDayNightBalance = *(float*)0x8D12C0;
+
+		RwD3D9SetVertexShader(pNVCShader);
+
+		_rwD3D9VSSetActiveWorldMatrix(RwFrameGetLTM(RpAtomicGetFrame(pRenderedAtomic)));
+		_rwD3D9VSGetComposedTransformMatrix(&outMat);
+		
+		RwD3D9SetVertexShaderConstant(0, &outMat, 4);
+		RwD3D9SetVertexShaderConstant(4, &fDayNightBalance, 1);
+	}
+	else
+		RwD3D9SetVertexShader(shader);
+}
+
+void __declspec(naked) SetShader2()
+{
+	_asm
+	{
+		mov		bRenderNVC, 1
+		push    ecx
+		push    edx
+		push    edi
+		push    ebp
+		call	CompileShader
+		mov		eax, 5DA6A0h
+		call	eax
+		add		esp, 10h
+		mov		bRenderNVC, 0
+		retn
+	}
+}
+
+void __declspec(naked) HijackAtomic()
+{
+	_asm
+	{
+		mov		eax, [esp+8]
+		mov		pRenderedAtomic, eax
+		mov		eax, 5D6480h
+		jmp		eax
+	}
+}
+
+void __declspec(naked) UsageIndex1()
+{
+	_asm
+	{
+		mov		byte ptr [esp+eax*8+27h], 1
+		inc		eax
+
+		push	5D611Bh
+		retn
+	}
+}
+
+static void*	pJackedEsi;
+
+void __declspec(naked) HijackEsi()
+{
+	_asm
+	{
+		mov     [esp+48h-2Ch], eax
+		mov		pJackedEsi, esi
+		lea     esi, [ebp+44h]
+
+		mov		eax, 5D6382h
+		jmp		eax
+	}
+}
+
+void __declspec(naked) PassDayColoursToShader()
+{
+	_asm
+	{
+		mov		[esp+54h],eax
+		jz		PassDayColoursToShader_FindDayColours
+		mov		eax, 5D6382h
+		jmp		eax
+
+PassDayColoursToShader_FindDayColours:
+		xor		eax, eax
+
+PassDayColoursToShader_FindDayColours_Loop:
+		cmp     byte ptr [esp+eax*8+48h-28h+6], D3DDECLUSAGE_COLOR
+		jnz		PassDayColoursToShader_FindDayColours_Next
+		cmp     byte ptr [esp+eax*8+48h-28h+7], 1
+		jz		PassDayColoursToShader_DoDayColours
+
+PassDayColoursToShader_FindDayColours_Next:
+		inc		eax
+		jmp		PassDayColoursToShader_FindDayColours_Loop
+
+PassDayColoursToShader_DoDayColours:
+		mov		esi, pJackedEsi
+		mov     edx, 8D12BCh
+		mov		edx, dword ptr [edx]
+		mov     edx, dword ptr [edx+esi+4]
+		mov     edi, dword ptr [ebp+18h]
+		mov     [esp+48h+4], edx
+		mov     edx, dword ptr [ebp+4]
+		lea     eax, [esp+eax*8+48h-26h]
+		mov     [esp+48h+0Ch], edx
+		mov     [esp+48h-2Ch], eax
+		lea     esi, [ebp+44h]
+
+PassDayColoursToShader_Iterate:
+		mov     edx, dword ptr [esi+14h]
+		mov     eax, dword ptr [esi]
+		push    edi         
+		push    edx            
+		mov     edx, dword ptr [esp+50h+4]
+		lea     edx, [edx+eax*4]
+		imul    eax, edi
+		push    edx            
+		mov     edx, dword ptr [esp+54h-2Ch]
+		movzx   edx, word ptr [edx]
+		add     ecx, eax
+		add     edx, ecx
+		push    edx             
+		call    _rpD3D9VertexDeclarationInstColor
+		mov     ecx, dword ptr [esp+58h-34h]
+		mov     [esi+8], eax
+		mov     eax, dword ptr [esp+58h+0Ch]
+		add     esp, 10h
+		add     esi, 24h
+		dec     eax
+		mov     [esp+48h+0Ch], eax
+		jnz     PassDayColoursToShader_Iterate
+
+		mov		eax, 5D63BDh
+		jmp		eax
+	}
+}
+
 __forceinline void Patch_SA_10()
 {
 	using namespace MemoryVP;
+
+	// TEMP - shaders!
+	/*InjectHook(0x5DA743, SetShader);
+	InjectHook(0x5D66F1, SetShader2);
+	InjectHook(0x5D6116, UsageIndex1, PATCH_JUMP);
+	InjectHook(0x5D63B7, PassDayColoursToShader, PATCH_JUMP);
+	InjectHook(0x5D637B, HijackEsi, PATCH_JUMP);
+	Patch<const void*>(0x5D67F4, HijackAtomic);
+	Patch<BYTE>(0x5D7200, 0xC3);
+	Patch<WORD>(0x5D67BB, 0x6890);
+	Patch<WORD>(0x5D67D7, 0x6890);
+	Patch<DWORD>(0x5D67BD, 0x5D5FE0);
+	Patch<DWORD>(0x5D67D9, 0x5D5FE0);
+
+	Patch<BYTE>(0x5D60D9, D3DDECLTYPE_D3DCOLOR);
+	Patch<BYTE>(0x5D60E2, D3DDECLUSAGE_COLOR);
+	Patch<BYTE>(0x5D60CF, sizeof(D3DCOLOR));
+	Patch<BYTE>(0x5D60EA, sizeof(D3DCOLOR));
+	Patch<BYTE>(0x5D60C2, 0x13);
+	Patch<BYTE>(0x5D62F0, 0xEB);*/
+
+	//Patch<BYTE>(0x5D7265, 0xEB);
 
 	// Temp
 	CTimer::m_snTimeInMilliseconds = *(int**)0x4242D1;
@@ -1591,7 +1787,7 @@ __forceinline void Patch_SA_10()
 
 	// Cars getting dirty
 	// Only 1.0 and Steam
-	InjectMethod(0x4C9648, CVehicleModelInfo::FindEditableMaterialList, PATCH_CALL);
+	InjectMethodVP(0x4C9648, CVehicleModelInfo::FindEditableMaterialList, PATCH_CALL);
 	Patch<DWORD>(0x4C964D, 0x0FEBCE8B);
 	Patch<DWORD>(0x5D5DC2, 32);		// 1.0 ONLY
 
@@ -1693,5 +1889,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		else if (*(DWORD*)0x85EC4A == 0x94BF) Patch_SA_Steam();
 #endif
 	}
+	/*else if ( fdwReason == DLL_PROCESS_DETACH )
+	{
+		if ( pNVCShader )
+			RwD3D9DeleteVertexShader(pNVCShader);
+	}*/
 	return TRUE;
 }

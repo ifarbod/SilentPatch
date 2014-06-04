@@ -65,4 +65,7 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\SilentPatch\nvc.fx" />
+  </ItemGroup>
 </Project>

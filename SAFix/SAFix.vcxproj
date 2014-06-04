@@ -19,6 +19,7 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v100</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -48,7 +49,7 @@
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PreprocessorDefinitions>SILENTPATCH_SA_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9;C:\Program Files\Microsoft DirectX SDK (June 2010)\Include</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
@@ -100,6 +101,15 @@
     <ClCompile Include="..\SilentPatch\Vehicle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <CustomBuild Include="..\SilentPatch\nvc.fx">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"C:\Program Files\Microsoft DirectX SDK (June 2010)\Utilities\bin\x86\fxc.exe" /T vs_2_0 /E NVC_vertex_shader /Fh ..\SilentPatch\nvc.h ..\SilentPatch\nvc.fx</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\SilentPatch\nvc.h</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling shaders...</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"C:\Program Files\Microsoft DirectX SDK (June 2010)\Utilities\bin\x86\fxc.exe" /T vs_2_0 /E NVC_vertex_shader /Fh ..\SilentPatch\nvc.h ..\SilentPatch\nvc.fx</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling shaders...</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\SilentPatch\nvc.h</Outputs>
+    </CustomBuild>
     <None Include="..\SilentPatch\win2000.asm" />
   </ItemGroup>
   <ItemGroup>
