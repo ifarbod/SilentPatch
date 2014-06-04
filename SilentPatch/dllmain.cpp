@@ -1528,7 +1528,7 @@ void __declspec(naked) DumpIPLStub()
 #include "nvc.h"
 
 static IDirect3DVertexShader9*	pNVCShader = nullptr;
-static bool						bRenderNVC;
+static bool						bRenderNVC = false;
 static RpAtomic*				pRenderedAtomic;
 
 WRAPPER void _rwD3D9SetVertexShader(void *shader) { EAXJMP(0x7F9FB0); }
@@ -1546,15 +1546,28 @@ WRAPPER RwBool _rpD3D9VertexDeclarationInstColor(RwUInt8 *mem,
                                   RwInt32 numVerts,
 								  RwUInt32 stride) { EAXJMP(0x754AE0); }
 
-void CompileShader()
-{
-	static bool		bCompiledYet = false;
+WRAPPER bool IsVisionFXActive() { EAXJMP(0x7034F0); }
 
-	if ( !bCompiledYet )
+bool ShaderAttach()
+{
+	// CGame::InitialiseRenderWare
+	// TODO: EXEs
+	if ( ((bool(*)())0x5BD600)() )
 	{
-		bCompiledYet = true;
 		RwD3D9CreateVertexShader(reinterpret_cast<const RwUInt32*>(g_vs20_NVC_vertex_shader), reinterpret_cast<void**>(&pNVCShader));
+		return true;
 	}
+	return false;
+}
+
+void ShaderDetach()
+{
+	if ( pNVCShader )
+		RwD3D9DeleteVertexShader(pNVCShader);
+
+	// PluginDetach?
+	// TODO: EXEs
+	((void(*)())0x53BB80)();
 }
 
 void SetShader(void* shader)
@@ -1564,6 +1577,9 @@ void SetShader(void* shader)
 		// TODO: Daynight balance var
 		D3DMATRIX		outMat;
 		float			fDayNightBalance = *(float*)0x8D12C0;
+		RwRGBAReal*		AmbientLight = RpLightGetColor(*(RpLight**)0xC886E8);
+
+		assert(!shader);
 
 		RwD3D9SetVertexShader(pNVCShader);
 
@@ -1572,6 +1588,7 @@ void SetShader(void* shader)
 		
 		RwD3D9SetVertexShaderConstant(0, &outMat, 4);
 		RwD3D9SetVertexShaderConstant(4, &fDayNightBalance, 1);
+		RwD3D9SetVertexShaderConstant(5, AmbientLight, 1);
 	}
 	else
 		RwD3D9SetVertexShader(shader);
@@ -1586,7 +1603,6 @@ void __declspec(naked) SetShader2()
 		push    edx
 		push    edi
 		push    ebp
-		call	CompileShader
 		mov		eax, 5DA6A0h
 		call	eax
 		add		esp, 10h
@@ -1702,11 +1718,13 @@ __forceinline void Patch_SA_10()
 	using namespace MemoryVP;
 
 	// TEMP - shaders!
-	/*InjectHook(0x5DA743, SetShader);
+	InjectHook(0x5DA743, SetShader);
 	InjectHook(0x5D66F1, SetShader2);
 	InjectHook(0x5D6116, UsageIndex1, PATCH_JUMP);
 	InjectHook(0x5D63B7, PassDayColoursToShader, PATCH_JUMP);
 	InjectHook(0x5D637B, HijackEsi, PATCH_JUMP);
+	InjectHook(0x5BF3A1, ShaderAttach);
+	InjectHook(0x53D910, ShaderDetach);
 	Patch<const void*>(0x5D67F4, HijackAtomic);
 	Patch<BYTE>(0x5D7200, 0xC3);
 	Patch<WORD>(0x5D67BB, 0x6890);
@@ -1719,7 +1737,10 @@ __forceinline void Patch_SA_10()
 	Patch<BYTE>(0x5D60CF, sizeof(D3DCOLOR));
 	Patch<BYTE>(0x5D60EA, sizeof(D3DCOLOR));
 	Patch<BYTE>(0x5D60C2, 0x13);
-	Patch<BYTE>(0x5D62F0, 0xEB);*/
+	Patch<BYTE>(0x5D62F0, 0xEB);
+
+	// PostFX fix
+	Patch<float>(*(float**)0x7034C0, 0.0);
 
 	//Patch<BYTE>(0x5D7265, 0xEB);
 
@@ -1734,6 +1755,16 @@ __forceinline void Patch_SA_10()
 	Patch<const void*>(0x734127, TwoPassAlphaRender);
 	Patch<const void*>(0x73445E, RenderBigVehicleActomic);
 	//Patch<const void*>(0x73406E, TwoPassAlphaRender);
+
+	// Boats
+	/*Patch<BYTE>(0x4C79DF, 0x19);
+	Patch<DWORD>(0x733A87, EXPAND_BOAT_ALPHA_ATOMIC_LISTS * sizeof(AlphaObjectInfo));
+	Patch<DWORD>(0x733AD7, EXPAND_BOAT_ALPHA_ATOMIC_LISTS * sizeof(AlphaObjectInfo));*/
+
+	// Fixed strafing? Hopefully
+	static const float		fStrafeCheck = 0.1f;
+	Patch<const void*>(0x61E0C2, &fStrafeCheck);
+	Nop(0x61E0CA, 6);
 
 	// Plane rotors
 	InjectHook(0x4C7981, PlaneAtomicRendererSetup, PATCH_JUMP);
