@@ -20,6 +20,7 @@
 
 #include <rwcore.h>
 #include <rpworld.h>
+#include <rtpng.h>
 
 #include "MemoryMgr.h"
 #include "Maths.h"

@@ -14,7 +14,7 @@ struct VS_OUTPUT
 };
 
 float4x4	viewProjMatrix : register(c0);
-float		fDayNightBalance : register(c4);
+float2		fEnvVars : register(c4);
 float4		AmbientLight : register(c5);
 
 VS_OUTPUT NVC_vertex_shader( in VS_INPUT In )
@@ -24,8 +24,8 @@ VS_OUTPUT NVC_vertex_shader( in VS_INPUT In )
 	Out.Position = mul(In.Position, viewProjMatrix);
 	Out.Texture = In.Texture;
 
-	Out.Color = (In.DayColor * (1.0-fDayNightBalance) + In.NightColor * fDayNightBalance);	
-	Out.Color.rgb += AmbientLight.rgb * AmbientLight.a;
+	Out.Color.rgb = (In.DayColor.rgb * (1.0-fEnvVars[0]) + In.NightColor.rgb * fEnvVars[0]) + (AmbientLight.rgb * AmbientLight.a);
+	Out.Color.a = fEnvVars[1];
 	Out.Color = saturate(Out.Color);
 
 	return Out;

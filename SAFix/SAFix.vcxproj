@@ -93,6 +93,7 @@
     <ClCompile Include="..\SilentPatch\dllmain.cpp" />
     <ClCompile Include="..\SilentPatch\General.cpp" />
     <ClCompile Include="..\SilentPatch\ModelInfoSA.cpp" />
+    <ClCompile Include="..\SilentPatch\PNGFile.cpp" />
     <ClCompile Include="..\SilentPatch\StdAfx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -118,6 +119,7 @@
     <ClInclude Include="..\SilentPatch\Maths.h" />
     <ClInclude Include="..\SilentPatch\MemoryMgr.h" />
     <ClInclude Include="..\SilentPatch\ModelInfoSA.h" />
+    <ClInclude Include="..\SilentPatch\PNGFile.h" />
     <ClInclude Include="..\SilentPatch\StdAfx.h" />
     <ClInclude Include="..\SilentPatch\Timer.h" />
     <ClInclude Include="..\SilentPatch\Vehicle.h" />
