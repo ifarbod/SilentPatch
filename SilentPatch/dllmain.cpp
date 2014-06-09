@@ -1756,6 +1756,20 @@ PassDayColoursToShader_Iterate:
 	}
 }
 
+void __declspec(naked) UserTracksFix()
+{
+	_asm
+	{
+		push	[esp+4]
+		mov		eax, 4D7C60h
+		call	eax
+		mov		ecx, 0B6B970h
+		mov		eax, 4F35B0h
+		call	eax
+		retn	4
+	}
+}
+
 __forceinline void Patch_SA_10()
 {
 	using namespace MemoryVP;
@@ -1921,6 +1935,11 @@ __forceinline void Patch_SA_10()
 	Patch<DWORD>(0x733B05, EXPAND_ALPHA_ENTITY_LISTS * 20);
 	Patch<DWORD>(0x733B55, EXPAND_ALPHA_ENTITY_LISTS * 20);
 #endif
+
+	// User Tracks fix
+	InjectHook(0x4D9B66, UserTracksFix);
+	InjectHook(0x4D9BB5, 0x4F2FD0);
+	//Nop(0x4D9BB5, 5);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
