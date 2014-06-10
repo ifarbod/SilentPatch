@@ -8,20 +8,26 @@
 //WRAPPER unsigned int CAEDataStream::FillBuffer(void* pBuf, unsigned long nLen) { EAXJMP(0x4DC1C0); }
 WRAPPER bool CAEDataStream::Initialise() { EAXJMP(0x4DC2B0); }
 
+//static bool	bEOFFlag = false;
+
 FLAC__StreamDecoderReadStatus CAEFLACDecoder::read_cb(const FLAC__StreamDecoder* decoder, FLAC__byte buffer[], size_t* bytes, void* client_data)
 {
+	UNREFERENCED_PARAMETER(decoder);
 	CAEFLACDecoder*	pClientData = static_cast<CAEFLACDecoder*>(client_data);
 
 	ReadFile(pClientData->GetStream()->GetFile(), buffer, *bytes, reinterpret_cast<LPDWORD>(bytes), nullptr); //*bytes = pClientData->GetStream()->FillBuffer(buffer, *bytes);
 	//*bytes = pClientData->GetStream()->FillBuffer(buffer, *bytes);
+	//bEOFFlag = GetLastError() == ERROR_HANDLE_EOF;
 
-	FLAC__StreamDecoderReadStatus bResult = *bytes ? FLAC__STREAM_DECODER_READ_STATUS_CONTINUE : FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;
+	auto result = *bytes ? FLAC__STREAM_DECODER_READ_STATUS_CONTINUE : FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;
 
-	return bResult;
+	return result;
 }
 
 static FLAC__int32*		pMalloc = nullptr;
 static unsigned int		nBlockSize = 0;
+
+static unsigned int		nSamplesLeftToProcess = 0;
 
 FLAC__StreamDecoderWriteStatus CAEFLACDecoder::write_cb(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC__int32 *const buffer[], void *client_data)
 {
@@ -32,17 +38,23 @@ FLAC__StreamDecoderWriteStatus CAEFLACDecoder::write_cb(const FLAC__StreamDecode
 						frame->header.number.sample_number :
 						frame->header.number.frame_number * frame->header.blocksize;
 
-	if ( frame->header.blocksize > nBlockSize )
+	// Mono/stereo?
+	unsigned int	nNumChannelsToAlloc = pClientData->pStreamInfo->data.stream_info.channels > 1 ? 2 : 1;
+	static unsigned int		nLastMallocSize = 0;
+
+	if ( frame->header.blocksize * sizeof(FLAC__int32) * nNumChannelsToAlloc > nLastMallocSize )
 	{
 		// Realloc needed
 		operator delete(pMalloc);
 
-		pMalloc = static_cast<FLAC__int32*>(operator new(frame->header.blocksize * sizeof(FLAC__int32) * 2));	// TODO: More channels?
+		nLastMallocSize = frame->header.blocksize * sizeof(FLAC__int32) * nNumChannelsToAlloc;
+		pMalloc = static_cast<FLAC__int32*>(operator new(nLastMallocSize));	// TODO: More channels?
 	}
 	nBlockSize = frame->header.blocksize;
 
 	memcpy(pMalloc, buffer[0], nBlockSize * sizeof(FLAC__int32));
-	memcpy(pMalloc+nBlockSize, buffer[1], nBlockSize * sizeof(FLAC__int32));
+	if ( nNumChannelsToAlloc > 1 )
+		memcpy(pMalloc+nBlockSize, buffer[1], nBlockSize * sizeof(FLAC__int32));
 
 	return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
 }
@@ -91,10 +103,11 @@ FLAC__StreamDecoderLengthStatus	CAEFLACDecoder::length_cb(const FLAC__StreamDeco
 	return bResult ? FLAC__STREAM_DECODER_LENGTH_STATUS_OK: FLAC__STREAM_DECODER_LENGTH_STATUS_ERROR;
 }
 
-FLAC__bool CAEFLACDecoder::eof_cb(const FLAC__StreamDecoder *decoder, void *client_data)
+FLAC__bool CAEFLACDecoder::eof_cb(const FLAC__StreamDecoder* decoder, void* client_data)
 {
-
-	// TODO: DO
+	// Not implemented
+	UNREFERENCED_PARAMETER(decoder);
+	UNREFERENCED_PARAMETER(client_data);
 	return false;
 }
 
@@ -117,38 +130,64 @@ bool CAEFLACDecoder::Initialise()
 	return result;
 }
 
-#include <cassert>
-
 unsigned int CAEFLACDecoder::FillBuffer(void* pBuf, unsigned long nLen)
 {
-	signed int		nSigLen = nLen / 4;
+	//unsigned int	nSigLen = nLen / 4;
 	unsigned int	nBytesDecoded = 0;
 	FLAC__int16*	pBuffer = static_cast<FLAC__int16*>(pBuf);
 
-	while ( nSigLen > 0 )
+	while ( nBytesDecoded < nLen )
 	{
-		FLAC__stream_decoder_process_single(pFLACDecoder);
+		static FLAC__int32*		pCurrentPtr[2];
 
-		FLAC__int32*	pCurrentPtr[2];
+		unsigned int		nToWrite;
+		// No samples left from a previous fetch?
+		if ( !nSamplesLeftToProcess )
+		{
+			FLAC__stream_decoder_process_single(pFLACDecoder);
 
-		pCurrentPtr[0] = pMalloc;
-		pCurrentPtr[1] = pMalloc+nBlockSize;
+			pCurrentPtr[0] = pMalloc;
+			pCurrentPtr[1] = pMalloc+nBlockSize;
+
+			if ( (nLen - nBytesDecoded) / 4 >= nBlockSize )
+				nToWrite = nBlockSize;
+			else
+				nToWrite = (nLen - nBytesDecoded) / 4;
+
+			nSamplesLeftToProcess = nBlockSize;
+		}
+		else
+			nToWrite = nSamplesLeftToProcess;
 
 		// Write channels
-		unsigned int		nToWrite = min(nLen / 4, nBlockSize);
-		for ( unsigned int i = 0; i < nToWrite; i++ )
+		// = min((nLen - nBytesDecoded) / 4, nBlockSize);
+
+		for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
 		{
 			pBuffer[0] = pCurrentPtr[0][i];
-			pBuffer[1] = pCurrentPtr[1][i];
+			pBuffer[1] = pCurrentPtr[pStreamInfo->data.stream_info.channels > 1][i];
 
 			pBuffer += 2;
 		}
 
-		nSigLen -= nToWrite;
+		//nSigLen -= nToWrite;
 		nBytesDecoded += nToWrite*4;
 
 		if ( FLAC__stream_decoder_get_state(pFLACDecoder) == FLAC__STREAM_DECODER_END_OF_STREAM )
 			break;
 	}
-	return nSigLen > 0 ? nLen - nBytesDecoded : nLen;
+	return nBytesDecoded;//nSigLen > 0 ? nLen - nBytesDecoded : nLen;
+}
+
+CAEFLACDecoder::~CAEFLACDecoder()
+{
+	nSamplesLeftToProcess = 0;
+	if ( pFLACDecoder )
+	{
+		FLAC__stream_decoder_finish(pFLACDecoder);
+		FLAC__stream_decoder_delete(pFLACDecoder);
+
+		FLAC__metadata_object_delete(pStreamInfo);
+		pFLACDecoder = nullptr;
+	}
 }

@@ -144,18 +144,7 @@ public:
 		: CAEStreamingDecoder(stream), pFLACDecoder(nullptr)
 	{}
 
-	virtual ~CAEFLACDecoder()
-	{
-		if ( pFLACDecoder )
-		{
-			FLAC__stream_decoder_finish(pFLACDecoder);
-			FLAC__stream_decoder_delete(pFLACDecoder);
-
-			FLAC__metadata_object_delete(pStreamInfo);
-			pFLACDecoder = nullptr;
-		}
-	}
-
+	virtual ~CAEFLACDecoder();
 	
 	virtual bool			Initialise() override;
 
@@ -163,12 +152,14 @@ public:
 
 	virtual unsigned int	GetStreamLengthMs() override
 	{
-		return pStreamInfo->data.stream_info.total_samples * 1000 / pStreamInfo->data.stream_info.sample_rate;
+		unsigned int	nTime = pStreamInfo->data.stream_info.total_samples * 1000 / pStreamInfo->data.stream_info.sample_rate;
+		return nTime;
 	}
 
 	virtual unsigned int	GetStreamPlayTimeMs() override
 	{
-		return nCurrentSample * 1000 / pStreamInfo->data.stream_info.sample_rate;
+		unsigned int	nTime = nCurrentSample * 1000 / pStreamInfo->data.stream_info.sample_rate;
+		return nTime;
 	}
 
 	virtual void			SetCursor(unsigned int nTime) override
