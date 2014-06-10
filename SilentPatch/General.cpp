@@ -1,5 +1,4 @@
 #include "StdAfx.h"
-
 #include "General.h"
 
 // Wrappers

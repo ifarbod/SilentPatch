@@ -5,6 +5,7 @@
 #include "Vehicle.h"
 #include "LinkList.h"
 #include "ModelInfoSA.h"
+#include "AudioHardware.h"
 
 struct RsGlobalType
 {
@@ -1770,6 +1771,93 @@ void __declspec(naked) UserTracksFix()
 	}
 }
 
+static CAEFLACDecoder* __stdcall DecoderCtor(CAEDataStream* pData)
+{
+	return new CAEFLACDecoder(pData);
+}
+
+static void __stdcall StreamDtor(CAEDataStream* pData)
+{
+	delete pData;
+}
+
+void __declspec(naked) LoadFLAC()
+{
+	_asm
+	{
+		jz		LoadFLAC_WindowsMedia
+		sub		ebp, 2
+		jnz		LoadFLAC_Return
+		//push	SIZE CAEStreamingDecoder
+		//call	malloc				// TODO: operator new
+		//mov		[esp+20h+4], eax
+		//test	eax, eax
+		//jz		LoadFLAC_AllocFailed
+		push	esi
+		//mov		ecx, eax
+		//call	CAEFLACDecoder::CAEFLACDecoder
+		call	DecoderCtor
+		jmp		LoadFLAC_Success
+
+LoadFLAC_WindowsMedia:
+		mov		eax, 4F3743h
+		jmp		eax
+
+//LoadFLAC_AllocFailed:
+		//xor		eax, eax
+
+LoadFLAC_Success:
+		test	eax, eax
+		mov		[esp+20h+4], eax
+		jnz		LoadFLAC_Return_NoDelete
+
+LoadFLAC_Return:
+		push	esi
+		//mov		ecx, esi
+		call	StreamDtor
+		//call	CAEDataStream::~CAEDataStream
+		//push	esi
+		//call	free				// TODO: operator delete
+		//add     esp, 4
+
+LoadFLAC_Return_NoDelete:
+		mov     eax, [esp+20h+4]
+		mov		ecx, [esp+20h-0Ch]
+		pop		esi
+		pop		ebp
+		pop		edi
+		pop		ebx
+		mov		fs:0, ecx
+		add		esp, 10h
+		retn	4
+	}
+}
+
+static struct
+{
+	char			Extension[8];
+	unsigned int	Codec;
+} UserTrackExtensions[] = { { ".ogg", DECODER_VORBIS }, { ".mp3", DECODER_QUICKTIME },
+							{ ".wav", DECODER_WAVE }, { ".wma", DECODER_WINDOWSMEDIA },
+							{ ".wmv", DECODER_WINDOWSMEDIA }, { ".aac", DECODER_QUICKTIME },
+							{ ".m4a", DECODER_QUICKTIME }, { ".mov", DECODER_QUICKTIME },
+							{ ".fla", DECODER_FLAC }, { ".flac", DECODER_FLAC } };
+
+void __declspec(naked) FLACInit()
+{
+	_asm
+	{
+		mov		al, 1
+		mov		[esi+0Dh], al
+		pop		esi
+		jnz		FLACInit_DontFallBack
+		mov		UserTrackExtensions+12.Codec, DECODER_WINDOWSMEDIA
+
+FLACInit_DontFallBack:
+		retn
+	}
+}
+
 __forceinline void Patch_SA_10()
 {
 	using namespace MemoryVP;
@@ -1941,6 +2029,15 @@ __forceinline void Patch_SA_10()
 	InjectHook(0x4D9BB5, 0x4F2FD0);
 	//Nop(0x4D9BB5, 5);
 
+	// FLAC support
+	InjectHook(0x4F373D, LoadFLAC, PATCH_JUMP);
+	InjectHook(0x4F35E0, FLACInit, PATCH_JUMP);
+
+	Patch<const void*>(0x4F3210, UserTrackExtensions);
+	Patch<const void*>(0x4F3241, &UserTrackExtensions->Codec);
+	//Patch<const void*>(0x4F35E7, &UserTrackExtensions[1].Codec);
+	Patch<BYTE>(0x4F322D, sizeof(UserTrackExtensions));
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -1990,3 +2087,5 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	}*/
 	return TRUE;
 }
+
+WRAPPER void GTAdelete(void* data) { EAXJMP(0x82413F); }

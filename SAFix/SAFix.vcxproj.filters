@@ -16,6 +16,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{729e19b1-4747-44c3-b99e-1ecc383d1cad}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\FLAC">
+      <UniqueIdentifier>{57615a2f-8bc4-461f-b9f6-86d5f8286d7a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\SilentPatch\dllmain.cpp">
@@ -37,6 +40,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\SilentPatch\PNGFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\SilentPatch\AudioHardware.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -71,6 +77,27 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\SilentPatch\PNGFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\FLAC\callback.h">
+      <Filter>Header Files\FLAC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\FLAC\export.h">
+      <Filter>Header Files\FLAC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\FLAC\format.h">
+      <Filter>Header Files\FLAC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\FLAC\metadata.h">
+      <Filter>Header Files\FLAC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\FLAC\ordinals.h">
+      <Filter>Header Files\FLAC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\FLAC\stream_decoder.h">
+      <Filter>Header Files\FLAC</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\AudioHardware.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
