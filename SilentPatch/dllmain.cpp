@@ -1812,13 +1812,13 @@ LoadFLAC_Success:
 		jnz		LoadFLAC_Return_NoDelete
 
 LoadFLAC_Return:
-		push	esi
-		//mov		ecx, esi
-		call	StreamDtor
-		//call	CAEDataStream::~CAEDataStream
 		//push	esi
-		//call	free				// TODO: operator delete
-		//add     esp, 4
+		mov		ecx, esi
+		//call	StreamDtor
+		call	CAEDataStream::~CAEDataStream
+		push	esi
+		call	GTAdelete
+		add     esp, 4
 
 LoadFLAC_Return_NoDelete:
 		mov     eax, [esp+20h+4]

@@ -129,6 +129,8 @@ private:
 	FLAC__StreamMetadata*		pStreamInfo;
 	unsigned int				nCurrentSample;
 
+	static unsigned int			nRefCount;
+
 private:
 	static FLAC__StreamDecoderReadStatus	read_cb(const FLAC__StreamDecoder* decoder, FLAC__byte buffer[], size_t* bytes, void* client_data);
 	static FLAC__StreamDecoderWriteStatus	write_cb(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC__int32 *const buffer[], void *client_data);
@@ -142,7 +144,9 @@ private:
 public:
 	CAEFLACDecoder(CAEDataStream* stream)
 		: CAEStreamingDecoder(stream), pFLACDecoder(nullptr)
-	{}
+	{
+		++nRefCount;
+	}
 
 	virtual ~CAEFLACDecoder();
 	
