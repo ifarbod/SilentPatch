@@ -18,6 +18,8 @@ FLAC__StreamDecoderReadStatus CAEFLACDecoder::read_cb(const FLAC__StreamDecoder*
 	CAEFLACDecoder*	pClientData = static_cast<CAEFLACDecoder*>(client_data);
 
 	ReadFile(pClientData->GetStream()->GetFile(), buffer, *bytes, reinterpret_cast<LPDWORD>(bytes), nullptr); //*bytes = pClientData->GetStream()->FillBuffer(buffer, *bytes);
+	//*bytes = pClientData->GetStream()->FillBuffer(buffer, *bytes);
+	//bEOFFlag = GetLastError() == ERROR_HANDLE_EOF;
 
 	auto result = *bytes ? FLAC__STREAM_DECODER_READ_STATUS_CONTINUE : FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;
 
@@ -26,12 +28,11 @@ FLAC__StreamDecoderReadStatus CAEFLACDecoder::read_cb(const FLAC__StreamDecoder*
 
 static FLAC__int32*		pMalloc = nullptr;
 static unsigned int		nBlockSize = 0;
+
 static unsigned int		nSamplesLeftToProcess = 0;
 
 FLAC__StreamDecoderWriteStatus CAEFLACDecoder::write_cb(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC__int32 *const buffer[], void *client_data)
 {
-	UNREFERENCED_PARAMETER(decoder);
-
 	CAEFLACDecoder*	pClientData = static_cast<CAEFLACDecoder*>(client_data);
 
 	// Obtain current sample
@@ -63,8 +64,6 @@ FLAC__StreamDecoderWriteStatus CAEFLACDecoder::write_cb(const FLAC__StreamDecode
 
 void CAEFLACDecoder::meta_cb(const FLAC__StreamDecoder* decoder, const FLAC__StreamMetadata *metadata, void *client_data)
 {
-	UNREFERENCED_PARAMETER(decoder);
-
 	if ( metadata->type == FLAC__METADATA_TYPE_STREAMINFO )
 	{
 		// Cache the header
@@ -75,8 +74,6 @@ void CAEFLACDecoder::meta_cb(const FLAC__StreamDecoder* decoder, const FLAC__Str
 
 FLAC__StreamDecoderSeekStatus CAEFLACDecoder::seek_cb(const FLAC__StreamDecoder *decoder, FLAC__uint64 absolute_byte_offset, void *client_data)
 {
-	UNREFERENCED_PARAMETER(decoder);
-
 	CAEFLACDecoder*	pClientData = static_cast<CAEFLACDecoder*>(client_data);
 	LARGE_INTEGER	li;
 	li.QuadPart = absolute_byte_offset;
@@ -88,8 +85,6 @@ FLAC__StreamDecoderSeekStatus CAEFLACDecoder::seek_cb(const FLAC__StreamDecoder 
 
 FLAC__StreamDecoderTellStatus CAEFLACDecoder::tell_cb(const FLAC__StreamDecoder *decoder, FLAC__uint64 *absolute_byte_offset, void *client_data)
 {
-	UNREFERENCED_PARAMETER(decoder);
-
 	CAEFLACDecoder*	pClientData = static_cast<CAEFLACDecoder*>(client_data);
 	LARGE_INTEGER	li;
 	li.QuadPart = 0;
@@ -102,8 +97,6 @@ FLAC__StreamDecoderTellStatus CAEFLACDecoder::tell_cb(const FLAC__StreamDecoder 
 
 FLAC__StreamDecoderLengthStatus	CAEFLACDecoder::length_cb(const FLAC__StreamDecoder *decoder, FLAC__uint64 *stream_length, void *client_data)
 {
-	UNREFERENCED_PARAMETER(decoder);
-
 	CAEFLACDecoder*	pClientData = static_cast<CAEFLACDecoder*>(client_data);
 	LARGE_INTEGER	li;
 
@@ -129,6 +122,7 @@ void CAEFLACDecoder::error_cb(const FLAC__StreamDecoder* decoder, FLAC__StreamDe
 	UNREFERENCED_PARAMETER(client_data);
 }
 
+
 bool CAEFLACDecoder::Initialise()
 {
 	pFLACDecoder = FLAC__stream_decoder_new();
@@ -136,32 +130,27 @@ bool CAEFLACDecoder::Initialise()
 	{
 		FLAC__stream_decoder_process_until_end_of_metadata(pFLACDecoder);
 
-		return pStreamInfo->data.stream_info.sample_rate <= 48000 && (pStreamInfo->data.stream_info.bits_per_sample == 8 || pStreamInfo->data.stream_info.bits_per_sample == 16 || pStreamInfo->data.stream_info.bits_per_sample == 24);
+		return /*pStreamInfo->data.stream_info.sample_rate <= 48000 &&*/ (pStreamInfo->data.stream_info.bits_per_sample == 8 || pStreamInfo->data.stream_info.bits_per_sample == 16 || pStreamInfo->data.stream_info.bits_per_sample == 24);
 	}
 	return false;
 }
 
-/*unsigned int CAEFLACDecoder::FillBuffer(void* pBuf, unsigned long nLen)
+unsigned int CAEFLACDecoder::FillBuffer(void* pBuf, unsigned long nLen)
 {
-	//unsigned int	nSigLen = nLen / 4;
-	unsigned int	nBytesDecoded = 0;
-	unsigned int	nSampleRate = pStreamInfo->data.stream_info.bits_per_sample;
-	FLAC__int16*	pBuffer = static_cast<FLAC__int16*>(pBuf);
-	bool			bStereo = pStreamInfo->data.stream_info.channels > 1;
+	unsigned int		nBytesDecoded = 0;
+	FLAC__int16*		pBuffer = static_cast<FLAC__int16*>(pBuf);
+
+	const unsigned int	nSampleRate = pStreamInfo->data.stream_info.bits_per_sample;
+	const bool			bStereo = pStreamInfo->data.stream_info.channels > 1;
 
 	while ( nBytesDecoded < nLen )
 	{
-		static FLAC__int32*		pCurrentPtr[2];
-
 		unsigned int		nToWrite;
 		// No samples left from a previous fetch?
 		if ( !nSamplesLeftToProcess )
 		{
 			FLAC__stream_decoder_process_single(pFLACDecoder);
 
-			pCurrentPtr[0] = pMalloc;
-			pCurrentPtr[1] = pMalloc+nBlockSize;
-
 			if ( (nLen - nBytesDecoded) / 4 >= nBlockSize )
 				nToWrite = nBlockSize;
 			else
@@ -172,39 +161,51 @@ bool CAEFLACDecoder::Initialise()
 		else
 			nToWrite = nSamplesLeftToProcess;
 
-		// Write channels
-		if ( bStereo )
-		{
-			// Stereo
-			if ( nSampleRate == 8 )
-			{
-				// 8-bit
-				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
-				{
-					pBuffer[0] = *pCurrentPtr[0]++ << 8;
-					pBuffer[1] = *pCurrentPtr[1]++ << 8;
+		FLAC__int32*		pCurrentPtr[2] = { pMalloc, pMalloc+nBlockSize };
+		const unsigned int	ExtraIndex = nBlockSize - nSamplesLeftToProcess;
 
-					pBuffer += 2;
-				}
-			}
-			else if ( nSampleRate == 24 )
+		// Write channels
+		if ( nSampleRate == 8 )
+		{
+			// 8-bit
+			if ( bStereo )
 			{
-				// 24-bit
 				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
 				{
-					pBuffer[0] = *pCurrentPtr[0]++ >> 8;
-					pBuffer[1] = *pCurrentPtr[1]++ >> 8;
+					pBuffer[0] = pCurrentPtr[0][ExtraIndex+i] << 8;
+					pBuffer[1] = pCurrentPtr[1][ExtraIndex+i] << 8;
 
 					pBuffer += 2;
 				}
 			}
 			else
 			{
-				// 16-bit
 				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
 				{
-					pBuffer[0] = *pCurrentPtr[0]++;
-					pBuffer[1] = *pCurrentPtr[1]++;
+					pBuffer[0] = pBuffer[1] = pCurrentPtr[0][ExtraIndex+i] << 8;
+
+					pBuffer += 2;
+				}
+			}
+		}
+		else if ( nSampleRate == 24 )
+		{
+			// 24-bit
+			if ( bStereo )
+			{
+				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
+				{
+					pBuffer[0] = pCurrentPtr[0][ExtraIndex+i] >> 8;
+					pBuffer[1] = pCurrentPtr[1][ExtraIndex+i] >> 8;
+
+					pBuffer += 2;
+				}
+			}
+			else
+			{
+				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
+				{
+					pBuffer[0] = pBuffer[1] = pCurrentPtr[0][ExtraIndex+i] >> 8;
 
 					pBuffer += 2;
 				}
@@ -212,337 +213,34 @@ bool CAEFLACDecoder::Initialise()
 		}
 		else
 		{
-			// Mono
-			if ( nSampleRate == 8 )
+			// 16-bit
+			if ( bStereo )
 			{
-				// 8-bit
 				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
 				{
-					pBuffer[0] = pBuffer[1] = *pCurrentPtr[0]++ << 8;
-
-					pBuffer += 2;
-				}
-			}
-			else if ( nSampleRate == 24 )
-			{
-				// 24-bit
-				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
-				{
-					pBuffer[0] = pBuffer[1] = *pCurrentPtr[0]++ >> 8;
+					pBuffer[0] = pCurrentPtr[0][ExtraIndex+i];
+					pBuffer[1] = pCurrentPtr[1][ExtraIndex+i];
 
 					pBuffer += 2;
 				}
 			}
 			else
 			{
-				// 16-bit
 				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
 				{
-					pBuffer[0] = pBuffer[1] = *pCurrentPtr[0]++;
+					pBuffer[0] = pBuffer[1] = pCurrentPtr[0][ExtraIndex+i];
 
 					pBuffer += 2;
 				}
 			}
 		}
 
-		//nSigLen -= nToWrite;
 		nBytesDecoded += nToWrite*4;
 
 		if ( FLAC__stream_decoder_get_state(pFLACDecoder) == FLAC__STREAM_DECODER_END_OF_STREAM )
 			break;
 	}
-
-	return nBytesDecoded;//nSigLen > 0 ? nLen - nBytesDecoded : nLen;
-}*/
-
-// Separated functions for maximum decoding performance
-static FLAC__int32*		pCurrentPtr[2];
-
-static unsigned int DecodeMono8bit(FLAC__StreamDecoder* pDecoder, void* pBuf, unsigned long nLen)
-{
-	unsigned int	nBytesDecoded = 0;
-	FLAC__int16*	pBuffer = static_cast<FLAC__int16*>(pBuf);
-
-	while ( nBytesDecoded < nLen )
-	{
-		unsigned int		nToWrite;
-		// No samples left from a previous fetch?
-		if ( !nSamplesLeftToProcess )
-		{
-			FLAC__stream_decoder_process_single(pDecoder);
-
-			pCurrentPtr[0] = pMalloc;
-			pCurrentPtr[1] = pMalloc+nBlockSize;
-
-			if ( (nLen - nBytesDecoded) / 4 >= nBlockSize )
-				nToWrite = nBlockSize;
-			else
-				nToWrite = (nLen - nBytesDecoded) / 4;
-
-			nSamplesLeftToProcess = nBlockSize;
-		}
-		else
-			nToWrite = nSamplesLeftToProcess;
-
-		// Write channels
-		for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
-		{
-			pBuffer[0] = pBuffer[1] = *pCurrentPtr[0]++ << 8;
-
-			pBuffer += 2;
-		}
-
-		nBytesDecoded += nToWrite*4;
-
-		if ( FLAC__stream_decoder_get_state(pDecoder) == FLAC__STREAM_DECODER_END_OF_STREAM )
-			break;
-	}
-
 	return nBytesDecoded;
-}
-
-static unsigned int DecodeMono16bit(FLAC__StreamDecoder* pDecoder, void* pBuf, unsigned long nLen)
-{
-	unsigned int	nBytesDecoded = 0;
-	FLAC__int16*	pBuffer = static_cast<FLAC__int16*>(pBuf);
-
-	while ( nBytesDecoded < nLen )
-	{
-		unsigned int		nToWrite;
-		// No samples left from a previous fetch?
-		if ( !nSamplesLeftToProcess )
-		{
-			FLAC__stream_decoder_process_single(pDecoder);
-
-			pCurrentPtr[0] = pMalloc;
-			pCurrentPtr[1] = pMalloc+nBlockSize;
-
-			if ( (nLen - nBytesDecoded) / 4 >= nBlockSize )
-				nToWrite = nBlockSize;
-			else
-				nToWrite = (nLen - nBytesDecoded) / 4;
-
-			nSamplesLeftToProcess = nBlockSize;
-		}
-		else
-			nToWrite = nSamplesLeftToProcess;
-
-		// Write channels
-		for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
-		{
-			pBuffer[0] = pBuffer[1] = *pCurrentPtr[0]++;
-
-			pBuffer += 2;
-		}
-
-		nBytesDecoded += nToWrite*4;
-
-		if ( FLAC__stream_decoder_get_state(pDecoder) == FLAC__STREAM_DECODER_END_OF_STREAM )
-			break;
-	}
-
-	return nBytesDecoded;
-}
-
-static unsigned int DecodeMono24bit(FLAC__StreamDecoder* pDecoder, void* pBuf, unsigned long nLen)
-{
-	unsigned int	nBytesDecoded = 0;
-	FLAC__int16*	pBuffer = static_cast<FLAC__int16*>(pBuf);
-
-	while ( nBytesDecoded < nLen )
-	{
-		unsigned int		nToWrite;
-		// No samples left from a previous fetch?
-		if ( !nSamplesLeftToProcess )
-		{
-			FLAC__stream_decoder_process_single(pDecoder);
-
-			pCurrentPtr[0] = pMalloc;
-			pCurrentPtr[1] = pMalloc+nBlockSize;
-
-			if ( (nLen - nBytesDecoded) / 4 >= nBlockSize )
-				nToWrite = nBlockSize;
-			else
-				nToWrite = (nLen - nBytesDecoded) / 4;
-
-			nSamplesLeftToProcess = nBlockSize;
-		}
-		else
-			nToWrite = nSamplesLeftToProcess;
-
-		// Write channels
-		for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
-		{
-			pBuffer[0] = pBuffer[1] = *pCurrentPtr[0]++ >> 8;
-
-			pBuffer += 2;
-		}
-
-		nBytesDecoded += nToWrite*4;
-
-		if ( FLAC__stream_decoder_get_state(pDecoder) == FLAC__STREAM_DECODER_END_OF_STREAM )
-			break;
-	}
-
-	return nBytesDecoded;
-}
-
-static unsigned int DecodeStereo8bit(FLAC__StreamDecoder* pDecoder, void* pBuf, unsigned long nLen)
-{
-	unsigned int	nBytesDecoded = 0;
-	FLAC__int16*	pBuffer = static_cast<FLAC__int16*>(pBuf);
-
-	while ( nBytesDecoded < nLen )
-	{
-		unsigned int		nToWrite;
-		// No samples left from a previous fetch?
-		if ( !nSamplesLeftToProcess )
-		{
-			FLAC__stream_decoder_process_single(pDecoder);
-
-			pCurrentPtr[0] = pMalloc;
-			pCurrentPtr[1] = pMalloc+nBlockSize;
-
-			if ( (nLen - nBytesDecoded) / 4 >= nBlockSize )
-				nToWrite = nBlockSize;
-			else
-				nToWrite = (nLen - nBytesDecoded) / 4;
-
-			nSamplesLeftToProcess = nBlockSize;
-		}
-		else
-			nToWrite = nSamplesLeftToProcess;
-
-		// Write channels
-		for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
-		{
-			pBuffer[0] = *pCurrentPtr[0]++ << 8;
-			pBuffer[1] = *pCurrentPtr[1]++ << 8;
-
-			pBuffer += 2;
-		}
-
-		nBytesDecoded += nToWrite*4;
-
-		if ( FLAC__stream_decoder_get_state(pDecoder) == FLAC__STREAM_DECODER_END_OF_STREAM )
-			break;
-	}
-
-	return nBytesDecoded;
-}
-
-static unsigned int DecodeStereo16bit(FLAC__StreamDecoder* pDecoder, void* pBuf, unsigned long nLen)
-{
-	unsigned int	nBytesDecoded = 0;
-	FLAC__int16*	pBuffer = static_cast<FLAC__int16*>(pBuf);
-
-	while ( nBytesDecoded < nLen )
-	{
-		unsigned int		nToWrite;
-		// No samples left from a previous fetch?
-		if ( !nSamplesLeftToProcess )
-		{
-			FLAC__stream_decoder_process_single(pDecoder);
-
-			pCurrentPtr[0] = pMalloc;
-			pCurrentPtr[1] = pMalloc+nBlockSize;
-
-			if ( (nLen - nBytesDecoded) / 4 >= nBlockSize )
-				nToWrite = nBlockSize;
-			else
-				nToWrite = (nLen - nBytesDecoded) / 4;
-
-			nSamplesLeftToProcess = nBlockSize;
-		}
-		else
-			nToWrite = nSamplesLeftToProcess;
-
-		// Write channels
-		for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
-		{
-			//*pBuffer++ = *pCurrentPtr[0]++ + (*pCurrentPtr[1]++ << 16);
-			pBuffer[0] = *pCurrentPtr[0]++;
-			pBuffer[1] = *pCurrentPtr[1]++;
-
-			pBuffer += 2;
-		}
-
-		nBytesDecoded += nToWrite*4;
-
-		if ( FLAC__stream_decoder_get_state(pDecoder) == FLAC__STREAM_DECODER_END_OF_STREAM )
-			break;
-	}
-
-	return nBytesDecoded;
-}
-
-static unsigned int DecodeStereo24bit(FLAC__StreamDecoder* pDecoder, void* pBuf, unsigned long nLen)
-{
-	unsigned int	nBytesDecoded = 0;
-	FLAC__int16*	pBuffer = static_cast<FLAC__int16*>(pBuf);
-
-	while ( nBytesDecoded < nLen )
-	{
-		unsigned int		nToWrite;
-		// No samples left from a previous fetch?
-		if ( !nSamplesLeftToProcess )
-		{
-			FLAC__stream_decoder_process_single(pDecoder);
-
-			pCurrentPtr[0] = pMalloc;
-			pCurrentPtr[1] = pMalloc+nBlockSize;
-
-			if ( (nLen - nBytesDecoded) / 4 >= nBlockSize )
-				nToWrite = nBlockSize;
-			else
-				nToWrite = (nLen - nBytesDecoded) / 4;
-
-			nSamplesLeftToProcess = nBlockSize;
-		}
-		else
-			nToWrite = nSamplesLeftToProcess;
-
-		// Write channels
-		for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
-		{
-			pBuffer[0] = *pCurrentPtr[0]++ >> 8;
-			pBuffer[1] = *pCurrentPtr[1]++ >> 8;
-
-			pBuffer += 2;
-		}
-
-		nBytesDecoded += nToWrite*4;
-
-		if ( FLAC__stream_decoder_get_state(pDecoder) == FLAC__STREAM_DECODER_END_OF_STREAM )
-			break;
-	}
-
-	return nBytesDecoded;
-}
-
-unsigned int CAEFLACDecoder::FillBuffer(void* pBuf, unsigned long nLen)
-{
-	unsigned int	nSampleRate = pStreamInfo->data.stream_info.bits_per_sample;
-	bool			bStereo = pStreamInfo->data.stream_info.channels > 1;
-
-	if ( bStereo )
-	{
-		if ( nSampleRate == 8 )
-			return DecodeStereo8bit(pFLACDecoder, pBuf, nLen);
-
-		if ( nSampleRate == 24 )
-			return DecodeStereo24bit(pFLACDecoder, pBuf, nLen);
-
-		return DecodeStereo16bit(pFLACDecoder, pBuf, nLen);
-	}
-
-	if ( nSampleRate == 8 )
-		return DecodeMono8bit(pFLACDecoder, pBuf, nLen);
-
-	if ( nSampleRate == 24 )
-		return DecodeMono24bit(pFLACDecoder, pBuf, nLen);
-
-	return DecodeMono16bit(pFLACDecoder, pBuf, nLen);
 }
 
 CAEFLACDecoder::~CAEFLACDecoder()
