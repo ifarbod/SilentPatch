@@ -84,7 +84,10 @@ public:
 
 public:
 	// Custom methods
-	//unsigned int		FillBuffer(void* pBuf, unsigned long nLen);
+	unsigned int		Seek(long nToSeek, int nPoint);
+	unsigned int		FillBuffer(void* pBuf, unsigned long nLen);
+	unsigned int		GetCurrentPosition()
+		{ return SetFilePointer(hHandle, 0, nullptr, FILE_CURRENT) - dwStartPosition; }
 	bool				Initialise();
 };
 
@@ -94,10 +97,14 @@ class CAEStreamingDecoder
 private:
 	CAEDataStream*		pStream;
 
+	static unsigned int	nMallocRefCount;
+
 public:
 	CAEStreamingDecoder(CAEDataStream* stream)
 		: pStream(stream)
 	{
+		++nMallocRefCount;
+
 		if ( stream )
 			stream->Initialise();
 	}
@@ -113,13 +120,55 @@ public:
 	virtual void			SetCursor(unsigned int nTime)=0;
 	virtual unsigned int	GetSampleRate()=0;
 
-	virtual					~CAEStreamingDecoder()
-	{
-		GTAdelete(pStream);
-		pStream = nullptr;
-	}
+	virtual					~CAEStreamingDecoder();
 
 	virtual unsigned int	GetStreamID()=0;
+};
+
+class CAEWaveDecoder : public CAEStreamingDecoder
+{
+private:
+	unsigned short	nNumChannels;
+	unsigned short	nBitRate;
+	unsigned int	nSampleRate;
+	unsigned int	nDataSize;
+	unsigned int	nOffsetToData;
+	//bool			bInitialised;
+
+	struct FormatChunk
+	{
+		unsigned short		audioFormat;
+		unsigned short		numChannels;
+		unsigned int		sampleRate;
+		unsigned int		byteRate;
+		unsigned short		blockAlign;
+		unsigned short		bitsPerSample;
+	}				formatChunk;
+
+public:
+	CAEWaveDecoder(CAEDataStream* stream)
+		: CAEStreamingDecoder(stream)//, bInitialised(false)
+	{}
+
+	virtual bool			Initialise() override;
+	virtual unsigned int	FillBuffer(void* pBuf, unsigned long nLen) override;
+
+	virtual unsigned int	GetStreamLengthMs() override
+		{ return static_cast<unsigned long long>(nDataSize) * 8000 / (formatChunk.sampleRate*formatChunk.bitsPerSample*formatChunk.numChannels); }
+	virtual unsigned int	GetStreamPlayTimeMs() override
+	{ return static_cast<unsigned long long>(GetStream()->GetCurrentPosition() - nOffsetToData) * 8000 / (formatChunk.sampleRate*formatChunk.bitsPerSample*formatChunk.numChannels); }		
+
+	virtual void			SetCursor(unsigned int nTime) override
+		{	auto nPos = static_cast<unsigned long long>(nTime) * (formatChunk.sampleRate*formatChunk.bitsPerSample*formatChunk.numChannels) /  8000;
+			auto nModulo = (formatChunk.numChannels*formatChunk.bitsPerSample/8);
+			auto nExtra = nPos % nModulo ? nModulo - (nPos % nModulo) : 0;
+			GetStream()->Seek(nOffsetToData + nPos + nExtra, FILE_BEGIN); }
+
+	virtual unsigned int	GetSampleRate() override
+	{ return formatChunk.sampleRate; }
+
+	virtual unsigned int	GetStreamID() override
+		{ return GetStream()->GetID(); }
 };
 
 class CAEFLACDecoder : public CAEStreamingDecoder
@@ -128,8 +177,6 @@ private:
 	FLAC__StreamDecoder*		pFLACDecoder;
 	FLAC__StreamMetadata*		pStreamInfo;
 	unsigned int				nCurrentSample;
-
-	static unsigned int			nRefCount;
 
 private:
 	static FLAC__StreamDecoderReadStatus	read_cb(const FLAC__StreamDecoder* decoder, FLAC__byte buffer[], size_t* bytes, void* client_data);
@@ -144,42 +191,21 @@ private:
 public:
 	CAEFLACDecoder(CAEDataStream* stream)
 		: CAEStreamingDecoder(stream), pFLACDecoder(nullptr)
-	{
-		++nRefCount;
-	}
+	{}
 
-	virtual ~CAEFLACDecoder();
-	
+	virtual					~CAEFLACDecoder();
 	virtual bool			Initialise() override;
-
 	virtual unsigned int	FillBuffer(void* pBuf, unsigned long nLen) override;
-
 	virtual unsigned int	GetStreamLengthMs() override
-	{
-		unsigned int	nTime = pStreamInfo->data.stream_info.total_samples * 1000 / pStreamInfo->data.stream_info.sample_rate;
-		return nTime;
-	}
-
+		{ return pStreamInfo->data.stream_info.total_samples * 1000 / pStreamInfo->data.stream_info.sample_rate; }
 	virtual unsigned int	GetStreamPlayTimeMs() override
-	{
-		unsigned int	nTime = nCurrentSample * 1000 / pStreamInfo->data.stream_info.sample_rate;
-		return nTime;
-	}
-
+		{ return nCurrentSample * 1000 / pStreamInfo->data.stream_info.sample_rate; }
 	virtual void			SetCursor(unsigned int nTime) override
-	{
-		FLAC__stream_decoder_seek_absolute(pFLACDecoder, nTime * pStreamInfo->data.stream_info.sample_rate / 1000);
-	}
-
+		{ FLAC__stream_decoder_seek_absolute(pFLACDecoder, nTime * pStreamInfo->data.stream_info.sample_rate / 1000); }
 	virtual unsigned int	GetSampleRate() override
-	{
-		return pStreamInfo->data.stream_info.sample_rate;
-	}
-
+		{ return pStreamInfo->data.stream_info.sample_rate; }
 	virtual unsigned int	GetStreamID() override
-	{
-		return GetStream()->GetID();
-	}
+		{ return GetStream()->GetID(); }
 };
 
 #endif

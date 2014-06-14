@@ -1336,7 +1336,7 @@ void __declspec(naked) ResetAlphaFuncRefAfterRender()
 	}
 }
 
-static bool		bUseTwoPass = false;
+static bool		bUseTwoPass = true;
 
 void SetRendererForAtomic(RpAtomic* pAtomic)
 {
@@ -1776,9 +1776,9 @@ static CAEFLACDecoder* __stdcall DecoderCtor(CAEDataStream* pData)
 	return new CAEFLACDecoder(pData);
 }
 
-static void __stdcall StreamDtor(CAEDataStream* pData)
+static CAEWaveDecoder* __stdcall CAEWaveDecoderInit(CAEDataStream* pStream)
 {
-	delete pData;
+	return new CAEWaveDecoder(pStream);
 }
 
 void __declspec(naked) LoadFLAC()
@@ -2032,7 +2032,10 @@ __forceinline void Patch_SA_10()
 	// FLAC support
 	InjectHook(0x4F373D, LoadFLAC, PATCH_JUMP);
 	InjectHook(0x4F35E0, FLACInit, PATCH_JUMP);
+	InjectHook(0x4F3787, CAEWaveDecoderInit);
 
+	Patch<WORD>(0x4F376A, 0x18EB);
+	//Patch<BYTE>(0x4F378F, sizeof(CAEWaveDecoder));
 	Patch<const void*>(0x4F3210, UserTrackExtensions);
 	Patch<const void*>(0x4F3241, &UserTrackExtensions->Codec);
 	//Patch<const void*>(0x4F35E7, &UserTrackExtensions[1].Codec);
