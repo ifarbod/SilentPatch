@@ -187,6 +187,8 @@ void __stdcall Recalculate(float& fX, float& fY, signed int nShadow)
 static CLinkList<AlphaObjectInfo>&		m_alphaList = **(CLinkList<AlphaObjectInfo>**)0x733A4D;
 static CLinkList<CEntity*>&				ms_weaponPedsForPC = **(CLinkList<CEntity*>**)0x53EACA;
 
+static unsigned char*					ZonesVisited = *(unsigned char**)0x57216A - 9;			
+
 #ifndef SA_STEAM_TEST
 void**									rwengine = *(void***)0x58FFC0;
 #else
@@ -235,8 +237,6 @@ RpMaterial* AlphaTest(RpMaterial* pMaterial, void* pData)
 
 	return pMaterial;
 }
-
-#include <cassert>
 
 RpMaterial* AlphaTestAndPush(RpMaterial* pMaterial, void* pData)
 {
@@ -325,7 +325,6 @@ RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
 
 	return pAtomic;
-	//return nullptr;
 }
 
 RpAtomic* StaticPropellerRender(RpAtomic* pAtomic)
@@ -401,6 +400,19 @@ void RenderWeaponsList()
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
+}
+
+bool GetCurrentZoneLockedOrUnlocked(float fPosX, float fPosY)
+{
+	int		Xindex = (fPosX+3000.0f) * (1.0f/600.0f);
+	int		Yindex = (fPosY+3000.0f) * (1.0f/600.0f);
+
+	// "Territories fix"
+	if ( (Xindex >= 0 && Xindex < 10) && (Yindex >= 0 && Yindex < 10) )
+		return ZonesVisited[10*Xindex - Yindex + 9] != 0;
+	
+	// Outside of map bounds
+	return true;
 }
 
 #endif
@@ -1922,6 +1934,12 @@ void StartNewMission_BasketballFix()
 		BasketballFix(ScriptSpace+200000, 69000);
 }
 
+static const float		fSteamSubtitleSizeX = 0.45f;
+static const float		fSteamSubtitleSizeY = 0.9f;
+static const float		fSteamRadioNamePosY = 33.0f;
+static const float		fSteamRadioNameSizeX = 0.4f;
+static const float		fSteamRadioNameSizeY = 0.6f;
+
 BOOL InjectDelayedPatches_10()
 {
 	if ( !IsAlreadyRunning() )
@@ -1972,6 +1990,28 @@ BOOL InjectDelayedPatches_10()
 
 			// PostFX fix
 			Patch<float>(*(float**)0x7034C0, 0.0);
+		}
+
+		if ( GetPrivateProfileInt("SilentPatch", "SkipIntroSplashes", TRUE, ".\\SilentPatchSA.ini") != FALSE )
+		{
+			// Skip the damn intro splash
+			Patch<WORD>(0x748AA8, 0x3DEB);
+		}
+
+		if ( GetPrivateProfileInt("SilentPatch", "SmallSteamTexts", TRUE, ".\\SilentPatchSA.ini") != FALSE )
+		{
+			// We're on 1.0 - make texts smaller
+			Patch<const void*>(0x58C387, &fSteamSubtitleSizeY);
+			Patch<const void*>(0x58C40F, &fSteamSubtitleSizeY);
+			Patch<const void*>(0x58C4CE, &fSteamSubtitleSizeY);
+
+			Patch<const void*>(0x58C39D, &fSteamSubtitleSizeX);
+			Patch<const void*>(0x58C425, &fSteamSubtitleSizeX);
+			Patch<const void*>(0x58C4E4, &fSteamSubtitleSizeX);
+
+			Patch<const void*>(0x4E9FD8, &fSteamRadioNamePosY);
+			Patch<const void*>(0x4E9F22, &fSteamRadioNameSizeY);
+			Patch<const void*>(0x4E9F38, &fSteamRadioNameSizeX);
 		}
 
 		return FALSE;
@@ -2149,6 +2189,9 @@ __forceinline void Patch_SA_10()
 	Patch<const void*>(0x4F3241, &UserTrackExtensions->Codec);
 	//Patch<const void*>(0x4F35E7, &UserTrackExtensions[1].Codec);
 	Patch<BYTE>(0x4F322D, sizeof(UserTrackExtensions));
+
+	// Zones fix
+	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;

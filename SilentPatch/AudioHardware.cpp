@@ -17,23 +17,18 @@ static unsigned int		nSamplesLeftToProcess = 0;
 
 unsigned int CAEDataStream::Seek(long nToSeek, int nPoint)
 {
-	LONG	nRealDistToSeek;
-
 	switch ( nPoint )
 	{
 	case FILE_BEGIN:
-		nRealDistToSeek = nToSeek + dwStartPosition;
-		break;
-	case FILE_CURRENT:
-		nRealDistToSeek = nToSeek;
+		nToSeek = nToSeek + dwStartPosition;
 		break;
 	case FILE_END:
 		nPoint = FILE_BEGIN;
-		nRealDistToSeek = dwStartPosition + dwLength - nToSeek;
+		nToSeek = dwStartPosition + dwLength - nToSeek;
 		break;
 	}
 
-	dwCurrentPosition = SetFilePointer(hHandle, nRealDistToSeek, nullptr, nPoint);
+	dwCurrentPosition = SetFilePointer(hHandle, nToSeek, nullptr, nPoint);
 
 	return dwCurrentPosition - dwStartPosition;
 }
