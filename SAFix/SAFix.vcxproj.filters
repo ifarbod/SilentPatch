@@ -45,6 +45,9 @@
     <ClCompile Include="..\SilentPatch\AudioHardware.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\SilentPatch\Script.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\SilentPatch\win2000.asm">
@@ -98,6 +101,9 @@
       <Filter>Header Files\FLAC</Filter>
     </ClInclude>
     <ClInclude Include="..\SilentPatch\AudioHardware.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\Script.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

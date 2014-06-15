@@ -6,6 +6,7 @@
 #include "LinkList.h"
 #include "ModelInfoSA.h"
 #include "AudioHardware.h"
+#include "Script.h"
 
 struct RsGlobalType
 {
@@ -762,7 +763,7 @@ __forceinline void Patch_III_Steam()
 	InjectHook(0x507D60, AlteredPrintString<0x507D59,0x507D2E>);
 	InjectHook(0x508061, AlteredPrintStringYOnly<0x508024>);
 	InjectHook(0x508CDE, AlteredPrintString<0x508CD7,0x508CB6>);
-	InjectHook(0x508F7B, AlteredPrintStringXOnly<0x508F72>);
+	InjectHook(0x508F79, AlteredPrintStringXOnly<0x508F72>);
 	InjectHook(0x426446, AlteredPrintString<0x42643F,0x426418>);
 	InjectHook(0x426584, AlteredPrintString<0x42657D,0x426556>);
 	InjectHook(0x42665F, AlteredPrintStringMinus<0x426658,0x426637>);
@@ -1007,7 +1008,8 @@ static const BYTE	gMoonMaskPNG[] = {
 // TODO: EXEs
 #ifndef SA_STEAM_TEST
 
-static unsigned char&		nGameClockDays = **(unsigned char**)0x4E841D;
+unsigned char&				nGameClockDays = **(unsigned char**)0x4E841D;
+unsigned char&				nGameClockMonths = **(unsigned char**)0x4E842D;
 static float&				fFarClipZ = **(float**)0x70D21F;
 static RwTexture** const	gpCoronaTexture = *(RwTexture***)0x6FAA8C;
 static int&					MoonSize = **(int**)0x713B0C;
@@ -1017,7 +1019,7 @@ static RwTexture*			gpMoonMask = nullptr;
 
 #else
 
-static unsigned char&		nGameClockDays = *(unsigned char*)0xBFCC60;
+unsigned char&				nGameClockDays = *(unsigned char*)0xBFCC60;
 static float&				fFarClipZ = *(float*)0xCCE6F8;
 static RwTexture** const	gpCoronaTexture = (RwTexture**)0xCCD768;
 static int&					MoonSize = *(int*)0x9499F4;
@@ -1336,7 +1338,7 @@ void __declspec(naked) ResetAlphaFuncRefAfterRender()
 	}
 }
 
-static bool		bUseTwoPass = true;
+static bool		bUseTwoPass;
 
 void SetRendererForAtomic(RpAtomic* pAtomic)
 {
@@ -1858,35 +1860,132 @@ FLACInit_DontFallBack:
 	}
 }
 
+static BOOL				(*IsAlreadyRunning)();
+static void				(*TheScriptsLoad)();
+
+static unsigned char*	ScriptSpace = *(unsigned char**)0x5D5380;
+static int*				ScriptParams = *(int**)0x48995B;
+
+static void BasketballFix(unsigned char* pBuf, int nSize)
+{
+	for ( int i = 0, hits = 0; i < nSize && hits < 7; i++, pBuf++ )
+	{
+		// Pattern check for save pickup XYZ
+		if ( *(unsigned int*)pBuf == 0x449DE19A )		// Save pickup X
+		{
+			hits++;
+			*(float*)pBuf = 1291.8f;
+		}
+		else if ( *(unsigned int*)pBuf == 0xC4416AE1 )		// Save pickup Y
+		{
+			hits++;
+			*(float*)pBuf = -797.8284f;
+		}
+		else if ( *(unsigned int*)pBuf == 0x44886C7B )		// Save pickup Z
+		{
+			hits++;
+			*(float*)pBuf = 1089.5f;
+		}
+		else if ( *(unsigned int*)pBuf == 0x449DF852 )		// Save point X
+		{
+			hits++;
+			*(float*)pBuf = 1286.8f;
+		}
+		else if ( *(unsigned int*)pBuf == 0xC44225C3 )		// Save point Y
+		{
+			hits++;
+			*(float*)pBuf = -797.69f;
+		}
+		else if ( *(unsigned int*)pBuf == 0x44885C7B )		// Save point Z
+		{
+			hits++;
+			*(float*)pBuf = 1089.1f;
+		}
+		else if ( *(unsigned int*)pBuf == 0x43373AE1 )		// Save point A
+		{
+			hits++;
+			*(float*)pBuf = 90.0f;
+		}
+	}
+}
+
+void TheScriptsLoad_BasketballFix()
+{
+	TheScriptsLoad();
+
+	BasketballFix(ScriptSpace+8, *(int*)(ScriptSpace+3));
+}
+
+void StartNewMission_BasketballFix()
+{
+	if ( ScriptParams[0] == 0 )
+		BasketballFix(ScriptSpace+200000, 69000);
+}
+
+BOOL InjectDelayedPatches_10()
+{
+	if ( !IsAlreadyRunning() )
+	{
+		using namespace MemoryVP;
+
+		bUseTwoPass = GetPrivateProfileInt("SilentPatch", "TwoPassRendering", FALSE, ".\\SilentPatchSA.ini") != FALSE;
+
+		if ( GetPrivateProfileInt("SilentPatch", "EnableScriptFixes", TRUE, ".\\SilentPatchSA.ini") != FALSE )
+		{
+			// Gym glitch fix
+			Patch<WORD>(0x470B03, 0xCD8B);
+			Patch<DWORD>(0x470B0A, 0x8B04508B);
+			Patch<WORD>(0x470B0E, 0x9000);
+			Nop(0x470B10, 1);
+			InjectMethodVP(0x470B05, CRunningScript::GetDay_GymGlitch, PATCH_CALL);
+
+			// Basketball fix
+			TheScriptsLoad = (void(*)())(*(int*)0x5D18F1 + 0x5D18F0 + 5);
+			InjectHook(0x5D18F0, TheScriptsLoad_BasketballFix);
+			InjectHook(0x464BC0, StartNewMission_BasketballFix, PATCH_JUMP);
+		}
+
+		if ( GetPrivateProfileInt("SilentPatch", "NVCShader", TRUE, ".\\SilentPatchSA.ini") != FALSE )
+		{
+			// Shaders!
+			InjectHook(0x5DA743, SetShader);
+			InjectHook(0x5D66F1, SetShader2);
+			InjectHook(0x5D6116, UsageIndex1, PATCH_JUMP);
+			InjectHook(0x5D63B7, PassDayColoursToShader, PATCH_JUMP);
+			InjectHook(0x5D637B, HijackEsi, PATCH_JUMP);
+			InjectHook(0x5BF3A1, ShaderAttach);
+			InjectHook(0x53D910, ShaderDetach);
+			Patch<const void*>(0x5D67F4, HijackAtomic);
+			Patch<BYTE>(0x5D7200, 0xC3);
+			Patch<WORD>(0x5D67BB, 0x6890);
+			Patch<WORD>(0x5D67D7, 0x6890);
+			Patch<DWORD>(0x5D67BD, 0x5D5FE0);
+			Patch<DWORD>(0x5D67D9, 0x5D5FE0);
+			Patch<DWORD>(0x5DA73F, 0x90909056);
+
+			Patch<BYTE>(0x5D60D9, D3DDECLTYPE_D3DCOLOR);
+			Patch<BYTE>(0x5D60E2, D3DDECLUSAGE_COLOR);
+			Patch<BYTE>(0x5D60CF, sizeof(D3DCOLOR));
+			Patch<BYTE>(0x5D60EA, sizeof(D3DCOLOR));
+			Patch<BYTE>(0x5D60C2, 0x13);
+			Patch<BYTE>(0x5D62F0, 0xEB);
+
+			// PostFX fix
+			Patch<float>(*(float**)0x7034C0, 0.0);
+		}
+
+		return FALSE;
+	}
+	return TRUE;
+}
+
 __forceinline void Patch_SA_10()
 {
 	using namespace MemoryVP;
 
-	// TEMP - shaders!
-	InjectHook(0x5DA743, SetShader);
-	InjectHook(0x5D66F1, SetShader2);
-	InjectHook(0x5D6116, UsageIndex1, PATCH_JUMP);
-	InjectHook(0x5D63B7, PassDayColoursToShader, PATCH_JUMP);
-	InjectHook(0x5D637B, HijackEsi, PATCH_JUMP);
-	InjectHook(0x5BF3A1, ShaderAttach);
-	InjectHook(0x53D910, ShaderDetach);
-	Patch<const void*>(0x5D67F4, HijackAtomic);
-	Patch<BYTE>(0x5D7200, 0xC3);
-	Patch<WORD>(0x5D67BB, 0x6890);
-	Patch<WORD>(0x5D67D7, 0x6890);
-	Patch<DWORD>(0x5D67BD, 0x5D5FE0);
-	Patch<DWORD>(0x5D67D9, 0x5D5FE0);
-	Patch<DWORD>(0x5DA73F, 0x90909056);
-
-	Patch<BYTE>(0x5D60D9, D3DDECLTYPE_D3DCOLOR);
-	Patch<BYTE>(0x5D60E2, D3DDECLUSAGE_COLOR);
-	Patch<BYTE>(0x5D60CF, sizeof(D3DCOLOR));
-	Patch<BYTE>(0x5D60EA, sizeof(D3DCOLOR));
-	Patch<BYTE>(0x5D60C2, 0x13);
-	Patch<BYTE>(0x5D62F0, 0xEB);
-
-	// PostFX fix
-	Patch<float>(*(float**)0x7034C0, 0.0);
+	// IsAlreadyRunning needs to be read relatively late - the later, the better
+	IsAlreadyRunning = (BOOL(*)())(*(int*)0x74872E + 0x74872D + 5);
+	InjectHook(0x74872D, InjectDelayedPatches_10);
 
 	//Patch<BYTE>(0x5D7265, 0xEB);
 
@@ -2023,6 +2122,16 @@ __forceinline void Patch_SA_10()
 	Patch<DWORD>(0x733B05, EXPAND_ALPHA_ENTITY_LISTS * 20);
 	Patch<DWORD>(0x733B55, EXPAND_ALPHA_ENTITY_LISTS * 20);
 #endif
+
+	// Unlocked widescreen resolutions
+	Patch<DWORD>(0x745B71, 0x9090687D);
+	Patch<DWORD>(0x74596C, 0x9090127D);
+	Nop(0x745970, 2);
+	Nop(0x745B75, 2);
+	Nop(0x7459E1, 2);
+
+	// Heap corruption fix
+	Nop(0x5C25D3, 5);
 
 	// User Tracks fix
 	InjectHook(0x4D9B66, UserTracksFix);

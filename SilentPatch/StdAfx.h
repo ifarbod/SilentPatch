@@ -28,6 +28,9 @@
 // SA operator delete
 void GTAdelete(void* data);
 
+extern unsigned char& nGameClockDays;
+extern unsigned char& nGameClockMonths;
+
 //#define HIDE_MATERIAL
 //#define EXPAND_ALPHA_ENTITY_LISTS		800
 //#define EXPAND_BOAT_ALPHA_ATOMIC_LISTS	400

@@ -40,8 +40,6 @@ unsigned int CAEDataStream::Seek(long nToSeek, int nPoint)
 
 unsigned int CAEDataStream::FillBuffer(void* pBuf, unsigned long nLen)
 {
-	//auto	nSize = min(nLen, dwCurrentPosition - dwLength - dwStartPosition);
-	//auto	nHah = dwCurrentPosition - dwLength - dwStartPosition;
 	ReadFile(hHandle, pBuf, nLen, &nLen, nullptr);
 
 	dwCurrentPosition += nLen;
@@ -111,7 +109,7 @@ bool CAEWaveDecoder::Initialise()
 
 	nDataSize = chunkHeader.sectionSize;
 
-	return formatChunk.numChannels <= 2 && (formatChunk.bitsPerSample == 8 || formatChunk.bitsPerSample == 16 || formatChunk.bitsPerSample == 24);
+	return formatChunk.sampleRate <= 48000 && formatChunk.numChannels <= 2 && (formatChunk.bitsPerSample == 8 || formatChunk.bitsPerSample == 16 || formatChunk.bitsPerSample == 24);
 }
 
 unsigned int CAEWaveDecoder::FillBuffer(void* pBuf, unsigned long nLen)
