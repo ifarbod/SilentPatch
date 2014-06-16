@@ -187,7 +187,10 @@ void __stdcall Recalculate(float& fX, float& fY, signed int nShadow)
 static CLinkList<AlphaObjectInfo>&		m_alphaList = **(CLinkList<AlphaObjectInfo>**)0x733A4D;
 static CLinkList<CEntity*>&				ms_weaponPedsForPC = **(CLinkList<CEntity*>**)0x53EACA;
 
-static unsigned char*					ZonesVisited = *(unsigned char**)0x57216A - 9;			
+static unsigned char*					ZonesVisited = *(unsigned char**)0x57216A - 9;	
+
+static const float						fRefZVal = 1.0f;
+static const float* const				pRefFal = &fRefZVal;
 
 #ifndef SA_STEAM_TEST
 void**									rwengine = *(void***)0x58FFC0;
@@ -2098,9 +2101,13 @@ __forceinline void Patch_SA_10()
 	Patch<DWORD>(0x733AD7, EXPAND_BOAT_ALPHA_ATOMIC_LISTS * sizeof(AlphaObjectInfo));*/
 
 	// Fixed strafing? Hopefully
-	static const float		fStrafeCheck = 0.1f;
+	/*static const float		fStrafeCheck = 0.1f;
 	Patch<const void*>(0x61E0C2, &fStrafeCheck);
-	Nop(0x61E0CA, 6);
+	Nop(0x61E0CA, 6);*/
+
+	// RefFix
+	Patch<const void*>(0x6FB97A, &pRefFal);
+	Patch<BYTE>(0x6FB9A0, 0);
 
 	// Plane rotors
 	InjectHook(0x4C7981, PlaneAtomicRendererSetup, PATCH_JUMP);
