@@ -1872,11 +1872,34 @@ FLACInit_DontFallBack:
 	}
 }
 
+void __declspec(naked) LightMaterialsFix()
+{
+	_asm
+	{
+		mov     [esi], edi
+		mov		ebx, [ecx]
+		lea     esi, [edx+4]
+		mov		[ebx+4], esi
+		mov		edi, [esi]
+		mov		[ebx+8], edi
+		add		esi, 4
+		mov		[ebx+12], esi
+		mov		edi, [esi]
+		mov		[ebx+16], edi
+		add		ebx, 20
+		mov		[ecx], ebx
+		retn
+	}
+}
+
 static BOOL				(*IsAlreadyRunning)();
 static void				(*TheScriptsLoad)();
 
 static unsigned char*	ScriptSpace = *(unsigned char**)0x5D5380;
 static int*				ScriptParams = *(int**)0x48995B;
+
+static CZoneInfo*&		pCurrZoneInfo = **(CZoneInfo***)0x58ADB1;
+static CRGBA*			HudColour = *(CRGBA**)0x58ADF6;
 
 static void BasketballFix(unsigned char* pBuf, int nSize)
 {
@@ -1932,6 +1955,14 @@ void StartNewMission_BasketballFix()
 {
 	if ( ScriptParams[0] == 0 )
 		BasketballFix(ScriptSpace+200000, 69000);
+}
+
+CRGBA* CRGBA::BlendGangColour(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+{
+	*this = Blend(CRGBA(r, g, b), pCurrZoneInfo->ZoneColour.a, HudColour[3], static_cast<BYTE>(255-pCurrZoneInfo->ZoneColour.a));
+	this->a = a;
+
+	return this;
 }
 
 static const float		fSteamSubtitleSizeX = 0.45f;
@@ -2014,6 +2045,26 @@ BOOL InjectDelayedPatches_10()
 			Patch<const void*>(0x4E9F38, &fSteamRadioNameSizeX);
 		}
 
+		if ( GetPrivateProfileInt("SilentPatch", "ColouredZoneNames", FALSE, ".\\SilentPatchSA.ini") != FALSE )
+		{
+			// Coloured zone names
+			Patch<WORD>(0x58ADBE, 0x0E75);
+			Patch<WORD>(0x58ADC5, 0x0775);
+
+			InjectMethodVP(0x58ADE4, CRGBA::BlendGangColour, PATCH_NOTHING);
+		}
+		else
+		{
+			Patch<BYTE>(0x58ADAE, 0xEB);
+		}
+
+		// ImVehFt conflicts
+		if ( GetModuleHandle("ImVehFt.asi") == nullptr )
+		{
+			InjectHook(0x4C830C, LightMaterialsFix, PATCH_CALL);
+			InjectMethodVP(0x59F180, CObject::Render, PATCH_JUMP);
+		}
+
 		return FALSE;
 	}
 	return TRUE;
@@ -2060,10 +2111,6 @@ __forceinline void Patch_SA_10()
 
 	// No framedelay
 	Patch<DWORD>(0x53E923, 0x42EB56);
-
-	// Coloured zone names
-	Patch<WORD>(0x58ADBE, 0x0E75);
-	Patch<WORD>(0x58ADC5, 0x0775);
 
 	// Disable re-initialization of DirectInput mouse device by the game
 	Patch<BYTE>(0x576CCC, 0xEB);
@@ -2209,7 +2256,7 @@ __forceinline void Patch_SA_Steam()
 {
 	using namespace MemoryVP;
 
-	InjectHook(0x72F058, HandleMoonStuffStub_Steam, PATCH_JUMP);
+	//InjectHook(0x72F058, HandleMoonStuffStub_Steam, PATCH_JUMP);
 }
 
 #endif
