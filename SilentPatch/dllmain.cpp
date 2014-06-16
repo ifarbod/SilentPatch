@@ -1354,6 +1354,7 @@ void __declspec(naked) ResetAlphaFuncRefAfterRender()
 }
 
 static bool		bUseTwoPass;
+static HMODULE	hDLLModule;
 
 void SetRendererForAtomic(RpAtomic* pAtomic)
 {
@@ -1980,9 +1981,26 @@ BOOL InjectDelayedPatches_10()
 	{
 		using namespace MemoryVP;
 
-		bUseTwoPass = GetPrivateProfileInt("SilentPatch", "TwoPassRendering", FALSE, ".\\SilentPatchSA.ini") != FALSE;
+		// Obtain a path to the ASI
+		wchar_t			wcModulePath[MAX_PATH];
 
-		if ( GetPrivateProfileInt("SilentPatch", "EnableScriptFixes", TRUE, ".\\SilentPatchSA.ini") != FALSE )
+		GetModuleFileNameW(hDLLModule, wcModulePath, MAX_PATH);
+
+		wchar_t*		pSlash = wcsrchr(wcModulePath, '\\');
+		if ( pSlash )
+		{
+			*pSlash = '\0';
+			PathAppendW(wcModulePath, L"SilentPatchSA.ini");
+		}
+		else
+		{
+			// Should never happen - if it does, something's fucking up
+			return TRUE;
+		}
+
+		bUseTwoPass = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", FALSE, wcModulePath) != FALSE;
+
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", TRUE, wcModulePath) != FALSE )
 		{
 			// Gym glitch fix
 			Patch<WORD>(0x470B03, 0xCD8B);
@@ -1997,7 +2015,7 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x464BC0, StartNewMission_BasketballFix, PATCH_JUMP);
 		}
 
-		if ( GetPrivateProfileInt("SilentPatch", "NVCShader", TRUE, ".\\SilentPatchSA.ini") != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", TRUE, wcModulePath) != FALSE )
 		{
 			// Shaders!
 			InjectHook(0x5DA743, SetShader);
@@ -2026,13 +2044,13 @@ BOOL InjectDelayedPatches_10()
 			Patch<float>(*(float**)0x7034C0, 0.0);
 		}
 
-		if ( GetPrivateProfileInt("SilentPatch", "SkipIntroSplashes", TRUE, ".\\SilentPatchSA.ini") != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", TRUE, wcModulePath) != FALSE )
 		{
 			// Skip the damn intro splash
 			Patch<WORD>(0x748AA8, 0x3DEB);
 		}
 
-		if ( GetPrivateProfileInt("SilentPatch", "SmallSteamTexts", TRUE, ".\\SilentPatchSA.ini") != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", TRUE, wcModulePath) != FALSE )
 		{
 			// We're on 1.0 - make texts smaller
 			Patch<const void*>(0x58C387, &fSteamSubtitleSizeY);
@@ -2048,7 +2066,7 @@ BOOL InjectDelayedPatches_10()
 			Patch<const void*>(0x4E9F38, &fSteamRadioNameSizeX);
 		}
 
-		if ( GetPrivateProfileInt("SilentPatch", "ColouredZoneNames", FALSE, ".\\SilentPatchSA.ini") != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", FALSE, wcModulePath) != FALSE )
 		{
 			// Coloured zone names
 			Patch<WORD>(0x58ADBE, 0x0E75);
@@ -2270,11 +2288,12 @@ __forceinline void Patch_SA_Steam()
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
-	UNREFERENCED_PARAMETER(hinstDLL);
+	//UNREFERENCED_PARAMETER(hinstDLL);
 	UNREFERENCED_PARAMETER(lpvReserved);
 
 	if ( fdwReason == DLL_PROCESS_ATTACH )
 	{
+		hDLLModule = hinstDLL;
 #if defined SILENTPATCH_III_VER
 		if (*(DWORD*)0x5C1E70 == 0x53E58955) Patch_III_10();
 			else if (*(DWORD*)0x5C2130 == 0x53E58955) Patch_III_11();

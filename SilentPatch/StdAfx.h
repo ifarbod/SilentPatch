@@ -14,6 +14,7 @@
 #include <limits>
 #include <utility> 
 #include <mmsystem.h>
+#include <Shlwapi.h>
 
 #define RwEngineInstance (*rwengine)
 #define RWFRAMESTATICPLUGINSSIZE 24

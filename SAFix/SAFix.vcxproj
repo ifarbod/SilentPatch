@@ -56,7 +56,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <MinimumRequiredVersion>5.0</MinimumRequiredVersion>
-      <AdditionalDependencies>winmm.lib;libFLAC_static_d.lib;win_utf8_io_static_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;Shlwapi.lib;libFLAC_static_d.lib;win_utf8_io_static_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"</Command>
@@ -83,7 +83,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Windows</SubSystem>
       <MinimumRequiredVersion>5.0</MinimumRequiredVersion>
-      <AdditionalDependencies>winmm.lib;libFLAC_static.lib;win_utf8_io_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>winmm.lib;Shlwapi.lib;libFLAC_static.lib;win_utf8_io_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"</Command>
@@ -106,10 +106,10 @@
   <ItemGroup>
     <CustomBuild Include="..\SilentPatch\nvc.fx">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">"C:\Program Files\Microsoft DirectX SDK (June 2010)\Utilities\bin\x86\fxc.exe" /T vs_2_0 /E NVC_vertex_shader /Fh ..\SilentPatch\nvc.h ..\SilentPatch\nvc.fx</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /T vs_2_0 /E NVC_vertex_shader /Fh ..\SilentPatch\nvc.h ..\SilentPatch\nvc.fx</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\SilentPatch\nvc.h</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling shaders...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">"C:\Program Files\Microsoft DirectX SDK (June 2010)\Utilities\bin\x86\fxc.exe" /T vs_2_0 /E NVC_vertex_shader /Fh ..\SilentPatch\nvc.h ..\SilentPatch\nvc.fx</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fxc /T vs_2_0 /E NVC_vertex_shader /Fh ..\SilentPatch\nvc.h ..\SilentPatch\nvc.fx</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling shaders...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\SilentPatch\nvc.h</Outputs>
     </CustomBuild>
