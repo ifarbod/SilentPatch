@@ -24,7 +24,7 @@ VS_OUTPUT NVC_vertex_shader( in VS_INPUT In )
 	Out.Position = mul(In.Position, viewProjMatrix);
 	Out.Texture = In.Texture;
 
-	Out.Color.rgb = (In.DayColor.rgb * (1.0-fEnvVars[0]) + In.NightColor.rgb * fEnvVars[0]) + (AmbientLight.rgb * AmbientLight.a);
+	Out.Color.rgb = (In.DayColor.rgb * (1.0-fEnvVars[0]) + In.NightColor.rgb * fEnvVars[0]) + AmbientLight.rgb;
 	Out.Color.a = fEnvVars[1];
 	Out.Color = saturate(Out.Color);
 
