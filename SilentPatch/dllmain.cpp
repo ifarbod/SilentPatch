@@ -1300,18 +1300,30 @@ void __declspec(naked) CacheCRC32()
 void __declspec(naked) PlaneAtomicRendererSetup()
 {
 	static const char	aStaticProp[] = "static_prop";
+	static const char	aMovingProp[] = "moving_prop";
 	_asm
 	{
 		mov     eax, [esi+4]
 		push	eax
 		call	GetFrameNodeName
+		//push	eax
+		mov		[esp+8+8], eax
 		push	11
 		push	offset aStaticProp
 		push	eax
 		call	strncmp
 		add		esp, 10h
 		test	eax, eax
+		jz		PlaneAtomicRendererSetup_Alpha
+		push	11
+		push	offset aMovingProp
+		push	[esp+12+8]
+		call	strncmp
+		add		esp, 0Ch
+		test	eax, eax
 		jnz		PlaneAtomicRendererSetup_NoAlpha
+
+PlaneAtomicRendererSetup_Alpha:
 		push	734370h
 		jmp		PlaneAtomicRendererSetup_Return
 
@@ -1722,6 +1734,12 @@ void SetShader(RxD3D9InstanceData* pInstData)
 		D3DMATRIX		outMat;
 		float			fEnvVars[2] = { *(float*)0x8D12C0, RpMaterialGetColor(pInstData->material)->alpha * (1.0f/255.0f) };
 		RwRGBAReal*		AmbientLight = RpLightGetColor(*(RpLight**)0xC886E8);
+
+		// Normalise the balance
+		if ( fEnvVars[0] < 0.0f )
+			fEnvVars[0] = 0.0f;
+		else if ( fEnvVars[0] > 1.0f )
+			fEnvVars[0] = 1.0f;
 
 		RwD3D9SetVertexShader(pNVCShader);
 
@@ -2168,8 +2186,17 @@ BOOL InjectDelayedPatches_10()
 		// ImVehFt conflicts
 		if ( GetModuleHandle("ImVehFt.asi") == nullptr )
 		{
+			// Lights
 			InjectHook(0x4C830C, LightMaterialsFix, PATCH_CALL);
+
+			// Flying components
 			InjectMethodVP(0x59F180, CObject::Render, PATCH_JUMP);
+
+			// Cars getting dirty
+			// Only 1.0 and Steam
+			InjectMethodVP(0x4C9648, CVehicleModelInfo::FindEditableMaterialList, PATCH_CALL);
+			Patch<DWORD>(0x4C964D, 0x0FEBCE8B);
+			Patch<DWORD>(0x5D5DC2, 32);		// 1.0 ONLY
 		}
 
 		return FALSE;
@@ -2258,12 +2285,6 @@ __forceinline void Patch_SA_10()
 	InjectHook(0x5D9A74, DarkVehiclesFix2, PATCH_JUMP);
 	InjectHook(0x5D9B44, DarkVehiclesFix3, PATCH_JUMP);
 	InjectHook(0x5D9CB2, DarkVehiclesFix4, PATCH_JUMP);
-
-	// Cars getting dirty
-	// Only 1.0 and Steam
-	InjectMethodVP(0x4C9648, CVehicleModelInfo::FindEditableMaterialList, PATCH_CALL);
-	Patch<DWORD>(0x4C964D, 0x0FEBCE8B);
-	Patch<DWORD>(0x5D5DC2, 32);		// 1.0 ONLY
 
 	// Bindable NUM5
 	// Only 1.0 and Steam
