@@ -52,7 +52,7 @@ WRAPPER RwRaster* RwRasterSetFromImage(RwRaster* raster, RwImage* image) { WRAPA
 WRAPPER RwBool RwImageDestroy(RwImage* image) { WRAPARG(image); EAXJMP(0x802740); }
 WRAPPER RwImage* RwImageFindRasterFormat(RwImage* ipImage, RwInt32 nRasterType, RwInt32* npWidth, RwInt32* npHeight, RwInt32* npDepth, RwInt32* npFormat) { WRAPARG(ipImage); WRAPARG(nRasterType); WRAPARG(npWidth); WRAPARG(npHeight); WRAPARG(npDepth); WRAPARG(npFormat); EAXJMP(0x8042C0); }
 
-
+WRAPPER bool CanSeeOutSideFromCurrArea() { EAXJMP(0x53C4A0); }
 
 #ifndef SA_STEAM_TEST
 
@@ -200,6 +200,7 @@ static const float						fRefZVal = 1.0f;
 static const float* const				pRefFal = &fRefZVal;
 
 static RwInt32&							clumpPluginOffset = **(RwInt32**)0x732202;
+static bool&							CCutsceneMgr__ms_running = **(bool**)0x53F92D;
 
 #ifndef SA_STEAM_TEST
 void**									rwengine = *(void***)0x58FFC0;
@@ -297,6 +298,10 @@ RpAtomic* OnePassAlphaRender(RpAtomic* atomic)
 
 RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
 {
+	// For cutscenes, fall back to one-pass render
+	if ( CCutsceneMgr__ms_running && !CanSeeOutSideFromCurrArea() )
+		return OnePassAlphaRender(atomic);
+
 	int		nPushedAlpha, nAlphaFunction;
 	int		nZWrite;
 	int		nAlphaBlending;
