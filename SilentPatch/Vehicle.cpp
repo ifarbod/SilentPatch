@@ -16,6 +16,74 @@ static RwObject* GetCurrentAtomicObjectCB(RwObject* pObject, void* data)
 	return pObject;
 }
 
+bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
+{
+	char		PlateText[8];
+	const char*	pOverrideText = pModelInfo->GetCustomCarPlateText();
+
+	if ( pOverrideText )
+		strncpy(PlateText, pOverrideText, 8);
+	else
+		CCustomCarPlateMgr::GeneratePlateText(PlateText, 8);
+
+	PlateTexture = CCustomCarPlateMgr::CreatePlateTexture(PlateText, pModelInfo->m_nPlateType);
+	PlateDesign = pModelInfo->m_nPlateType != -1 ? pModelInfo->m_nPlateType : CCustomCarPlateMgr::GetMapRegionPlateDesign();
+
+	assert(PlateDesign >= 0 && PlateDesign < 3);
+
+	pModelInfo->m_plateText[0] = '\0';
+	pModelInfo->m_nPlateType = -1;
+
+	return true;
+}
+
+static RwTexture*		pPushedTextures[NUM_MAX_PLATES];
+
+void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo)
+{
+	for ( int i = 0; i < NUM_MAX_PLATES; i++ )
+	{
+		if ( pModelInfo->m_apPlateMaterials[i] )
+		{
+			RwTexture*	pPlateTex = RpMaterialGetTexture(pModelInfo->m_apPlateMaterials[i]);
+
+			RwTextureAddRef(pPlateTex);
+			pPushedTextures[i] = pPlateTex;
+
+			RpMaterialSetTexture(pModelInfo->m_apPlateMaterials[i], PlateTexture);
+		}
+
+		if ( pModelInfo->m_apPlateMaterials[NUM_MAX_PLATES+i] )
+			CCustomCarPlateMgr::SetupMaterialPlatebackTexture(pModelInfo->m_apPlateMaterials[NUM_MAX_PLATES+i], PlateDesign);
+			//RwTexture*	pPlatebackTex = RpMaterialGetTexture(pModelInfo->m_apPlateMaterials[4+i]);
+
+			//RwTextureAddRef(pPlatebackTex);
+			//pPushedTextures[4+i] = pPlateTex;
+
+			//RpMaterialSetTexture(pModelInfo->m_apPlateMaterials[i], PlateTexture);
+	}
+}
+
+
+void CVehicle::CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo)
+{
+	for ( int i = 0; i < NUM_MAX_PLATES; i++ )
+	{
+		if ( pModelInfo->m_apPlateMaterials[i] )
+		{
+			//RwTexture*	pPlateTex = RpMaterialGetTexture(pModelInfo->m_apPlateMaterials[i]);
+
+			//RwTextureAddRef(pPlateTex);
+			//pPushedTextures[i] = pPlateTex;
+
+			RpMaterialSetTexture(pModelInfo->m_apPlateMaterials[i], pPushedTextures[i]);
+			RwTextureDestroy(pPushedTextures[i]);
+			pPushedTextures[i] = nullptr;
+		}
+	}
+
+}
+
 void CHeli::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;

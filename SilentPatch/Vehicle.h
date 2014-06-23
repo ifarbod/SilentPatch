@@ -2,6 +2,7 @@
 #define __VEHICLE
 
 #include "General.h"
+#include "ModelInfoSA.h"
 
 struct CVehicleFlags
 {
@@ -94,7 +95,11 @@ protected:
 	signed int		m_nTimeTillWeNeedThisCar;
 	BYTE			__pad4[56];
 	CEntity*		pDamagingEntity;
-	BYTE			__pad3[144];
+	BYTE			__pad3[116];
+	char			padpad, padpad2, padpad3;
+	signed char		PlateDesign;
+	RwTexture*		PlateTexture;
+	BYTE			__pad5[20];
 
 public:
 	CVehicleFlags&	GetVehicleFlags() 
@@ -103,6 +108,10 @@ public:
 						{ return pDamagingEntity; }
 
 	virtual void	Render() override;
+
+	bool			CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo);
+	void			CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo);
+	void			CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo);
 
 	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);
 };

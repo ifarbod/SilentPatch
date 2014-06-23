@@ -51,6 +51,8 @@ WRAPPER RwRaster* RwRasterCreate(RwInt32 width, RwInt32 height, RwInt32 depth, R
 WRAPPER RwRaster* RwRasterSetFromImage(RwRaster* raster, RwImage* image) { WRAPARG(raster); WRAPARG(image); EAXJMP(0x804290); }
 WRAPPER RwBool RwImageDestroy(RwImage* image) { WRAPARG(image); EAXJMP(0x802740); }
 WRAPPER RwImage* RwImageFindRasterFormat(RwImage* ipImage, RwInt32 nRasterType, RwInt32* npWidth, RwInt32* npHeight, RwInt32* npDepth, RwInt32* npFormat) { WRAPARG(ipImage); WRAPARG(nRasterType); WRAPARG(npWidth); WRAPARG(npHeight); WRAPARG(npDepth); WRAPARG(npFormat); EAXJMP(0x8042C0); }
+WRAPPER RpMaterial *RpMaterialSetTexture(RpMaterial *material, RwTexture *texture) { EAXJMP(0x74DBC0); }
+WRAPPER RwBool RwTextureDestroy(RwTexture* texture) { EAXJMP(0x7F3820); }
 
 WRAPPER bool CanSeeOutSideFromCurrArea() { EAXJMP(0x53C4A0); }
 
@@ -2376,6 +2378,20 @@ __forceinline void Patch_SA_10()
 
 	// Zones fix
 	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
+
+	// Properly random numberplates
+	DWORD*		pVMT = *(DWORD**)0x4C75FC;
+	void*		pFunc;
+	_asm
+	{
+		mov		eax, offset CVehicleModelInfo::Shutdown
+		mov		[pFunc], eax
+	}
+	Patch<const void*>(&pVMT[7], pFunc);
+	InjectMethodVP(0x4C9660, CVehicleModelInfo::SetCarCustomPlate, PATCH_NOTHING);
+	InjectMethodVP(0x6D6A58, CVehicle::CustomCarPlate_TextureCreate, PATCH_NOTHING);
+	InjectMethodVP(0x6D651C, CVehicle::CustomCarPlate_BeforeRenderingStart, PATCH_NOTHING);
+	InjectMethodVP(0x6D0E53, CVehicle::CustomCarPlate_AfterRenderingStop, PATCH_NOTHING);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;

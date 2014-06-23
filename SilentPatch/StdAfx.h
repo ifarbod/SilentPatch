@@ -15,6 +15,8 @@
 #include <utility> 
 #include <mmsystem.h>
 #include <Shlwapi.h>
+#include <tuple>
+#include <cassert>
 
 #define RwEngineInstance (*rwengine)
 #define RWFRAMESTATICPLUGINSSIZE 24
