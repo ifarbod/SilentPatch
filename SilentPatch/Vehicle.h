@@ -113,6 +113,8 @@ public:
 	void			CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo);
 	void			CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo);
 
+	bool			IsLawEnforcementVehicle();
+
 	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);
 };
 

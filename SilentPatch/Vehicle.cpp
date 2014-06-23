@@ -5,6 +5,7 @@
 
 WRAPPER void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha) { WRAPARG(pAtomic); WRAPARG(nAlpha); EAXJMP(0x6D2960); }
 WRAPPER void CVehicle::Render() { EAXJMP(0x6D0E60); }
+WRAPPER bool CVehicle::IsLawEnforcementVehicle() { EAXJMP(0x6D2370); }
 
 static RwObject* GetCurrentAtomicObjectCB(RwObject* pObject, void* data)
 {
@@ -27,7 +28,13 @@ bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 		CCustomCarPlateMgr::GeneratePlateText(PlateText, 8);
 
 	PlateTexture = CCustomCarPlateMgr::CreatePlateTexture(PlateText, pModelInfo->m_nPlateType);
-	PlateDesign = pModelInfo->m_nPlateType != -1 ? pModelInfo->m_nPlateType : CCustomCarPlateMgr::GetMapRegionPlateDesign();
+	//PlateDesign = pModelInfo->m_nPlateType != -1 ? pModelInfo->m_nPlateType : CCustomCarPlateMgr::GetMapRegionPlateDesign();
+	if ( pModelInfo->m_nPlateType != -1 )
+		PlateDesign = pModelInfo->m_nPlateType;
+	else if ( IsLawEnforcementVehicle() )
+		PlateDesign = CCustomCarPlateMgr::GetMapRegionPlateDesign();
+	else
+ 		PlateDesign = random(0, 20) == 0 ? random<signed char>(0, 3) : CCustomCarPlateMgr::GetMapRegionPlateDesign();
 
 	assert(PlateDesign >= 0 && PlateDesign < 3);
 
