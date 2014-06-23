@@ -44,7 +44,7 @@ bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 	return true;
 }
 
-static RwTexture*		pPushedTextures[NUM_MAX_PLATES];
+//static RwTexture*		pPushedTextures[NUM_MAX_PLATES];
 
 void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo)
 {
@@ -52,10 +52,10 @@ void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo
 	{
 		if ( pModelInfo->m_apPlateMaterials[i] )
 		{
-			RwTexture*	pPlateTex = RpMaterialGetTexture(pModelInfo->m_apPlateMaterials[i]);
+			//RwTexture*	pPlateTex = RpMaterialGetTexture(pModelInfo->m_apPlateMaterials[i]);
 
-			RwTextureAddRef(pPlateTex);
-			pPushedTextures[i] = pPlateTex;
+			//RwTextureAddRef(pPlateTex);
+			//pPushedTextures[i] = pPlateTex;
 
 			RpMaterialSetTexture(pModelInfo->m_apPlateMaterials[i], PlateTexture);
 		}
@@ -71,8 +71,8 @@ void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo
 	}
 }
 
-
-void CVehicle::CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo)
+// This is not needed
+/*void CVehicle::CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo)
 {
 	for ( int i = 0; i < NUM_MAX_PLATES; i++ )
 	{
@@ -83,13 +83,13 @@ void CVehicle::CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo)
 			//RwTextureAddRef(pPlateTex);
 			//pPushedTextures[i] = pPlateTex;
 
-			RpMaterialSetTexture(pModelInfo->m_apPlateMaterials[i], pPushedTextures[i]);
-			RwTextureDestroy(pPushedTextures[i]);
-			pPushedTextures[i] = nullptr;
+			//RpMaterialSetTexture(pModelInfo->m_apPlateMaterials[i], pPushedTextures[i]);
+			//RwTextureDestroy(pPushedTextures[i]);
+			//pPushedTextures[i] = nullptr;
 		}
 	}
 
-}
+}*/
 
 void CHeli::Render()
 {

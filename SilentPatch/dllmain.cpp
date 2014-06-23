@@ -2388,10 +2388,11 @@ __forceinline void Patch_SA_10()
 		mov		[pFunc], eax
 	}
 	Patch<const void*>(&pVMT[7], pFunc);
+	Patch<BYTE>(0x6D0E43, 0xEB);
 	InjectMethodVP(0x4C9660, CVehicleModelInfo::SetCarCustomPlate, PATCH_NOTHING);
 	InjectMethodVP(0x6D6A58, CVehicle::CustomCarPlate_TextureCreate, PATCH_NOTHING);
 	InjectMethodVP(0x6D651C, CVehicle::CustomCarPlate_BeforeRenderingStart, PATCH_NOTHING);
-	InjectMethodVP(0x6D0E53, CVehicle::CustomCarPlate_AfterRenderingStop, PATCH_NOTHING);
+	//InjectMethodVP(0x6D0E53, CVehicle::CustomCarPlate_AfterRenderingStop, PATCH_NOTHING);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
