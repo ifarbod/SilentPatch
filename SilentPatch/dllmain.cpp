@@ -2393,6 +2393,7 @@ __forceinline void Patch_SA_10()
 	InjectMethodVP(0x6D6A58, CVehicle::CustomCarPlate_TextureCreate, PATCH_NOTHING);
 	InjectMethodVP(0x6D651C, CVehicle::CustomCarPlate_BeforeRenderingStart, PATCH_NOTHING);
 	//InjectMethodVP(0x6D0E53, CVehicle::CustomCarPlate_AfterRenderingStop, PATCH_NOTHING);
+	Nop(0x6D6517, 2);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
