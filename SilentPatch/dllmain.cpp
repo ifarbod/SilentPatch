@@ -2103,6 +2103,9 @@ BOOL InjectDelayedPatches_10()
 			return TRUE;
 		}
 
+		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
+		bool		bSAMP = GetModuleHandle("samp") != nullptr;
+
 		bUseTwoPass = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", FALSE, wcModulePath) != FALSE;
 		
 		if ( bUseTwoPass )
@@ -2126,7 +2129,7 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x464BC0, StartNewMission_BasketballFix, PATCH_JUMP);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", TRUE, wcModulePath) != FALSE )
+		if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", TRUE, wcModulePath) != FALSE )
 		{
 			// Shaders!
 			InjectHook(0x5DA743, SetShader);
@@ -2191,7 +2194,7 @@ BOOL InjectDelayedPatches_10()
 		}
 
 		// ImVehFt conflicts
-		if ( GetModuleHandle("ImVehFt.asi") == nullptr )
+		if ( !bHasImVehFt )
 		{
 			// Lights
 			InjectHook(0x4C830C, LightMaterialsFix, PATCH_CALL);
@@ -2204,6 +2207,26 @@ BOOL InjectDelayedPatches_10()
 			InjectMethodVP(0x4C9648, CVehicleModelInfo::FindEditableMaterialList, PATCH_CALL);
 			Patch<DWORD>(0x4C964D, 0x0FEBCE8B);
 			Patch<DWORD>(0x5D5DC2, 32);		// 1.0 ONLY
+		}
+
+		if ( !bHasImVehFt && !bSAMP )
+		{
+			// Properly random numberplates
+			DWORD*		pVMT = *(DWORD**)0x4C75FC;
+			void*		pFunc;
+			_asm
+			{
+				mov		eax, offset CVehicleModelInfo::Shutdown
+				mov		[pFunc], eax
+			}
+			Patch<const void*>(&pVMT[7], pFunc);
+			Patch<BYTE>(0x6D0E43, 0xEB);
+			InjectMethodVP(0x4C9660, CVehicleModelInfo::SetCarCustomPlate, PATCH_NOTHING);
+			InjectMethodVP(0x6D6A58, CVehicle::CustomCarPlate_TextureCreate, PATCH_NOTHING);
+			InjectMethodVP(0x6D651C, CVehicle::CustomCarPlate_BeforeRenderingStart, PATCH_NOTHING);
+			InjectHook(0x6FDFE0, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, PATCH_JUMP);
+			//InjectMethodVP(0x6D0E53, CVehicle::CustomCarPlate_AfterRenderingStop, PATCH_NOTHING);
+			Nop(0x6D6517, 2);
 		}
 
 		return FALSE;
@@ -2378,23 +2401,6 @@ __forceinline void Patch_SA_10()
 
 	// Zones fix
 	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
-
-	// Properly random numberplates
-	DWORD*		pVMT = *(DWORD**)0x4C75FC;
-	void*		pFunc;
-	_asm
-	{
-		mov		eax, offset CVehicleModelInfo::Shutdown
-		mov		[pFunc], eax
-	}
-	Patch<const void*>(&pVMT[7], pFunc);
-	Patch<BYTE>(0x6D0E43, 0xEB);
-	InjectMethodVP(0x4C9660, CVehicleModelInfo::SetCarCustomPlate, PATCH_NOTHING);
-	InjectMethodVP(0x6D6A58, CVehicle::CustomCarPlate_TextureCreate, PATCH_NOTHING);
-	InjectMethodVP(0x6D651C, CVehicle::CustomCarPlate_BeforeRenderingStart, PATCH_NOTHING);
-	InjectHook(0x6FDFE0, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, PATCH_JUMP);
-	//InjectMethodVP(0x6D0E53, CVehicle::CustomCarPlate_AfterRenderingStop, PATCH_NOTHING);
-	Nop(0x6D6517, 2);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
