@@ -42,7 +42,7 @@ void CVehicleModelInfo::SetCarCustomPlate()
 	
 	for ( int i = 0; i < 2*NUM_MAX_PLATES; i++ )
 		m_apPlateMaterials[i] = nullptr;
-CCustomCarPlateMgr::SetupClump(reinterpret_cast<RpClump*>(pRwObject), m_apPlateMaterials);
+	CCustomCarPlateMgr::SetupClump(reinterpret_cast<RpClump*>(pRwObject), m_apPlateMaterials);
 }
 
 RpAtomic* CVehicleModelInfo::GetEditableMaterialListCB(RpAtomic* pAtomic, void* pData)
@@ -66,31 +66,57 @@ RpMaterial* CVehicleModelInfo::GetEditableMaterialListCB(RpMaterial* pMaterial, 
 	return pMaterial;
 }
 
+// TODO: FIX IT
 static RpMaterial* PollPlateData(RpMaterial* pMaterial, void* pData)
 {
 	if ( RwTexture* pTexture = RpMaterialGetTexture(pMaterial) )
 	{
-		if ( RwTextureGetName(pTexture) )
+		const char*		pTexName = RwTextureGetName(pTexture);
+		if ( pTexName )
 		{
-			if ( !_strnicmp(RwTextureGetName(pTexture), "carplate", 8) )
+			if ( !_strnicmp(pTexName, "carplate", 8) )
 			{
 				auto&		pCallbackData = *static_cast<std::tuple<RpMaterial**,RpMaterial**,unsigned char,unsigned char>*>(pData);
 
 				assert(std::get<2>(pCallbackData) < NUM_MAX_PLATES);
-				if ( std::get<2>(pCallbackData)++ < NUM_MAX_PLATES )
-					*(std::get<0>(pCallbackData)++) = pMaterial;
+				if ( std::get<2>(pCallbackData) < NUM_MAX_PLATES )
+				{
+					// Append data
+					for ( auto ptr = std::get<0>(pCallbackData); *ptr; ptr++ )
+					{
+						if ( *ptr == pMaterial )
+							return pMaterial;
+					}
+
+					while ( std::get<0>(pCallbackData)[std::get<2>(pCallbackData)] )
+						std::get<2>(pCallbackData)++;
+
+					std::get<0>(pCallbackData)[std::get<2>(pCallbackData)++] = pMaterial;
+				}
 			}
-			else if ( !_strnicmp(RwTextureGetName(pTexture), "carpback", 8) )
+			else if ( !_strnicmp(pTexName, "carpback", 8) )
 			{
 				auto&		pCallbackData = *static_cast<std::tuple<RpMaterial**,RpMaterial**,unsigned char,unsigned char>*>(pData);
 
 				assert(std::get<3>(pCallbackData) < NUM_MAX_PLATES);
-				if ( std::get<3>(pCallbackData)++ < NUM_MAX_PLATES )
-					*(std::get<1>(pCallbackData)++) = pMaterial;
+				if ( std::get<3>(pCallbackData) < NUM_MAX_PLATES )
+				{
+					// Append data
+					for ( auto ptr = std::get<0>(pCallbackData); *ptr; ptr++ )
+					{
+						if ( *ptr == pMaterial )
+							return pMaterial;
+					}
+
+					while ( std::get<1>(pCallbackData)[std::get<3>(pCallbackData)] )
+						std::get<3>(pCallbackData)++;
+
+					std::get<1>(pCallbackData)[std::get<3>(pCallbackData)] = pMaterial;
+
+				}
 			}
 		}
 	}
-
 
 	return pMaterial;
 }
@@ -101,10 +127,60 @@ static RpAtomic* PollPlateData(RpAtomic* pAtomic, void* pData)
 	return pAtomic;
 }
 
+static RpMaterial* SetPlateData(RpMaterial* pMaterial, void* pData)
+{
+	if ( RwTexture* pTexture = RpMaterialGetTexture(pMaterial) )
+	{
+		if ( RwTextureGetName(pTexture) )
+		{
+			if ( !_strnicmp(RwTextureGetName(pTexture), "carplate", 8) )
+			{
+				auto&		pCallbackData = *static_cast<std::pair<RwTexture*,signed char>*>(pData);
+
+				RpMaterialSetTexture(pMaterial, pCallbackData.first);
+			}
+			else if ( !_strnicmp(RwTextureGetName(pTexture), "carpback", 8) )
+			{
+				auto&		pCallbackData = *static_cast<std::pair<RwTexture*,signed char>*>(pData);
+
+				CCustomCarPlateMgr::SetupMaterialPlatebackTexture(pMaterial, pCallbackData.second);
+			}
+		}
+	}
+
+
+	return pMaterial;
+}
+
+static RpAtomic* SetPlateData(RpAtomic* pAtomic, void* pData)
+{
+	RpGeometryForAllMaterials(RpAtomicGetGeometry(pAtomic), SetPlateData, pData);
+	return pAtomic;
+}
+
 void CCustomCarPlateMgr::SetupClump(RpClump* pClump, RpMaterial** pMatsArray)
 {
 	// Split pMatsArray
 	std::tuple<RpMaterial**,RpMaterial**,unsigned char,unsigned char>	CallbackData = std::make_tuple(pMatsArray, pMatsArray+NUM_MAX_PLATES, 0, 0);
 
 	RpClumpForAllAtomics(pClump, PollPlateData, &CallbackData);
+}
+
+void CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade(RpClump* pClump, RpMaterial** pMatsArray, signed char nDesign)
+{
+	UNREFERENCED_PARAMETER(nDesign);
+	if ( pMatsArray )
+	{
+		// Split pMatsArray
+		std::tuple<RpMaterial**,RpMaterial**,unsigned char,unsigned char>	CallbackData = std::make_tuple(pMatsArray, pMatsArray+NUM_MAX_PLATES, 0, 0);
+
+		RpClumpForAllAtomics(pClump, PollPlateData, &CallbackData);
+	}
+}
+
+void CCustomCarPlateMgr::SetupPlates(RpClump* pClump, RwTexture* pTexture, signed char nDesign)
+{
+	std::pair<RwTexture*,signed char>	CallbackData = std::make_pair(pTexture, nDesign);
+
+	RpClumpForAllAtomics(pClump, SetPlateData, &CallbackData);
 }

@@ -2392,6 +2392,7 @@ __forceinline void Patch_SA_10()
 	InjectMethodVP(0x4C9660, CVehicleModelInfo::SetCarCustomPlate, PATCH_NOTHING);
 	InjectMethodVP(0x6D6A58, CVehicle::CustomCarPlate_TextureCreate, PATCH_NOTHING);
 	InjectMethodVP(0x6D651C, CVehicle::CustomCarPlate_BeforeRenderingStart, PATCH_NOTHING);
+	InjectHook(0x6FDFE0, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, PATCH_JUMP);
 	//InjectMethodVP(0x6D0E53, CVehicle::CustomCarPlate_AfterRenderingStop, PATCH_NOTHING);
 	Nop(0x6D6517, 2);
 

@@ -48,6 +48,7 @@ bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 
 void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo)
 {
+	//CCustomCarPlateMgr::SetupPlates(reinterpret_cast<RpClump*>(pModelInfo->pRwObject), PlateTexture, PlateDesign);
 	for ( int i = 0; i < NUM_MAX_PLATES; i++ )
 	{
 		if ( pModelInfo->m_apPlateMaterials[i] )

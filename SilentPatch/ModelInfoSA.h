@@ -281,7 +281,7 @@ public:
 	static RpMaterial*		GetEditableMaterialListCB(RpMaterial* pMaterial, void* pData);
 };
 
-#define NUM_MAX_PLATES		6
+#define NUM_MAX_PLATES		12
 
 class CCustomCarPlateMgr
 {
@@ -298,6 +298,9 @@ public:
 	static void				SetupMaterialPlatebackTexture(RpMaterial* pMaterial, signed char nDesign);
 
 	static void				SetupClump(RpClump* pClump, RpMaterial** pMatsArray);
+	static void				SetupClumpAfterVehicleUpgrade(RpClump* pClump, RpMaterial** pMatsArray, signed char nDesign);
+
+	static void				SetupPlates(RpClump* pClump, RwTexture* pTexture, signed char nDesign);
 };
 
 static_assert(sizeof(CBaseModelInfo) == 0x20, "Wrong size: CBaseModelInfo");
