@@ -2399,6 +2399,14 @@ __forceinline void Patch_SA_10()
 	//Patch<const void*>(0x4F35E7, &UserTrackExtensions[1].Codec);
 	Patch<BYTE>(0x4F322D, sizeof(UserTrackExtensions));
 
+	// Impound garages working correctly
+	InjectHook(0x425179, 0x448990);
+	InjectHook(0x425369, 0x448990);
+	InjectHook(0x425411, 0x448990);
+
+	// Impounding after busted works
+	Nop(0x443292, 5);
+
 	// Zones fix
 	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
 
