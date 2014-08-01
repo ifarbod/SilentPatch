@@ -1711,11 +1711,14 @@ WRAPPER RwBool _rpD3D9VertexDeclarationInstColor(RwUInt8 *mem,
 
 WRAPPER bool IsVisionFXActive() { EAXJMP(0x7034F0); }
 
+static BOOL				(*IsAlreadyRunning)();
+static void				(*TheScriptsLoad)();
+static bool				(*InitialiseRenderWare)();
+
 bool ShaderAttach()
 {
 	// CGame::InitialiseRenderWare
-	// TODO: EXEs
-	if ( ((bool(*)())0x5BD600)() )
+	if ( InitialiseRenderWare() )
 	{
 		RwD3D9CreateVertexShader(reinterpret_cast<const RwUInt32*>(g_vs20_NVC_vertex_shader), reinterpret_cast<void**>(&pNVCShader));
 		return true;
@@ -2001,9 +2004,6 @@ void __declspec(naked) LightMaterialsFix()
 	}
 }
 
-static BOOL				(*IsAlreadyRunning)();
-static void				(*TheScriptsLoad)();
-
 static unsigned char*	ScriptSpace = *(unsigned char**)0x5D5380;
 static int*				ScriptParams = *(int**)0x48995B;
 
@@ -2132,6 +2132,9 @@ BOOL InjectDelayedPatches_10()
 		if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", TRUE, wcModulePath) != FALSE )
 		{
 			// Shaders!
+			// plugin-sdk compatibility
+			InitialiseRenderWare = (bool(*)())(*(int*)0x5BF3A2 + 0x5BF3A1 + 5);
+
 			InjectHook(0x5DA743, SetShader);
 			InjectHook(0x5D66F1, SetShader2);
 			InjectHook(0x5D6116, UsageIndex1, PATCH_JUMP);
