@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+#include "StdAfxSA.h"
 #include "ModelInfoSA.h"
 
 WRAPPER void CBaseModelInfo::Shutdown() { EAXJMP(0x4C4D50); }

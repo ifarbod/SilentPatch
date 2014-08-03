@@ -1,11 +1,12 @@
-#include "StdAfx.h"
-#include "AudioHardware.h"
+#include "StdAfxSA.h"
+#include "AudioHardwareSA.h"
 
 //WRAPPER HRESULT STDMETHODCALLTYPE CAEDataStream::Seek(LARGE_INTEGER liDistanceToMove, DWORD dwOrigin, ULARGE_INTEGER* lpNewFilePointer)
 //			{ EAXJMP(0x4DC340); }
 //WRAPPER HRESULT STDMETHODCALLTYPE CAEDataStream::Stat(STATSTG* pStatstg, DWORD grfStatFlag) { EAXJMP(0x4DC3A0); }
 
-WRAPPER bool CAEDataStream::Initialise() { EAXJMP(0x4DC2B0); }
+static void* CAEDataStream__Initialise = AddressByVersion<void*>(0x4DC2B0, 0, 0);
+WRAPPER bool CAEDataStream::Initialise() { VARJMP(CAEDataStream__Initialise); }
 
 unsigned int			CAEStreamingDecoder::nMallocRefCount = 0;
 

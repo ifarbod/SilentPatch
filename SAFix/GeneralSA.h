@@ -345,6 +345,9 @@ public:
 	float               m_fParticlesIntensity;
 
 public:
+	inline void			Render_Stub()
+	{ CObject::Render(); }
+
 	virtual void		Render() override;
 };
 

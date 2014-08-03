@@ -1,5 +1,5 @@
-#include "StdAfx.h"
-#include "General.h"
+#include "StdAfxSA.h"
+#include "GeneralSA.h"
 
 // Wrappers
 WRAPPER bool CalcScreenCoors(const CVector& vecIn, CVector* vecOut) { WRAPARG(vecIn); WRAPARG(vecOut); EAXJMP(0x71DAB0); }
@@ -31,7 +31,7 @@ static void ResetEditableMaterials(std::pair<void*,int>* pData)
 
 void CObject::Render()
 {
-	if ( m_bDoNotRender )
+	if ( m_bDoNotRender || !m_pRwObject )
 		return;
 
 	bool						bCallRestore;

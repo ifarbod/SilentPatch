@@ -1,7 +1,7 @@
 #ifndef __VEHICLE
 #define __VEHICLE
 
-#include "General.h"
+#include "GeneralSA.h"
 #include "ModelInfoSA.h"
 
 struct CVehicleFlags
@@ -133,6 +133,9 @@ public:
 class NOVMT CHeli : public CAutomobile
 {
 public:
+	inline void			Render_Stub()
+	{ CHeli::Render(); }
+
 	virtual void		Render() override;
 };
 
@@ -143,6 +146,9 @@ public:
 	float				m_fPropellerSpeed;
 
 public:
+	inline void			Render_Stub()
+	{ CPlane::Render(); }
+
 	virtual void		Render() override;
 };
 

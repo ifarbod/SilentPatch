@@ -1,7 +1,7 @@
 #ifndef __MODELINFO
 #define __MODELINFO
 
-#include "General.h"
+#include "GeneralSA.h"
 
 // TODO: Move to a separate file?
 typedef struct

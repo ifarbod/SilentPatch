@@ -11,12 +11,18 @@
 #define _WIN32_WINNT 0x0500
 
 #include <windows.h>
+#include <utility> 
+#include <cassert>
+#include <tuple>
+#include <shlwapi.h>
+
+/*#include <windows.h>
 #include <limits>
 #include <utility> 
 #include <mmsystem.h>
 #include <Shlwapi.h>
 #include <tuple>
-#include <cassert>
+#include <cassert>*/
 
 #define RwEngineInstance (*rwengine)
 #define RWFRAMESTATICPLUGINSSIZE 24
@@ -25,11 +31,23 @@
 #include <rpworld.h>
 #include <rtpng.h>
 
+#include <d3d9.h>
+
 #include "MemoryMgr.h"
 #include "Maths.h"
 
+struct AlphaObjectInfo
+{
+	RpAtomic*	pAtomic;
+	RpAtomic*	(*callback)(RpAtomic*, float);
+	float		fCompareValue;
+
+	friend bool operator < (const AlphaObjectInfo &a, const AlphaObjectInfo &b) 
+	{ return a.fCompareValue < b.fCompareValue; }
+};
+
 // SA operator delete
-void GTAdelete(void* data);
+extern void	(*GTAdelete)(void* data);
 
 extern unsigned char& nGameClockDays;
 extern unsigned char& nGameClockMonths;

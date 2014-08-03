@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+#include "StdAfxSA.h"
 
 #include "Timer.h"
 

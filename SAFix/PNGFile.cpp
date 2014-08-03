@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+#include "StdAfxSA.h"
 #include "PNGFile.h"
 
 RwTexture* CPNGFile::ReadFromFile(const char* pFileName)

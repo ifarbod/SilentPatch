@@ -1,6 +1,6 @@
-#include "StdAfx.h"
+#include "StdAfxSA.h"
 
-#include "Timer.h"
+//#include "Timer.h"
 #include "General.h"
 #include "Vehicle.h"
 #include "LinkList.h"
@@ -38,23 +38,6 @@ struct ClumpVisibilityPlugin
 	BOOL			(*visibilityCallback)(RpClump*);
 	unsigned int	alpha;
 };
-
-// RW wrappers
-// TODO: Multiple EXEs
-WRAPPER RwFrame* RwFrameForAllObjects(RwFrame* frame, RwObjectCallBack callBack, void* data) { WRAPARG(frame); WRAPARG(callBack); WRAPARG(data); EAXJMP(0x7F1200); }
-WRAPPER RpClump* RpClumpForAllAtomics(RpClump* clump, RpAtomicCallBack callback, void* pData) { WRAPARG(clump); WRAPARG(callback); WRAPARG(pData); EAXJMP(0x749B70); }
-WRAPPER RpGeometry* RpGeometryForAllMaterials(RpGeometry* geometry, RpMaterialCallBack fpCallBack, void* pData) { WRAPARG(geometry); WRAPARG(fpCallBack); WRAPARG(pData); EAXJMP(0x74C790); }
-WRAPPER RpAtomic* AtomicDefaultRenderCallBack(RpAtomic* atomic) { WRAPARG(atomic); EAXJMP(0x7491C0); }
-WRAPPER RwImage* RtPNGImageRead(const RwChar* imageName) { WRAPARG(imageName); EAXJMP(0x7CF9B0); }
-WRAPPER RwTexture* RwTextureCreate(RwRaster* raster) { WRAPARG(raster); EAXJMP(0x7F37C0); }
-WRAPPER RwRaster* RwRasterCreate(RwInt32 width, RwInt32 height, RwInt32 depth, RwInt32 flags) { WRAPARG(width); WRAPARG(height); WRAPARG(depth); WRAPARG(flags); EAXJMP(0x7FB230); }
-WRAPPER RwRaster* RwRasterSetFromImage(RwRaster* raster, RwImage* image) { WRAPARG(raster); WRAPARG(image); EAXJMP(0x804290); }
-WRAPPER RwBool RwImageDestroy(RwImage* image) { WRAPARG(image); EAXJMP(0x802740); }
-WRAPPER RwImage* RwImageFindRasterFormat(RwImage* ipImage, RwInt32 nRasterType, RwInt32* npWidth, RwInt32* npHeight, RwInt32* npDepth, RwInt32* npFormat) { WRAPARG(ipImage); WRAPARG(nRasterType); WRAPARG(npWidth); WRAPARG(npHeight); WRAPARG(npDepth); WRAPARG(npFormat); EAXJMP(0x8042C0); }
-WRAPPER RpMaterial *RpMaterialSetTexture(RpMaterial *material, RwTexture *texture) { EAXJMP(0x74DBC0); }
-WRAPPER RwBool RwTextureDestroy(RwTexture* texture) { EAXJMP(0x7F3820); }
-
-WRAPPER bool CanSeeOutSideFromCurrArea() { EAXJMP(0x53C4A0); }
 
 #ifndef SA_STEAM_TEST
 
@@ -194,18 +177,16 @@ void __stdcall Recalculate(float& fX, float& fY, signed int nShadow)
 #elif defined SILENTPATCH_SA_VER
 
 static CLinkList<AlphaObjectInfo>&		m_alphaList = **(CLinkList<AlphaObjectInfo>**)0x733A4D;
-static CLinkList<CEntity*>&				ms_weaponPedsForPC = **(CLinkList<CEntity*>**)0x53EACA;
 
 static unsigned char*					ZonesVisited = *(unsigned char**)0x57216A - 9;	
 
-static const float						fRefZVal = 1.0f;
-static const float* const				pRefFal = &fRefZVal;
+
 
 static RwInt32&							clumpPluginOffset = **(RwInt32**)0x732202;
 static bool&							CCutsceneMgr__ms_running = **(bool**)0x53F92D;
 
 #ifndef SA_STEAM_TEST
-void**									rwengine = *(void***)0x58FFC0;
+
 #else
 void**									rwengine = (void**)0xD22E34;
 #endif
@@ -385,13 +366,19 @@ void RenderWeapon(CEntity* pEntity)
 	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
 	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTION, &nAlphaFunction);
 
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(255));
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONEQUAL));
+	if ( nPushedAlpha != 255 )
+		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(255));
+
+	if ( nAlphaFunction != rwALPHATESTFUNCTIONEQUAL )
+		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONEQUAL));
 
 	((void(*)(CEntity*))0x732F95)(pEntity);
 
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
+	if ( nPushedAlpha != 255 )
+		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
+
+	if ( nAlphaFunction != rwALPHATESTFUNCTIONEQUAL )
+		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
 
 	ms_weaponPedsForPC.Insert(pEntity);
 }
@@ -1098,8 +1085,6 @@ static const BYTE	gMoonMaskPNG[] = {
 // TODO: EXEs
 #ifndef SA_STEAM_TEST
 
-unsigned char&				nGameClockDays = **(unsigned char**)0x4E841D;
-unsigned char&				nGameClockMonths = **(unsigned char**)0x4E842D;
 static float&				fFarClipZ = **(float**)0x70D21F;
 static RwTexture** const	gpCoronaTexture = *(RwTexture***)0x6FAA8C;
 static int&					MoonSize = **(int**)0x713B0C;
@@ -1163,28 +1148,28 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 	//D3DPERF_EndEvent();
 }
 
+static void*	HandleMoonStuffStub_JumpBack = AddressByVersion<void*>(0x713D24, 0, 0);
 void __declspec(naked) HandleMoonStuffStub()
 {
 	__asm
 	{
-		mov eax, [esp + 78h - 64h] // screen x size
-		mov ecx, [esp + 78h - 68h] // screen y size
+		mov		eax, [esp + 78h - 64h] // screen x size
+		mov		ecx, [esp + 78h - 68h] // screen y size
 
-		push ecx
-		push eax
+		push	ecx
+		push	eax
 
-		lea ecx, [esp + 80h - 54h] // screen coord vector
+		lea		ecx, [esp + 80h - 54h] // screen coord vector
 
-		push ecx
+		push	ecx
 
-		push esi
+		push	esi
 
-		call DrawMoonWithPhases
+		call	DrawMoonWithPhases
 
-		add esp, 10h
+		add		esp, 10h
 
-		push 713D24h		// TODO: EXEs
-		retn
+		jmp		HandleMoonStuffStub_JumpBack
 	}
 }
 
@@ -1215,22 +1200,20 @@ void __declspec(naked) HandleMoonStuffStub_Steam()
 
 static unsigned int		nCachedCRC;
 
+static void*	RenderVehicleHiDetailCB = AddressByVersion<void*>(0x733240, 0, 0);
 void __declspec(naked) HunterTest()
 {
 	static const char	aDoorDummy[] = "door_lf_ok";
 	static const char	aStaticRotor[] = "static_rotor";
 	static const char	aStaticRotor2[] = "static_rotor2";
-	static const char	aWidescreen[] = "widescreen";
-	//static bool			bToPleaseFuckingCargobob;
+	static const char	aWindscreen[] = "windscreen";
 	_asm
 	{
-		//setnz	di
 		setnz	al
 		movzx	di, al
-		//mov	bToPleaseFuckingCargobob, al
 
 		push	10
-		push	offset aWidescreen
+		push	offset aWindscreen
 		push	ebp
 		call	strncmp
 		add		esp, 0Ch
@@ -1254,11 +1237,9 @@ void __declspec(naked) HunterTest()
 		jz		HunterTest_StaticRotorAlphaSet
 
 		test	di, di
-		//mov		al, bToPleaseFuckingCargobob
-		//test	al, al
 		jnz		HunterTest_DoorTest
 
-		push	733240h
+		push	[RenderVehicleHiDetailCB]
 		mov		eax, 4C7914h
 		jmp		eax
 
@@ -1300,45 +1281,6 @@ void __declspec(naked) CacheCRC32()
 		mov		eax, [ecx+4]
 		mov		nCachedCRC, eax
 		mov		eax, 4C7B10h
-		jmp		eax
-	}
-}
-
-void __declspec(naked) PlaneAtomicRendererSetup()
-{
-	static const char	aStaticProp[] = "static_prop";
-	static const char	aMovingProp[] = "moving_prop";
-	_asm
-	{
-		mov     eax, [esi+4]
-		push	eax
-		call	GetFrameNodeName
-		//push	eax
-		mov		[esp+8+8], eax
-		push	11
-		push	offset aStaticProp
-		push	eax
-		call	strncmp
-		add		esp, 10h
-		test	eax, eax
-		jz		PlaneAtomicRendererSetup_Alpha
-		push	11
-		push	offset aMovingProp
-		push	[esp+12+8]
-		call	strncmp
-		add		esp, 0Ch
-		test	eax, eax
-		jnz		PlaneAtomicRendererSetup_NoAlpha
-
-PlaneAtomicRendererSetup_Alpha:
-		push	734370h
-		jmp		PlaneAtomicRendererSetup_Return
-
-PlaneAtomicRendererSetup_NoAlpha:
-		push	733420h
-
-PlaneAtomicRendererSetup_Return:
-		mov		eax, 4C7986h
 		jmp		eax
 	}
 }
@@ -1686,8 +1628,6 @@ void __declspec(naked) DumpIPLStub()
 
 #endif
 
-#include <d3d9.h>
-
 #include "nvc.h"
 
 static IDirect3DVertexShader9*	pNVCShader = nullptr;
@@ -1715,55 +1655,6 @@ static BOOL				(*IsAlreadyRunning)();
 static void				(*TheScriptsLoad)();
 static bool				(*InitialiseRenderWare)();
 
-bool ShaderAttach()
-{
-	// CGame::InitialiseRenderWare
-	if ( InitialiseRenderWare() )
-	{
-		RwD3D9CreateVertexShader(reinterpret_cast<const RwUInt32*>(g_vs20_NVC_vertex_shader), reinterpret_cast<void**>(&pNVCShader));
-		return true;
-	}
-	return false;
-}
-
-void ShaderDetach()
-{
-	if ( pNVCShader )
-		RwD3D9DeleteVertexShader(pNVCShader);
-
-	// PluginDetach?
-	// TODO: EXEs
-	((void(*)())0x53BB80)();
-}
-
-void SetShader(RxD3D9InstanceData* pInstData)
-{
-	if ( bRenderNVC )
-	{
-		// TODO: Daynight balance var
-		D3DMATRIX		outMat;
-		float			fEnvVars[2] = { *(float*)0x8D12C0, RpMaterialGetColor(pInstData->material)->alpha * (1.0f/255.0f) };
-		RwRGBAReal*		AmbientLight = RpLightGetColor(*(RpLight**)0xC886E8);
-
-		// Normalise the balance
-		if ( fEnvVars[0] < 0.0f )
-			fEnvVars[0] = 0.0f;
-		else if ( fEnvVars[0] > 1.0f )
-			fEnvVars[0] = 1.0f;
-
-		RwD3D9SetVertexShader(pNVCShader);
-
-		_rwD3D9VSSetActiveWorldMatrix(RwFrameGetLTM(RpAtomicGetFrame(pRenderedAtomic)));
-		_rwD3D9VSGetComposedTransformMatrix(&outMat);
-		
-		RwD3D9SetVertexShaderConstant(0, &outMat, 4);
-		RwD3D9SetVertexShaderConstant(4, fEnvVars, 1);
-		RwD3D9SetVertexShaderConstant(5, AmbientLight, 1);
-	}
-	else
-		RwD3D9SetVertexShader(pInstData->vertexShader);
-}
-
 void __declspec(naked) SetShader2()
 {
 	_asm
@@ -1781,28 +1672,7 @@ void __declspec(naked) SetShader2()
 	}
 }
 
-void __declspec(naked) HijackAtomic()
-{
-	_asm
-	{
-		mov		eax, [esp+8]
-		mov		pRenderedAtomic, eax
-		mov		eax, 5D6480h
-		jmp		eax
-	}
-}
 
-void __declspec(naked) UsageIndex1()
-{
-	_asm
-	{
-		mov		byte ptr [esp+eax*8+27h], 1
-		inc		eax
-
-		push	5D611Bh
-		retn
-	}
-}
 
 static void*	pJackedEsi;
 
@@ -1883,20 +1753,6 @@ PassDayColoursToShader_Iterate:
 	}
 }
 
-void __declspec(naked) UserTracksFix()
-{
-	_asm
-	{
-		push	[esp+4]
-		mov		eax, 4D7C60h
-		call	eax
-		mov		ecx, 0B6B970h
-		mov		eax, 4F35B0h
-		call	eax
-		retn	4
-	}
-}
-
 static CAEFLACDecoder* __stdcall DecoderCtor(CAEDataStream* pData)
 {
 	return new CAEFLACDecoder(pData);
@@ -1959,16 +1815,6 @@ LoadFLAC_Return_NoDelete:
 	}
 }
 
-static struct
-{
-	char			Extension[8];
-	unsigned int	Codec;
-} UserTrackExtensions[] = { { ".ogg", DECODER_VORBIS }, { ".mp3", DECODER_QUICKTIME },
-							{ ".wav", DECODER_WAVE }, { ".wma", DECODER_WINDOWSMEDIA },
-							{ ".wmv", DECODER_WINDOWSMEDIA }, { ".aac", DECODER_QUICKTIME },
-							{ ".m4a", DECODER_QUICKTIME }, { ".mov", DECODER_QUICKTIME },
-							{ ".fla", DECODER_FLAC }, { ".flac", DECODER_FLAC } };
-
 void __declspec(naked) FLACInit()
 {
 	_asm
@@ -1982,88 +1828,6 @@ void __declspec(naked) FLACInit()
 FLACInit_DontFallBack:
 		retn
 	}
-}
-
-void __declspec(naked) LightMaterialsFix()
-{
-	_asm
-	{
-		mov     [esi], edi
-		mov		ebx, [ecx]
-		lea     esi, [edx+4]
-		mov		[ebx+4], esi
-		mov		edi, [esi]
-		mov		[ebx+8], edi
-		add		esi, 4
-		mov		[ebx+12], esi
-		mov		edi, [esi]
-		mov		[ebx+16], edi
-		add		ebx, 20
-		mov		[ecx], ebx
-		retn
-	}
-}
-
-static unsigned char*	ScriptSpace = *(unsigned char**)0x5D5380;
-static int*				ScriptParams = *(int**)0x48995B;
-
-static CZoneInfo*&		pCurrZoneInfo = **(CZoneInfo***)0x58ADB1;
-static CRGBA*			HudColour = *(CRGBA**)0x58ADF6;
-
-static void BasketballFix(unsigned char* pBuf, int nSize)
-{
-	for ( int i = 0, hits = 0; i < nSize && hits < 7; i++, pBuf++ )
-	{
-		// Pattern check for save pickup XYZ
-		if ( *(unsigned int*)pBuf == 0x449DE19A )		// Save pickup X
-		{
-			hits++;
-			*(float*)pBuf = 1291.8f;
-		}
-		else if ( *(unsigned int*)pBuf == 0xC4416AE1 )		// Save pickup Y
-		{
-			hits++;
-			*(float*)pBuf = -797.8284f;
-		}
-		else if ( *(unsigned int*)pBuf == 0x44886C7B )		// Save pickup Z
-		{
-			hits++;
-			*(float*)pBuf = 1089.5f;
-		}
-		else if ( *(unsigned int*)pBuf == 0x449DF852 )		// Save point X
-		{
-			hits++;
-			*(float*)pBuf = 1286.8f;
-		}
-		else if ( *(unsigned int*)pBuf == 0xC44225C3 )		// Save point Y
-		{
-			hits++;
-			*(float*)pBuf = -797.69f;
-		}
-		else if ( *(unsigned int*)pBuf == 0x44885C7B )		// Save point Z
-		{
-			hits++;
-			*(float*)pBuf = 1089.1f;
-		}
-		else if ( *(unsigned int*)pBuf == 0x43373AE1 )		// Save point A
-		{
-			hits++;
-			*(float*)pBuf = 90.0f;
-		}
-	}
-}
-
-void TheScriptsLoad_BasketballFix()
-{
-	TheScriptsLoad();
-
-	BasketballFix(ScriptSpace+8, *(int*)(ScriptSpace+3));
-}
-
-void StartNewMission_BasketballFix()
-{
-	if ( ScriptParams[0] == 0 )
-		BasketballFix(ScriptSpace+200000, 69000);
 }
 
 CRGBA* CRGBA::BlendGangColour(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
@@ -2237,194 +2001,6 @@ BOOL InjectDelayedPatches_10()
 	return TRUE;
 }
 
-__forceinline void Patch_SA_10()
-{
-	using namespace MemoryVP;
-
-	// IsAlreadyRunning needs to be read relatively late - the later, the better
-	IsAlreadyRunning = (BOOL(*)())(*(int*)0x74872E + 0x74872D + 5);
-	InjectHook(0x74872D, InjectDelayedPatches_10);
-
-	//Patch<BYTE>(0x5D7265, 0xEB);
-
-	// Temp
-	CTimer::m_snTimeInMilliseconds = *(int**)0x4242D1;
-
-	// Heli rotors
-	InjectMethodVP(0x6CAB70, CPlane::Render, PATCH_JUMP);
-	InjectMethodVP(0x6C4400, CHeli::Render, PATCH_JUMP);
-	//InjectHook(0x553318, RenderAlphaAtomics);
-	Patch<const void*>(0x7341D9, TwoPassAlphaRender);
-	Patch<const void*>(0x734127, TwoPassAlphaRender);
-	Patch<const void*>(0x73445E, RenderBigVehicleActomic);
-	//Patch<const void*>(0x73406E, TwoPassAlphaRender);
-
-	// Boats
-	/*Patch<BYTE>(0x4C79DF, 0x19);
-	Patch<DWORD>(0x733A87, EXPAND_BOAT_ALPHA_ATOMIC_LISTS * sizeof(AlphaObjectInfo));
-	Patch<DWORD>(0x733AD7, EXPAND_BOAT_ALPHA_ATOMIC_LISTS * sizeof(AlphaObjectInfo));*/
-
-	// Fixed strafing? Hopefully
-	/*static const float		fStrafeCheck = 0.1f;
-	Patch<const void*>(0x61E0C2, &fStrafeCheck);
-	Nop(0x61E0CA, 6);*/
-
-	// RefFix
-	Patch<const void*>(0x6FB97A, &pRefFal);
-	Patch<BYTE>(0x6FB9A0, 0);
-
-	// Plane rotors
-	InjectHook(0x4C7981, PlaneAtomicRendererSetup, PATCH_JUMP);
-
-	// DOUBLE_RWHEELS
-	Patch<WORD>(0x4C9290, 0xE281);
-	Patch<int>(0x4C9292, ~(rwMATRIXTYPEMASK|rwMATRIXINTERNALIDENTITY));
-
-	// No framedelay
-	Patch<DWORD>(0x53E923, 0x42EB56);
-
-	// Disable re-initialization of DirectInput mouse device by the game
-	Patch<BYTE>(0x576CCC, 0xEB);
-	Patch<BYTE>(0x576EBA, 0xEB);
-	Patch<BYTE>(0x576F8A, 0xEB);
-
-	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
-	Patch<DWORD>(0x7469A0, 0x909000B0);
-
-	// Weapons rendering
-	InjectHook(0x5E7859, RenderWeapon);
-	InjectHook(0x732F30, RenderWeaponsList, PATCH_JUMP);
-	//Patch<WORD>(0x53EAC4, 0x0DEB);
-	//Patch<WORD>(0x705322, 0x0DEB);
-	//Patch<WORD>(0x7271E3, 0x0DEB);
-	//Patch<BYTE>(0x73314E, 0xC3);
-	Patch<DWORD>(0x732F95, 0x560CEC83);
-	Patch<DWORD>(0x732FA2, 0x20245C8B);
-	Patch<WORD>(0x733128, 0x20EB);
-	Patch<WORD>(0x733135, 0x13EB);
-	Nop(0x732FBC, 5);
-	//Nop(0x732F93, 6);
-	//Nop(0x733144, 6);
-	Nop(0x732FA6, 6);
-	//Nop(0x5E46DA, 2);
-
-	// Hunter interior & static_rotor for helis
-	InjectHook(0x4C78F2, HunterTest, PATCH_JUMP);
-	InjectHook(0x4C9618, CacheCRC32);
-
-	// Fixed blown up car rendering
-	// ONLY 1.0
-	InjectHook(0x5D993F, DarkVehiclesFix1);
-	InjectHook(0x5D9A74, DarkVehiclesFix2, PATCH_JUMP);
-	InjectHook(0x5D9B44, DarkVehiclesFix3, PATCH_JUMP);
-	InjectHook(0x5D9CB2, DarkVehiclesFix4, PATCH_JUMP);
-
-	// Bindable NUM5
-	// Only 1.0 and Steam
-	Nop(0x57DC55, 2);
-
-	// Moonphases
-	InjectHook(0x713ACB, HandleMoonStuffStub, PATCH_JUMP);
-
-	// TEMP
-	//Patch<DWORD>(0x733B05, 40);
-	//Patch<DWORD>(0x733B55, 40);
-	//Patch<BYTE>(0x5B3ADD, 4);
-
-	// Twopass rendering (experimental)
-	/*Patch<WORD>(0x4C441E, 0x47C7);
-	Patch<BYTE>(0x4C4420, 0x48);
-	Patch<const void*>(0x4C4421, TwoPassAlphaRender);
-	Patch<DWORD>(0x4C4425, 0x04C25E5F);
-	Patch<BYTE>(0x4C4429, 0x00);*/
-	Patch<BYTE>(0x4C441E, 0x57);
-	InjectHook(0x4C441F, SetRendererForAtomic, PATCH_CALL);
-	Patch<DWORD>(0x4C4424, 0x5F04C483);
-	Patch<DWORD>(0x4C4428, 0x0004C25E);
-
-	// Lightbeam fix
-	Patch<WORD>(0x6A2E88, 0x0EEB);
-	Nop(0x6A2E9C, 3);
-	Patch<WORD>(0x6E0F63, 0x0AEB);
-	Patch<WORD>(0x6E0F7C, 0x0BEB);
-	Patch<WORD>(0x6E0F95, 0x0BEB);
-	Patch<WORD>(0x6E0FAF, 0x1AEB);
-
-	Patch<WORD>(0x6E13D5, 0x09EB);
-	Patch<WORD>(0x6E13ED, 0x17EB);
-	Patch<WORD>(0x6E141F, 0x0AEB);
-
-	Patch<BYTE>(0x6E0FE0, 0x28);
-	Patch<BYTE>(0x6E142D, 0x18);
-	Patch<BYTE>(0x6E0FDB, 0xC8-0x7C);
-	//InjectHook(0x6A2EDA, CullTest);
-
-	InjectHook(0x6A2EF7, ResetAlphaFuncRefAfterRender, PATCH_JUMP);
-
-	// PS2 SUN!!!!!!!!!!!!!!!!!
-	static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
-
-	Nop(0x6FB17C, 3);
-	Patch<const void*>(0x6FC5B0, &fSunMult);
-	//Patch<WORD>(0x6FB172, 0x0BEB);
-	//Patch<BYTE>(0x6FB1A7, 8);
-
-#if defined EXPAND_ALPHA_ENTITY_LISTS
-	// Bigger alpha entity lists
-	Patch<DWORD>(0x733B05, EXPAND_ALPHA_ENTITY_LISTS * 20);
-	Patch<DWORD>(0x733B55, EXPAND_ALPHA_ENTITY_LISTS * 20);
-#endif
-
-	// Unlocked widescreen resolutions
-	Patch<DWORD>(0x745B71, 0x9090687D);
-	Patch<DWORD>(0x74596C, 0x9090127D);
-	Nop(0x745970, 2);
-	Nop(0x745B75, 2);
-	Nop(0x7459E1, 2);
-
-	// Heap corruption fix
-	Nop(0x5C25D3, 5);
-
-	// User Tracks fix
-	InjectHook(0x4D9B66, UserTracksFix);
-	InjectHook(0x4D9BB5, 0x4F2FD0);
-	//Nop(0x4D9BB5, 5);
-
-	// FLAC support
-	InjectHook(0x4F373D, LoadFLAC, PATCH_JUMP);
-	InjectHook(0x4F35E0, FLACInit, PATCH_JUMP);
-	InjectHook(0x4F3787, CAEWaveDecoderInit);
-
-	Patch<WORD>(0x4F376A, 0x18EB);
-	//Patch<BYTE>(0x4F378F, sizeof(CAEWaveDecoder));
-	Patch<const void*>(0x4F3210, UserTrackExtensions);
-	Patch<const void*>(0x4F3241, &UserTrackExtensions->Codec);
-	//Patch<const void*>(0x4F35E7, &UserTrackExtensions[1].Codec);
-	Patch<BYTE>(0x4F322D, sizeof(UserTrackExtensions));
-
-	// Impound garages working correctly
-	InjectHook(0x425179, 0x448990);
-	InjectHook(0x425369, 0x448990);
-	InjectHook(0x425411, 0x448990);
-
-	// Impounding after busted works
-	Nop(0x443292, 5);
-
-	// Zones fix
-	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
-
-	// Fixed police scanner names
-	char*			pScannerNames = *(char**)0x4E72D4;
-	strncpy(pScannerNames + (8*113), "WESTP", 8);
-	strncpy(pScannerNames + (8*134), "????", 8);
-
-	// TEMP - dumping IPL data
-#ifdef DO_MAP_DUMP
-	InjectHook(0x538090, DumpIPLStub, PATCH_JUMP);
-	InjectHook(0x5B92C7, DumpIPLName);
-#endif
-}
-
 __forceinline void Patch_SA_Steam()
 {
 	using namespace MemoryVP;
@@ -2463,5 +2039,3 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	}*/
 	return TRUE;
 }
-
-WRAPPER void GTAdelete(void* data) { EAXJMP(0x82413F); }

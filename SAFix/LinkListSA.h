@@ -2,13 +2,13 @@
 #define __LINKLIST__
 
 template <class T>
-class CLink 
+class CLinkSA
 {
 public:
-	inline void Insert(CLink<T>* pAttach) {
+	inline void Insert(CLinkSA<T>* pAttach) {
 		pAttach->m_pNext = m_pNext;
 		m_pNext->m_pPrev = pAttach;
-		
+
 		pAttach->m_pPrev = this;
 		m_pNext = pAttach;
 	}
@@ -24,22 +24,22 @@ public:
 
 	T m_pItem; // 0-4
 	// an item
-	CLink<T>* m_pPrev; // 4-8
+	CLinkSA<T>* m_pPrev; // 4-8
 	//next link in the list
-	CLink<T>* m_pNext; // 8-12
+	CLinkSA<T>* m_pNext; // 8-12
 	//prev link in the list
 };
 
 template <class T>
-class CLinkList {
+class CLinkListSA {
 public:
-	CLinkList(void)
+	CLinkListSA(void)
 		: m_plnLinks(nullptr)
 	{
 	}
 
 	void Init(int nNumLinks) {
-		m_plnLinks = new CLink<T>[nNumLinks];
+		m_plnLinks = new CLinkSA<T>[nNumLinks];
 
 		m_lnListHead.m_pNext = &m_lnListTail;
 		m_lnListTail.m_pPrev = &m_lnListHead;
@@ -58,8 +58,8 @@ public:
 		m_plnLinks = nullptr;
 	}
 
-	CLink<T>* InsertSorted(const T& pItem) {
-		CLink<T>* pLink = m_lnFreeListHead.m_pNext;
+	CLinkSA<T>* InsertSorted(const T& pItem) {
+		CLinkSA<T>* pLink = m_lnFreeListHead.m_pNext;
 
 		if(pLink == &m_lnFreeListTail) {
 			return nullptr;
@@ -69,7 +69,7 @@ public:
 
 		pLink->Remove();
 
-		CLink<T>* pInsertAfter = &m_lnListHead;
+		CLinkSA<T>* pInsertAfter = &m_lnListHead;
 
 		while(pInsertAfter->m_pNext != &m_lnListTail && pInsertAfter->m_pNext->m_pItem < pItem) {
 			pInsertAfter = pInsertAfter->m_pNext;
@@ -80,8 +80,8 @@ public:
 		return pLink;
 	}
 
-	CLink<T>* Insert(const T& pItem) {
-		CLink<T>* pLink = m_lnFreeListHead.m_pNext;
+	CLinkSA<T>* Insert(const T& pItem) {
+		CLinkSA<T>* pLink = m_lnFreeListHead.m_pNext;
 
 		if(pLink == &m_lnFreeListTail) {
 			return nullptr;
@@ -101,12 +101,12 @@ public:
 		}
 	}
 
-	void Remove(CLink<T>* pLink) {
+	void Remove(CLinkSA<T>* pLink) {
 		pLink->Remove();
 		m_lnFreeListHead.Insert(pLink);
 	}
 
-	CLink<T>* Next(CLink<T>* pCurrent) {
+	CLinkSA<T>* Next(CLinkSA<T>* pCurrent) {
 		if(pCurrent == 0) {
 			pCurrent = &m_lnListHead;
 		}
@@ -119,15 +119,15 @@ public:
 		}
 	}
 
-	CLink<T> m_lnListHead; // 0-12
+	CLinkSA<T> m_lnListHead; // 0-12
 	//head of the list of active links
-	CLink<T> m_lnListTail; // 12-24
+	CLinkSA<T> m_lnListTail; // 12-24
 	//tail of the list of active links
-	CLink<T> m_lnFreeListHead; // 24-36
+	CLinkSA<T> m_lnFreeListHead; // 24-36
 	//head of the list of free links
-	CLink<T> m_lnFreeListTail; // 36-48
+	CLinkSA<T> m_lnFreeListTail; // 36-48
 	//tail of the list of free links
-	CLink<T>* m_plnLinks; // 48-52
+	CLinkSA<T>* m_plnLinks; // 48-52
 	//pointer to actual array of links
 };
 

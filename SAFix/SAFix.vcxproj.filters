@@ -21,31 +21,31 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\SilentPatch\dllmain.cpp">
+    <ClCompile Include="SilentPatchSA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\SilentPatch\General.cpp">
+    <ClCompile Include="StdAfxSA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\SilentPatch\Vehicle.cpp">
+    <ClCompile Include="ScriptSA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\SilentPatch\StdAfx.cpp">
+    <ClCompile Include="TimerSA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\SilentPatch\Timer.cpp">
+    <ClCompile Include="VehicleSA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\SilentPatch\ModelInfoSA.cpp">
+    <ClCompile Include="GeneralSA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\SilentPatch\PNGFile.cpp">
+    <ClCompile Include="ModelInfoSA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\SilentPatch\AudioHardware.cpp">
+    <ClCompile Include="AudioHardwareSA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\SilentPatch\Script.cpp">
+    <ClCompile Include="PNGFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -58,28 +58,7 @@
     <ClInclude Include="..\SilentPatch\MemoryMgr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\SilentPatch\General.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SilentPatch\Vehicle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SilentPatch\LinkList.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SilentPatch\Maths.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SilentPatch\StdAfx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\SilentPatch\Timer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SilentPatch\ModelInfoSA.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SilentPatch\PNGFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\SilentPatch\FLAC\callback.h">
@@ -100,10 +79,34 @@
     <ClInclude Include="..\SilentPatch\FLAC\stream_decoder.h">
       <Filter>Header Files\FLAC</Filter>
     </ClInclude>
-    <ClInclude Include="..\SilentPatch\AudioHardware.h">
+    <ClInclude Include="StdAfxSA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\SilentPatch\Script.h">
+    <ClInclude Include="ScriptSA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TimerSA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VehicleSA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneralSA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelInfoSA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AudioHardwareSA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LinkListSA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Maths.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PNGFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

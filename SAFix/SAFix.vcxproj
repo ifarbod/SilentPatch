@@ -38,10 +38,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <TargetExt>.dll</TargetExt>
+    <TargetExt>.asi</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <TargetExt>.dll</TargetExt>
+    <TargetExt>.asi</TargetExt>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -49,8 +49,9 @@
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PreprocessorDefinitions>SILENTPATCH_SA_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9;C:\Program Files\Microsoft DirectX SDK (June 2010)\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9;C:\Program Files\Microsoft DirectX SDK (June 2010)\Include;..\SilentPatch</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>StdAfxSA.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -74,8 +75,9 @@
       <PreprocessorDefinitions>SILENTPATCH_SA_VER;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9;..\SilentPatch</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>StdAfxSA.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -90,18 +92,18 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\SilentPatch\dllmain.cpp" />
-    <ClCompile Include="..\SilentPatch\AudioHardware.cpp" />
-    <ClCompile Include="..\SilentPatch\General.cpp" />
-    <ClCompile Include="..\SilentPatch\ModelInfoSA.cpp" />
-    <ClCompile Include="..\SilentPatch\PNGFile.cpp" />
-    <ClCompile Include="..\SilentPatch\Script.cpp" />
-    <ClCompile Include="..\SilentPatch\StdAfx.cpp">
+    <ClCompile Include="AudioHardwareSA.cpp" />
+    <ClCompile Include="GeneralSA.cpp" />
+    <ClCompile Include="ModelInfoSA.cpp" />
+    <ClCompile Include="PNGFile.cpp" />
+    <ClCompile Include="ScriptSA.cpp" />
+    <ClCompile Include="SilentPatchSA.cpp" />
+    <ClCompile Include="StdAfxSA.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="..\SilentPatch\Timer.cpp" />
-    <ClCompile Include="..\SilentPatch\Vehicle.cpp" />
+    <ClCompile Include="TimerSA.cpp" />
+    <ClCompile Include="VehicleSA.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\SilentPatch\nvc.fx">
@@ -116,23 +118,24 @@
     <None Include="..\SilentPatch\win2000.asm" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\SilentPatch\AudioHardware.h" />
     <ClInclude Include="..\SilentPatch\FLAC\callback.h" />
     <ClInclude Include="..\SilentPatch\FLAC\export.h" />
     <ClInclude Include="..\SilentPatch\FLAC\format.h" />
     <ClInclude Include="..\SilentPatch\FLAC\metadata.h" />
     <ClInclude Include="..\SilentPatch\FLAC\ordinals.h" />
     <ClInclude Include="..\SilentPatch\FLAC\stream_decoder.h" />
-    <ClInclude Include="..\SilentPatch\General.h" />
-    <ClInclude Include="..\SilentPatch\LinkList.h" />
-    <ClInclude Include="..\SilentPatch\Maths.h" />
     <ClInclude Include="..\SilentPatch\MemoryMgr.h" />
-    <ClInclude Include="..\SilentPatch\ModelInfoSA.h" />
-    <ClInclude Include="..\SilentPatch\PNGFile.h" />
-    <ClInclude Include="..\SilentPatch\Script.h" />
-    <ClInclude Include="..\SilentPatch\StdAfx.h" />
     <ClInclude Include="..\SilentPatch\Timer.h" />
-    <ClInclude Include="..\SilentPatch\Vehicle.h" />
+    <ClInclude Include="AudioHardwareSA.h" />
+    <ClInclude Include="GeneralSA.h" />
+    <ClInclude Include="LinkListSA.h" />
+    <ClInclude Include="Maths.h" />
+    <ClInclude Include="ModelInfoSA.h" />
+    <ClInclude Include="PNGFile.h" />
+    <ClInclude Include="ScriptSA.h" />
+    <ClInclude Include="StdAfxSA.h" />
+    <ClInclude Include="TimerSA.h" />
+    <ClInclude Include="VehicleSA.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

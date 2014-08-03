@@ -1,7 +1,7 @@
-#include "StdAfx.h"
+#include "StdAfxSA.h"
 
-#include "Vehicle.h"
-#include "Timer.h"
+#include "VehicleSA.h"
+#include "TimerSA.h"
 
 WRAPPER void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha) { WRAPARG(pAtomic); WRAPARG(nAlpha); EAXJMP(0x6D2960); }
 WRAPPER void CVehicle::Render() { EAXJMP(0x6D0E60); }
@@ -98,7 +98,7 @@ void CHeli::Render()
 	bool		bHasMovingRotor = m_pCarNode[12] != nullptr;
 	bool		bHasMovingRotor2 = m_pCarNode[14] != nullptr;
 
-	m_nTimeTillWeNeedThisCar = *CTimer::m_snTimeInMilliseconds + 3000;
+	m_nTimeTillWeNeedThisCar = CTimer::m_snTimeInMilliseconds + 3000;
 
 	if ( m_fRotorSpeed > 0.0 )
 		dRotorsSpeed = min(1.7 * (1.0/0.22) * m_fRotorSpeed, 1.5);
@@ -153,7 +153,7 @@ void CPlane::Render()
 	bool		bHasMovingProp = m_pCarNode[12] != nullptr;
 	bool		bHasMovingProp2 = m_pCarNode[14] != nullptr;
 
-	m_nTimeTillWeNeedThisCar = *CTimer::m_snTimeInMilliseconds + 3000;
+	m_nTimeTillWeNeedThisCar = CTimer::m_snTimeInMilliseconds + 3000;
 
 	if ( m_fPropellerSpeed > 0.0 )
 		dRotorsSpeed = min(1.7 * (1.0/0.31) * m_fPropellerSpeed, 1.5);
