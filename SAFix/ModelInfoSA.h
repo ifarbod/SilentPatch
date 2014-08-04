@@ -292,10 +292,10 @@ private:
 	//static signed char		m_nCurPlateDesign;
 
 public:
-	static RwTexture*		CreatePlateTexture(const char* pText, signed char nDesign);
-	static bool				GeneratePlateText(char* pBuf, int nLen);
-	static signed char		GetMapRegionPlateDesign();
-	static void				SetupMaterialPlatebackTexture(RpMaterial* pMaterial, signed char nDesign);
+	static RwTexture*		(*CreatePlateTexture)(const char* pText, signed char nDesign);
+	static bool				(*GeneratePlateText)(char* pBuf, int nLen);
+	static signed char		(*GetMapRegionPlateDesign)();
+	static void				(*SetupMaterialPlatebackTexture)(RpMaterial* pMaterial, signed char nDesign);
 
 	static void				SetupClump(RpClump* pClump, RpMaterial** pMatsArray);
 	static void				SetupClumpAfterVehicleUpgrade(RpClump* pClump, RpMaterial** pMatsArray, signed char nDesign);

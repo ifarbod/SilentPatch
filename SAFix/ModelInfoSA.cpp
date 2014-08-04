@@ -1,12 +1,13 @@
 #include "StdAfxSA.h"
 #include "ModelInfoSA.h"
 
-WRAPPER void CBaseModelInfo::Shutdown() { EAXJMP(0x4C4D50); }
+static void* BaseModelInfoShutdown = AddressByVersion<void*>(0x4C4D50, 0, 0);
+WRAPPER void CBaseModelInfo::Shutdown() { VARJMP(BaseModelInfoShutdown); }
 
-WRAPPER RwTexture* CCustomCarPlateMgr::CreatePlateTexture(const char* pText, signed char nDesign) { EAXJMP(0x6FDEA0); }
-WRAPPER bool CCustomCarPlateMgr::GeneratePlateText(char* pBuf, int nLen) { EAXJMP(0x6FD5B0); }
-WRAPPER signed char CCustomCarPlateMgr::GetMapRegionPlateDesign() { EAXJMP(0x6FD7A0); }
-WRAPPER void CCustomCarPlateMgr::SetupMaterialPlatebackTexture(RpMaterial* pMaterial, signed char nDesign) { EAXJMP(0x6FDE50); }
+RwTexture* (*CCustomCarPlateMgr::CreatePlateTexture)(const char* pText, signed char nDesign) = AddressByVersion<RwTexture*(*)(const char*,signed char)>(0x6FDEA0, 0, 0);
+bool (*CCustomCarPlateMgr::GeneratePlateText)(char* pBuf, int nLen) = AddressByVersion<bool(*)(char*,int)>(0x6FD5B0, 0, 0);
+signed char (*CCustomCarPlateMgr::GetMapRegionPlateDesign)() = AddressByVersion<signed char(*)()>(0x6FD7A0, 0, 0);
+void (*CCustomCarPlateMgr::SetupMaterialPlatebackTexture)(RpMaterial* pMaterial, signed char nDesign) = AddressByVersion<void(*)(RpMaterial*,signed char)>(0x6FDE50, 0, 0);
 
 void CVehicleModelInfo::Shutdown()
 {

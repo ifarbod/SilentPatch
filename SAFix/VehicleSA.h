@@ -115,7 +115,7 @@ public:
 
 	bool			IsLawEnforcementVehicle();
 
-	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);
+	static void		(*SetComponentAtomicAlpha)(RpAtomic* pAtomic, int nAlpha);
 };
 
 class NOVMT CAutomobile : public CVehicle

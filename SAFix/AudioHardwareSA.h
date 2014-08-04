@@ -128,9 +128,6 @@ public:
 class CAEWaveDecoder : public CAEStreamingDecoder
 {
 private:
-	unsigned short	nNumChannels;
-	unsigned short	nBitRate;
-	unsigned int	nSampleRate;
 	unsigned int	nDataSize;
 	unsigned int	nOffsetToData;
 	//bool			bInitialised;

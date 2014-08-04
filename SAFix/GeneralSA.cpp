@@ -2,18 +2,13 @@
 #include "GeneralSA.h"
 
 // Wrappers
-WRAPPER bool CalcScreenCoors(const CVector& vecIn, CVector* vecOut) { WRAPARG(vecIn); WRAPARG(vecOut); EAXJMP(0x71DAB0); }
-WRAPPER void LoadingScreenLoadingFile(const char* pText) { WRAPARG(pText); EAXJMP(0x5B3680); }
+static void* EntityRender = AddressByVersion<void*>(0x534310, 0, 0);
+WRAPPER void CEntity::Render() { VARJMP(EntityRender); }
 
-WRAPPER void CEntity::UpdateRW() { EAXJMP(0x446F90); }
-WRAPPER void CEntity::RegisterReference(CEntity** pAddress) { WRAPARG(pAddress); EAXJMP(0x571B70); }
-WRAPPER void CEntity::CleanUpOldReference(CEntity** pAddress) { WRAPARG(pAddress); EAXJMP(0x571A00); }
-WRAPPER void CEntity::Render() { EAXJMP(0x534310); }
+static RwTexture*&						ms_pRemapTexture = **AddressByVersion<RwTexture***>(0x59F1BD, 0, 0);
+static unsigned char*					ms_currentCol = *AddressByVersion<unsigned char**>(0x4C84C8, 0, 0);
 
-static RwTexture*&						ms_pRemapTexture = *(RwTexture**)0xB4E47C;
-static unsigned char*					ms_currentCol = *(unsigned char**)0x4C84C8;
-
-WRAPPER RpAtomic* SetEditableMaterialsCB(RpAtomic* pMaterial, void* pData) { WRAPARG(pMaterial); WRAPARG(pData); EAXJMP(0x4C83E0); }
+auto	SetEditableMaterialsCB = AddressByVersion<RpAtomic*(*)(RpAtomic*,void*)>(0x4C83E0, 0, 0);
 
 static void SetVehicleColour(unsigned char primaryColour, unsigned char secondaryColour, unsigned char tertiaryColour, unsigned char quaternaryColour)
 {

@@ -77,6 +77,9 @@ CZoneInfo*&				pCurrZoneInfo = **AddressByVersion<CZoneInfo***>(0x58ADB1, 0, 0);
 CRGBA*					HudColour = *AddressByVersion<CRGBA**>(0x58ADF6, 0, 0);
 unsigned char*			ZonesVisited = *AddressByVersion<unsigned char**>(0x57216A, 0, 0) - 9;	
 
+float&					m_fDNBalanceParam = **AddressByVersion<float**>(0x4A9062, 0, 0);
+RpLight*&				pAmbient = **AddressByVersion<RpLight***>(0x5BA53A, 0, 0);
+
 CLinkListSA<CEntity*>&			ms_weaponPedsForPC = **AddressByVersion<CLinkListSA<CEntity*>**>(0x53EACA, 0, 0);
 CLinkListSA<AlphaObjectInfo>&	m_alphaList = **AddressByVersion<CLinkListSA<AlphaObjectInfo>**>(0x733A4D, 0, 0);
 
@@ -537,10 +540,9 @@ void SetShader(RxD3D9InstanceData* pInstData)
 {
 	if ( bRenderNVC )
 	{
-		// TODO: Daynight balance var
 		D3DMATRIX		outMat;
-		float			fEnvVars[2] = { *(float*)0x8D12C0, RpMaterialGetColor(pInstData->material)->alpha * (1.0f/255.0f) };
-		RwRGBAReal*		AmbientLight = RpLightGetColor(*(RpLight**)0xC886E8);
+		float			fEnvVars[2] = { m_fDNBalanceParam, RpMaterialGetColor(pInstData->material)->alpha * (1.0f/255.0f) };
+		RwRGBAReal*		AmbientLight = RpLightGetColor(pAmbient);
 
 		// Normalise the balance
 		if ( fEnvVars[0] < 0.0f )
@@ -551,6 +553,7 @@ void SetShader(RxD3D9InstanceData* pInstData)
 		RwD3D9SetVertexShader(pNVCShader);
 
 		_rwD3D9VSSetActiveWorldMatrix(RwFrameGetLTM(RpAtomicGetFrame(pRenderedAtomic)));
+		//_rwD3D9VSSetActiveWorldMatrix(RwFrameGetMatrix(RpAtomicGetFrame(pRenderedAtomic)));
 		_rwD3D9VSGetComposedTransformMatrix(&outMat);
 		
 		RwD3D9SetVertexShaderConstant(0, &outMat, 4);
@@ -1307,6 +1310,7 @@ __forceinline void Patch_SA_10()
 	// PS2 SUN!!!!!!!!!!!!!!!!!
 	static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
 
+	// TODO: Use min()
 	Nop(0x6FB17C, 3);
 	Patch<const void*>(0x6FC5B0, &fSunMult);
 	//Patch<WORD>(0x6FB172, 0x0BEB);

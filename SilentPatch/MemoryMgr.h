@@ -29,6 +29,12 @@ inline bool* GetEuropean()
 	return &bEuropean;
 }
 
+inline void* GetDummy()
+{
+	static DWORD		dwDummy;
+	return &dwDummy;
+}
+
 // This function initially detects SA version then chooses the address basing on game version
 template<typename T>
 inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
@@ -64,10 +70,16 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 			*bEuropean = false;
 		}
 	}
+
 	switch ( *bVer )
 	{
 	case 1:
 		assert(address11);
+
+		// Safety measures - if null, return dummy var pointer to prevent a crash
+		if ( !address11 )
+			return (T)GetDummy();
+
 		// Adjust to EU if needed
 		if ( *bEuropean && address11 > 0x746FA0 )
 		{
@@ -79,6 +91,10 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 		return (T)address11;
 	case 2:
 		assert(addressSteam);
+		// Safety measures - if null, return dummy var pointer to prevent a crash
+		if ( !addressSteam )
+			return (T)GetDummy();
+
 		return (T)addressSteam;
 	default:
 		assert(address10);

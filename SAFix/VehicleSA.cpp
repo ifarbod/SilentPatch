@@ -3,9 +3,12 @@
 #include "VehicleSA.h"
 #include "TimerSA.h"
 
-WRAPPER void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha) { WRAPARG(pAtomic); WRAPARG(nAlpha); EAXJMP(0x6D2960); }
-WRAPPER void CVehicle::Render() { EAXJMP(0x6D0E60); }
-WRAPPER bool CVehicle::IsLawEnforcementVehicle() { EAXJMP(0x6D2370); }
+void (*CVehicle::SetComponentAtomicAlpha)(RpAtomic* pAtomic, int nAlpha) = AddressByVersion<void(*)(RpAtomic*,int)>(0x6D2960, 0, 0);
+
+static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0, 0);
+WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
+static void*	varIsLawEnforcementVehicle = AddressByVersion<void*>(0x6D2370, 0, 0);
+WRAPPER bool CVehicle::IsLawEnforcementVehicle() { VARJMP(varIsLawEnforcementVehicle); }
 
 static RwObject* GetCurrentAtomicObjectCB(RwObject* pObject, void* data)
 {
