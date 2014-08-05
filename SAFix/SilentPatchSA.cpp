@@ -70,6 +70,7 @@ auto					RenderWeaponHooked = AddressByVersion<void(*)(CEntity*)>(0x732F95, 0, 0
 
 static BOOL				(*IsAlreadyRunning)();
 static void				(*TheScriptsLoad)();
+static void				(*WipeLocalVariableMemoryForMissionScript)();
 static bool				(*InitialiseRenderWare)();
 static void				(*ShutdownRenderWare)();
 static void				(*DoSunAndMoon)();
@@ -460,6 +461,8 @@ void TheScriptsLoad_BasketballFix()
 
 void StartNewMission_BasketballFix()
 {
+	WipeLocalVariableMemoryForMissionScript();
+
 	if ( ScriptParams[0] == 0 )
 		BasketballFix(ScriptSpace+200000, 69000);
 }
@@ -968,6 +971,7 @@ void __declspec(naked) HandleMoonStuffStub()
 static bool			bDarkVehicleThing;
 static RpLight*&	pDirect = **(RpLight***)0x5BA573;
 
+static void* DarkVehiclesFix1_JumpBack = *GetEuropean() == true ? (void*)0x756DE0 : (void*)0x756D90;
 void __declspec(naked) DarkVehiclesFix1()
 {
 	_asm
@@ -987,8 +991,7 @@ DarkVehiclesFix1_DontAppply:
 		mov		bDarkVehicleThing, 0
 
 DarkVehiclesFix1_Return:
-		mov		eax, 756D90h
-		jmp		eax
+		jmp		DarkVehiclesFix1_JumpBack
 	}
 }
 
@@ -1101,9 +1104,12 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x470B05, &CRunningScript::GetDay_GymGlitch, PATCH_CALL);
 
 			// Basketball fix
+			WipeLocalVariableMemoryForMissionScript = (void(*)())(*(int*)0x489A71 + 0x489A70 + 5);
 			TheScriptsLoad = (void(*)())(*(int*)0x5D18F1 + 0x5D18F0 + 5);
 			InjectHook(0x5D18F0, TheScriptsLoad_BasketballFix);
-			InjectHook(0x464BC0, StartNewMission_BasketballFix, PATCH_JUMP);
+			// Fixed for Hoodlum
+			InjectHook(0x489A70, StartNewMission_BasketballFix);
+			InjectHook(0x4899F0, StartNewMission_BasketballFix);
 		}
 
 		if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", TRUE, wcModulePath) != FALSE )
@@ -1143,7 +1149,7 @@ BOOL InjectDelayedPatches_10()
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", TRUE, wcModulePath) != FALSE )
 		{
 			// Skip the damn intro splash
-			Patch<WORD>(0x748AA8, 0x3DEB);
+			Patch<WORD>(AddressByRegion_10<DWORD>(0x748AA8), 0x3DEB);
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", TRUE, wcModulePath) != FALSE )
@@ -1221,8 +1227,9 @@ __forceinline void Patch_SA_10()
 	using namespace MemoryVP;
 
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
-	IsAlreadyRunning = (BOOL(*)())(*(int*)0x74872E + 0x74872D + 5);
-	InjectHook(0x74872D, InjectDelayedPatches_10);
+	int			pIsAlreadyRunning = AddressByRegion_10<int>(0x74872D);
+	IsAlreadyRunning = (BOOL(*)())(*(int*)(pIsAlreadyRunning+1) + pIsAlreadyRunning + 5);
+	InjectHook(pIsAlreadyRunning, InjectDelayedPatches_10);
 
 	//Patch<BYTE>(0x5D7265, 0xEB);
 
@@ -1269,7 +1276,7 @@ __forceinline void Patch_SA_10()
 	Patch<BYTE>(0x576F8A, 0xEB);
 
 	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
-	Patch<DWORD>(0x7469A0, 0x909000B0);
+	Patch<DWORD>(AddressByRegion_10<DWORD>(0x7469A0), 0x909000B0);
 
 	// Weapons rendering
 	InjectHook(0x5E7859, RenderWeapon);

@@ -110,6 +110,41 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 	}
 }
 
+template<typename T>
+inline T AddressByRegion_10(DWORD address10)
+{
+	bool*			bEuropean = GetEuropean();
+	signed char*	bVer = GetVer();
+
+	if ( *bVer == -1 )
+	{
+		if ( *(DWORD*)0x82457C == 0x94BF )
+		{
+			*bVer = 0;
+			*bEuropean = false;
+		}
+		else if ( *(DWORD*)0x8245BC == 0x94BF )
+		{
+			*bVer = 0;
+			*bEuropean = true;
+		}
+		else
+		{
+			assert(!"AddressByRegion_10 on non-1.0 EXE!");
+		}
+	}
+
+	// Adjust to EU if needed
+	if ( *bEuropean && address10 > 0x7466D0 )
+	{
+		if ( address10 < 0x7BA940 )
+			address10 += 0x50;
+		else
+			address10 += 0x40;
+	}
+	return (T)address10;
+}
+
 namespace Memory
 {
 	template<typename T, typename AT>
