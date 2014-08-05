@@ -27,7 +27,6 @@ RwTexture* CPNGFile::ReadFromMemory(const void* pMemory, unsigned int nLen)
 	static BYTE*	pMem = AddressByVersion<BYTE*>(0x7CF9CA, 0, 0);
 	RwTexture*		pTexture = nullptr;
 
-	// TOOO: EXEs
 	MemoryVP::Patch<BYTE>(pMem, rwSTREAMMEMORY);
 
 	RwMemory	PNGMemory;

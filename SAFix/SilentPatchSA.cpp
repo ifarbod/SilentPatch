@@ -9,34 +9,51 @@
 #include "PNGFile.h"
 
 // RW wrappers
-// TODO: Multiple EXEs
-WRAPPER RwFrame* RwFrameForAllObjects(RwFrame* frame, RwObjectCallBack callBack, void* data) { WRAPARG(frame); WRAPARG(callBack); WRAPARG(data); EAXJMP(0x7F1200); }
-WRAPPER RpClump* RpClumpForAllAtomics(RpClump* clump, RpAtomicCallBack callback, void* pData) { WRAPARG(clump); WRAPARG(callback); WRAPARG(pData); EAXJMP(0x749B70); }
-WRAPPER RpGeometry* RpGeometryForAllMaterials(RpGeometry* geometry, RpMaterialCallBack fpCallBack, void* pData) { WRAPARG(geometry); WRAPARG(fpCallBack); WRAPARG(pData); EAXJMP(0x74C790); }
-WRAPPER RpAtomic* AtomicDefaultRenderCallBack(RpAtomic* atomic) { WRAPARG(atomic); EAXJMP(0x7491C0); }
-WRAPPER RwImage* RtPNGImageRead(const RwChar* imageName) { WRAPARG(imageName); EAXJMP(0x7CF9B0); }
-WRAPPER RwTexture* RwTextureCreate(RwRaster* raster) { WRAPARG(raster); EAXJMP(0x7F37C0); }
-WRAPPER RwRaster* RwRasterCreate(RwInt32 width, RwInt32 height, RwInt32 depth, RwInt32 flags) { WRAPARG(width); WRAPARG(height); WRAPARG(depth); WRAPARG(flags); EAXJMP(0x7FB230); }
-WRAPPER RwRaster* RwRasterSetFromImage(RwRaster* raster, RwImage* image) { WRAPARG(raster); WRAPARG(image); EAXJMP(0x804290); }
-WRAPPER RwBool RwImageDestroy(RwImage* image) { WRAPARG(image); EAXJMP(0x802740); }
-WRAPPER RwImage* RwImageFindRasterFormat(RwImage* ipImage, RwInt32 nRasterType, RwInt32* npWidth, RwInt32* npHeight, RwInt32* npDepth, RwInt32* npFormat) { WRAPARG(ipImage); WRAPARG(nRasterType); WRAPARG(npWidth); WRAPARG(npHeight); WRAPARG(npDepth); WRAPARG(npFormat); EAXJMP(0x8042C0); }
-WRAPPER RpMaterial *RpMaterialSetTexture(RpMaterial *material, RwTexture *texture) { EAXJMP(0x74DBC0); }
-WRAPPER RwBool RwTextureDestroy(RwTexture* texture) { EAXJMP(0x7F3820); }
-WRAPPER void RwD3D9SetRenderState(RwUInt32 state, RwUInt32 value) { WRAPARG(state); WRAPARG(value); EAXJMP(0x7FC2D0); }
-WRAPPER void _rwD3D9SetVertexShader(void *shader) { EAXJMP(0x7F9FB0); }
-WRAPPER RwBool RwD3D9CreateVertexShader(const RwUInt32 *function, void **shader) { EAXJMP(0x7FAC60); }
-WRAPPER void RwD3D9DeleteVertexShader(void *shader) { EAXJMP(0x7FAC90); }
-WRAPPER void _rwD3D9VSGetComposedTransformMatrix(void *transformMatrix) { EAXJMP(0x7646E0); }
-WRAPPER void _rwD3D9VSSetActiveWorldMatrix(const RwMatrix *worldMatrix) { EAXJMP(0x764650); }
-WRAPPER RwMatrix* RwFrameGetLTM(RwFrame* frame) { EAXJMP(0x7F0990); }
+static void* varRwFrameForAllObjects = AddressByVersion<void*>(0x7F1200, 0, 0);
+WRAPPER RwFrame* RwFrameForAllObjects(RwFrame* frame, RwObjectCallBack callBack, void* data) { WRAPARG(frame); WRAPARG(callBack); WRAPARG(data); VARJMP(varRwFrameForAllObjects); }
+static void* varRpClumpForAllAtomics = AddressByVersion<void*>(0x749B70, 0, 0);
+WRAPPER RpClump* RpClumpForAllAtomics(RpClump* clump, RpAtomicCallBack callback, void* pData) { WRAPARG(clump); WRAPARG(callback); WRAPARG(pData); VARJMP(varRpClumpForAllAtomics); }
+static void* varRpGeometryForAllMaterials = AddressByVersion<void*>(0x74C790, 0, 0);
+WRAPPER RpGeometry* RpGeometryForAllMaterials(RpGeometry* geometry, RpMaterialCallBack fpCallBack, void* pData) { WRAPARG(geometry); WRAPARG(fpCallBack); WRAPARG(pData); VARJMP(varRpGeometryForAllMaterials); }
+static void* varAtomicDefaultRenderCallBack = AddressByVersion<void*>(0x7491C0, 0, 0);
+WRAPPER RpAtomic* AtomicDefaultRenderCallBack(RpAtomic* atomic) { WRAPARG(atomic); VARJMP(varAtomicDefaultRenderCallBack); }
+static void* varRtPNGImageRead = AddressByVersion<void*>(0x7CF9B0, 0, 0);
+WRAPPER RwImage* RtPNGImageRead(const RwChar* imageName) { WRAPARG(imageName); VARJMP(varRtPNGImageRead); }
+static void* varRwTextureCreate = AddressByVersion<void*>(0x7F37C0, 0, 0);
+WRAPPER RwTexture* RwTextureCreate(RwRaster* raster) { WRAPARG(raster); VARJMP(varRwTextureCreate); }
+static void* varRwRasterCreate = AddressByVersion<void*>(0x7FB230, 0, 0);
+WRAPPER RwRaster* RwRasterCreate(RwInt32 width, RwInt32 height, RwInt32 depth, RwInt32 flags) { WRAPARG(width); WRAPARG(height); WRAPARG(depth); WRAPARG(flags); VARJMP(varRwRasterCreate); }
+static void* varRwRasterSetFromImage = AddressByVersion<void*>(0x804290, 0, 0);
+WRAPPER RwRaster* RwRasterSetFromImage(RwRaster* raster, RwImage* image) { WRAPARG(raster); WRAPARG(image); VARJMP(varRwRasterSetFromImage); }
+static void* varRwImageDestroy = AddressByVersion<void*>(0x802740, 0, 0);
+WRAPPER RwBool RwImageDestroy(RwImage* image) { WRAPARG(image); VARJMP(varRwImageDestroy); }
+static void* varRwImageFindRasterFormat = AddressByVersion<void*>(0x8042C0, 0, 0);
+WRAPPER RwImage* RwImageFindRasterFormat(RwImage* ipImage, RwInt32 nRasterType, RwInt32* npWidth, RwInt32* npHeight, RwInt32* npDepth, RwInt32* npFormat) { WRAPARG(ipImage); WRAPARG(nRasterType); WRAPARG(npWidth); WRAPARG(npHeight); WRAPARG(npDepth); WRAPARG(npFormat); VARJMP(varRwImageFindRasterFormat); }
+static void* varRpMaterialSetTexture = AddressByVersion<void*>(0x74DBC0, 0, 0);
+WRAPPER RpMaterial *RpMaterialSetTexture(RpMaterial *material, RwTexture *texture) { VARJMP(varRpMaterialSetTexture); }
+static void* varRwD3D9SetRenderState = AddressByVersion<void*>(0x7FC2D0, 0, 0);
+WRAPPER void RwD3D9SetRenderState(RwUInt32 state, RwUInt32 value) { WRAPARG(state); WRAPARG(value); VARJMP(varRwD3D9SetRenderState); }
+static void* var_rwD3D9SetVertexShader = AddressByVersion<void*>(0x7F9FB0, 0, 0);
+WRAPPER void _rwD3D9SetVertexShader(void *shader) { VARJMP(var_rwD3D9SetVertexShader); }
+static void* varRwD3D9CreateVertexShader = AddressByVersion<void*>(0x7FAC60, 0, 0);
+WRAPPER RwBool RwD3D9CreateVertexShader(const RwUInt32 *function, void **shader) { VARJMP(varRwD3D9CreateVertexShader); }
+static void* varRwD3D9DeleteVertexShader = AddressByVersion<void*>(0x7FAC90, 0, 0);
+WRAPPER void RwD3D9DeleteVertexShader(void *shader) { VARJMP(varRwD3D9DeleteVertexShader); }
+static void* var_rwD3D9VSGetComposedTransformMatrix = AddressByVersion<void*>(0x7646E0, 0, 0);
+WRAPPER void _rwD3D9VSGetComposedTransformMatrix(void *transformMatrix) { VARJMP(var_rwD3D9VSGetComposedTransformMatrix); }
+static void* var_rwD3D9VSSetActiveWorldMatrix = AddressByVersion<void*>(0x764650, 0, 0);
+WRAPPER void _rwD3D9VSSetActiveWorldMatrix(const RwMatrix *worldMatrix) { VARJMP(var_rwD3D9VSSetActiveWorldMatrix); }
+static void* varRwFrameGetLTM = AddressByVersion<void*>(0x7F0990, 0, 0);
+WRAPPER RwMatrix* RwFrameGetLTM(RwFrame* frame) { VARJMP(varRwFrameGetLTM); }
+static void* var_rwD3D9SetVertexShaderConstant = AddressByVersion<void*>(0x7FACA0, 0, 0);
 WRAPPER void _rwD3D9SetVertexShaderConstant(RwUInt32 registerAddress,
                                const void *constantData,
-							   RwUInt32  constantCount) { EAXJMP(0x7FACA0); }
-
+							   RwUInt32  constantCount) { VARJMP(var_rwD3D9SetVertexShaderConstant); }
+static void* var_rpD3D9VertexDeclarationInstColor = AddressByVersion<void*>(0x754AE0, 0, 0);
 WRAPPER RwBool _rpD3D9VertexDeclarationInstColor(RwUInt8 *mem,
                                   const RwRGBA *color,
                                   RwInt32 numVerts,
-								  RwUInt32 stride) { EAXJMP(0x754AE0); }
+								  RwUInt32 stride) { VARJMP(var_rpD3D9VertexDeclarationInstColor); }
 
 // Other wrappers
 void					(*GTAdelete)(void*) = AddressByVersion<void(*)(void*)>(0x82413F, 0, 0);
@@ -55,6 +72,7 @@ static BOOL				(*IsAlreadyRunning)();
 static void				(*TheScriptsLoad)();
 static bool				(*InitialiseRenderWare)();
 static void				(*ShutdownRenderWare)();
+static void				(*DoSunAndMoon)();
 static void				(*sub_5DA6A0)(void*, void*, void*, void*);
 
 
@@ -85,6 +103,7 @@ CLinkListSA<AlphaObjectInfo>&	m_alphaList = **AddressByVersion<CLinkListSA<Alpha
 
 
 // Custom variables
+static float		fSunFarClip;
 static RwTexture*	gpMoonMask = nullptr;
 static HMODULE		hDLLModule;
 static struct
@@ -508,6 +527,12 @@ CRGBA* CRGBA::BlendGangColour(unsigned char r, unsigned char g, unsigned char b,
 	this->a = a;
 
 	return this;
+}
+
+void SunAndMoonFarClip()
+{
+	fSunFarClip = min(1500.0f, fFarClipZ);
+	DoSunAndMoon();
 }
 
 #include "nvc.h"
@@ -1050,6 +1075,10 @@ BOOL InjectDelayedPatches_10()
 
 		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
 		bool		bSAMP = GetModuleHandle("samp") != nullptr;
+
+		// PS2 sun - more
+		DoSunAndMoon = (void(*)())(*(int*)0x53C137 + 0x53C136 + 5);
+		InjectHook(0x53C136, SunAndMoonFarClip);
 		
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", FALSE, wcModulePath) != FALSE )
 		{
@@ -1310,9 +1339,9 @@ __forceinline void Patch_SA_10()
 	// PS2 SUN!!!!!!!!!!!!!!!!!
 	static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
 
-	// TODO: Use min()
 	Nop(0x6FB17C, 3);
 	Patch<const void*>(0x6FC5B0, &fSunMult);
+	Patch<const void*>(0x6FC5AA, &fSunFarClip);
 	//Patch<WORD>(0x6FB172, 0x0BEB);
 	//Patch<BYTE>(0x6FB1A7, 8);
 
