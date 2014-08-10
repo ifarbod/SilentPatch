@@ -1401,6 +1401,11 @@ __forceinline void Patch_SA_10()
 	// Impounding after busted works
 	Nop(0x443292, 5);
 
+	// Mouse rotates an airbone car only with Steer with Mouse option enabled
+	bool*	bEnableMouseSteering = *(bool**)0x6AD7AD; // CVehicle::m_bEnableMouseSteering
+	Patch<bool*>(0x6B4EC0, bEnableMouseSteering);
+	Patch<bool*>(0x6CE827, bEnableMouseSteering);
+
 	// Zones fix
 	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
 
