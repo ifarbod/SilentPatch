@@ -1217,6 +1217,14 @@ BOOL InjectDelayedPatches_10()
 			Nop(0x6D6517, 2);
 		}
 
+		// Bigger streamed entity linked lists
+		// Increase only if they're not increased already
+		if ( *(DWORD*)0x5B8E55 == 12000 )
+		{
+			Patch<DWORD>(0x5B8E55, 15000);
+			Patch<DWORD>(0x5B8EB0, 15000);
+		}
+
 		return FALSE;
 	}
 	return TRUE;
