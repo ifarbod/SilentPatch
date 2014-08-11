@@ -86,6 +86,16 @@ struct CVehicleFlags
     unsigned char bUsedForReplay: 1; // This car is controlled by replay and should be removed when replay is done.
 };
 
+class CBouncingPanel
+{
+public:
+	short	m_nNodeIndex;
+	short	m_nBouncingType;
+	float	m_fBounceRange;
+	CVector	field_8;
+	CVector	m_vecBounceVector;
+};
+
 class NOVMT CVehicle	: public CPhysical
 {
 protected:
@@ -121,13 +131,15 @@ public:
 class NOVMT CAutomobile : public CVehicle
 {
 public:
-	BYTE		paddd[172];
-	RwFrame*	m_pCarNode[20];		// May be wrong?
-	BYTE		padding[432];
-	float		m_fRotorSpeed;
-	BYTE		__moarpad[312];
+	BYTE			paddd[168];
+	RwFrame*		m_pCarNode[25];
+	CBouncingPanel	m_aBouncingPanel[3];
+	BYTE			padding[320];
+	float			m_fRotorSpeed;
+	BYTE			__moarpad[312];
 
 public:
+	void		Fix_SilentPatch();
 };
 
 class NOVMT CHeli : public CAutomobile
@@ -152,6 +164,7 @@ public:
 	virtual void		Render() override;
 };
 
+static_assert(sizeof(CBouncingPanel) == 0x20, "Wrong size: CBouncingPanel");
 static_assert(sizeof(CVehicle) == 0x5A0, "Wrong size: CVehicle");
 static_assert(sizeof(CAutomobile) == 0x988, "Wrong size: CAutomobile");
 

@@ -1406,6 +1406,18 @@ __forceinline void Patch_SA_10()
 	Patch<bool*>(0x6B4EC0, bEnableMouseSteering);
 	Patch<bool*>(0x6CE827, bEnableMouseSteering);
 
+	// Patched CAutomobile::Fix
+	// misc_x parts don't get reset (Bandito fix), Towtruck's bouncing panel is not reset
+	//Patch<WORD>(0x6A34C9, 0x5EEB);
+	Patch<DWORD>(0x6A34D0, 10);
+	Patch<DWORD>(0x6A3555, 0x5E5FCF8B);
+	Patch<DWORD>(0x6A3559, 0x448B5B5D);
+	Patch<DWORD>(0x6A355D, 0x89644824);
+	Patch<DWORD>(0x6A3561, 5);
+	Patch<DWORD>(0x6A3565, 0x54C48300);
+	InjectHook(0x6A3569, &CAutomobile::Fix_SilentPatch, PATCH_JUMP);
+	
+
 	// Zones fix
 	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
 

@@ -98,8 +98,8 @@ void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo
 void CHeli::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
-	bool		bHasMovingRotor = m_pCarNode[12] != nullptr;
-	bool		bHasMovingRotor2 = m_pCarNode[14] != nullptr;
+	bool		bHasMovingRotor = m_pCarNode[13] != nullptr;
+	bool		bHasMovingRotor2 = m_pCarNode[15] != nullptr;
 
 	m_nTimeTillWeNeedThisCar = CTimer::m_snTimeInMilliseconds + 3000;
 
@@ -115,18 +115,18 @@ void CHeli::Render()
 	int			nStaticRotorAlpha = static_cast<int>(min((1.5-dRotorsSpeed) * 255.0, 255));
 	int			nMovingRotorAlpha = static_cast<int>(min(dMovingRotorSpeed * 175.0, 175));
 
-	if ( m_pCarNode[11] )
+	if ( m_pCarNode[12] )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[11], GetCurrentAtomicObjectCB, &pOutAtomic);
+		RwFrameForAllObjects(m_pCarNode[12], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingRotor ? nStaticRotorAlpha : 255);
 	}
 
-	if ( m_pCarNode[13] )
+	if ( m_pCarNode[14] )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[13], GetCurrentAtomicObjectCB, &pOutAtomic);
+		RwFrameForAllObjects(m_pCarNode[14], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingRotor2 ? nStaticRotorAlpha : 255);
 	}
@@ -134,7 +134,7 @@ void CHeli::Render()
 	if ( bHasMovingRotor )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[12], GetCurrentAtomicObjectCB, &pOutAtomic);
+		RwFrameForAllObjects(m_pCarNode[13], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
 			SetComponentAtomicAlpha(pOutAtomic, nMovingRotorAlpha);
 	}
@@ -142,7 +142,7 @@ void CHeli::Render()
 	if ( bHasMovingRotor2 )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[14], GetCurrentAtomicObjectCB, &pOutAtomic);
+		RwFrameForAllObjects(m_pCarNode[15], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
 			SetComponentAtomicAlpha(pOutAtomic, nMovingRotorAlpha);
 	}
@@ -153,8 +153,8 @@ void CHeli::Render()
 void CPlane::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
-	bool		bHasMovingProp = m_pCarNode[12] != nullptr;
-	bool		bHasMovingProp2 = m_pCarNode[14] != nullptr;
+	bool		bHasMovingProp = m_pCarNode[13] != nullptr;
+	bool		bHasMovingProp2 = m_pCarNode[15] != nullptr;
 
 	m_nTimeTillWeNeedThisCar = CTimer::m_snTimeInMilliseconds + 3000;
 
@@ -170,18 +170,18 @@ void CPlane::Render()
 	int			nStaticRotorAlpha = static_cast<int>(min((1.5-dRotorsSpeed) * 255.0, 255));
 	int			nMovingRotorAlpha = static_cast<int>(min(dMovingRotorSpeed * 175.0, 175));
 
-	if ( m_pCarNode[11] )
+	if ( m_pCarNode[12] )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[11], GetCurrentAtomicObjectCB, &pOutAtomic);
+		RwFrameForAllObjects(m_pCarNode[12], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingProp ? nStaticRotorAlpha : 255);
 	}
 
-	if ( m_pCarNode[13] )
+	if ( m_pCarNode[14] )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[13], GetCurrentAtomicObjectCB, &pOutAtomic);
+		RwFrameForAllObjects(m_pCarNode[14], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingProp2 ? nStaticRotorAlpha : 255);
 	}
@@ -189,7 +189,7 @@ void CPlane::Render()
 	if ( bHasMovingProp )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[12], GetCurrentAtomicObjectCB, &pOutAtomic);
+		RwFrameForAllObjects(m_pCarNode[13], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
 			SetComponentAtomicAlpha(pOutAtomic, nMovingRotorAlpha);
 	}
@@ -197,10 +197,22 @@ void CPlane::Render()
 	if ( bHasMovingProp2 )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[14], GetCurrentAtomicObjectCB, &pOutAtomic);
+		RwFrameForAllObjects(m_pCarNode[15], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
 			SetComponentAtomicAlpha(pOutAtomic, nMovingRotorAlpha);
 	}
 
 	CVehicle::Render();
+}
+
+void CAutomobile::Fix_SilentPatch()
+{
+	// Reset bouncing panels
+	for ( int i = 0; i < 3; i++ )
+	{
+		// Towtruck/Tractor fix
+		if ( i == 0 && (m_nModelIndex == 525 && m_pCarNode[21]) || (m_nModelIndex == 531 && m_pCarNode[17]) )
+			continue;
+		m_aBouncingPanel[i].m_nNodeIndex = -1;
+	}
 }
