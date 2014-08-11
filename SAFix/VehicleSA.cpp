@@ -211,7 +211,8 @@ void CAutomobile::Fix_SilentPatch()
 	for ( int i = 0; i < 3; i++ )
 	{
 		// Towtruck/Tractor fix
-		if ( i == 0 && (m_nModelIndex == 525 && m_pCarNode[21]) || (m_nModelIndex == 531 && m_pCarNode[17]) )
+		// + no reset on Vortex
+		if ( i == 0 && ((m_nModelIndex == 525 && m_pCarNode[21]) || (m_nModelIndex == 531 && m_pCarNode[17]) || m_nModelIndex == 539) )
 			continue;
 		m_aBouncingPanel[i].m_nNodeIndex = -1;
 	}

@@ -1416,6 +1416,13 @@ __forceinline void Patch_SA_10()
 	Patch<DWORD>(0x6A3561, 5);
 	Patch<DWORD>(0x6A3565, 0x54C48300);
 	InjectHook(0x6A3569, &CAutomobile::Fix_SilentPatch, PATCH_JUMP);
+
+	// Patched CPlane::Fix
+	// Doors don't get reset (they can't get damaged anyway), bouncing panels DO reset
+	// but not on Vortex
+	Patch<BYTE>(0x6CABD0, 0xEB);
+	Patch<DWORD>(0x6CAC05, 0x5E5FCF8B);
+	InjectHook(0x6CAC09, &CAutomobile::Fix_SilentPatch, PATCH_JUMP);
 	
 
 	// Zones fix
