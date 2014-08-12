@@ -1430,7 +1430,7 @@ __forceinline void Patch_SA_10()
 	// but not on Vortex
 	Patch<BYTE>(0x6CABD0, 0xEB);
 	Patch<DWORD>(0x6CAC05, 0x5E5FCF8B);
-	InjectHook(0x6CAC09, &CAutomobile::Fix_SilentPatch, PATCH_JUMP);
+	InjectHook(0x6CAC09, &CPlane::Fix_SilentPatch, PATCH_JUMP);
 	
 
 	// Zones fix

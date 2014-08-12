@@ -220,6 +220,18 @@ void CPlane::Render()
 	CVehicle::Render();
 }
 
+void CPlane::Fix_SilentPatch()
+{
+	// Reset bouncing panels
+	for ( int i = 0; i < 3; i++ )
+	{
+		// No reset on Vortex
+		if ( i == 0 && m_nModelIndex == 539 )
+			continue;
+		m_aBouncingPanel[i].m_nNodeIndex = -1;
+	}
+}
+
 void CAutomobile::Fix_SilentPatch()
 {
 	ResetFrames();
@@ -228,8 +240,7 @@ void CAutomobile::Fix_SilentPatch()
 	for ( int i = 0; i < 3; i++ )
 	{
 		// Towtruck/Tractor fix
-		// + no reset on Vortex
-		if ( i == 0 && ((m_nModelIndex == 525 && m_pCarNode[21]) || (m_nModelIndex == 531 && m_pCarNode[17]) || m_nModelIndex == 539) )
+		if ( i == 0 && ((m_nModelIndex == 525 && m_pCarNode[21]) || (m_nModelIndex == 531 && m_pCarNode[17])) )
 			continue;
 		m_aBouncingPanel[i].m_nNodeIndex = -1;
 	}

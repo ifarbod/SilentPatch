@@ -164,6 +164,8 @@ public:
 	{ CPlane::Render(); }
 
 	virtual void		Render() override;
+
+	void				Fix_SilentPatch();
 };
 
 static_assert(sizeof(CBouncingPanel) == 0x20, "Wrong size: CBouncingPanel");
