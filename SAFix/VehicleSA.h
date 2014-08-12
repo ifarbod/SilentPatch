@@ -140,6 +140,8 @@ public:
 
 public:
 	void		Fix_SilentPatch();
+
+	void		ResetFrames();
 };
 
 class NOVMT CHeli : public CAutomobile

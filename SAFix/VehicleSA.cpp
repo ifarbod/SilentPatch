@@ -20,6 +20,21 @@ static RwObject* GetCurrentAtomicObjectCB(RwObject* pObject, void* data)
 	return pObject;
 }
 
+static RwFrame* GetFrameFromNameCB(RwFrame* pFrame, void* pData)
+{
+	// Is this a frame we want?
+	std::pair<const char*,RwFrame*>*	pFindData = static_cast<std::pair<const char*,RwFrame*>*>(pData);
+	if ( !strncmp(pFindData->first, GetFrameNodeName(pFrame), 24) )
+	{
+		pFindData->second = pFrame;
+		return nullptr;
+	}
+
+	// Try children
+	RwFrameForAllChildren(pFrame, GetFrameFromNameCB, pData);
+	return !pFindData->second ? pFrame : nullptr;
+}
+
 bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 {
 	char		PlateText[8];
@@ -207,6 +222,8 @@ void CPlane::Render()
 
 void CAutomobile::Fix_SilentPatch()
 {
+	ResetFrames();
+
 	// Reset bouncing panels
 	for ( int i = 0; i < 3; i++ )
 	{
@@ -215,5 +232,31 @@ void CAutomobile::Fix_SilentPatch()
 		if ( i == 0 && ((m_nModelIndex == 525 && m_pCarNode[21]) || (m_nModelIndex == 531 && m_pCarNode[17]) || m_nModelIndex == 539) )
 			continue;
 		m_aBouncingPanel[i].m_nNodeIndex = -1;
+	}
+}
+
+void CAutomobile::ResetFrames()
+{
+	RpClump*	pOrigClump = reinterpret_cast<RpClump*>(ms_modelInfoPtrs[m_nModelIndex]->pRwObject);
+	if ( pOrigClump )
+	{
+		// Instead of setting frame rotation to (0,0,0) like R* did, obtain the original frame matrix from CBaseNodelInfo clump
+		for ( int i = 8; i < 25; i++ )
+		{
+			if ( m_pCarNode[i] )
+			{
+				// Find a frame in CBaseModelInfo object
+				std::pair<const char*,RwFrame*>		FindData = std::make_pair(GetFrameNodeName(m_pCarNode[i]), nullptr);
+
+				RwFrameForAllChildren(RpClumpGetFrame(pOrigClump), GetFrameFromNameCB, &FindData);
+
+				if ( FindData.second )
+				{
+					// Found a frame, reset it
+					*RwFrameGetMatrix(m_pCarNode[i]) = *RwFrameGetMatrix(FindData.second);
+					RwMatrixUpdate(RwFrameGetMatrix(m_pCarNode[i]));
+				}
+			}
+		}
 	}
 }

@@ -281,6 +281,8 @@ public:
 	static RpMaterial*		GetEditableMaterialListCB(RpMaterial* pMaterial, void* pData);
 };
 
+extern CBaseModelInfo** const		ms_modelInfoPtrs;
+
 #define NUM_MAX_PLATES		12
 
 class CCustomCarPlateMgr

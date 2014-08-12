@@ -9,6 +9,8 @@
 #include "PNGFile.h"
 
 // RW wrappers
+static void* varRwFrameForAllChildren = AddressByVersion<void*>(0x7F0DC0, 0, 0);
+WRAPPER RwFrame* RwFrameForAllChildren(RwFrame* frame, RwFrameCallBack callBack, void* data) { WRAPARG(frame); WRAPARG(callBack); WRAPARG(data); VARJMP(varRwFrameForAllChildren); }
 static void* varRwFrameForAllObjects = AddressByVersion<void*>(0x7F1200, 0, 0);
 WRAPPER RwFrame* RwFrameForAllObjects(RwFrame* frame, RwObjectCallBack callBack, void* data) { WRAPARG(frame); WRAPARG(callBack); WRAPARG(data); VARJMP(varRwFrameForAllObjects); }
 static void* varRpClumpForAllAtomics = AddressByVersion<void*>(0x749B70, 0, 0);
@@ -55,14 +57,20 @@ WRAPPER RwBool _rpD3D9VertexDeclarationInstColor(RwUInt8 *mem,
                                   RwInt32 numVerts,
 								  RwUInt32 stride) { VARJMP(var_rpD3D9VertexDeclarationInstColor); }
 
+RwMatrix* RwMatrixUpdate(RwMatrix* matrix)
+{
+	matrix->flags &= ~(rwMATRIXTYPEMASK|rwMATRIXINTERNALIDENTITY);
+	return matrix;
+}
+
 // Other wrappers
 void					(*GTAdelete)(void*) = AddressByVersion<void(*)(void*)>(0x82413F, 0, 0);
+const char*				(*GetFrameNodeName)(RwFrame*) = AddressByVersion<const char*(*)(RwFrame*)>(0x72FB30, 0, 0);
 auto					SetVolume = AddressByVersion<void(__thiscall*)(void*,float)>(0x4D7C60, 0, 0);
 auto					InitializeUtrax = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0, 0);
 auto					CanSeeOutSideFromCurrArea = AddressByVersion<bool(*)()>(0x53C4A0, 0, 0);
 
 auto					__rwD3D9TextureHasAlpha = AddressByVersion<BOOL(*)(RwTexture*)>(0x4C9EA0, 0, 0);
-auto					GetFrameNodeName = AddressByVersion<const char*(*)(RwFrame*)>(0x72FB30, 0, 0);
 auto					RenderOneXLUSprite = AddressByVersion<void(*)(float, float, float, float, float, int, int, int, int, float, char, char, char)>(0x70D000, 0, 0);
 
 // That function is fake
@@ -1408,8 +1416,8 @@ __forceinline void Patch_SA_10()
 
 	// Patched CAutomobile::Fix
 	// misc_x parts don't get reset (Bandito fix), Towtruck's bouncing panel is not reset
-	//Patch<WORD>(0x6A34C9, 0x5EEB);
-	Patch<DWORD>(0x6A34D0, 10);
+	Patch<WORD>(0x6A34C9, 0x5EEB);
+	//Patch<DWORD>(0x6A34D0, 10);
 	Patch<DWORD>(0x6A3555, 0x5E5FCF8B);
 	Patch<DWORD>(0x6A3559, 0x448B5B5D);
 	Patch<DWORD>(0x6A355D, 0x89644824);
