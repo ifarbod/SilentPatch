@@ -9,14 +9,6 @@
 #include "PNGFile.h"
 
 // RW wrappers
-static void* varRwFrameForAllChildren = AddressByVersion<void*>(0x7F0DC0, 0, 0);
-WRAPPER RwFrame* RwFrameForAllChildren(RwFrame* frame, RwFrameCallBack callBack, void* data) { WRAPARG(frame); WRAPARG(callBack); WRAPARG(data); VARJMP(varRwFrameForAllChildren); }
-static void* varRwFrameForAllObjects = AddressByVersion<void*>(0x7F1200, 0, 0);
-WRAPPER RwFrame* RwFrameForAllObjects(RwFrame* frame, RwObjectCallBack callBack, void* data) { WRAPARG(frame); WRAPARG(callBack); WRAPARG(data); VARJMP(varRwFrameForAllObjects); }
-static void* varRpClumpForAllAtomics = AddressByVersion<void*>(0x749B70, 0, 0);
-WRAPPER RpClump* RpClumpForAllAtomics(RpClump* clump, RpAtomicCallBack callback, void* pData) { WRAPARG(clump); WRAPARG(callback); WRAPARG(pData); VARJMP(varRpClumpForAllAtomics); }
-static void* varRpGeometryForAllMaterials = AddressByVersion<void*>(0x74C790, 0, 0);
-WRAPPER RpGeometry* RpGeometryForAllMaterials(RpGeometry* geometry, RpMaterialCallBack fpCallBack, void* pData) { WRAPARG(geometry); WRAPARG(fpCallBack); WRAPARG(pData); VARJMP(varRpGeometryForAllMaterials); }
 static void* varAtomicDefaultRenderCallBack = AddressByVersion<void*>(0x7491C0, 0, 0);
 WRAPPER RpAtomic* AtomicDefaultRenderCallBack(RpAtomic* atomic) { WRAPARG(atomic); VARJMP(varAtomicDefaultRenderCallBack); }
 static void* varRtPNGImageRead = AddressByVersion<void*>(0x7CF9B0, 0, 0);
@@ -25,14 +17,12 @@ static void* varRwTextureCreate = AddressByVersion<void*>(0x7F37C0, 0, 0);
 WRAPPER RwTexture* RwTextureCreate(RwRaster* raster) { WRAPARG(raster); VARJMP(varRwTextureCreate); }
 static void* varRwRasterCreate = AddressByVersion<void*>(0x7FB230, 0, 0);
 WRAPPER RwRaster* RwRasterCreate(RwInt32 width, RwInt32 height, RwInt32 depth, RwInt32 flags) { WRAPARG(width); WRAPARG(height); WRAPARG(depth); WRAPARG(flags); VARJMP(varRwRasterCreate); }
-static void* varRwRasterSetFromImage = AddressByVersion<void*>(0x804290, 0, 0);
-WRAPPER RwRaster* RwRasterSetFromImage(RwRaster* raster, RwImage* image) { WRAPARG(raster); WRAPARG(image); VARJMP(varRwRasterSetFromImage); }
 static void* varRwImageDestroy = AddressByVersion<void*>(0x802740, 0, 0);
 WRAPPER RwBool RwImageDestroy(RwImage* image) { WRAPARG(image); VARJMP(varRwImageDestroy); }
-static void* varRwImageFindRasterFormat = AddressByVersion<void*>(0x8042C0, 0, 0);
-WRAPPER RwImage* RwImageFindRasterFormat(RwImage* ipImage, RwInt32 nRasterType, RwInt32* npWidth, RwInt32* npHeight, RwInt32* npDepth, RwInt32* npFormat) { WRAPARG(ipImage); WRAPARG(nRasterType); WRAPARG(npWidth); WRAPARG(npHeight); WRAPARG(npDepth); WRAPARG(npFormat); VARJMP(varRwImageFindRasterFormat); }
 static void* varRpMaterialSetTexture = AddressByVersion<void*>(0x74DBC0, 0, 0);
 WRAPPER RpMaterial *RpMaterialSetTexture(RpMaterial *material, RwTexture *texture) { VARJMP(varRpMaterialSetTexture); }
+static void* varRwFrameGetLTM = AddressByVersion<void*>(0x7F0990, 0, 0);
+WRAPPER RwMatrix* RwFrameGetLTM(RwFrame* frame) { VARJMP(varRwFrameGetLTM); }
 static void* varRwD3D9SetRenderState = AddressByVersion<void*>(0x7FC2D0, 0, 0);
 WRAPPER void RwD3D9SetRenderState(RwUInt32 state, RwUInt32 value) { WRAPARG(state); WRAPARG(value); VARJMP(varRwD3D9SetRenderState); }
 static void* var_rwD3D9SetVertexShader = AddressByVersion<void*>(0x7F9FB0, 0, 0);
@@ -45,8 +35,6 @@ static void* var_rwD3D9VSGetComposedTransformMatrix = AddressByVersion<void*>(0x
 WRAPPER void _rwD3D9VSGetComposedTransformMatrix(void *transformMatrix) { VARJMP(var_rwD3D9VSGetComposedTransformMatrix); }
 static void* var_rwD3D9VSSetActiveWorldMatrix = AddressByVersion<void*>(0x764650, 0, 0);
 WRAPPER void _rwD3D9VSSetActiveWorldMatrix(const RwMatrix *worldMatrix) { VARJMP(var_rwD3D9VSSetActiveWorldMatrix); }
-static void* varRwFrameGetLTM = AddressByVersion<void*>(0x7F0990, 0, 0);
-WRAPPER RwMatrix* RwFrameGetLTM(RwFrame* frame) { VARJMP(varRwFrameGetLTM); }
 static void* var_rwD3D9SetVertexShaderConstant = AddressByVersion<void*>(0x7FACA0, 0, 0);
 WRAPPER void _rwD3D9SetVertexShaderConstant(RwUInt32 registerAddress,
                                const void *constantData,
@@ -57,10 +45,77 @@ WRAPPER RwBool _rpD3D9VertexDeclarationInstColor(RwUInt8 *mem,
                                   RwInt32 numVerts,
 								  RwUInt32 stride) { VARJMP(var_rpD3D9VertexDeclarationInstColor); }
 
+
+RwFrame* RwFrameForAllChildren(RwFrame* frame, RwFrameCallBack callBack, void* data)
+{
+	for ( RwFrame* curFrame = frame->child; curFrame; curFrame = curFrame->next )
+	{
+		if ( !callBack(curFrame, data) )
+			break;
+	}
+	return frame;
+}
+
+RwFrame* RwFrameForAllObjects(RwFrame* frame, RwObjectCallBack callBack, void* data)
+{
+	for ( RwLLLink* link = rwLinkListGetFirstLLLink(&frame->objectList); link != rwLinkListGetTerminator(&frame->objectList); link = rwLLLinkGetNext(link) )
+	{
+		if ( !callBack(&rwLLLinkGetData(link, RwObjectHasFrame, lFrame)->object, data) )
+			break;
+	}
+
+	return frame;
+}
+
 RwMatrix* RwMatrixUpdate(RwMatrix* matrix)
 {
 	matrix->flags &= ~(rwMATRIXTYPEMASK|rwMATRIXINTERNALIDENTITY);
 	return matrix;
+}
+
+RwRaster* RwRasterSetFromImage(RwRaster* raster, RwImage* image)
+{
+	if ( RWSRCGLOBAL(stdFunc[rwSTANDARDRASTERSETIMAGE])(raster, image, 0) != FALSE )
+	{
+		if ( image->flags & rwIMAGEGAMMACORRECTED )
+			raster->privateFlags |= rwRASTERGAMMACORRECTED;
+		return raster;
+	}
+	return NULL;
+}
+
+RwImage* RwImageFindRasterFormat(RwImage* ipImage, RwInt32 nRasterType, RwInt32* npWidth, RwInt32* npHeight, RwInt32* npDepth, RwInt32* npFormat)
+{
+	RwRaster	outRaster;
+	if ( RWSRCGLOBAL(stdFunc[rwSTANDARDIMAGEFINDRASTERFORMAT])(&outRaster, ipImage, nRasterType) != FALSE )
+	{
+		*npFormat = RwRasterGetFormat(&outRaster) | outRaster.cType;
+		*npWidth = RwRasterGetWidth(&outRaster);
+		*npHeight = RwRasterGetHeight(&outRaster);
+		*npDepth = RwRasterGetDepth(&outRaster);
+		return ipImage;
+	}
+	return NULL;
+}
+
+RpClump* RpClumpForAllAtomics(RpClump* clump, RpAtomicCallBack callback, void* pData)
+{
+	for ( RwLLLink* link = rwLinkListGetFirstLLLink(&clump->atomicList); link != rwLinkListGetTerminator(&clump->atomicList); link = rwLLLinkGetNext(link) )
+	{
+		if ( !callback(rwLLLinkGetData(link, RpAtomic, inClumpLink), pData) )
+			break;
+	}
+	return clump;
+}
+
+RpGeometry* RpGeometryForAllMaterials(RpGeometry* geometry, RpMaterialCallBack fpCallBack, void* pData)
+{
+	for ( RwInt32 i = 0, j = geometry->matList.numMaterials; i < j; i++ )
+	{
+		if ( !fpCallBack(geometry->matList.materials[i], pData) )
+			break;
+	}
+	return geometry;
 }
 
 // Other wrappers

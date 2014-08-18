@@ -3,8 +3,6 @@
 #include "VehicleSA.h"
 #include "TimerSA.h"
 
-void (*CVehicle::SetComponentAtomicAlpha)(RpAtomic* pAtomic, int nAlpha) = AddressByVersion<void(*)(RpAtomic*,int)>(0x6D2960, 0, 0);
-
 static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0, 0);
 WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
 static void*	varIsLawEnforcementVehicle = AddressByVersion<void*>(0x6D2370, 0, 0);
@@ -33,6 +31,20 @@ static RwFrame* GetFrameFromNameCB(RwFrame* pFrame, void* pData)
 	// Try children
 	RwFrameForAllChildren(pFrame, GetFrameFromNameCB, pData);
 	return !pFindData->second ? pFrame : nullptr;
+}
+
+static RpMaterial* SetCompAlphaCB(RpMaterial* pMaterial, void* data)
+{
+	pMaterial->color.alpha = reinterpret_cast<RwUInt8>(data);
+	return pMaterial;
+}
+
+void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha)
+{
+	RpGeometry*	pGeometry = RpAtomicGetGeometry(pAtomic);
+	pGeometry->flags |= rpGEOMETRYMODULATEMATERIALCOLOR;
+
+	RpGeometryForAllMaterials(pGeometry, SetCompAlphaCB, reinterpret_cast<void*>(nAlpha));
 }
 
 bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
