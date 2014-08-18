@@ -4,18 +4,18 @@
 #include "PedSA.h"
 
 // Wrappers
-static void* EntityRender = AddressByVersion<void*>(0x534310, 0, 0);
+static void* EntityRender = AddressByVersion<void*>(0x534310, 0, 0x545B30);
 WRAPPER void CEntity::Render() { VARJMP(EntityRender); }
 
-static void* varInvertRaster = AddressByVersion<void*>(0x705660, 0, 0);
+static void* varInvertRaster = AddressByVersion<void*>(0x705660, 0, 0x7497A0);
 WRAPPER void CShadowCamera::InvertRaster() { VARJMP(varInvertRaster); }
 
-CWeaponInfo* (*CWeaponInfo::GetWeaponInfo)(eWeaponType, signed char) = AddressByVersion<CWeaponInfo*(*)(eWeaponType, signed char)>(0x743C60, 0, 0);
+CWeaponInfo* (*CWeaponInfo::GetWeaponInfo)(eWeaponType, signed char) = AddressByVersion<CWeaponInfo*(*)(eWeaponType, signed char)>(0x743C60, 0, 0x77D940);
 
-static RwTexture*&						ms_pRemapTexture = **AddressByVersion<RwTexture***>(0x59F1BD, 0, 0);
-static unsigned char*					ms_currentCol = *AddressByVersion<unsigned char**>(0x4C84C8, 0, 0);
+static RwTexture*&						ms_pRemapTexture = **AddressByVersion<RwTexture***>(0x59F1BD, 0, 0x5B811D);
+static unsigned char*					ms_currentCol = *AddressByVersion<unsigned char**>(0x4C84C8, 0, 0x4D2DC8);
 
-auto	SetEditableMaterialsCB = AddressByVersion<RpAtomic*(*)(RpAtomic*,void*)>(0x4C83E0, 0, 0);
+auto	SetEditableMaterialsCB = AddressByVersion<RpAtomic*(*)(RpAtomic*,void*)>(0x4C83E0, 0, 0x4D2CE0);
 
 static void SetVehicleColour(unsigned char primaryColour, unsigned char secondaryColour, unsigned char tertiaryColour, unsigned char quaternaryColour)
 {

@@ -3,9 +3,9 @@
 #include "VehicleSA.h"
 #include "TimerSA.h"
 
-static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0, 0);
+static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0, 0x70C0B0);
 WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
-static void*	varIsLawEnforcementVehicle = AddressByVersion<void*>(0x6D2370, 0, 0);
+static void*	varIsLawEnforcementVehicle = AddressByVersion<void*>(0x6D2370, 0, 0x70D8C0);
 WRAPPER bool CVehicle::IsLawEnforcementVehicle() { VARJMP(varIsLawEnforcementVehicle); }
 
 static RwObject* GetCurrentAtomicObjectCB(RwObject* pObject, void* data)

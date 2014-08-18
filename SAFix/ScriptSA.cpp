@@ -1,7 +1,7 @@
 #include "StdAfxSA.h"
 #include "ScriptSA.h"
 
-static int*		StatTypesInt = *AddressByVersion<int**>(0x55C0D8, 0, 0);
+static int*		StatTypesInt = *AddressByVersion<int**>(0x55C0D8, 0, 0x574F24);
 
 std::pair<int,int>* CRunningScript::GetDay_GymGlitch()
 {

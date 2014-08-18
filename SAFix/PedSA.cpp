@@ -1,17 +1,17 @@
 #include "StdAfxSA.h"
 #include "PedSA.h"
 
-static void* varGetWeaponSkill = AddressByVersion<void*>(0x5E6580, 0, 0);
+static void* varGetWeaponSkill = AddressByVersion<void*>(0x5E6580, 0, 0x6039F0);
 WRAPPER unsigned char CPed::GetWeaponSkill() { VARJMP(varGetWeaponSkill); }
-static void* varResetGunFlashAlpha = AddressByVersion<void*>(0x5DF4E0, 0, 0);
+static void* varResetGunFlashAlpha = AddressByVersion<void*>(0x5DF4E0, 0, 0x5FC210);
 WRAPPER void CPed::ResetGunFlashAlpha() { VARJMP(varResetGunFlashAlpha); }
-static void* varSetGunFlashAlpha = AddressByVersion<void*>(0x5DF400, 0, 0);
+static void* varSetGunFlashAlpha = AddressByVersion<void*>(0x5DF400, 0, 0x5FC120);
 WRAPPER void CPed::SetGunFlashAlpha(bool bSecondWeapon) { WRAPARG(bSecondWeapon); VARJMP(varSetGunFlashAlpha); }
 
-static void* varGetTaskJetPack = AddressByVersion<void*>(0x601110, 0, 0);
+static void* varGetTaskJetPack = AddressByVersion<void*>(0x601110, 0, 0x620E70);
 WRAPPER CTaskSimpleJetPack* CPedIntelligence::GetTaskJetPack() const { VARJMP(varGetTaskJetPack); }
 
-static void* varRenderJetPack = AddressByVersion<void*>(0x67F6A0, 0, 0);
+static void* varRenderJetPack = AddressByVersion<void*>(0x67F6A0, 0, 0x6AB110);
 WRAPPER void CTaskSimpleJetPack::RenderJetPack(CPed* pPed) { WRAPARG(pPed); VARJMP(varRenderJetPack); }
 
 static RwObject* GetFirstObjectCallback(RwObject* pObject, void* pData)
