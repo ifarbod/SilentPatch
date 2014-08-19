@@ -167,17 +167,10 @@ RpGeometry* RpGeometryForAllMaterials(RpGeometry* geometry, RpMaterialCallBack f
 
 RwInt32 RpHAnimIDGetIndex(RpHAnimHierarchy* hierarchy, RwInt32 ID)
 {
-	RpHAnimNodeInfo*	curNodeInfo = hierarchy->pNodeInfo;
-	RwInt32				curNumNodes = hierarchy->numNodes;
-
-	if ( curNumNodes > 0 )
+	for ( RwInt32 i = 0, j = hierarchy->numNodes; i < j; i++ )
 	{
-		for ( RwInt32 i = 0; i < curNumNodes; i++ )
-		{
-			if ( ID == curNodeInfo->nodeID )
-				return i;
-			curNodeInfo++;
-		}
+		if ( ID == hierarchy->pNodeInfo[i].nodeID )
+			return i;
 	}
 	return -1;
 }
@@ -1557,7 +1550,11 @@ __forceinline void Patch_SA_10()
 	Patch<BYTE>(0x6CABD0, 0xEB);
 	Patch<DWORD>(0x6CAC05, 0x5E5FCF8B);
 	InjectHook(0x6CAC09, &CPlane::Fix_SilentPatch, PATCH_JUMP);
-	
+
+	// Weapon icon fix (crosshairs mess up rwRENDERSTATEZWRITEENABLE)
+	Nop(0x58E210, 3);
+	Nop(0x58EAB7, 3);
+	Nop(0x58EAE1, 3);	
 
 	// Zones fix
 	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
