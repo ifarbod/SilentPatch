@@ -4,6 +4,7 @@
 #include "GeneralSA.h"
 #include "ModelInfoSA.h"
 #include "VehicleSA.h"
+#include "PedSA.h"
 #include "AudioHardwareSA.h"
 #include "LinkListSA.h"
 #include "PNGFile.h"
@@ -23,6 +24,10 @@ static void* varRpMaterialSetTexture = AddressByVersion<void*>(0x74DBC0, 0, 0);
 WRAPPER RpMaterial *RpMaterialSetTexture(RpMaterial *material, RwTexture *texture) { VARJMP(varRpMaterialSetTexture); }
 static void* varRwFrameGetLTM = AddressByVersion<void*>(0x7F0990, 0, 0);
 WRAPPER RwMatrix* RwFrameGetLTM(RwFrame* frame) { VARJMP(varRwFrameGetLTM); }
+static void* varRwMatrixTranslate = AddressByVersion<void*>(0x7F2450, 0, 0);
+WRAPPER RwMatrix* RwMatrixTranslate(RwMatrix* matrix, const RwV3d* translation, RwOpCombineType combineOp) { WRAPARG(matrix); WRAPARG(translation); WRAPARG(combineOp); VARJMP(varRwMatrixTranslate); }
+static void* varRwMatrixRotate = AddressByVersion<void*>(0x7F1FD0, 0, 0);
+WRAPPER RwMatrix* RwMatrixRotate(RwMatrix* matrix, const RwV3d* axis, RwReal angle, RwOpCombineType combineOp) { WRAPARG(matrix); WRAPARG(axis); WRAPARG(angle); WRAPARG(combineOp); VARJMP(varRwMatrixRotate); }
 static void* varRwD3D9SetRenderState = AddressByVersion<void*>(0x7FC2D0, 0, 0);
 WRAPPER void RwD3D9SetRenderState(RwUInt32 state, RwUInt32 value) { WRAPARG(state); WRAPARG(value); VARJMP(varRwD3D9SetRenderState); }
 static void* var_rwD3D9SetVertexShader = AddressByVersion<void*>(0x7F9FB0, 0, 0);
@@ -67,6 +72,16 @@ RwFrame* RwFrameForAllObjects(RwFrame* frame, RwObjectCallBack callBack, void* d
 	return frame;
 }
 
+RwFrame* RwFrameUpdateObjects(RwFrame* frame)
+{
+	if ( !rwObjectTestPrivateFlags(&frame->root->object, rwFRAMEPRIVATEHIERARCHYSYNCLTM|rwFRAMEPRIVATEHIERARCHYSYNCOBJ) )
+		rwLinkListAddLLLink(&RWSRCGLOBAL(dirtyFrameList), &frame->root->inDirtyListLink);
+
+	rwObjectSetPrivateFlags(&frame->root->object, rwObjectGetPrivateFlags(&frame->root->object) | (rwFRAMEPRIVATEHIERARCHYSYNCLTM|rwFRAMEPRIVATEHIERARCHYSYNCOBJ));
+	rwObjectSetPrivateFlags(&frame->object, rwObjectGetPrivateFlags(&frame->object) | (rwFRAMEPRIVATESUBTREESYNCLTM|rwFRAMEPRIVATESUBTREESYNCOBJ));
+	return frame;
+}
+
 RwMatrix* RwMatrixUpdate(RwMatrix* matrix)
 {
 	matrix->flags &= ~(rwMATRIXTYPEMASK|rwMATRIXINTERNALIDENTITY);
@@ -108,6 +123,23 @@ RpClump* RpClumpForAllAtomics(RpClump* clump, RpAtomicCallBack callback, void* p
 	return clump;
 }
 
+RpClump* RpClumpRender(RpClump* clump)
+{
+	for ( RwLLLink* link = rwLinkListGetFirstLLLink(&clump->atomicList); link != rwLinkListGetTerminator(&clump->atomicList); link = rwLLLinkGetNext(link) )
+	{
+		RpAtomic* curAtomic = rwLLLinkGetData(link, RpAtomic, inClumpLink);
+		if ( RpAtomicGetFlags(curAtomic) & rpATOMICRENDER )
+		{
+			// Not sure why they need this
+			RwFrameGetLTM(RpAtomicGetFrame(curAtomic));
+			if ( !RpAtomicRender(curAtomic) )
+				return NULL;
+		}
+	}
+	return clump;
+
+}
+
 RpGeometry* RpGeometryForAllMaterials(RpGeometry* geometry, RpMaterialCallBack fpCallBack, void* pData)
 {
 	for ( RwInt32 i = 0, j = geometry->matList.numMaterials; i < j; i++ )
@@ -118,18 +150,38 @@ RpGeometry* RpGeometryForAllMaterials(RpGeometry* geometry, RpMaterialCallBack f
 	return geometry;
 }
 
+RwInt32 RpHAnimIDGetIndex(RpHAnimHierarchy* hierarchy, RwInt32 ID)
+{
+	RpHAnimNodeInfo*	curNodeInfo = hierarchy->pNodeInfo;
+	RwInt32				curNumNodes = hierarchy->numNodes;
+
+	if ( curNumNodes > 0 )
+	{
+		for ( RwInt32 i = 0; i < curNumNodes; i++ )
+		{
+			if ( ID == curNodeInfo->nodeID )
+				return i;
+			curNodeInfo++;
+		}
+	}
+	return -1;
+}
+
+RwMatrix* RpHAnimHierarchyGetMatrixArray(RpHAnimHierarchy* hierarchy)
+{
+	return hierarchy->pMatrixArray;
+}
+
 // Other wrappers
 void					(*GTAdelete)(void*) = AddressByVersion<void(*)(void*)>(0x82413F, 0, 0);
 const char*				(*GetFrameNodeName)(RwFrame*) = AddressByVersion<const char*(*)(RwFrame*)>(0x72FB30, 0, 0);
+RpHAnimHierarchy*		(*GetAnimHierarchyFromSkinClump)(RpClump*) = AddressByVersion<RpHAnimHierarchy*(*)(RpClump*)>(0x734A40, 0, 0);
 auto					SetVolume = AddressByVersion<void(__thiscall*)(void*,float)>(0x4D7C60, 0, 0);
 auto					InitializeUtrax = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0, 0);
 auto					CanSeeOutSideFromCurrArea = AddressByVersion<bool(*)()>(0x53C4A0, 0, 0);
 
 auto					__rwD3D9TextureHasAlpha = AddressByVersion<BOOL(*)(RwTexture*)>(0x4C9EA0, 0, 0);
 auto					RenderOneXLUSprite = AddressByVersion<void(*)(float, float, float, float, float, int, int, int, int, float, char, char, char)>(0x70D000, 0, 0);
-
-// That function is fake
-auto					RenderWeaponHooked = AddressByVersion<void(*)(CEntity*)>(0x732F95, 0, 0);
 
 static BOOL				(*IsAlreadyRunning)();
 static void				(*TheScriptsLoad)();
@@ -162,7 +214,7 @@ unsigned char*			ZonesVisited = *AddressByVersion<unsigned char**>(0x57216A, 0, 
 float&					m_fDNBalanceParam = **AddressByVersion<float**>(0x4A9062, 0, 0);
 RpLight*&				pAmbient = **AddressByVersion<RpLight***>(0x5BA53A, 0, 0);
 
-CLinkListSA<CEntity*>&			ms_weaponPedsForPC = **AddressByVersion<CLinkListSA<CEntity*>**>(0x53EACA, 0, 0);
+CLinkListSA<CPed*>&			ms_weaponPedsForPC = **AddressByVersion<CLinkListSA<CPed*>**>(0x53EACA, 0, 0);
 CLinkListSA<AlphaObjectInfo>&	m_alphaList = **AddressByVersion<CLinkListSA<AlphaObjectInfo>**>(0x733A4D, 0, 0);
 
 
@@ -398,31 +450,26 @@ void SetRendererForAtomic(RpAtomic* pAtomic)
 		RpAtomicSetRenderCallBack(pAtomic, renderer);
 }
 
-void RenderWeapon(CEntity* pEntity)
+void RenderWeapon(CPed* pPed)
 {
-	int		nPushedAlpha, nAlphaFunction;
-
-	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
-	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTION, &nAlphaFunction);
-
-	if ( nPushedAlpha != 255 )
-		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(255));
-
-	if ( nAlphaFunction != rwALPHATESTFUNCTIONEQUAL )
-		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONEQUAL));
-
-	RenderWeaponHooked(pEntity);
-
-	if ( nPushedAlpha != 255 )
-		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
-
-	if ( nAlphaFunction != rwALPHATESTFUNCTIONEQUAL )
-		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
-
-	ms_weaponPedsForPC.Insert(pEntity);
+	pPed->RenderWeapon(false);
+	ms_weaponPedsForPC.Insert(pPed);
 }
 
-void RenderWeaponsList()
+void RenderWeaponPedsForPC()
+{
+	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
+	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
+
+	for ( auto it = ms_weaponPedsForPC.m_lnListHead.m_pNext; it != &ms_weaponPedsForPC.m_lnListTail; it = it->m_pNext )
+	{
+		it->V()->SetupLighting();
+		it->V()->RenderWeapon(true);
+		it->V()->RemoveLighting();
+	}
+}
+
+/*void RenderWeaponsList()
 {
 	int		nPushedAlpha, nAlphaFunction;
 	int		nZWrite;
@@ -449,7 +496,7 @@ void RenderWeaponsList()
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
-}
+}*/
 
 RpAtomic* RenderPedCB(RpAtomic* pAtomic)
 {
@@ -1350,7 +1397,7 @@ __forceinline void Patch_SA_10()
 	Patch<DWORD>(AddressByRegion_10<DWORD>(0x7469A0), 0x909000B0);
 
 	// Weapons rendering
-	InjectHook(0x5E7859, RenderWeapon);
+	/*InjectHook(0x5E7859, RenderWeapon);
 	InjectHook(0x732F30, RenderWeaponsList, PATCH_JUMP);
 	//Patch<WORD>(0x53EAC4, 0x0DEB);
 	//Patch<WORD>(0x705322, 0x0DEB);
@@ -1364,7 +1411,9 @@ __forceinline void Patch_SA_10()
 	//Nop(0x732F93, 6);
 	//Nop(0x733144, 6);
 	Nop(0x732FA6, 6);
-	//Nop(0x5E46DA, 2);
+	//Nop(0x5E46DA, 2);*/
+	InjectHook(0x5E7859, RenderWeapon);
+	InjectHook(0x732F30, RenderWeaponPedsForPC, PATCH_JUMP);
 
 	// Hunter interior & static_rotor for helis
 	InjectHook(0x4C78F2, HunterTest, PATCH_JUMP);

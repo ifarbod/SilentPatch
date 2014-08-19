@@ -95,6 +95,7 @@
     <ClCompile Include="AudioHardwareSA.cpp" />
     <ClCompile Include="GeneralSA.cpp" />
     <ClCompile Include="ModelInfoSA.cpp" />
+    <ClCompile Include="PedSA.cpp" />
     <ClCompile Include="PNGFile.cpp" />
     <ClCompile Include="ScriptSA.cpp" />
     <ClCompile Include="SilentPatchSA.cpp" />
@@ -131,6 +132,7 @@
     <ClInclude Include="LinkListSA.h" />
     <ClInclude Include="Maths.h" />
     <ClInclude Include="ModelInfoSA.h" />
+    <ClInclude Include="PedSA.h" />
     <ClInclude Include="PNGFile.h" />
     <ClInclude Include="ScriptSA.h" />
     <ClInclude Include="StdAfxSA.h" />

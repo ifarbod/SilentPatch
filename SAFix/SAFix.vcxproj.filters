@@ -48,6 +48,9 @@
     <ClCompile Include="PNGFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PedSA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\SilentPatch\win2000.asm">
@@ -107,6 +110,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PNGFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PedSA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

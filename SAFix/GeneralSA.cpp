@@ -5,6 +5,8 @@
 static void* EntityRender = AddressByVersion<void*>(0x534310, 0, 0);
 WRAPPER void CEntity::Render() { VARJMP(EntityRender); }
 
+CWeaponInfo* (*CWeaponInfo::GetWeaponInfo)(eWeaponType, signed char) = AddressByVersion<CWeaponInfo*(*)(eWeaponType, signed char)>(0x743C60, 0, 0);
+
 static RwTexture*&						ms_pRemapTexture = **AddressByVersion<RwTexture***>(0x59F1BD, 0, 0);
 static unsigned char*					ms_currentCol = *AddressByVersion<unsigned char**>(0x4C84C8, 0, 0);
 
