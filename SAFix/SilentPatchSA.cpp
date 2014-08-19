@@ -1401,7 +1401,8 @@ __forceinline void Patch_SA_10()
 	Patch<int>(0x4C9292, ~(rwMATRIXTYPEMASK|rwMATRIXINTERNALIDENTITY));
 
 	// No framedelay
-	Patch<DWORD>(0x53E923, 0x42EB56);
+	Patch<WORD>(0x53E923, 0x43EB);
+	Nop(0x53E9A5, 1);
 
 	// Disable re-initialization of DirectInput mouse device by the game
 	Patch<BYTE>(0x576CCC, 0xEB);
@@ -1552,6 +1553,7 @@ __forceinline void Patch_SA_10()
 	InjectHook(0x6CAC09, &CPlane::Fix_SilentPatch, PATCH_JUMP);
 
 	// Weapon icon fix (crosshairs mess up rwRENDERSTATEZWRITEENABLE)
+	// Only 1.0 and 1.01, Steam somehow fixed it (not the same way though)
 	Nop(0x58E210, 3);
 	Nop(0x58EAB7, 3);
 	Nop(0x58EAE1, 3);	
