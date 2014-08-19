@@ -51,6 +51,21 @@ WRAPPER RwBool _rpD3D9VertexDeclarationInstColor(RwUInt8 *mem,
 								  RwUInt32 stride) { VARJMP(var_rpD3D9VertexDeclarationInstColor); }
 
 
+RwCamera* RwCameraBeginUpdate(RwCamera* camera)
+{
+	return camera->beginUpdate(camera);
+}
+
+RwCamera* RwCameraEndUpdate(RwCamera* camera)
+{
+	return camera->endUpdate(camera);
+}
+
+RwCamera* RwCameraClear(RwCamera* camera, RwRGBA* colour, RwInt32 clearMode)
+{
+	return RWSRCGLOBAL(stdFunc[rwSTANDARDCAMERACLEAR])(camera, colour, clearMode) != FALSE ? camera : NULL;
+}
+
 RwFrame* RwFrameForAllChildren(RwFrame* frame, RwFrameCallBack callBack, void* data)
 {
 	for ( RwFrame* curFrame = frame->child; curFrame; curFrame = curFrame->next )
@@ -452,7 +467,7 @@ void SetRendererForAtomic(RpAtomic* pAtomic)
 
 void RenderWeapon(CPed* pPed)
 {
-	pPed->RenderWeapon(false);
+	pPed->RenderWeapon(false, false);
 	ms_weaponPedsForPC.Insert(pPed);
 }
 
@@ -464,7 +479,7 @@ void RenderWeaponPedsForPC()
 	for ( auto it = ms_weaponPedsForPC.m_lnListHead.m_pNext; it != &ms_weaponPedsForPC.m_lnListTail; it = it->m_pNext )
 	{
 		it->V()->SetupLighting();
-		it->V()->RenderWeapon(true);
+		it->V()->RenderWeapon(true, false);
 		it->V()->RemoveLighting();
 	}
 }
@@ -1325,6 +1340,13 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x6FDFE0, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, PATCH_JUMP);
 			//InjectMethodVP(0x6D0E53, CVehicle::CustomCarPlate_AfterRenderingStop, PATCH_NOTHING);
 			Nop(0x6D6517, 2);
+		}
+
+		// SSE conflicts
+		if ( GetModuleHandle("shadows.asi") == nullptr )
+		{
+			Patch<DWORD>(0x70665C, 0x52909090);
+			InjectHook(0x706662, &CShadowCamera::Update);
 		}
 
 		// Bigger streamed entity linked lists

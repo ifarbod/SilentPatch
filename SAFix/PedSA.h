@@ -5,6 +5,19 @@
 
 class CEntryExit;
 
+// Stub
+class CTaskSimpleJetPack
+{
+public:
+	void			RenderJetPack(class CPed* pPed);
+};
+
+class CPedIntelligence
+{
+public:
+	class CTaskSimpleJetPack*	GetTaskJetPack() const;
+};
+
 class CPedFlags
 {
 public:
@@ -297,7 +310,8 @@ public:
 	void				ResetGunFlashAlpha();
 	void				SetGunFlashAlpha(bool bSecondWeapon);
 
-	void				RenderWeapon(bool bMuzzleFlash);
+	void				RenderWeapon(bool bMuzzleFlash, bool bForShadow);
+	void				RenderForShadow();
 };
 
 static_assert(sizeof(CPed) == 0x79C, "Wrong size: CPed");

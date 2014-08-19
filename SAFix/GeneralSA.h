@@ -549,6 +549,20 @@ public:
 	static CWeaponInfo*		(*GetWeaponInfo)(eWeaponType weaponID, signed char bType);
 };
 
+class CShadowCamera
+{
+public:
+	RwCamera*		m_pCamera;
+	RwTexture*		m_pTexture;
+
+public:
+	void			InvertRaster();
+
+	RwCamera*		Update(CEntity* pEntity);
+};
+
+RpAtomic* ShadowCameraRenderCB(RpAtomic* pAtomic, void* pData);
+
 static_assert(sizeof(CEntity) == 0x38, "Wrong size: CEntity");
 static_assert(sizeof(CPhysical) == 0x138, "Wrong size: CPhysical");
 static_assert(sizeof(CObject) == 0x17C, "Wrong size: CObject");

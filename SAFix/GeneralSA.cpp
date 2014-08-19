@@ -1,9 +1,14 @@
 #include "StdAfxSA.h"
 #include "GeneralSA.h"
 
+#include "PedSA.h"
+
 // Wrappers
 static void* EntityRender = AddressByVersion<void*>(0x534310, 0, 0);
 WRAPPER void CEntity::Render() { VARJMP(EntityRender); }
+
+static void* varInvertRaster = AddressByVersion<void*>(0x705660, 0, 0);
+WRAPPER void CShadowCamera::InvertRaster() { VARJMP(varInvertRaster); }
 
 CWeaponInfo* (*CWeaponInfo::GetWeaponInfo)(eWeaponType, signed char) = AddressByVersion<CWeaponInfo*(*)(eWeaponType, signed char)>(0x743C60, 0, 0);
 
@@ -24,6 +29,24 @@ static void ResetEditableMaterials(std::pair<void*,int>* pData)
 {
 	for ( auto* i = pData; i->first; i++ )
 		*static_cast<int*>(i->first) = i->second;
+}
+
+RpAtomic* ShadowCameraRenderCB(RpAtomic* pAtomic, void* pData)
+{
+	UNREFERENCED_PARAMETER(pData);
+
+	if ( RpAtomicGetFlags(pAtomic) & rpATOMICRENDER )
+	{
+		RpGeometry*	pGeometry = RpAtomicGetGeometry(pAtomic);
+		RwUInt32	geometryFlags = RpGeometryGetFlags(pGeometry);
+
+		RpGeometrySetFlags(pGeometry, geometryFlags & ~(rpGEOMETRYTEXTURED|rpGEOMETRYPRELIT|
+						/*rpGEOMETRYNORMALS|*/rpGEOMETRYLIGHT|rpGEOMETRYMODULATEMATERIALCOLOR|rpGEOMETRYTEXTURED2));
+
+		AtomicDefaultRenderCallBack(pAtomic);
+		RpGeometrySetFlags(pGeometry, geometryFlags);
+	}
+	return pAtomic;
 }
 
 void CObject::Render()
@@ -53,4 +76,25 @@ void CObject::Render()
 
 	if ( bCallRestore )
 		ResetEditableMaterials(materialRestoreData);
+}
+
+RwCamera* CShadowCamera::Update(CEntity* pEntity)
+{
+	RwRGBA	ClearColour = { 255, 255, 255, 0 };
+	RwCameraClear(m_pCamera, &ClearColour, rwCAMERACLEARIMAGE|rwCAMERACLEARZ);
+
+	if ( RwCameraBeginUpdate(m_pCamera ) )
+	{
+		if ( pEntity )
+		{
+			if ( pEntity->nType == 3 )
+				static_cast<CPed*>(pEntity)->RenderForShadow();
+			else
+				RpClumpForAllAtomics(reinterpret_cast<RpClump*>(pEntity->m_pRwObject), ShadowCameraRenderCB, nullptr);
+		}
+
+		InvertRaster();
+		RwCameraEndUpdate(m_pCamera);
+	}
+	return m_pCamera;
 }
