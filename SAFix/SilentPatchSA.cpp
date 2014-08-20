@@ -1563,7 +1563,7 @@ __forceinline void Patch_SA_10()
 	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
 
 	// CGarages::RespraysAreFree resetting on new game
-	Patch<WORD>(0x448BD8, 0x0D89);
+	Patch<WORD>(0x448BD8, 0x0D88);
 	Patch<bool*>(0x448BDA, *(bool**)0x44AC98);
 	Patch<BYTE>(0x448BDE, 0xC3);
 
@@ -1571,12 +1571,6 @@ __forceinline void Patch_SA_10()
 	char*			pScannerNames = *(char**)0x4E72D4;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
 	strncpy(pScannerNames + (8*134), "????", 8);
-
-	// TEMP - dumping IPL data
-#ifdef DO_MAP_DUMP
-	InjectHook(0x538090, DumpIPLStub, PATCH_JUMP);
-	InjectHook(0x5B92C7, DumpIPLName);
-#endif
 }
 
 __forceinline void Patch_SA_Steam()
