@@ -1839,6 +1839,16 @@ __forceinline void Patch_SA_Steam()
 	bool*	bEnableMouseSteering = *(bool**)0x6DB76D; // CVehicle::m_bEnableMouseSteering
 	Patch<bool*>(0x6E3199, bEnableMouseSteering);
 	Patch<bool*>(0x7046AB, bEnableMouseSteering);
+
+
+
+	// STEAM ONLY
+	// Proper aspect ratios - why Rockstar, why?
+	// Steam aspect ratios were additionally divided by 1.1, producing a squashed image
+	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
+	Patch<const void*>(0x73822B, &f169);
+	Patch<const void*>(0x738247, &f54);
+	Patch<const void*>(0x73825A, &f43);
 }
 
 
