@@ -1561,6 +1561,11 @@ __forceinline void Patch_SA_10()
 	// Zones fix
 	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
 
+	// CGarages::RespraysAreFree resetting on new game
+	Patch<WORD>(0x448BD8, 0x0D89);
+	Patch<bool*>(0x448BDA, *(bool**)0x44AC98);
+	Patch<BYTE>(0x448BDE, 0xC3);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
