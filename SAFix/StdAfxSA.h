@@ -26,7 +26,6 @@
 #include <cassert>*/
 
 #define RwEngineInstance (*rwengine)
-#define RWFRAMESTATICPLUGINSSIZE 24
 
 #include <rwcore.h>
 #include <rpworld.h>
@@ -65,5 +64,3 @@ inline T random(T a, T b)
 //#define HIDE_MATERIAL
 //#define EXPAND_ALPHA_ENTITY_LISTS		800
 //#define EXPAND_BOAT_ALPHA_ATOMIC_LISTS	400
-
-//#define SA_STEAM_TEST

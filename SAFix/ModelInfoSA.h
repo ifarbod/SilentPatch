@@ -272,6 +272,9 @@ public:
 	inline const char*		GetCustomCarPlateText()
 		{ return m_plateText[0] ? m_plateText : nullptr; }
 
+	inline void				Shutdown_Stub()
+		{ CVehicleModelInfo::Shutdown(); }
+
 	virtual void			Shutdown() override;
 
 	void					FindEditableMaterialList();

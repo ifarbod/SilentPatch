@@ -36,9 +36,9 @@ static void* varRwD3D9CreateVertexShader = AddressByVersion<void*>(0x7FAC60, 0, 
 WRAPPER RwBool RwD3D9CreateVertexShader(const RwUInt32 *function, void **shader) { VARJMP(varRwD3D9CreateVertexShader); }
 static void* varRwD3D9DeleteVertexShader = AddressByVersion<void*>(0x7FAC90, 0, 0x834C50);
 WRAPPER void RwD3D9DeleteVertexShader(void *shader) { VARJMP(varRwD3D9DeleteVertexShader); }
-static void* var_rwD3D9VSGetComposedTransformMatrix = AddressByVersion<void*>(0x7646E0, 0, 0);
+static void* var_rwD3D9VSGetComposedTransformMatrix = AddressByVersion<void*>(0x7646E0, 0, 0x79E6A0);
 WRAPPER void _rwD3D9VSGetComposedTransformMatrix(void *transformMatrix) { VARJMP(var_rwD3D9VSGetComposedTransformMatrix); }
-static void* var_rwD3D9VSSetActiveWorldMatrix = AddressByVersion<void*>(0x764650, 0, 0);
+static void* var_rwD3D9VSSetActiveWorldMatrix = AddressByVersion<void*>(0x764650, 0, 0x79E610);
 WRAPPER void _rwD3D9VSSetActiveWorldMatrix(const RwMatrix *worldMatrix) { VARJMP(var_rwD3D9VSSetActiveWorldMatrix); }
 static void* var_rwD3D9SetVertexShaderConstant = AddressByVersion<void*>(0x7FACA0, 0, 0x834C60);
 WRAPPER void _rwD3D9SetVertexShaderConstant(RwUInt32 registerAddress,
@@ -711,7 +711,7 @@ void SetShader(RxD3D9InstanceData* pInstData)
 		RwD3D9SetVertexShader(pInstData->vertexShader);
 }
 
-static void*	HijackAtomic_JumpBack = AddressByVersion<void*>(0x5D6480, 0, 0x5F6020);
+static void*	HijackAtomic_JumpBack = AddressByVersion<void*>(0x5D6480, 0, 0x5F2C80);
 void __declspec(naked) HijackAtomic()
 {
 	_asm
@@ -740,7 +740,7 @@ void __declspec(naked) SetShader2()
 
 static void*	pJackedEsi;
 static void*	PassDayColoursToShader_NextIt = AddressByVersion<void*>(0x5D6382, 0, 0x5F2B81);
-static void*	PassDayColoursToShader_Return = AddressByVersion<void*>(0x5D63BD, 0, 0x5F2BB8);
+static void*	PassDayColoursToShader_Return = AddressByVersion<void*>(0x5D63BD, 0, 0x5F2BB4);
 void __declspec(naked) HijackEsi()
 {
 	_asm
@@ -815,6 +815,74 @@ PassDayColoursToShader_Iterate:
 	}
 }
 
+void __declspec(naked) PassDayColoursToShader_Steam()
+{
+	_asm
+	{
+		dec		ebx
+		jz		PassDayColoursToShader_FindDayColours
+		jmp		PassDayColoursToShader_NextIt
+
+PassDayColoursToShader_FindDayColours:
+		xor		eax, eax
+
+PassDayColoursToShader_FindDayColours_Loop:
+		cmp     byte ptr [esp+eax*8+48h-28h+6], D3DDECLUSAGE_COLOR
+		jnz		PassDayColoursToShader_FindDayColours_Next
+		cmp     byte ptr [esp+eax*8+48h-28h+7], 1
+		jz		PassDayColoursToShader_DoDayColours
+
+PassDayColoursToShader_FindDayColours_Next:
+		inc		eax
+		jmp		PassDayColoursToShader_FindDayColours_Loop
+
+PassDayColoursToShader_DoDayColours:
+		mov		esi, pJackedEsi
+		mov     edx, [ms_extraVertColourPluginOffset]
+		mov		edx, dword ptr [edx]
+		mov     edx, dword ptr [edx+esi+4]
+		mov     edi, dword ptr [ebp+18h]
+		mov     [esp+48h+0Ch], edx
+		mov     ebx, dword ptr [ebp+4]
+		lea     eax, [esp+eax*8+48h-26h]
+		mov     [esp+48h-2Ch], eax
+		lea     esi, [ebp+44h]
+
+PassDayColoursToShader_Iterate:
+		mov     edx, dword ptr [esi+14h]
+		mov     eax, dword ptr [esi]
+		push    edi         
+		push    edx            
+		mov     edx, dword ptr [esp+50h+0Ch]
+		lea     edx, [edx+eax*4]
+		imul    eax, edi
+		push    edx            
+		mov     edx, dword ptr [esp+54h-2Ch]
+		add     eax, dword ptr [esp+54h-34h]
+		movzx   edx, word ptr [edx]
+		add     edx, eax
+		push    edx             
+		call    _rpD3D9VertexDeclarationInstColor
+		mov     [esi+8], eax
+		add     esp, 10h
+		add     esi, 24h
+		dec     ebx
+		jnz     PassDayColoursToShader_Iterate
+
+		jmp		PassDayColoursToShader_Return
+	}
+}
+
+void __declspec(naked) ChangeEdi_Steam()
+{
+	_asm
+	{
+		mov		edi, SIZE D3DCOLOR
+		cmp     byte ptr [esp+4Ch-35h], 0
+		retn
+	}
+}
+
 // Hooks
 void __declspec(naked) LightMaterialsFix()
 {
@@ -848,7 +916,8 @@ void __declspec(naked) UserTracksFix()
 	}
 }
 
-static void* UsageIndex1_JumpBack = AddressByVersion<void*>(0x5D611B, 0, 0x5F28D4);
+// Unused on Steam EXE
+static void* UsageIndex1_JumpBack = AddressByVersion<void*>(0x5D611B, 0, 1);
 void __declspec(naked) UsageIndex1()
 {
 	_asm
@@ -1133,7 +1202,7 @@ FLACInit_DontFallBack:
 }
 
 // Only 1.0/1.01
-static void*	HandleMoonStuffStub_JumpBack = AddressByVersion<void*>(0x713D24, 0, 0);
+static void*	HandleMoonStuffStub_JumpBack = AddressByVersion<void*>(0x713D24, 0, 0x72F17F);
 void __declspec(naked) HandleMoonStuffStub()
 {
 	__asm
@@ -1162,24 +1231,23 @@ void __declspec(naked) HandleMoonStuffStub_Steam()
 {
 	__asm
 	{
-		mov eax, [esp + 70h - 58h] // screen x size
-		mov ecx, [esp + 70h - 5Ch] // screen y size
+		mov		eax, [esp + 70h - 58h] // screen x size
+		mov		ecx, [esp + 70h - 5Ch] // screen y size
 
-		push ecx
-		push eax
+		push	ecx
+		push	eax
 
-		lea ecx, [esp + 78h - 48h] // screen coord vector
+		lea		ecx, [esp + 78h - 48h] // screen coord vector
 
-		push ecx
+		push	ecx
 
-		push esi
+		push	esi
 
-		call DrawMoonWithPhases
+		call	DrawMoonWithPhases
 
-		add esp, 10h
+		add		esp, 10h
 
-		push 72F17Fh
-		retn
+		jmp		HandleMoonStuffStub_JumpBack
 	}
 }
 
@@ -1269,6 +1337,13 @@ static const float		fSteamRadioNamePosY = 33.0f;
 static const float		fSteamRadioNameSizeX = 0.4f;
 static const float		fSteamRadioNameSizeY = 0.6f;
 
+static const double		dRetailSubtitleSizeX = 0.58;
+static const double		dRetailSubtitleSizeY = 1.2;
+static const double		dRetailSubtitleSizeY2 = 1.22;
+static const double		dRetailRadioNamePosY = 22.0;
+static const double		dRetailRadioNameSizeX = 0.6;
+static const double		dRetailRadioNameSizeY = 0.9;
+
 BOOL InjectDelayedPatches_10()
 {
 	if ( !IsAlreadyRunning() )
@@ -1328,7 +1403,7 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x4899F0, StartNewMission_BasketballFix);
 		}
 
-		if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", TRUE, wcModulePath) != FALSE )
+		if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", FALSE, wcModulePath) != FALSE )
 		{
 			// Shaders!
 			// plugin-sdk compatibility
@@ -1417,13 +1492,7 @@ BOOL InjectDelayedPatches_10()
 		{
 			// Properly random numberplates
 			DWORD*		pVMT = *(DWORD**)0x4C75FC;
-			void*		pFunc;
-			_asm
-			{
-				mov		eax, offset CVehicleModelInfo::Shutdown
-				mov		[pFunc], eax
-			}
-			Patch<const void*>(&pVMT[7], pFunc);
+			Patch(&pVMT[7], &CVehicleModelInfo::Shutdown_Stub);
 			Patch<BYTE>(0x6D0E43, 0xEB);
 			InjectHook(0x4C9660, &CVehicleModelInfo::SetCarCustomPlate);
 			InjectHook(0x6D6A58, &CVehicle::CustomCarPlate_TextureCreate);
@@ -1492,6 +1561,133 @@ BOOL InjectDelayedPatches_Steam()
 		else
 		{
 			InjectHook(0x4CEBF4, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+		}
+
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", TRUE, wcModulePath) != FALSE )
+		{
+			// Gym glitch fix
+			Patch<WORD>(0x476C2A, 0xCD8B);
+			Patch<DWORD>(0x476C31, 0x408B088B);
+			Patch<WORD>(0x476C35, 0x9004);
+			Nop(0x476C37, 1);
+			InjectHook(0x476C2C, &CRunningScript::GetDay_GymGlitch, PATCH_CALL);
+
+			// Basketball fix
+			WipeLocalVariableMemoryForMissionScript = (void(*)())(*(int*)0x4907AF + 0x4907AE + 5);
+			TheScriptsLoad = (void(*)())(*(int*)0x5EE018 + 0x5EE017 + 5);
+			InjectHook(0x5EE017, TheScriptsLoad_BasketballFix);
+			// Fixed for Hoodlum
+			InjectHook(0x4907AE, StartNewMission_BasketballFix);
+			InjectHook(0x49072E, StartNewMission_BasketballFix);
+		}
+
+		if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", FALSE, wcModulePath) != FALSE )
+		{
+			// Shaders!
+			// plugin-sdk compatibility
+			InitialiseRenderWare = (bool(*)())(*(int*)0x5DE5A2 + 0x5DE5A1 + 5);
+			ShutdownRenderWare = (void(*)())(*(int*)0x550071 + 0x550070 + 5);
+			sub_5DA6A0 = (void(*)(void*,void*,void*,void*))(*(int*)0x5F663F + 0x5F663E + 5);
+
+			InjectHook(0x5F6EB3, SetShader);
+			InjectHook(0x5F2F02, SetShader2);
+			//InjectHook(0x5F292C, UsageIndex1, PATCH_JUMP);
+			InjectHook(0x5F2BAF, PassDayColoursToShader_Steam, PATCH_JUMP);
+			InjectHook(0x5F2B7A, HijackEsi, PATCH_JUMP);
+			InjectHook(0x5DE5A1, ShaderAttach);
+			InjectHook(0x550070, ShaderDetach);
+			Patch<const void*>(0x5F3004, HijackAtomic);
+			Patch<BYTE>(0x5F3760, 0xC3);
+			Patch<WORD>(0x5F2FCB, 0x6890);
+			Patch<WORD>(0x5F2FE7, 0x6890);
+			Patch<DWORD>(0x5F2FCD, 0x5F27C0);
+			Patch<DWORD>(0x5F2FE9, 0x5F27C0);
+			Patch<DWORD>(0x5F6EAF, 0x90909056);
+
+			Patch<BYTE>(0x5F28D0, 1);
+			Patch<BYTE>(0x5F28C1, D3DDECLTYPE_D3DCOLOR);
+			Patch<BYTE>(0x5F28CB, D3DDECLUSAGE_COLOR);
+			//Patch<BYTE>(0x5D60CF, sizeof(D3DCOLOR));
+			//Patch<BYTE>(0x5D60EA, sizeof(D3DCOLOR));
+			InjectHook(0x5F28A7, ChangeEdi_Steam, PATCH_CALL);
+			//Patch<BYTE>(0x5D60C2, 0x13);
+			Patch<BYTE>(0x5F2AE7, 0xEB);
+
+			// PostFX fix
+			Patch<float>(*(float**)0x746E57, 0.0);
+		}
+
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", TRUE, wcModulePath) == FALSE )
+		{
+			// We're on Steam - make texts bigger
+			Patch<const void*>(0x59A719, &dRetailSubtitleSizeY);
+			Patch<const void*>(0x59A7B7, &dRetailSubtitleSizeY2);
+			Patch<const void*>(0x59A8A1, &dRetailSubtitleSizeY2);
+
+			Patch<const void*>(0x59A737, &dRetailSubtitleSizeX);
+			Patch<const void*>(0x59A7D5, &dRetailSubtitleSizeX);
+			Patch<const void*>(0x59A8BF, &dRetailSubtitleSizeX);
+
+			Patch<const void*>(0x4F5A71, &dRetailRadioNamePosY);
+			Patch<const void*>(0x4F59A1, &dRetailRadioNameSizeY);
+			Patch<const void*>(0x4F59BF, &dRetailRadioNameSizeX);
+		}
+
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", FALSE, wcModulePath) != FALSE )
+		{
+			// Coloured zone names
+			Patch<WORD>(0x598F65, 0x0C75);
+			Patch<WORD>(0x598F6B, 0x0675);
+
+			InjectHook(0x598F87, &CRGBA::BlendGangColour);
+		}
+		else
+		{
+			Patch<BYTE>(0x598F56, 0xEB);
+		}
+
+		// ImVehFt conflicts
+		if ( !bHasImVehFt )
+		{
+			// Lights
+			InjectHook(0x4D2C06, LightMaterialsFix, PATCH_CALL);
+
+			// Flying components
+			InjectHook(0x5B80E0, &CObject::Render_Stub, PATCH_JUMP);
+
+			// Cars getting dirty
+			// Only 1.0 and Steam
+			InjectHook(0x4D3F4D, &CVehicleModelInfo::FindEditableMaterialList, PATCH_CALL);
+			Patch<DWORD>(0x4D3F52, 0x0FEBCE8B);
+		}
+
+		if ( !bHasImVehFt && !bSAMP )
+		{
+			// Properly random numberplates
+			DWORD*		pVMT = *(DWORD**)0x4D1E9A;
+			Patch(&pVMT[7], &CVehicleModelInfo::Shutdown_Stub);
+			Patch<BYTE>(0x70C094, 0xEB);
+			InjectHook(0x4D3F65, &CVehicleModelInfo::SetCarCustomPlate);
+			InjectHook(0x711F28, &CVehicle::CustomCarPlate_TextureCreate);
+			InjectHook(0x71194D, &CVehicle::CustomCarPlate_BeforeRenderingStart);
+			InjectHook(0x736BD0, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, PATCH_JUMP);
+			//InjectMethodVP(0x6D0E53, CVehicle::CustomCarPlate_AfterRenderingStop, PATCH_NOTHING);
+			Nop(0x711948, 2);
+		}
+
+		// SSE conflicts
+		if ( GetModuleHandle("shadows.asi") == nullptr )
+		{
+			Patch<DWORD>(0x74A864, 0x52909090);
+			InjectHook(0x74A86A, &CShadowCamera::Update);
+		}
+
+		// Bigger streamed entity linked lists
+		// Increase only if they're not increased already
+		if ( *(DWORD*)0x5D5780 == 12000 )
+		{
+			Patch<DWORD>(0x5D5720, 1250);
+			Patch<DWORD>(0x5D5780, 15000);
 		}
 
 		return FALSE;
@@ -1840,7 +2036,35 @@ __forceinline void Patch_SA_Steam()
 	Patch<bool*>(0x6E3199, bEnableMouseSteering);
 	Patch<bool*>(0x7046AB, bEnableMouseSteering);
 
+	// Patched CAutomobile::Fix
+	// misc_x parts don't get reset (Bandito fix), Towtruck's bouncing panel is not reset
+	Patch<DWORD>(0x6D05B3, 0x6BEBED31);
+	Patch<DWORD>(0x6D0649, 0x5E5FCF8B);
+	Patch<DWORD>(0x6D064D, 0x448B5B5D);
+	Patch<DWORD>(0x6D0651, 0x89644824);
+	Patch<DWORD>(0x6D0655, 5);
+	Patch<DWORD>(0x6D0659, 0x54C48300);
+	InjectHook(0x6D065D, &CAutomobile::Fix_SilentPatch, PATCH_JUMP);
 
+	// Patched CPlane::Fix
+	// Doors don't get reset (they can't get damaged anyway), bouncing panels DO reset
+	// but not on Vortex
+	Patch<BYTE>(0x700681, 0xEB);
+	Patch<DWORD>(0x7006B6, 0x5E5FCF8B);
+	InjectHook(0x7006BA, &CPlane::Fix_SilentPatch, PATCH_JUMP);
+
+	// Zones fix
+	InjectHook(0x587080, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
+
+	// CGarages::RespraysAreFree resetting on new game
+	Patch<WORD>(0x44CB55, 0x0D88);
+	Patch<bool*>(0x44CB57, *(bool**)0x44EEBA);
+	Nop(0x44CB5B, 3);
+
+	// Fixed police scanner names
+	char*			pScannerNames = *(char**)0x4F2B83;
+	strncpy(pScannerNames + (8*113), "WESTP", 8);
+	strncpy(pScannerNames + (8*134), "????", 8);
 
 	// STEAM ONLY
 	// Proper aspect ratios - why Rockstar, why?
