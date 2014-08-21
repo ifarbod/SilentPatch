@@ -80,13 +80,13 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 		if ( !address11 )
 			return (T)GetDummy();
 
-		// Adjust to EU if needed
-		if ( *bEuropean && address11 > 0x746FA0 )
+		// Adjust to US if needed
+		if ( !(*bEuropean) && address11 > 0x746FA0 )
 		{
 			if ( address11 < 0x7BB240 )
-				address11 += 0x50;
+				address11 -= 0x50;
 			else
-				address11 += 0x40;
+				address11 -= 0x40;
 		}
 		return (T)address11;
 	case 2:
@@ -143,6 +143,41 @@ inline T AddressByRegion_10(DWORD address10)
 			address10 += 0x40;
 	}
 	return (T)address10;
+}
+
+template<typename T>
+inline T AddressByRegion_11(DWORD address11)
+{
+	bool*			bEuropean = GetEuropean();
+	signed char*	bVer = GetVer();
+
+	if ( *bVer == -1 )
+	{
+		if ( *(DWORD*)0x8252FC == 0x94BF )
+		{
+			*bVer = 1;
+			*bEuropean = false;
+		}	
+		else if ( *(DWORD*)0x82533C == 0x94BF )
+		{
+			*bVer = 1;
+			*bEuropean = true;
+		}
+		else
+		{
+			assert(!"AddressByRegion_11 on non-1.01 EXE!");
+		}
+	}
+
+	// Adjust to US if needed
+	if ( !(*bEuropean) && address11 > 0x746FA0 )
+	{
+		if ( address11 < 0x7BB240 )
+			address11 -= 0x50;
+		else
+			address11 -= 0x40;
+	}
+	return (T)address11;
 }
 
 namespace Memory

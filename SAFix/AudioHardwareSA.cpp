@@ -5,7 +5,7 @@
 //			{ EAXJMP(0x4DC340); }
 //WRAPPER HRESULT STDMETHODCALLTYPE CAEDataStream::Stat(STATSTG* pStatstg, DWORD grfStatFlag) { EAXJMP(0x4DC3A0); }
 
-static void* CAEDataStream__Initialise = AddressByVersion<void*>(0x4DC2B0, 0, 0x4E7550);
+static void* CAEDataStream__Initialise = AddressByVersion<void*>(0x4DC2B0, 0x4DC7A0, 0x4E7550);
 WRAPPER bool CAEDataStream::Initialise() { VARJMP(CAEDataStream__Initialise); }
 
 unsigned int			CAEStreamingDecoder::nMallocRefCount = 0;

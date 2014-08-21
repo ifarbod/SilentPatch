@@ -1,15 +1,15 @@
 #include "StdAfxSA.h"
 #include "ModelInfoSA.h"
 
-static void* BaseModelInfoShutdown = AddressByVersion<void*>(0x4C4D50, 0, 0x4CF590);
+static void* BaseModelInfoShutdown = AddressByVersion<void*>(0x4C4D50, 0x4C4DD0, 0x4CF590);
 WRAPPER void CBaseModelInfo::Shutdown() { VARJMP(BaseModelInfoShutdown); }
 
-RwTexture* (*CCustomCarPlateMgr::CreatePlateTexture)(const char* pText, signed char nDesign) = AddressByVersion<RwTexture*(*)(const char*,signed char)>(0x6FDEA0, 0, 0x736AC0);
-bool (*CCustomCarPlateMgr::GeneratePlateText)(char* pBuf, int nLen) = AddressByVersion<bool(*)(char*,int)>(0x6FD5B0, 0, 0x7360F0);
-signed char (*CCustomCarPlateMgr::GetMapRegionPlateDesign)() = AddressByVersion<signed char(*)()>(0x6FD7A0, 0, 0x7363E0);
-void (*CCustomCarPlateMgr::SetupMaterialPlatebackTexture)(RpMaterial* pMaterial, signed char nDesign) = AddressByVersion<void(*)(RpMaterial*,signed char)>(0x6FDE50, 0, 0x736A80);
+RwTexture* (*CCustomCarPlateMgr::CreatePlateTexture)(const char* pText, signed char nDesign) = AddressByVersion<RwTexture*(*)(const char*,signed char)>(0x6FDEA0, 0x6FE6D0, 0x736AC0);
+bool (*CCustomCarPlateMgr::GeneratePlateText)(char* pBuf, int nLen) = AddressByVersion<bool(*)(char*,int)>(0x6FD5B0, 0x6FDDE0, 0x7360F0);
+signed char (*CCustomCarPlateMgr::GetMapRegionPlateDesign)() = AddressByVersion<signed char(*)()>(0x6FD7A0, 0x6FDFD0, 0x7363E0);
+void (*CCustomCarPlateMgr::SetupMaterialPlatebackTexture)(RpMaterial* pMaterial, signed char nDesign) = AddressByVersion<void(*)(RpMaterial*,signed char)>(0x6FDE50, 0x6FE680, 0x736A80);
 
-CBaseModelInfo** const			ms_modelInfoPtrs = *AddressByVersion<CBaseModelInfo***>(0x509CB1, 0, 0x403DB7);
+CBaseModelInfo** const			ms_modelInfoPtrs = *AddressByVersion<CBaseModelInfo***>(0x509CB1, 0x4C0C96, 0x403DB7);
 
 void CVehicleModelInfo::Shutdown()
 {

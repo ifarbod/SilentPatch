@@ -1911,6 +1911,12 @@ __forceinline void Patch_SA_10()
 	strncpy(pScannerNames + (8*134), "????", 8);
 }
 
+__forceinline void Patch_SA_11()
+{
+	using namespace MemoryVP;
+
+}
+
 __forceinline void Patch_SA_Steam()
 {
 	using namespace MemoryVP;
@@ -2085,7 +2091,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		hDLLModule = hinstDLL;
 
 		if (*(DWORD*)0x82457C == 0x94BF || *(DWORD*)0x8245BC == 0x94BF) Patch_SA_10();
-		//else if (*(DWORD*)0x8252FC == 0x94BF || *(DWORD*)0x82533C == 0x94BF) Patch_SA_11();
+		else if (*(DWORD*)0x8252FC == 0x94BF || *(DWORD*)0x82533C == 0x94BF) Patch_SA_11();
 		else if (*(DWORD*)0x85EC4A == 0x94BF) Patch_SA_Steam();
 		else return FALSE;
 	}
