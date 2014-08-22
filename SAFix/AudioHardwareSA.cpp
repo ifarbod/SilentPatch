@@ -5,6 +5,8 @@
 //			{ EAXJMP(0x4DC340); }
 //WRAPPER HRESULT STDMETHODCALLTYPE CAEDataStream::Stat(STATSTG* pStatstg, DWORD grfStatFlag) { EAXJMP(0x4DC3A0); }
 
+bool			CAEDataStream::m_bUseNewStruct;
+
 static void* CAEDataStream__Initialise = AddressByVersion<void*>(0x4DC2B0, 0x4DC7A0, 0x4E7550);
 WRAPPER bool CAEDataStream::Initialise() { VARJMP(CAEDataStream__Initialise); }
 
@@ -16,7 +18,7 @@ static unsigned int		nLastMallocSize = 0;
 
 static unsigned int		nSamplesLeftToProcess = 0;
 
-unsigned int CAEDataStream::Seek(long nToSeek, int nPoint)
+unsigned int CAEDataStreamOld::Seek(long nToSeek, int nPoint)
 {
 	switch ( nPoint )
 	{
@@ -34,7 +36,33 @@ unsigned int CAEDataStream::Seek(long nToSeek, int nPoint)
 	return dwCurrentPosition - dwStartPosition;
 }
 
-unsigned int CAEDataStream::FillBuffer(void* pBuf, unsigned long nLen)
+unsigned int CAEDataStreamOld::FillBuffer(void* pBuf, unsigned long nLen)
+{
+	ReadFile(hHandle, pBuf, nLen, &nLen, nullptr);
+
+	dwCurrentPosition += nLen;
+	return nLen;
+}
+
+unsigned int CAEDataStreamNew::Seek(long nToSeek, int nPoint)
+{
+	switch ( nPoint )
+	{
+	case FILE_BEGIN:
+		nToSeek = nToSeek + dwStartPosition;
+		break;
+	case FILE_END:
+		nPoint = FILE_BEGIN;
+		nToSeek = dwStartPosition + dwLength - nToSeek;
+		break;
+	}
+
+	dwCurrentPosition = SetFilePointer(hHandle, nToSeek, nullptr, nPoint);
+
+	return dwCurrentPosition - dwStartPosition;
+}
+
+unsigned int CAEDataStreamNew::FillBuffer(void* pBuf, unsigned long nLen)
 {
 	ReadFile(hHandle, pBuf, nLen, &nLen, nullptr);
 
@@ -44,7 +72,10 @@ unsigned int CAEDataStream::FillBuffer(void* pBuf, unsigned long nLen)
 
 CAEStreamingDecoder::~CAEStreamingDecoder()
 {
-	GTAdelete(pStream);
+	if ( CAEDataStream::IsNew() )
+		delete reinterpret_cast<CAEDataStreamNew*>(pStream);
+	else
+		delete reinterpret_cast<CAEDataStreamOld*>(pStream);
 	pStream = nullptr;
 
 	if ( --nMallocRefCount == 0 )

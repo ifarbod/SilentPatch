@@ -10,41 +10,41 @@
 #include "PNGFile.h"
 
 // RW wrappers
-static void* varAtomicDefaultRenderCallBack = AddressByVersion<void*>(0x7491C0, 0, 0x783180);
+static void* varAtomicDefaultRenderCallBack = AddressByVersion<void*>(0x7491C0, 0x749AD0, 0x783180);
 WRAPPER RpAtomic* AtomicDefaultRenderCallBack(RpAtomic* atomic) { WRAPARG(atomic); VARJMP(varAtomicDefaultRenderCallBack); }
-static void* varRtPNGImageRead = AddressByVersion<void*>(0x7CF9B0, 0, 0x809970);
+static void* varRtPNGImageRead = AddressByVersion<void*>(0x7CF9B0, 0x7D02B0, 0x809970);
 WRAPPER RwImage* RtPNGImageRead(const RwChar* imageName) { WRAPARG(imageName); VARJMP(varRtPNGImageRead); }
-static void* varRwTextureCreate = AddressByVersion<void*>(0x7F37C0, 0, 0x82D780);
+static void* varRwTextureCreate = AddressByVersion<void*>(0x7F37C0, 0x7F40C0, 0x82D780);
 WRAPPER RwTexture* RwTextureCreate(RwRaster* raster) { WRAPARG(raster); VARJMP(varRwTextureCreate); }
-static void* varRwRasterCreate = AddressByVersion<void*>(0x7FB230, 0, 0x8351F0);
+static void* varRwRasterCreate = AddressByVersion<void*>(0x7FB230, 0x7FBB30, 0x8351F0);
 WRAPPER RwRaster* RwRasterCreate(RwInt32 width, RwInt32 height, RwInt32 depth, RwInt32 flags) { WRAPARG(width); WRAPARG(height); WRAPARG(depth); WRAPARG(flags); VARJMP(varRwRasterCreate); }
-static void* varRwImageDestroy = AddressByVersion<void*>(0x802740, 0, 0x83C700);
+static void* varRwImageDestroy = AddressByVersion<void*>(0x802740, 0x803040, 0x83C700);
 WRAPPER RwBool RwImageDestroy(RwImage* image) { WRAPARG(image); VARJMP(varRwImageDestroy); }
-static void* varRpMaterialSetTexture = AddressByVersion<void*>(0x74DBC0, 0, 0x787B80);
-WRAPPER RpMaterial *RpMaterialSetTexture(RpMaterial *material, RwTexture *texture) { VARJMP(varRpMaterialSetTexture); }
-static void* varRwFrameGetLTM = AddressByVersion<void*>(0x7F0990, 0, 0x82A950);
+static void* varRpMaterialSetTexture = AddressByVersion<void*>(0x74DBC0, 0x74E4D0, 0x787B80);
+WRAPPER RpMaterial* RpMaterialSetTexture(RpMaterial* material, RwTexture* texture) { VARJMP(varRpMaterialSetTexture); }
+static void* varRwFrameGetLTM = AddressByVersion<void*>(0x7F0990, 0x7F1290, 0x82A950);
 WRAPPER RwMatrix* RwFrameGetLTM(RwFrame* frame) { VARJMP(varRwFrameGetLTM); }
-static void* varRwMatrixTranslate = AddressByVersion<void*>(0x7F2450, 0, 0x82C410);
+static void* varRwMatrixTranslate = AddressByVersion<void*>(0x7F2450, 0x7F2D50, 0x82C410);
 WRAPPER RwMatrix* RwMatrixTranslate(RwMatrix* matrix, const RwV3d* translation, RwOpCombineType combineOp) { WRAPARG(matrix); WRAPARG(translation); WRAPARG(combineOp); VARJMP(varRwMatrixTranslate); }
-static void* varRwMatrixRotate = AddressByVersion<void*>(0x7F1FD0, 0, 0x82BF90);
+static void* varRwMatrixRotate = AddressByVersion<void*>(0x7F1FD0, 0x7F28D0, 0x82BF90);
 WRAPPER RwMatrix* RwMatrixRotate(RwMatrix* matrix, const RwV3d* axis, RwReal angle, RwOpCombineType combineOp) { WRAPARG(matrix); WRAPARG(axis); WRAPARG(angle); WRAPARG(combineOp); VARJMP(varRwMatrixRotate); }
-static void* varRwD3D9SetRenderState = AddressByVersion<void*>(0x7FC2D0, 0, 0x836290);
+static void* varRwD3D9SetRenderState = AddressByVersion<void*>(0x7FC2D0, 0x7FCBD0, 0x836290);
 WRAPPER void RwD3D9SetRenderState(RwUInt32 state, RwUInt32 value) { WRAPARG(state); WRAPARG(value); VARJMP(varRwD3D9SetRenderState); }
-static void* var_rwD3D9SetVertexShader = AddressByVersion<void*>(0x7F9FB0, 0, 0x833F70);
+static void* var_rwD3D9SetVertexShader = AddressByVersion<void*>(0x7F9FB0, 0x7FA8B0, 0x833F70);
 WRAPPER void _rwD3D9SetVertexShader(void *shader) { VARJMP(var_rwD3D9SetVertexShader); }
-static void* varRwD3D9CreateVertexShader = AddressByVersion<void*>(0x7FAC60, 0, 0x834C20);
+static void* varRwD3D9CreateVertexShader = AddressByVersion<void*>(0x7FAC60, 0x7FB560, 0x834C20);
 WRAPPER RwBool RwD3D9CreateVertexShader(const RwUInt32 *function, void **shader) { VARJMP(varRwD3D9CreateVertexShader); }
-static void* varRwD3D9DeleteVertexShader = AddressByVersion<void*>(0x7FAC90, 0, 0x834C50);
+static void* varRwD3D9DeleteVertexShader = AddressByVersion<void*>(0x7FAC90, 0x7FB590, 0x834C50);
 WRAPPER void RwD3D9DeleteVertexShader(void *shader) { VARJMP(varRwD3D9DeleteVertexShader); }
-static void* var_rwD3D9VSGetComposedTransformMatrix = AddressByVersion<void*>(0x7646E0, 0, 0x79E6A0);
+static void* var_rwD3D9VSGetComposedTransformMatrix = AddressByVersion<void*>(0x7646E0, 0x764FF0, 0x79E6A0);
 WRAPPER void _rwD3D9VSGetComposedTransformMatrix(void *transformMatrix) { VARJMP(var_rwD3D9VSGetComposedTransformMatrix); }
-static void* var_rwD3D9VSSetActiveWorldMatrix = AddressByVersion<void*>(0x764650, 0, 0x79E610);
+static void* var_rwD3D9VSSetActiveWorldMatrix = AddressByVersion<void*>(0x764650, 0x764F60, 0x79E610);
 WRAPPER void _rwD3D9VSSetActiveWorldMatrix(const RwMatrix *worldMatrix) { VARJMP(var_rwD3D9VSSetActiveWorldMatrix); }
-static void* var_rwD3D9SetVertexShaderConstant = AddressByVersion<void*>(0x7FACA0, 0, 0x834C60);
+static void* var_rwD3D9SetVertexShaderConstant = AddressByVersion<void*>(0x7FACA0, 0x7FB5A0, 0x834C60);
 WRAPPER void _rwD3D9SetVertexShaderConstant(RwUInt32 registerAddress,
                                const void *constantData,
 							   RwUInt32  constantCount) { VARJMP(var_rwD3D9SetVertexShaderConstant); }
-static void* var_rpD3D9VertexDeclarationInstColor = AddressByVersion<void*>(0x754AE0, 0, 0x78EAA0);
+static void* var_rpD3D9VertexDeclarationInstColor = AddressByVersion<void*>(0x754AE0, 0x7553F0, 0x78EAA0);
 WRAPPER RwBool _rpD3D9VertexDeclarationInstColor(RwUInt8 *mem,
                                   const RwRGBA *color,
                                   RwInt32 numVerts,
@@ -182,15 +182,15 @@ RwMatrix* RpHAnimHierarchyGetMatrixArray(RpHAnimHierarchy* hierarchy)
 }
 
 // Other wrappers
-void					(*GTAdelete)(void*) = AddressByVersion<void(*)(void*)>(0x82413F, 0, 0x85E58C);
-const char*				(*GetFrameNodeName)(RwFrame*) = AddressByVersion<const char*(*)(RwFrame*)>(0x72FB30, 0, 0x769C20);
-RpHAnimHierarchy*		(*GetAnimHierarchyFromSkinClump)(RpClump*) = AddressByVersion<RpHAnimHierarchy*(*)(RpClump*)>(0x734A40, 0, 0x7671B0);
-auto					SetVolume = AddressByVersion<void(__thiscall*)(void*,float)>(0x4D7C60, 0, 0x4E2750);
-auto					InitializeUtrax = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0, 0x4FFA80);
-auto					CanSeeOutSideFromCurrArea = AddressByVersion<bool(*)()>(0x53C4A0, 0, 0x54E440);
+void					(*GTAdelete)(void*) = AddressByVersion<void(*)(void*)>(0x82413F, 0x824EFF, 0x85E58C);
+const char*				(*GetFrameNodeName)(RwFrame*) = AddressByVersion<const char*(*)(RwFrame*)>(0x72FB30, 0x730360, 0x769C20);
+RpHAnimHierarchy*		(*GetAnimHierarchyFromSkinClump)(RpClump*) = AddressByVersion<RpHAnimHierarchy*(*)(RpClump*)>(0x734A40, 0x735270, 0x7671B0);
+auto					SetVolume = AddressByVersion<void(__thiscall*)(void*,float)>(0x4D7C60, 0x4D7E60, 0x4E2750);
+auto					InitializeUtrax = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0x4F3A10, 0x4FFA80);
+auto					CanSeeOutSideFromCurrArea = AddressByVersion<bool(*)()>(0x53C4A0, 0x53C940, 0x54E440);
 
-auto					__rwD3D9TextureHasAlpha = AddressByVersion<BOOL(*)(RwTexture*)>(0x4C9EA0, 0, 0x4D47E0);
-auto					RenderOneXLUSprite = AddressByVersion<void(*)(float, float, float, float, float, int, int, int, int, float, char, char, char)>(0x70D000, 0, 0x7592C0);
+auto					__rwD3D9TextureHasAlpha = AddressByVersion<BOOL(*)(RwTexture*)>(0x4C9EA0, 0x4CA090, 0x4D47E0);
+auto					RenderOneXLUSprite = AddressByVersion<void(*)(float, float, float, float, float, int, int, int, int, float, char, char, char)>(0x70D000, 0x70D830, 0x7592C0);
 
 static BOOL				(*IsAlreadyRunning)();
 static void				(*TheScriptsLoad)();
@@ -202,29 +202,29 @@ static void				(*sub_5DA6A0)(void*, void*, void*, void*);
 
 
 // SA variables
-void**					rwengine = *AddressByVersion<void***>(0x58FFC0, 0, 0x48C194);
-signed int&				ms_extraVertColourPluginOffset = **AddressByVersion<int**>(0x5D6362, 0, 0x5F2B65);
+void**					rwengine = *AddressByVersion<void***>(0x58FFC0, 0x53F032, 0x48C194);
+signed int&				ms_extraVertColourPluginOffset = **AddressByVersion<int**>(0x5D6362, 0x5D6B42, 0x5F2B65);
 
-unsigned char&			nGameClockDays = **AddressByVersion<unsigned char**>(0x4E841D, 0, 0x4F3871);
-unsigned char&			nGameClockMonths = **AddressByVersion<unsigned char**>(0x4E842D, 0, 0x4F3861);
-void*&					pUserTracksStuff = **AddressByVersion<void***>(0x4D9B7B, 0, 0x4E4A43);
-bool&					CCutsceneMgr__ms_running = **AddressByVersion<bool**>(0x53F92D, 0, 0x422061);
-unsigned char*			ScriptSpace = *AddressByVersion<unsigned char**>(0x5D5380, 0, 0x450E34);
-int*					ScriptParams = *AddressByVersion<int**>(0x48995B, 0, 0x46979A);
+unsigned char&			nGameClockDays = **AddressByVersion<unsigned char**>(0x4E841D, 0x4E886D, 0x4F3871);
+unsigned char&			nGameClockMonths = **AddressByVersion<unsigned char**>(0x4E842D, 0x4E887D, 0x4F3861);
+void*&					pUserTracksStuff = **AddressByVersion<void***>(0x4D9B7B, 0x4DA06C, 0x4E4A43);
+bool&					CCutsceneMgr__ms_running = **AddressByVersion<bool**>(0x53F92D, 0x434241, 0x422061);
+unsigned char*			ScriptSpace = *AddressByVersion<unsigned char**>(0x5D5380, 0x5D5B60, 0x450E34);
+int*					ScriptParams = *AddressByVersion<int**>(0x48995B, 0x46410A, 0x46979A);
 
-float&					fFarClipZ = **AddressByVersion<float**>(0x70D21F, 0, 0x421AB2);
-RwTexture** const		gpCoronaTexture = *AddressByVersion<RwTexture***>(0x6FAA8C, 0, 0x5480BF);
-int&					MoonSize = **AddressByVersion<int**>(0x713B0C, 0, 0x72F0AB);
+float&					fFarClipZ = **AddressByVersion<float**>(0x70D21F, 0x70DA4F, 0x421AB2);
+RwTexture** const		gpCoronaTexture = *AddressByVersion<RwTexture***>(0x6FAA8C, 0x6FB2BC, 0x5480BF);
+int&					MoonSize = **AddressByVersion<int**>(0x713B0C, 0x71433C, 0x72F0AB);
 
-CZoneInfo*&				pCurrZoneInfo = **AddressByVersion<CZoneInfo***>(0x58ADB1, 0, 0x407F93);
-CRGBA*					HudColour = *AddressByVersion<CRGBA**>(0x58ADF6, 0, 0x440648);
-unsigned char*			ZonesVisited = *AddressByVersion<unsigned char**>(0x57216A, 0, 0x5870E8) - 9;	
+CZoneInfo*&				pCurrZoneInfo = **AddressByVersion<CZoneInfo***>(0x58ADB1, 0x58B581, 0x407F93);
+CRGBA*					HudColour = *AddressByVersion<CRGBA**>(0x58ADF6, 0x58B5C6, 0x440648);
+unsigned char*			ZonesVisited = *AddressByVersion<unsigned char**>(0x57216A, 0, 0x5870E8) - 9;		// 1.01 fixed it!
 
-float&					m_fDNBalanceParam = **AddressByVersion<float**>(0x4A9062, 0, 0x4B2512);
-RpLight*&				pAmbient = **AddressByVersion<RpLight***>(0x5BA53A, 0, 0x5D90F0);
+float&					m_fDNBalanceParam = **AddressByVersion<float**>(0x4A9062, 0x4A90F2, 0x4B2512);
+RpLight*&				pAmbient = **AddressByVersion<RpLight***>(0x5BA53A, 0x735D11, 0x5D90F0);
 
-CLinkListSA<CPed*>&			ms_weaponPedsForPC = **AddressByVersion<CLinkListSA<CPed*>**>(0x53EACA, 0, 0x551101);
-CLinkListSA<AlphaObjectInfo>&	m_alphaList = **AddressByVersion<CLinkListSA<AlphaObjectInfo>**>(0x733A4D, 0, 0x76DCA3);
+CLinkListSA<CPed*>&			ms_weaponPedsForPC = **AddressByVersion<CLinkListSA<CPed*>**>(0x53EACA, 0x53EF6A, 0x551101);
+CLinkListSA<AlphaObjectInfo>&	m_alphaList = **AddressByVersion<CLinkListSA<AlphaObjectInfo>**>(0x733A4D, 0x73427D, 0x76DCA3);
 
 
 // Custom variables
@@ -586,6 +586,7 @@ void StartNewMission_BasketballFix()
 		BasketballFix(ScriptSpace+200000, 69000);
 }
 
+// 1.01 kinda fixed it
 bool GetCurrentZoneLockedOrUnlocked(float fPosX, float fPosY)
 {
 	int		Xindex = (fPosX+3000.0f) * (1.0f/600.0f);
@@ -683,6 +684,15 @@ void ShaderDetach()
 	ShutdownRenderWare();
 }
 
+// Function for 1.01
+BOOL Initialise3D(void* pParam)
+{
+	RwBool	(*RsRwInitialize)(void*) = (RwBool(*)(void*))(*(int*)0x5BFB93 + 0x5BFB92 + 5);
+	if ( RsRwInitialize(pParam) )
+		return ShaderAttach();
+	return false;
+}
+
 void SetShader(RxD3D9InstanceData* pInstData)
 {
 	if ( bRenderNVC )
@@ -711,7 +721,7 @@ void SetShader(RxD3D9InstanceData* pInstData)
 		RwD3D9SetVertexShader(pInstData->vertexShader);
 }
 
-static void*	HijackAtomic_JumpBack = AddressByVersion<void*>(0x5D6480, 0, 0x5F2C80);
+static void*	HijackAtomic_JumpBack = AddressByVersion<void*>(0x5D6480, 0x5D6C60, 0x5F2C80);
 void __declspec(naked) HijackAtomic()
 {
 	_asm
@@ -739,8 +749,8 @@ void __declspec(naked) SetShader2()
 }
 
 static void*	pJackedEsi;
-static void*	PassDayColoursToShader_NextIt = AddressByVersion<void*>(0x5D6382, 0, 0x5F2B81);
-static void*	PassDayColoursToShader_Return = AddressByVersion<void*>(0x5D63BD, 0, 0x5F2BB4);
+static void*	PassDayColoursToShader_NextIt = AddressByVersion<void*>(0x5D6382, 0x5D6B62, 0x5F2B81);
+static void*	PassDayColoursToShader_Return = AddressByVersion<void*>(0x5D63BD, 0x5D6B9D, 0x5F2BB4);
 void __declspec(naked) HijackEsi()
 {
 	_asm
@@ -911,13 +921,27 @@ void __declspec(naked) UserTracksFix()
 		push	[esp+4]
 		call	SetVolume
 		mov		ecx, [pUserTracksStuff]
+		mov		byte ptr [ecx+0Dh], 1
+		call	InitializeUtrax
+		retn	4
+	}
+}
+
+void __declspec(naked) UserTracksFix_Steam()
+{
+	_asm
+	{
+		push	[esp+4]
+		call	SetVolume
+		mov		ecx, [pUserTracksStuff]
+		mov		byte ptr [ecx+5], 1
 		call	InitializeUtrax
 		retn	4
 	}
 }
 
 // Unused on Steam EXE
-static void* UsageIndex1_JumpBack = AddressByVersion<void*>(0x5D611B, 0, 1);
+static void* UsageIndex1_JumpBack = AddressByVersion<void*>(0x5D611B, 0x5D68FB, 1);
 void __declspec(naked) UsageIndex1()
 {
 	_asm
@@ -965,9 +989,9 @@ void __declspec(naked) ResetAlphaFuncRefAfterRender_Steam()
 	}
 }
 
-static void*	PlaneAtomicRendererSetup_JumpBack = AddressByVersion<void*>(0x4C7986, 0, 0x4D2275);
-static void*	RenderVehicleHiDetailAlphaCB_BigVehicle = AddressByVersion<void*>(0x734370, 0, 0x76E400);
-static void*	RenderVehicleHiDetailCB_BigVehicle = AddressByVersion<void*>(0x733420, 0, 0x76D6C0);
+static void*	PlaneAtomicRendererSetup_JumpBack = AddressByVersion<void*>(0x4C7986, 0x4C7A06, 0x4D2275);
+static void*	RenderVehicleHiDetailAlphaCB_BigVehicle = AddressByVersion<void*>(0x734370, 0x734BA0, 0x76E400);
+static void*	RenderVehicleHiDetailCB_BigVehicle = AddressByVersion<void*>(0x733420, 0x733C50, 0x76D6C0);
 void __declspec(naked) PlaneAtomicRendererSetup()
 {
 	static const char	aStaticProp[] = "static_prop";
@@ -1008,11 +1032,11 @@ PlaneAtomicRendererSetup_Return:
 
 static unsigned int		nCachedCRC;
 
-static void*	RenderVehicleHiDetailCB = AddressByVersion<void*>(0x733240, 0, 0x76D4C0);
-static void*	RenderVehicleHiDetailAlphaCB = AddressByVersion<void*>(0x733F80, 0, 0x76DFE0);
-static void*	RenderHeliRotorAlphaCB = AddressByVersion<void*>(0x7340B0, 0, 0x76E110);
-static void*	RenderHeliTailRotorAlphaCB = AddressByVersion<void*>(0x734170, 0, 0x76E1E0);
-static void*	HunterTest_JumpBack = AddressByVersion<void*>(0x4C7914, 0, 0x4D2203);
+static void*	RenderVehicleHiDetailCB = AddressByVersion<void*>(0x733240, 0x733A70, 0x76D4C0);
+static void*	RenderVehicleHiDetailAlphaCB = AddressByVersion<void*>(0x733F80, 0x7347B0, 0x76DFE0);
+static void*	RenderHeliRotorAlphaCB = AddressByVersion<void*>(0x7340B0, 0x7348E0, 0x76E110);
+static void*	RenderHeliTailRotorAlphaCB = AddressByVersion<void*>(0x734170, 0x7349A0, 0x76E1E0);
+static void*	HunterTest_JumpBack = AddressByVersion<void*>(0x4C7914, 0x4C7994, 0x4D2203);
 void __declspec(naked) HunterTest()
 {
 	static const char	aDoorDummy[] = "door_lf_ok";
@@ -1081,7 +1105,7 @@ HunterTest_StaticRotor2AlphaSet:
 	}
 }
  
-static void*	CacheCRC32_JumpBack = AddressByVersion<void*>(0x4C7B10, 0, 0x4D2400);
+static void*	CacheCRC32_JumpBack = AddressByVersion<void*>(0x4C7B10, 0x4C7B90, 0x4D2400);
 void __declspec(naked) CacheCRC32()
 {
 	_asm
@@ -1092,7 +1116,7 @@ void __declspec(naked) CacheCRC32()
 	}
 }
 
-static void*	LoadFLAC_JumpBack = AddressByVersion<void*>(0x4F3743, 0, 0x4FFC3F);
+static void*	LoadFLAC_JumpBack = AddressByVersion<void*>(0x4F3743, *(BYTE*)0x4F3A50 == 0x6A ? 0x4F3BA3 : 0x5B6B81, 0x4FFC3F);
 void __declspec(naked) LoadFLAC()
 {
 	_asm
@@ -1114,7 +1138,7 @@ LoadFLAC_Success:
 
 LoadFLAC_Return:
 		mov		ecx, esi
-		call	CAEDataStream::~CAEDataStream
+		call	CAEDataStreamOld::~CAEDataStreamOld
 		push	esi
 		call	GTAdelete
 		add     esp, 4
@@ -1131,6 +1155,47 @@ LoadFLAC_Return_NoDelete:
 		retn	4
 	}
 }
+
+// 1.01 securom butchered this func, might not be reliable
+void __declspec(naked) LoadFLAC_11()
+{
+	_asm
+	{
+		jz		LoadFLAC_WindowsMedia
+		sub		ebp, 2
+		jnz		LoadFLAC_Return
+		push	esi
+		call	DecoderCtor
+		jmp		LoadFLAC_Success
+
+LoadFLAC_WindowsMedia:
+		jmp		LoadFLAC_JumpBack
+
+LoadFLAC_Success:
+		test	eax, eax
+		mov		[esp+20h+4], eax
+		jnz		LoadFLAC_Return_NoDelete
+
+LoadFLAC_Return:
+		mov		ecx, esi
+		call	CAEDataStreamNew::~CAEDataStreamNew
+		push	esi
+		call	GTAdelete
+		add     esp, 4
+
+LoadFLAC_Return_NoDelete:
+		mov     eax, [esp+20h+4]
+		mov		ecx, [esp+20h-0Ch]
+		pop		esi
+		pop		ebp
+		pop		edi
+		pop		ebx
+		mov		fs:0, ecx
+		add		esp, 10h
+		retn	4
+	}
+}
+
 
 void __declspec(naked) LoadFLAC_Steam()
 {
@@ -1153,7 +1218,7 @@ LoadFLAC_Success:
 
 LoadFLAC_Return:
 		mov		ecx, esi
-		call	CAEDataStream::~CAEDataStream
+		call	CAEDataStreamOld::~CAEDataStreamOld
 		push	esi
 		call	GTAdelete
 		add     esp, 4
@@ -1175,14 +1240,8 @@ void __declspec(naked) FLACInit()
 {
 	_asm
 	{
-		mov		al, 1
-		mov		[esi+0Dh], al
-		pop		esi
-		jnz		FLACInit_DontFallBack
-		mov		UserTrackExtensions+12.Codec, DECODER_WINDOWSMEDIA
-
-FLACInit_DontFallBack:
-		retn
+		mov		byte ptr [ecx+0Dh], 1
+		jmp		InitializeUtrax
 	}
 }
 
@@ -1190,19 +1249,14 @@ void __declspec(naked) FLACInit_Steam()
 {
 	_asm
 	{
-		mov		al, 1
-		mov		[esi+5], al
-		pop		esi
-		jnz		FLACInit_DontFallBack
-		mov		UserTrackExtensions+12.Codec, DECODER_WINDOWSMEDIA
-
-FLACInit_DontFallBack:
-		retn
+		mov		byte ptr [ecx+5], 1
+		jmp		InitializeUtrax
 	}
 }
 
+
 // Only 1.0/1.01
-static void*	HandleMoonStuffStub_JumpBack = AddressByVersion<void*>(0x713D24, 0, 0x72F17F);
+static void*	HandleMoonStuffStub_JumpBack = AddressByVersion<void*>(0x713D24, 0x714554, 0x72F17F);
 void __declspec(naked) HandleMoonStuffStub()
 {
 	__asm
@@ -1255,7 +1309,7 @@ void __declspec(naked) HandleMoonStuffStub_Steam()
 static bool			bDarkVehicleThing;
 static RpLight*&	pDirect = **(RpLight***)0x5BA573;
 
-static void* DarkVehiclesFix1_JumpBack = *GetEuropean() == true ? (void*)0x756DE0 : (void*)0x756D90;
+static void* DarkVehiclesFix1_JumpBack = AddressByRegion_10<void*>(0x756D90);//*GetEuropean() == true ? (void*)0x756DE0 : (void*)0x756D90;
 void __declspec(naked) DarkVehiclesFix1()
 {
 	_asm
@@ -1522,6 +1576,192 @@ BOOL InjectDelayedPatches_10()
 	return TRUE;
 }
 
+BOOL InjectDelayedPatches_11()
+{
+	if ( !IsAlreadyRunning() )
+	{
+		using namespace MemoryVP;
+
+		// Obtain a path to the ASI
+		wchar_t			wcModulePath[MAX_PATH];
+
+		GetModuleFileNameW(hDLLModule, wcModulePath, MAX_PATH);
+
+		wchar_t*		pSlash = wcsrchr(wcModulePath, '\\');
+		if ( pSlash )
+		{
+			*pSlash = '\0';
+			PathAppendW(wcModulePath, L"SilentPatchSA.ini");
+		}
+		else
+		{
+			// Should never happen - if it does, something's fucking up
+			return TRUE;
+		}
+
+		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
+		bool		bSAMP = GetModuleHandle("samp") != nullptr;
+
+		// PS2 sun - more
+		DoSunAndMoon = (void(*)())(*(int*)0x53C5D7 + 0x53C5D6 + 5);
+		InjectHook(0x53C5D6, SunAndMoonFarClip);
+
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", FALSE, wcModulePath) != FALSE )
+		{
+			InjectHook(0x4C449F, SetRendererForAtomic<TwoPassAlphaRender>, PATCH_CALL);
+			// Twopass for peds
+			InjectHook(0x733E44, RenderPedCB);
+		}
+		else
+		{
+			InjectHook(0x4C449F, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+		}
+
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", TRUE, wcModulePath) != FALSE )
+		{
+			// Gym glitch fix
+			Patch<WORD>(0x470B83, 0xCD8B);
+			Patch<DWORD>(0x470B8A, 0x8B04508B);
+			Patch<WORD>(0x470B8E, 0x9000);
+			Nop(0x470B90, 1);
+			InjectHook(0x470B85, &CRunningScript::GetDay_GymGlitch, PATCH_CALL);
+
+			// Basketball fix
+			WipeLocalVariableMemoryForMissionScript = (void(*)())(*(int*)0x489AF1 + 0x489AF0 + 5);
+			TheScriptsLoad = (void(*)())(*(int*)0x5D20D1 + 0x5D20D0 + 5);
+			InjectHook(0x5D20D0, TheScriptsLoad_BasketballFix);
+			// Fixed for Hoodlum
+			InjectHook(0x489A70, StartNewMission_BasketballFix);
+			InjectHook(0x489AF0, StartNewMission_BasketballFix);
+		}
+
+		if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", FALSE, wcModulePath) != FALSE )
+		{
+			// Shaders!
+			// plugin-sdk compatibility
+			// 1.01 needs to reverse Initialise3D
+			InitialiseRenderWare = (bool(*)())(*(int*)0x5BFB9F + 0x5BFB9E + 5);
+			ShutdownRenderWare = (void(*)())(*(int*)0x53DDB1 + 0x53DDB0 + 5);
+			sub_5DA6A0 = (void(*)(void*,void*,void*,void*))(*(int*)0x5D6ED2 + 0x5D6ED1 + 5);
+
+			InjectHook(0x5BFB70, Initialise3D, PATCH_JUMP);
+			InjectHook(0x5D6ED1, SetShader2);
+			InjectHook(0x5D68F6, UsageIndex1, PATCH_JUMP);
+			InjectHook(0x5D6B97, PassDayColoursToShader, PATCH_JUMP);
+			InjectHook(0x5D6B5B, HijackEsi, PATCH_JUMP);
+			//InjectHook(0x5BF3A1, ShaderAttach);
+			InjectHook(0x53DDB0, ShaderDetach);
+			Patch<const void*>(0x5D6FD4, HijackAtomic);
+			Patch<BYTE>(0x5D79E0, 0xC3);
+			Patch<WORD>(0x5D6F9B, 0x6890);
+			Patch<WORD>(0x5D6FB7, 0x6890);
+			Patch<DWORD>(0x5D6F9D, 0x5D67C0);
+			Patch<DWORD>(0x5D6FB9, 0x5D67C0);
+
+			Patch<BYTE>(0x5D68B9, D3DDECLTYPE_D3DCOLOR);
+			Patch<BYTE>(0x5D68C2, D3DDECLUSAGE_COLOR);
+			Patch<BYTE>(0x5D68AF, sizeof(D3DCOLOR));
+			Patch<BYTE>(0x5D68CA, sizeof(D3DCOLOR));
+			Patch<BYTE>(0x5D68A2, 0x13);
+			Patch<BYTE>(0x5D6AD0, 0xEB);
+
+			if ( *(DWORD*)0x5DAEC0 == 0x0C2444F6 )
+			{
+				InjectHook(0x5DAEC0 + 0xA3, SetShader);
+				Patch<DWORD>(0x5DAEC0 + 0x9F, 0x90909056);
+			}
+			else
+			{
+				// securom'd EXE
+				if ( *(DWORD*)0x14D0882 == 0x51104E8B )
+				{
+					InjectHook(0x14D088B, SetShader, PATCH_JUMP);
+					Patch<DWORD>(0x14D0882, 0x90909056);
+				}
+			}
+
+			// PostFX fix
+			Patch<float>(*(float**)0x703CF0, 0.0);
+		}
+
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", TRUE, wcModulePath) != FALSE )
+		{
+			// Skip the damn intro splash
+			Patch<WORD>(AddressByRegion_11<DWORD>(0x749388), 0x62EB);
+		}
+
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", TRUE, wcModulePath) != FALSE )
+		{
+			// We're on 1.01 - make texts smaller
+			Patch<const void*>(0x58CB57, &fSteamSubtitleSizeY);
+			Patch<const void*>(0x58CBDF, &fSteamSubtitleSizeY);
+			Patch<const void*>(0x58CC9E, &fSteamSubtitleSizeY);
+
+			Patch<const void*>(0x58CB6D, &fSteamSubtitleSizeX);
+			Patch<const void*>(0x58CBF5, &fSteamSubtitleSizeX);
+			Patch<const void*>(0x58CCB4, &fSteamSubtitleSizeX);
+
+			Patch<const void*>(0x4EA428, &fSteamRadioNamePosY);
+			Patch<const void*>(0x4EA372, &fSteamRadioNameSizeY);
+			Patch<const void*>(0x4EA388, &fSteamRadioNameSizeX);
+		}
+
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", FALSE, wcModulePath) != FALSE )
+		{
+			// Coloured zone names
+			Patch<WORD>(0x58B58E, 0x0E75);
+			Patch<WORD>(0x58B595, 0x0775);
+
+			InjectHook(0x58B5B4, &CRGBA::BlendGangColour);
+		}
+		else
+		{
+			Patch<BYTE>(0x58B57E, 0xEB);
+		}
+
+		// ImVehFt conflicts
+		if ( !bHasImVehFt )
+		{
+			// Lights
+			InjectHook(0x4C838C, LightMaterialsFix, PATCH_CALL);
+
+			// Flying components
+			InjectHook(0x59F950, &CObject::Render_Stub, PATCH_JUMP);
+		}
+
+		if ( !bHasImVehFt && !bSAMP )
+		{
+			// Properly random numberplates
+			DWORD*		pVMT = *(DWORD**)0x4C767C;
+			Patch(&pVMT[7], &CVehicleModelInfo::Shutdown_Stub);
+			Patch<BYTE>(0x6D1663, 0xEB);
+			InjectHook(0x4C984D, &CVehicleModelInfo::SetCarCustomPlate);
+			InjectHook(0x6D7288, &CVehicle::CustomCarPlate_TextureCreate);
+			InjectHook(0x6D6D4C, &CVehicle::CustomCarPlate_BeforeRenderingStart);
+			InjectHook(0x6FE810, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, PATCH_JUMP);
+			Nop(0x6D6D47, 2);
+		}
+
+		// SSE conflicts
+		if ( GetModuleHandle("shadows.asi") == nullptr )
+		{
+			Patch<DWORD>(0x706E8C, 0x52909090);
+			InjectHook(0x706E92, &CShadowCamera::Update);
+		}
+
+		// Bigger streamed entity linked lists
+		// Increase only if they're not increased already
+		if ( *(DWORD*)0x5B9635 == 12000 )
+		{
+			Patch<DWORD>(0x5B9635, 15000);
+			Patch<DWORD>(0x5B9690, 15000);
+		}
+
+		return FALSE;
+	}
+	return TRUE;
+}
+
 BOOL InjectDelayedPatches_Steam()
 {
 	if ( !IsAlreadyRunning() )
@@ -1704,6 +1944,9 @@ __forceinline void Patch_SA_10()
 	IsAlreadyRunning = (BOOL(*)())(*(int*)(pIsAlreadyRunning+1) + pIsAlreadyRunning + 5);
 	InjectHook(pIsAlreadyRunning, InjectDelayedPatches_10);
 
+	// Set CAEDataStream to use an old structure
+	CAEDataStream::SetStructType(false);
+
 	//Patch<BYTE>(0x5D7265, 0xEB);
 
 
@@ -1742,6 +1985,7 @@ __forceinline void Patch_SA_10()
 
 	// No framedelay
 	Patch<WORD>(0x53E923, 0x43EB);
+	Patch<BYTE>(0x53E99F, 0x10);
 	Nop(0x53E9A5, 1);
 
 	// Disable re-initialization of DirectInput mouse device by the game
@@ -1851,14 +2095,14 @@ __forceinline void Patch_SA_10()
 
 	// FLAC support
 	InjectHook(0x4F373D, LoadFLAC, PATCH_JUMP);
-	InjectHook(0x4F35E0, FLACInit, PATCH_JUMP);
+	InjectHook(0x57BEFE, FLACInit);
 	InjectHook(0x4F3787, CAEWaveDecoderInit);
 
 	Patch<WORD>(0x4F376A, 0x18EB);
 	//Patch<BYTE>(0x4F378F, sizeof(CAEWaveDecoder));
 	Patch<const void*>(0x4F3210, UserTrackExtensions);
 	Patch<const void*>(0x4F3241, &UserTrackExtensions->Codec);
-	//Patch<const void*>(0x4F35E7, &UserTrackExtensions[1].Codec);
+	Patch<const void*>(0x4F35E7, &UserTrackExtensions[1].Codec);
 	Patch<BYTE>(0x4F322D, sizeof(UserTrackExtensions));
 
 	// Impound garages working correctly
@@ -1898,12 +2142,14 @@ __forceinline void Patch_SA_10()
 	Nop(0x58EAE1, 3);	
 
 	// Zones fix
+	// Only 1.0 and Steam
 	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
 
 	// CGarages::RespraysAreFree resetting on new game
-	Patch<WORD>(0x448BD8, 0x0D88);
-	Patch<bool*>(0x448BDA, *(bool**)0x44AC98);
-	Patch<BYTE>(0x448BDE, 0xC3);
+	Patch<WORD>(0x448BD8, 0x8966);
+	Patch<BYTE>(0x448BDA, 0x0D);
+	Patch<bool*>(0x448BDB, *(bool**)0x44AC98);
+	Patch<BYTE>(0x448BDF, 0xC3);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
@@ -1915,6 +2161,199 @@ __forceinline void Patch_SA_11()
 {
 	using namespace MemoryVP;
 
+	// IsAlreadyRunning needs to be read relatively late - the later, the better
+	int			pIsAlreadyRunning = AddressByRegion_11<int>(0x749000);
+	IsAlreadyRunning = (BOOL(*)())(*(int*)(pIsAlreadyRunning+1) + pIsAlreadyRunning + 5);
+	InjectHook(pIsAlreadyRunning, InjectDelayedPatches_11);
+
+	// Set CAEDataStream to use a NEW structure
+	CAEDataStream::SetStructType(true);
+
+	// Heli rotors
+	InjectHook(0x6CB390, &CPlane::Render_Stub, PATCH_JUMP);
+	InjectHook(0x6C4C20, &CHeli::Render_Stub, PATCH_JUMP);
+	Patch<const void*>(0x734A09, TwoPassAlphaRender);
+	Patch<const void*>(0x734957, TwoPassAlphaRender);
+	Patch<const void*>(0x734C8E, RenderBigVehicleActomic);
+
+	// RefFix
+	static const float						fRefZVal = 1.0f;
+	static const float* const				pRefFal = &fRefZVal;
+
+	Patch<const void*>(0x6FC1AA, &pRefFal);
+	Patch<BYTE>(0x6FC1D0, 0);
+
+	// Plane rotors
+	InjectHook(0x4C7A01, PlaneAtomicRendererSetup, PATCH_JUMP);
+
+	// DOUBLE_RWHEELS
+	Patch<WORD>(0x4C9490, 0xE281);
+	Patch<int>(0x4C9492, ~(rwMATRIXTYPEMASK|rwMATRIXINTERNALIDENTITY));
+
+	// No framedelay
+	Patch<WORD>(0x53EDC3, 0x43EB);
+	Patch<BYTE>(0x53EE3F, 0x10);
+	Nop(0x53EE45, 1);
+
+	// Disable re-initialization of DirectInput mouse device by the game
+	Patch<BYTE>(0x57723C, 0xEB);
+	Patch<BYTE>(0x57742A, 0xEB);
+	Patch<BYTE>(0x5774FA, 0xEB);
+
+	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
+	Patch<DWORD>(AddressByRegion_11<DWORD>(0x747270), 0x9090C030);
+
+	// Weapons rendering
+	InjectHook(0x5E8079, RenderWeapon);
+	InjectHook(0x733760, RenderWeaponPedsForPC, PATCH_JUMP);
+
+	// Hunter interior & static_rotor for helis
+	InjectHook(0x4C7972, HunterTest, PATCH_JUMP);
+	InjectHook(0x4C9818, CacheCRC32);
+
+	// Moonphases
+	InjectHook(0x7142FB, HandleMoonStuffStub, PATCH_JUMP);
+
+	// Twopass rendering (experimental)
+	Patch<BYTE>(0x4C449E, 0x57);
+	Patch<DWORD>(0x4C44A4, 0x5F04C483);
+	Patch<DWORD>(0x4C44A8, 0x0004C25E);
+
+	// Lightbeam fix
+	Patch<WORD>(0x6A36A8, 0x0EEB);
+	Nop(0x6A36BC, 3);
+	Patch<WORD>(0x6E1793, 0x0AEB);
+	Patch<WORD>(0x6E17AC, 0x0BEB);
+	Patch<WORD>(0x6E17C5, 0x0BEB);
+	Patch<WORD>(0x6E17DF, 0x1AEB);
+
+	Patch<WORD>(0x6E1C05, 0x09EB);
+	Patch<WORD>(0x6E1C1D, 0x17EB);
+	Patch<WORD>(0x6E1C4F, 0x0AEB);
+
+	Patch<BYTE>(0x6E1810, 0x28);
+	Patch<BYTE>(0x6E1C5D, 0x18);
+	Patch<BYTE>(0x6E180B, 0xC8-0x7C);
+
+	InjectHook(0x6A3717, ResetAlphaFuncRefAfterRender, PATCH_JUMP);
+
+	// PS2 SUN!!!!!!!!!!!!!!!!!
+	static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
+
+	Nop(0x6FB9AC, 3);
+	Patch<const void*>(0x6FCDE0, &fSunMult);
+	Patch<const void*>(0x6FCDDA, &fSunFarClip);
+
+	// Unlocked widescreen resolutions
+	Patch<DWORD>(0x74619C, 0x9090127D);
+	Nop(0x7461A0, 2);
+	Nop(0x746222, 2);
+
+	if ( *(BYTE*)0x746333 == 0xE9 )
+	{
+		// securom'd EXE
+		// I better check if it's an address I want to patch, I don't want to break the game
+		if ( *(DWORD*)0x14E7387 == 0x00E48C0F )
+		{
+			Patch<DWORD>(0x14E7387, 0x90905D7D);
+			Nop(0x14E738B, 2);
+		}
+	}
+	else
+	{
+		// Sadly, this func is different in 1.01 - so I don't know the original offset
+	}
+
+	// Heap corruption fix
+	Patch<BYTE>(0x4A9D50, 0xC3);
+
+	// User Tracks fix
+	InjectHook(0x4DA057, UserTracksFix);
+	InjectHook(0x4DA0A5, 0x4F3430);
+
+	// FLAC support
+	InjectHook(0x57C566, FLACInit);
+	if ( *(BYTE*)0x4F3A50 == 0x6A )
+	{
+		InjectHook(0x4F3A50 + 0x14D, LoadFLAC_11, PATCH_JUMP);
+		InjectHook(0x4F3A50 + 0x197, CAEWaveDecoderInit);
+
+		Patch<WORD>(0x4F3A50 + 0x17A, 0x18EB);
+		Patch<const void*>(0x4F3650 + 0x20, UserTrackExtensions);
+		Patch<const void*>(0x4F3650 + 0x51, &UserTrackExtensions->Codec);
+		Patch<const void*>(0x4F3A10 + 0x37, &UserTrackExtensions[1].Codec);
+		Patch<BYTE>(0x4F3650 + 0x3D, sizeof(UserTrackExtensions));
+	}
+	else
+	{
+		// securom'd EXE
+		InjectHook(0x5B6B7B, LoadFLAC_11, PATCH_JUMP);
+		InjectHook(0x5B6BFB, CAEWaveDecoderInit, PATCH_JUMP);
+		Patch<WORD>(0x5B6BCB, 0x26EB);
+
+		if ( *(DWORD*)0x14E4954 == 0x05C70A75 )
+			Patch<const void*>(0x14E4958, &UserTrackExtensions[1].Codec);
+
+		// Deobfuscating an opcode
+		Patch<BYTE>(0x4EBD25, 0xBF);
+		Patch<const void*>(0x4EBD26, UserTrackExtensions);
+		Patch<const void*>(0x4EBDD4, &UserTrackExtensions->Codec);
+		Patch<WORD>(0x4EBD2A, 0x72EB);
+		Patch<BYTE>(0x4EBDC0, sizeof(UserTrackExtensions));
+	}
+
+	// Impound garages working correctly
+	InjectHook(0x4251F9, 0x448A10);
+	InjectHook(0x4253E9, 0x448A10);
+	InjectHook(0x425491, 0x448A10);
+
+	// Impounding after busted works
+	Nop(0x443312, 5);
+
+	// Mouse rotates an airbone car only with Steer with Mouse option enabled
+	bool*	bEnableMouseSteering = *(bool**)0x6ADFCD; // CVehicle::m_bEnableMouseSteering
+	Patch<bool*>(0x6B56E0, bEnableMouseSteering);
+	Patch<bool*>(0x6CF047, bEnableMouseSteering);
+
+	// Patched CAutomobile::Fix
+	// misc_x parts don't get reset (Bandito fix), Towtruck's bouncing panel is not reset
+	Patch<WORD>(0x6A3CE9, 0x5EEB);
+	Patch<DWORD>(0x6A3D75, 0x5E5FCF8B);
+	Patch<DWORD>(0x6A3D79, 0x448B5B5D);
+	Patch<DWORD>(0x6A3D7D, 0x89644824);
+	Patch<DWORD>(0x6A3D81, 5);
+	Patch<DWORD>(0x6A3D85, 0x54C48300);
+	InjectHook(0x6A3D89, &CAutomobile::Fix_SilentPatch, PATCH_JUMP);
+
+	// Patched CPlane::Fix
+	// Doors don't get reset (they can't get damaged anyway), bouncing panels DO reset
+	// but not on Vortex
+	Patch<BYTE>(0x6CB3F0, 0xEB);
+	Patch<DWORD>(0x6CB425, 0x5E5FCF8B);
+	InjectHook(0x6CB429, &CPlane::Fix_SilentPatch, PATCH_JUMP);
+
+	// Weapon icon fix (crosshairs mess up rwRENDERSTATEZWRITEENABLE)
+	// Only 1.0 and 1.01, Steam somehow fixed it (not the same way though)
+	Nop(0x58E9E0, 3);
+	Nop(0x58F287, 3);
+	Nop(0x58F2B1, 3);
+
+	// CGarages::RespraysAreFree resetting on new game
+	Patch<WORD>(0x448C58, 0x8966);
+	Patch<BYTE>(0x448C5A, 0x0D);
+	Patch<bool*>(0x448C5B, *(bool**)0x44AD18);
+	Patch<BYTE>(0x448C5F, 0xC3);
+
+	// Fixed police scanner names
+	char*			pScannerNames = *(char**)0x4E7714;
+	strncpy(pScannerNames + (8*113), "WESTP", 8);
+	strncpy(pScannerNames + (8*134), "????", 8);
+
+
+	// 1.01 ONLY
+	// I'm not sure what was this new audio code supposed to do, but it leaks memory
+	// and due to this I have to make extra effort if I want FLAC to work on 1.01
+	Patch<DWORD>(0x4E124C, 0x4DEBC78B);
 }
 
 __forceinline void Patch_SA_Steam()
@@ -1925,6 +2364,8 @@ __forceinline void Patch_SA_Steam()
 	IsAlreadyRunning = (BOOL(*)())(*(int*)(0x7826ED+1) + 0x7826ED + 5);
 	InjectHook(0x7826ED, InjectDelayedPatches_Steam);
 
+	// Set CAEDataStream to use an old structure
+	CAEDataStream::SetStructType(false);
 
 	// Heli rotors
 	InjectHook(0x700620, &CPlane::Render_Stub, PATCH_JUMP);
@@ -1949,6 +2390,7 @@ __forceinline void Patch_SA_Steam()
 
 	// No framedelay
 	Patch<WORD>(0x551113, 0x46EB);
+	Patch<BYTE>(0x551195, 0xC);
 	Nop(0x551197, 1);
 
 	// Disable re-initialization of DirectInput mouse device by the game
@@ -2016,17 +2458,18 @@ __forceinline void Patch_SA_Steam()
 
 	// User Tracks fix
 	Patch<BYTE>(0x4E4A28, 0xBA);
-	Patch<const void*>(0x4E4A29, UserTracksFix);
+	Patch<const void*>(0x4E4A29, UserTracksFix_Steam);
 	InjectHook(0x4E4A8B, 0x4FF2B0);
 
 	// FLAC support
 	InjectHook(0x4FFC39, LoadFLAC_Steam, PATCH_JUMP);
-	InjectHook(0x4FFAAF, FLACInit_Steam, PATCH_JUMP);
+	InjectHook(0x591814, FLACInit_Steam);
 	InjectHook(0x4FFC83, CAEWaveDecoderInit);
 
 	Patch<WORD>(0x4FFC66, 0x18EB);
 	Patch<const void*>(0x4FF4F0, UserTrackExtensions);
 	Patch<const void*>(0x4FF523, &UserTrackExtensions->Codec);
+	Patch<const void*>(0x4FFAB6, &UserTrackExtensions[1].Codec);
 	Patch<BYTE>(0x4FF50F, sizeof(UserTrackExtensions));
 
 	// Impound garages working correctly
@@ -2063,9 +2506,10 @@ __forceinline void Patch_SA_Steam()
 	InjectHook(0x587080, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
 
 	// CGarages::RespraysAreFree resetting on new game
-	Patch<WORD>(0x44CB55, 0x0D88);
-	Patch<bool*>(0x44CB57, *(bool**)0x44EEBA);
-	Nop(0x44CB5B, 3);
+	Patch<WORD>(0x44CB55, 0xC766);
+	Patch<BYTE>(0x44CB57, 0x05);
+	Patch<bool*>(0x44CB58, *(bool**)0x44EEBA);
+	Patch<WORD>(0x44CB5C, 0x0000);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
