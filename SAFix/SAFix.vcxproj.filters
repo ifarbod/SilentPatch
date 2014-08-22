@@ -53,11 +53,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\SilentPatch\win2000.asm">
-      <Filter>Source Files</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\SilentPatch\MemoryMgr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -120,5 +115,10 @@
     <CustomBuild Include="..\SilentPatch\nvc.fx">
       <Filter>Shaders</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="..\SilentPatch\win2000.asm">
+      <Filter>Source Files</Filter>
+    </MASM>
   </ItemGroup>
 </Project>
