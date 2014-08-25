@@ -2523,6 +2523,13 @@ __forceinline void Patch_SA_Steam()
 	Patch<const void*>(0x73822B, &f169);
 	Patch<const void*>(0x738247, &f54);
 	Patch<const void*>(0x73825A, &f43);
+
+	// No IMG size check
+	Nop(0x406CD0, 7);
+	Nop(0x406D00, 7);
+
+	// Unlock 1.0/1.01 saves loading
+	InjectHook(0x5EDFD9, 0x5EE0FA, PATCH_JUMP);
 }
 
 
