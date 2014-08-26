@@ -1,5 +1,4 @@
-#include "StdAfxSA.h"
-
+#include "StdAfx.h"
 #include "Timer.h"
 
 float*			CTimer::ms_fTimeScale;

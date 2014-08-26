@@ -49,7 +49,9 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>SILENTPATCH_VC_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\SilentPatch</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>StdAfx.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -70,11 +72,12 @@
       <PreprocessorDefinitions>SILENTPATCH_VC_VER;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <BufferSecurityCheck>false</BufferSecurityCheck>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
-      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\SilentPatch</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>StdAfx.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -89,12 +92,18 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\SilentPatch\General.h" />
     <ClInclude Include="..\SilentPatch\MemoryMgr.h" />
+    <ClInclude Include="..\SilentPatch\StdAfx.h" />
     <ClInclude Include="..\SilentPatch\Timer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\SilentPatch\dllmain.cpp" />
     <ClCompile Include="..\SilentPatch\Timer.cpp" />
+    <ClCompile Include="SilentPatchVC.cpp" />
+    <ClCompile Include="StdAfxVC.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <MASM Include="..\SilentPatch\win2000.asm">
