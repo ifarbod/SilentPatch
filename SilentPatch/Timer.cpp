@@ -96,7 +96,7 @@ void CTimer::Resume()
 		// MVL fix
 		InitTimerFunc();
 #endif
-		oldTime = timerFunction() - suspendTime;
+		oldTime += timerFunction() - suspendTime;
 	}
 }
 
@@ -116,17 +116,6 @@ unsigned int CTimer::GetCyclesPerMillisecond()
 
 void CTimer::Update()
 {
-#ifdef SILENTPATCH_VC_VER
-	// CTimer::Initialise workaround
-	static bool		bIntialisedIt = false;
-
-	if ( !bIntialisedIt )
-	{
-		Initialise();
-		bIntialisedIt = true;
-	}
-#endif
-
 	*m_snPreviousTimeInMilliseconds = *m_snTimeInMilliseconds;
 	cyclesPreviousTime = cyclesTime;
 

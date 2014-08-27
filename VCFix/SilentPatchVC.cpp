@@ -290,6 +290,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		else if(*(DWORD*)0x667C40 == 0x53E58955) Patch_VC_11();
 		else if (*(DWORD*)0x666BA0 == 0x53E58955) Patch_VC_Steam();
 		else return FALSE;
+
+		CTimer::Initialise();
 	}
 	return TRUE;
 }
