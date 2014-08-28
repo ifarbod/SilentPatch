@@ -256,6 +256,9 @@ __forceinline void Patch_III_10()
 	InjectHook(0x509A65, AlteredPrintStringMinus<0x509A5E,0x509A3D>);
 	InjectHook(0x50A142, AlteredPrintStringXOnly<0x50A139>);
 	InjectHook(0x57E9F5, AlteredPrintString<0x57E9EE,0x57E9CD>);
+
+	// Armour cheat as TORTOISE - like in 1.1 and Steam
+	Patch<const char*>(0x4925FB, "ESIOTROT");
 }
 
 __forceinline void Patch_III_11()

@@ -79,33 +79,17 @@ void CTimer::Initialise()
 void CTimer::Suspend()
 {
 	if ( suspendDepth++ == 0 )
-	{
-#ifdef SILENTPATCH_VC_VER
-		// MVL fix
-		InitTimerFunc();
-#endif
 		suspendTime = timerFunction();
-	}
 }
 
 void CTimer::Resume()
 {
 	if ( --suspendDepth == 0 )
-	{
-#ifdef SILENTPATCH_VC_VER
-		// MVL fix
-		InitTimerFunc();
-#endif
 		oldTime += timerFunction() - suspendTime;
-	}
 }
 
 unsigned int CTimer::GetCyclesPerFrame()
 {
-#ifdef SILENTPATCH_VC_VER
-	// MVL fix
-	InitTimerFunc();
-#endif
 	return static_cast<unsigned int>(timerFunction() - oldTime);
 }
 
