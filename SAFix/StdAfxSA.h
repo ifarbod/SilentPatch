@@ -15,7 +15,6 @@
 #include <utility> 
 #include <cassert>
 #include <tuple>
-#include <shlwapi.h>
 
 /*#include <windows.h>
 #include <limits>

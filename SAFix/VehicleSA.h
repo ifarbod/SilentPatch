@@ -4,6 +4,22 @@
 #include "GeneralSA.h"
 #include "ModelInfoSA.h"
 
+enum eVehicleType
+{
+    VEHICLE_AUTOMOBILE,
+    VEHICLE_MTRUCK,
+    VEHICLE_QUAD,
+    VEHICLE_HELI,
+    VEHICLE_PLANE,
+    VEHICLE_BOAT,
+    VEHICLE_TRAIN,
+    VEHICLE_FHELI,
+    VEHICLE_FPLANE,
+    VEHICLE_BIKE,
+    VEHICLE_BMX,
+    VEHICLE_TRAILER
+};
+
 struct CVehicleFlags
 {
 	//0x428

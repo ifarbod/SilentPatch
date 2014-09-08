@@ -6,8 +6,8 @@ struct RsGlobalType
 {
 	const char*		AppName;
 	unsigned int	unkWidth, unkHeight;
-	unsigned int	MaximumWidth;
-	unsigned int	MaximumHeight;
+	signed int		MaximumWidth;
+	signed int		MaximumHeight;
 	unsigned int	frameLimit;
 	BOOL			quit;
 	void*			ps;
@@ -23,8 +23,6 @@ static const void*		RosieAudioFix_JumpBack;
 void (__stdcall *AudioResetTimers)(unsigned int);
 static void (*PrintString)(float,float,const wchar_t*);
 
-static bool*			bWantsToDrawHud;
-static bool*			bCamCheck;
 static RsGlobalType*	RsGlobal;
 static const float*		ResolutionWidthMult;
 static const float*		ResolutionHeightMult;
@@ -99,7 +97,7 @@ void __declspec(naked) SubtitlesShadowFix()
 }
 
 
-__forceinline void Patch_VC_10()
+void Patch_VC_10()
 {
 	using namespace MemoryVP;
 
@@ -159,7 +157,7 @@ __forceinline void Patch_VC_10()
 	InjectHook(0x54474D, AlteredPrintStringMinus<0x544727,0x544727>);
 }
 
-__forceinline void Patch_VC_11()
+void Patch_VC_11()
 {
 	using namespace MemoryVP;
 
@@ -219,7 +217,7 @@ __forceinline void Patch_VC_11()
 	InjectHook(0x54476D, AlteredPrintStringMinus<0x544747,0x544747>);
 }
 
-__forceinline void Patch_VC_Steam()
+void Patch_VC_Steam()
 {
 	using namespace MemoryVP;
 

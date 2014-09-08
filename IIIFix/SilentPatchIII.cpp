@@ -7,8 +7,8 @@ struct RsGlobalType
 {
 	const char*		AppName;
 	unsigned int	unkWidth, unkHeight;
-	unsigned int	MaximumWidth;
-	unsigned int	MaximumHeight;
+	signed int		MaximumWidth;
+	signed int		MaximumHeight;
 	unsigned int	frameLimit;
 	BOOL			quit;
 	void*			ps;
@@ -154,7 +154,7 @@ void __declspec(naked) SubtitlesShadowFix()
 	}
 }
 
-__forceinline void Patch_III_10()
+void Patch_III_10()
 {
 	using namespace MemoryVP;
 
@@ -259,9 +259,12 @@ __forceinline void Patch_III_10()
 
 	// Armour cheat as TORTOISE - like in 1.1 and Steam
 	Patch<const char*>(0x4925FB, "ESIOTROT");
+	
+	// BOOOOORING fixed
+	Patch<BYTE>(0x4925D7, 10);
 }
 
-__forceinline void Patch_III_11()
+void Patch_III_11()
 {
 	using namespace MemoryVP;
 
@@ -365,7 +368,7 @@ __forceinline void Patch_III_11()
 	InjectHook(0x57ED45, AlteredPrintString<0x57ED3E,0x57ED1D>);
 }
 
-__forceinline void Patch_III_Steam()
+void Patch_III_Steam()
 {
 	using namespace MemoryVP;
 

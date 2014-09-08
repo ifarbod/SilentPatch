@@ -1116,6 +1116,68 @@ void __declspec(naked) CacheCRC32()
 	}
 }
 
+static void* const TrailerDoubleRWheelsFix_ReturnFalse = AddressByVersion<void*>(0x4C9333, 0x4C9533, 0x4D3C59);
+static void* const TrailerDoubleRWheelsFix_ReturnTrue = AddressByVersion<void*>(0x4C9235, 0x4C9435, 0x4D3B59);
+void __declspec(naked) TrailerDoubleRWheelsFix()
+{
+	_asm
+	{
+		cmp		[edi]CVehicleModelInfo.m_dwType, VEHICLE_TRAILER
+		je		TrailerDoubleRWheelsFix_DoWheels
+		cmp		eax, 2
+		je		TrailerDoubleRWheelsFix_False
+		cmp		eax, 5
+		je		TrailerDoubleRWheelsFix_False
+
+TrailerDoubleRWheelsFix_DoWheels:
+		jmp		TrailerDoubleRWheelsFix_ReturnTrue
+
+TrailerDoubleRWheelsFix_False:
+		jmp		TrailerDoubleRWheelsFix_ReturnFalse
+	}
+}
+
+void __declspec(naked) TrailerDoubleRWheelsFix2()
+{
+	_asm
+	{
+		add     esp, 18h
+		mov     eax, [ebx]
+		mov     eax, [esi+eax+4]
+		jmp		TrailerDoubleRWheelsFix
+	}
+}
+
+void __declspec(naked) TrailerDoubleRWheelsFix_Steam()
+{
+	_asm
+	{
+		cmp		[esi]CVehicleModelInfo.m_dwType, VEHICLE_TRAILER
+		je		TrailerDoubleRWheelsFix_DoWheels
+		cmp		eax, 2
+		je		TrailerDoubleRWheelsFix_False
+		cmp		eax, 5
+		je		TrailerDoubleRWheelsFix_False
+
+TrailerDoubleRWheelsFix_DoWheels:
+		jmp		TrailerDoubleRWheelsFix_ReturnTrue
+
+TrailerDoubleRWheelsFix_False:
+		jmp		TrailerDoubleRWheelsFix_ReturnFalse
+	}
+}
+
+void __declspec(naked) TrailerDoubleRWheelsFix2_Steam()
+{
+	_asm
+	{
+		add     esp, 18h
+		mov     eax, [ebp]
+		mov     eax, [ebx+eax+4]
+		jmp		TrailerDoubleRWheelsFix_Steam
+	}
+}
+
 static void*	LoadFLAC_JumpBack = AddressByVersion<void*>(0x4F3743, *(BYTE*)0x4F3A50 == 0x6A ? 0x4F3BA3 : 0x5B6B81, 0x4FFC3F);
 void __declspec(naked) LoadFLAC()
 {
@@ -1409,17 +1471,11 @@ BOOL InjectDelayedPatches_10()
 
 		GetModuleFileNameW(hDLLModule, wcModulePath, MAX_PATH);
 
-		wchar_t*		pSlash = wcsrchr(wcModulePath, '\\');
-		if ( pSlash )
-		{
-			*pSlash = '\0';
-			PathAppendW(wcModulePath, L"SilentPatchSA.ini");
-		}
-		else
-		{
-			// Should never happen - if it does, something's fucking up
-			return TRUE;
-		}
+		// ASI -> INI
+		size_t		nLen = wcslen(wcModulePath);
+		wcModulePath[nLen-1] = L'i';
+		wcModulePath[nLen-2] = L'n';
+		wcModulePath[nLen-3] = L'i';
 
 		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
 		bool		bSAMP = GetModuleHandle("samp") != nullptr;
@@ -1587,17 +1643,11 @@ BOOL InjectDelayedPatches_11()
 
 		GetModuleFileNameW(hDLLModule, wcModulePath, MAX_PATH);
 
-		wchar_t*		pSlash = wcsrchr(wcModulePath, '\\');
-		if ( pSlash )
-		{
-			*pSlash = '\0';
-			PathAppendW(wcModulePath, L"SilentPatchSA.ini");
-		}
-		else
-		{
-			// Should never happen - if it does, something's fucking up
-			return TRUE;
-		}
+		// ASI -> INI
+		size_t		nLen = wcslen(wcModulePath);
+		wcModulePath[nLen-1] = L'i';
+		wcModulePath[nLen-2] = L'n';
+		wcModulePath[nLen-3] = L'i';
 
 		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
 		bool		bSAMP = GetModuleHandle("samp") != nullptr;
@@ -1773,17 +1823,11 @@ BOOL InjectDelayedPatches_Steam()
 
 		GetModuleFileNameW(hDLLModule, wcModulePath, MAX_PATH);
 
-		wchar_t*		pSlash = wcsrchr(wcModulePath, '\\');
-		if ( pSlash )
-		{
-			*pSlash = '\0';
-			PathAppendW(wcModulePath, L"SilentPatchSA.ini");
-		}
-		else
-		{
-			// Should never happen - if it does, something's fucking up
-			return TRUE;
-		}
+		// ASI -> INI
+		size_t		nLen = wcslen(wcModulePath);
+		wcModulePath[nLen-1] = L'i';
+		wcModulePath[nLen-2] = L'n';
+		wcModulePath[nLen-3] = L'i';
 
 		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
 		bool		bSAMP = GetModuleHandle("samp") != nullptr;
@@ -1935,7 +1979,7 @@ BOOL InjectDelayedPatches_Steam()
 	return TRUE;
 }
 
-__forceinline void Patch_SA_10()
+void Patch_SA_10()
 {
 	using namespace MemoryVP;
 
@@ -1982,6 +2026,10 @@ __forceinline void Patch_SA_10()
 	// DOUBLE_RWHEELS
 	Patch<WORD>(0x4C9290, 0xE281);
 	Patch<int>(0x4C9292, ~(rwMATRIXTYPEMASK|rwMATRIXINTERNALIDENTITY));
+
+	// A fix for DOUBLE_RWHEELS trailers
+	InjectHook(0x4C9223, TrailerDoubleRWheelsFix, PATCH_JUMP);
+	InjectHook(0x4C92F4, TrailerDoubleRWheelsFix2, PATCH_JUMP);
 
 	// No framedelay
 	Patch<WORD>(0x53E923, 0x43EB);
@@ -2157,7 +2205,7 @@ __forceinline void Patch_SA_10()
 	strncpy(pScannerNames + (8*134), "????", 8);
 }
 
-__forceinline void Patch_SA_11()
+void Patch_SA_11()
 {
 	using namespace MemoryVP;
 
@@ -2189,6 +2237,10 @@ __forceinline void Patch_SA_11()
 	// DOUBLE_RWHEELS
 	Patch<WORD>(0x4C9490, 0xE281);
 	Patch<int>(0x4C9492, ~(rwMATRIXTYPEMASK|rwMATRIXINTERNALIDENTITY));
+
+	// A fix for DOUBLE_RWHEELS trailers
+	InjectHook(0x4C9423, TrailerDoubleRWheelsFix, PATCH_JUMP);
+	InjectHook(0x4C94F4, TrailerDoubleRWheelsFix2, PATCH_JUMP);
 
 	// No framedelay
 	Patch<WORD>(0x53EDC3, 0x43EB);
@@ -2356,7 +2408,7 @@ __forceinline void Patch_SA_11()
 	Patch<DWORD>(0x4E124C, 0x4DEBC78B);
 }
 
-__forceinline void Patch_SA_Steam()
+void Patch_SA_Steam()
 {
 	using namespace MemoryVP;
 
@@ -2387,6 +2439,10 @@ __forceinline void Patch_SA_Steam()
 	// DOUBLE_RWHEELS
 	Patch<WORD>(0x4D3B9D, 0x6781);
 	Patch<int>(0x4D3BA0, ~(rwMATRIXTYPEMASK|rwMATRIXINTERNALIDENTITY));
+
+	// A fix for DOUBLE_RWHEELS trailers
+	InjectHook(0x4D3B47, TrailerDoubleRWheelsFix_Steam, PATCH_JUMP);
+	InjectHook(0x4D3C1A, TrailerDoubleRWheelsFix2_Steam, PATCH_JUMP);
 
 	// No framedelay
 	Patch<WORD>(0x551113, 0x46EB);
