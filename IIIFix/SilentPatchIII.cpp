@@ -37,31 +37,44 @@ static void (*PrintString)(float,float,const wchar_t*);
 static bool*			bWantsToDrawHud;
 static bool*			bCamCheck;
 static RsGlobalType*	RsGlobal;
-static const float*		ResolutionWidthMult;
-static const float*		ResolutionHeightMult;
 static const void*		SubtitlesShadowFix_JumpBack;
+
+inline float GetWidthMult()
+{
+	static const float&		ResolutionWidthMult = **AddressByVersion<float**>(0x57E956, 0x57ECA6, 0x57EBA6);
+	return ResolutionWidthMult;
+}
+
+inline float GetHeightMult()
+{
+	static const float&		ResolutionHeightMult = **AddressByVersion<float**>(0x57E940, 0x57EC90, 0x57EB90);
+	return ResolutionHeightMult;
+}
 
 void ShowRadarTrace(float fX, float fY, unsigned int nScale, BYTE r, BYTE g, BYTE b, BYTE a)
 {
 	if ( *bWantsToDrawHud == true && !*bCamCheck )
 	{
-		DrawRect(CRect(	fX - ((nScale+1.0f) * *ResolutionWidthMult * RsGlobal->MaximumWidth),
-						fY + ((nScale+1.0f) * *ResolutionHeightMult * RsGlobal->MaximumHeight),
-						fX + ((nScale+1.0f) * *ResolutionWidthMult * RsGlobal->MaximumWidth),
-						fY - ((nScale+1.0f) * *ResolutionHeightMult * RsGlobal->MaximumHeight)),
+		float	fWidthMult = GetWidthMult();
+		float	fHeightMult = GetHeightMult();
+
+		DrawRect(CRect(	fX - ((nScale+1.0f) * fWidthMult * RsGlobal->MaximumWidth),
+						fY + ((nScale+1.0f) * fHeightMult * RsGlobal->MaximumHeight),
+						fX + ((nScale+1.0f) * fWidthMult * RsGlobal->MaximumWidth),
+						fY - ((nScale+1.0f) * fHeightMult * RsGlobal->MaximumHeight)),
 				 CRGBA(0, 0, 0, a));
 
-		DrawRect(CRect(	fX - (nScale * *ResolutionWidthMult * RsGlobal->MaximumWidth),
-						fY + (nScale * *ResolutionHeightMult * RsGlobal->MaximumHeight),
-						fX + (nScale * *ResolutionWidthMult * RsGlobal->MaximumWidth),
-						fY - (nScale * *ResolutionHeightMult * RsGlobal->MaximumHeight)),
+		DrawRect(CRect(	fX - (nScale * fWidthMult * RsGlobal->MaximumWidth),
+						fY + (nScale * fHeightMult * RsGlobal->MaximumHeight),
+						fX + (nScale * fWidthMult * RsGlobal->MaximumWidth),
+						fY - (nScale * fHeightMult * RsGlobal->MaximumHeight)),
 				 CRGBA(r, g, b, a));
 	}
 }
 
 void SetScaleProperly(float fX, float fY)
 {
-	SetScale(fX * *ResolutionWidthMult * RsGlobal->MaximumWidth, fY * *ResolutionHeightMult * RsGlobal->MaximumHeight);
+	SetScale(fX * GetWidthMult() * RsGlobal->MaximumWidth, fY * GetHeightMult() * RsGlobal->MaximumHeight);
 }
 
 void PurpleNinesGlitchFix()
@@ -117,8 +130,8 @@ static float fShadowXSize, fShadowYSize;
 
 void __stdcall Recalculate(signed int nShadow)
 {
-	fShadowXSize = nShadow * *ResolutionWidthMult * RsGlobal->MaximumWidth;
-	fShadowYSize = nShadow * *ResolutionHeightMult * RsGlobal->MaximumHeight;
+	fShadowXSize = nShadow * GetWidthMult() * RsGlobal->MaximumWidth;
+	fShadowYSize = nShadow * GetHeightMult() * RsGlobal->MaximumHeight;
 }
 
 template<int pFltX, int pFltY>
@@ -126,7 +139,7 @@ void AlteredPrintString(float fX, float fY, const wchar_t* pText)
 {
 	float	fMarginX = **reinterpret_cast<float**>(pFltX);
 	float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	PrintString(fX - fMarginX + (fMarginX * *ResolutionWidthMult * RsGlobal->MaximumWidth), fY - fMarginY + (fMarginY * *ResolutionHeightMult * RsGlobal->MaximumHeight), pText);
+	PrintString(fX - fMarginX + (fMarginX * GetWidthMult() * RsGlobal->MaximumWidth), fY - fMarginY + (fMarginY * GetHeightMult() * RsGlobal->MaximumHeight), pText);
 }
 
 template<int pFltX, int pFltY>
@@ -134,21 +147,21 @@ void AlteredPrintStringMinus(float fX, float fY, const wchar_t* pText)
 {
 	float	fMarginX = **reinterpret_cast<float**>(pFltX);
 	float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	PrintString(fX + fMarginX - (fMarginX * *ResolutionWidthMult * RsGlobal->MaximumWidth), fY + fMarginY - (fMarginY * *ResolutionHeightMult * RsGlobal->MaximumHeight), pText);
+	PrintString(fX + fMarginX - (fMarginX * GetWidthMult() * RsGlobal->MaximumWidth), fY + fMarginY - (fMarginY * GetHeightMult() * RsGlobal->MaximumHeight), pText);
 }
 
 template<int pFltX>
 void AlteredPrintStringXOnly(float fX, float fY, const wchar_t* pText)
 {
 	float	fMarginX = **reinterpret_cast<float**>(pFltX);
-	PrintString(fX - fMarginX + (fMarginX * *ResolutionWidthMult * RsGlobal->MaximumWidth), fY, pText);
+	PrintString(fX - fMarginX + (fMarginX * GetWidthMult() * RsGlobal->MaximumWidth), fY, pText);
 }
 
 template<int pFltY>
 void AlteredPrintStringYOnly(float fX, float fY, const wchar_t* pText)
 {
 	float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	PrintString(fX, fY - fMarginY + (fMarginY * *ResolutionHeightMult * RsGlobal->MaximumHeight), pText);
+	PrintString(fX, fY - fMarginY + (fMarginY * GetHeightMult() * RsGlobal->MaximumHeight), pText);
 }
 
 float FixedRefValue()
@@ -182,8 +195,6 @@ void Patch_III_10()
 	bWantsToDrawHud = *(bool**)0x4A5877;
 	bCamCheck = *(bool**)0x4A588C;
 	RsGlobal = *(RsGlobalType**)0x584C42;
-	ResolutionWidthMult = *(float**)0x57E956;
-	ResolutionHeightMult = *(float**)0x57E940;
 	HeadlightsFix_JumpBack = (void*)0x5382F2;
 	SubtitlesShadowFix_JumpBack = (void*)0x500D32;
 
@@ -295,8 +306,6 @@ void Patch_III_11()
 	bWantsToDrawHud = *(bool**)0x4A5967;
 	bCamCheck = *(bool**)0x4A597C;
 	RsGlobal = *(RsGlobalType**)0x584F82;
-	ResolutionWidthMult = *(float**)0x57ECA6;
-	ResolutionHeightMult = *(float**)0x57EC90;
 	HeadlightsFix_JumpBack = (void*)0x538532;
 	SubtitlesShadowFix_JumpBack = (void*)0x500E12;
 
@@ -402,8 +411,6 @@ void Patch_III_Steam()
 	bWantsToDrawHud = *(bool**)0x4A58F7;
 	bCamCheck = *(bool**)0x4A590C;
 	RsGlobal = *(RsGlobalType**)0x584E72;
-	ResolutionWidthMult = *(float**)0x57EBA6;
-	ResolutionHeightMult = *(float**)0x57EB90;
 	SubtitlesShadowFix_JumpBack = (void*)0x500DA2;
 
 	CTimer::ms_fTimeScale = *(float**)0x43F73F;

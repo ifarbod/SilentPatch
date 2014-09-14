@@ -35,6 +35,66 @@ inline void* GetDummy()
 	return &dwDummy;
 }
 
+#if defined SILENTPATCH_III_VER
+
+// This function initially detects III version then chooses the address basing on game version
+template<typename T>
+inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
+{
+	signed char*	bVer = GetVer();
+
+	if ( *bVer == -1 )
+	{
+		if (*(DWORD*)0x5C1E70 == 0x53E58955) *bVer = 0;
+		else if (*(DWORD*)0x5C2130 == 0x53E58955) *bVer = 1;
+		else if (*(DWORD*)0x5C6FD0 == 0x53E58955) *bVer = 2;
+	}
+
+	switch ( *bVer )
+	{
+	case 1:
+		assert(address11);
+		return (T)address11;
+	case 2:
+		assert(addressSteam);
+		return (T)addressSteam;
+	default:
+		assert(address10);
+		return (T)address10;
+	}
+}
+
+#elif defined SILENTPATCH_VC_VER
+
+// This function initially detects VC version then chooses the address basing on game version
+template<typename T>
+inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
+{
+	signed char*	bVer = GetVer();
+
+	if ( *bVer == -1 )
+	{
+		if (*(DWORD*)0x667BF0 == 0x53E58955) *bVer = 0;
+		else if (*(DWORD*)0x667C40 == 0x53E58955) *bVer = 1;
+		else if (*(DWORD*)0x666BA0 == 0x53E58955) *bVer = 2;
+	}
+
+	switch ( *bVer )
+	{
+	case 1:
+		assert(address11);
+		return (T)address11;
+	case 2:
+		assert(addressSteam);
+		return (T)addressSteam;
+	default:
+		assert(address10);
+		return (T)address10;
+	}
+}
+
+#else
+
 // This function initially detects SA version then chooses the address basing on game version
 template<typename T>
 inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
@@ -179,6 +239,8 @@ inline T AddressByRegion_11(DWORD address11)
 	}
 	return (T)address11;
 }
+
+#endif
 
 namespace Memory
 {

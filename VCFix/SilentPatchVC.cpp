@@ -24,9 +24,19 @@ void (__stdcall *AudioResetTimers)(unsigned int);
 static void (*PrintString)(float,float,const wchar_t*);
 
 static RsGlobalType*	RsGlobal;
-static const float*		ResolutionWidthMult;
-static const float*		ResolutionHeightMult;
 static const void*		SubtitlesShadowFix_JumpBack;
+
+inline float GetWidthMult()
+{
+	static const float&		ResolutionWidthMult = **AddressByVersion<float**>(0x5FA15E, 0x5FA17E, 0x5F9DBE);
+	return ResolutionWidthMult;
+}
+
+inline float GetHeightMult()
+{
+	static const float&		ResolutionHeightMult = **AddressByVersion<float**>(0x5FA148, 0x5FA168, 0x5F9DA8);
+	return ResolutionHeightMult;
+}
 
 
 void __declspec(naked) RosiesAudioFix()
@@ -41,8 +51,8 @@ void __declspec(naked) RosiesAudioFix()
 
 void __stdcall Recalculate(float& fX, float& fY, signed int nShadow)
 {
-	fX = nShadow * *ResolutionWidthMult * RsGlobal->MaximumWidth;
-	fY = nShadow * *ResolutionHeightMult * RsGlobal->MaximumHeight;
+	fX = nShadow * GetWidthMult() * RsGlobal->MaximumWidth;
+	fY = nShadow * GetHeightMult() * RsGlobal->MaximumHeight;
 }
 
 template<int pFltX, int pFltY>
@@ -50,7 +60,7 @@ void AlteredPrintString(float fX, float fY, const wchar_t* pText)
 {
 	float	fMarginX = **reinterpret_cast<float**>(pFltX);
 	float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	PrintString(fX - fMarginX + (fMarginX * *ResolutionWidthMult * RsGlobal->MaximumWidth), fY - fMarginY + (fMarginY * *ResolutionHeightMult * RsGlobal->MaximumHeight), pText);
+	PrintString(fX - fMarginX + (fMarginX * GetWidthMult() * RsGlobal->MaximumWidth), fY - fMarginY + (fMarginY * GetHeightMult() * RsGlobal->MaximumHeight), pText);
 }
 
 template<int pFltX, int pFltY>
@@ -58,21 +68,21 @@ void AlteredPrintStringMinus(float fX, float fY, const wchar_t* pText)
 {
 	float	fMarginX = **reinterpret_cast<float**>(pFltX);
 	float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	PrintString(fX + fMarginX - (fMarginX * *ResolutionWidthMult * RsGlobal->MaximumWidth), fY + fMarginY - (fMarginY * *ResolutionHeightMult * RsGlobal->MaximumHeight), pText);
+	PrintString(fX + fMarginX - (fMarginX * GetWidthMult() * RsGlobal->MaximumWidth), fY + fMarginY - (fMarginY * GetHeightMult() * RsGlobal->MaximumHeight), pText);
 }
 
 template<int pFltX>
 void AlteredPrintStringXOnly(float fX, float fY, const wchar_t* pText)
 {
 	float	fMarginX = **reinterpret_cast<float**>(pFltX);
-	PrintString(fX - fMarginX + (fMarginX * *ResolutionWidthMult * RsGlobal->MaximumWidth), fY, pText);
+	PrintString(fX - fMarginX + (fMarginX * GetWidthMult() * RsGlobal->MaximumWidth), fY, pText);
 }
 
 template<int pFltY>
 void AlteredPrintStringYOnly(float fX, float fY, const wchar_t* pText)
 {
 	float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	PrintString(fX, fY - fMarginY + (fMarginY * *ResolutionHeightMult * RsGlobal->MaximumHeight), pText);
+	PrintString(fX, fY - fMarginY + (fMarginY * GetHeightMult() * RsGlobal->MaximumHeight), pText);
 }
 
 float FixedRefValue()
@@ -106,8 +116,6 @@ void Patch_VC_10()
 
 	bSnapShotActive = *(bool**)0x4D1239;
 	RsGlobal = *(RsGlobalType**)0x602D32;
-	ResolutionWidthMult = *(float**)0x5FA15E;
-	ResolutionHeightMult = *(float**)0x5FA148;
 	RosieAudioFix_JumpBack = (void*)0x42BFFE;
 	SubtitlesShadowFix_JumpBack = (void*)0x551701;
 
@@ -166,8 +174,6 @@ void Patch_VC_11()
 
 	bSnapShotActive = *(bool**)0x4D1259;
 	RsGlobal = *(RsGlobalType**)0x602D12;
-	ResolutionWidthMult = *(float**)0x5FA17E;
-	ResolutionHeightMult = *(float**)0x5FA168;
 	RosieAudioFix_JumpBack = (void*)0x42BFFE;
 	SubtitlesShadowFix_JumpBack = (void*)0x551721;
 
@@ -226,8 +232,6 @@ void Patch_VC_Steam()
 
 	bSnapShotActive = *(bool**)0x4D10F9;
 	RsGlobal = *(RsGlobalType**)0x602952;
-	ResolutionWidthMult = *(float**)0x5F9DBE;
-	ResolutionHeightMult = *(float**)0x5F9DA8;
 	RosieAudioFix_JumpBack = (void*)0x42BFCE;
 	SubtitlesShadowFix_JumpBack = (void*)0x5515F1;
 
