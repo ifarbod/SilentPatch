@@ -365,12 +365,12 @@ RpAtomic* OnePassAlphaRender(RpAtomic* atomic)
 
 	if ( nAlphaBlending != TRUE )
 		RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
-	auto* pAtomic = AtomicDefaultRenderCallBack(atomic);
+	atomic = AtomicDefaultRenderCallBack(atomic);
 
 	if ( nAlphaBlending != TRUE )
 		RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
 
-	return pAtomic;
+	return atomic;
 }
 
 RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
@@ -393,21 +393,24 @@ RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(255));
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONEQUAL));
 
-	auto* pAtomic = AtomicDefaultRenderCallBack(atomic);
+	atomic = AtomicDefaultRenderCallBack(atomic);
 
-	// 2nd pass
-	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
-	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
+	if ( atomic )
+	{
+		// 2nd pass
+		RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
+		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
+		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
 
-	AtomicDefaultRenderCallBack(atomic);
+		AtomicDefaultRenderCallBack(atomic);
+	}
 
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
 
-	return pAtomic;
+	return atomic;
 }
 
 RpAtomic* StaticPropellerRender(RpAtomic* pAtomic)
@@ -417,10 +420,10 @@ RpAtomic* StaticPropellerRender(RpAtomic* pAtomic)
 	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
 
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, 0);
-	auto* pReturnAtomic = AtomicDefaultRenderCallBack(pAtomic);
+	pAtomic = AtomicDefaultRenderCallBack(pAtomic);
 
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
-	return pReturnAtomic;
+	return pAtomic;
 }
 
 RpAtomic* RenderBigVehicleActomic(RpAtomic* pAtomic, float fComp)
@@ -2199,6 +2202,16 @@ void Patch_SA_10()
 	Patch<bool*>(0x448BDB, *(bool**)0x44AC98);
 	Patch<BYTE>(0x448BDF, 0xC3);
 
+	// Bilinear filtering for license plates
+	//Patch<BYTE>(0x6FD528, rwFILTERLINEAR);
+	//Patch<BYTE>(0x6FDF47, rwFILTERLINEAR);
+
+	// -//- Roadsign maganer
+	//Patch<BYTE>(0x6FE147, rwFILTERLINEAR);
+
+	// Illumination value from timecyc.dat properly using floats
+	Patch<WORD>(0x5BBFC9, 0x14EB);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -2396,6 +2409,9 @@ void Patch_SA_11()
 	Patch<bool*>(0x448C5B, *(bool**)0x44AD18);
 	Patch<BYTE>(0x448C5F, 0xC3);
 
+	// Illumination value from timecyc.dat properly using floats
+	Patch<WORD>(0x5BC7A9, 0x14EB);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E7714;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -2566,6 +2582,9 @@ void Patch_SA_Steam()
 	Patch<BYTE>(0x44CB57, 0x05);
 	Patch<bool*>(0x44CB58, *(bool**)0x44EEBA);
 	Patch<WORD>(0x44CB5C, 0x0000);
+
+	// Illumination value from timecyc.dat properly using floats
+	Patch<WORD>(0x5DAF6B, 0x2CEB);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
