@@ -13,6 +13,7 @@
 
 #include <windows.h>
 #include <mmsystem.h>
+#include <cassert>
 
 #include "MemoryMgr.h"
 

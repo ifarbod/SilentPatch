@@ -17,6 +17,11 @@ struct RsGlobalType
 	void*			pad;
 };
 
+struct RwV2d
+{
+    float x;   /**< X value*/
+    float y;   /**< Y value */
+};
 
 
 static void (*DrawRect)(const CRect&,const CRGBA&);
@@ -63,6 +68,15 @@ void PurpleNinesGlitchFix()
 {
 	for ( int i = 0; i < 9; ++i )
 		pGangModelOverrides[i * 16] = -1;
+}
+
+static void (* const ConstructRenderList)() = AddressByVersion<void(*)()>(0x4A76B0, 0x4A77A0, 0x4A7730);
+static void (* const RsMouseSetPos)(RwV2d*) = AddressByVersion<void(*)(RwV2d*)>(0x580D20, 0x581070, 0x580F70);
+void ResetMousePos()
+{
+	RwV2d	vecPos = { RsGlobal->MaximumWidth * 0.5f, RsGlobal->MaximumHeight * 0.5f };
+	RsMouseSetPos(&vecPos);
+	ConstructRenderList();
 }
 
 void __declspec(naked) M16StatsFix()
@@ -257,6 +271,9 @@ void Patch_III_10()
 	InjectHook(0x50A142, AlteredPrintStringXOnly<0x50A139>);
 	InjectHook(0x57E9F5, AlteredPrintString<0x57E9EE,0x57E9CD>);
 
+	// RsMouseSetPos call (SA style fix)
+	InjectHook(0x48E539, ResetMousePos);
+
 	// Armour cheat as TORTOISE - like in 1.1 and Steam
 	Patch<const char*>(0x4925FB, "ESIOTROT");
 	
@@ -366,6 +383,9 @@ void Patch_III_11()
 	InjectHook(0x509B45, AlteredPrintStringMinus<0x509B3E,0x509B1D>);
 	InjectHook(0x50A222, AlteredPrintStringXOnly<0x50A219>);
 	InjectHook(0x57ED45, AlteredPrintString<0x57ED3E,0x57ED1D>);
+
+	// RsMouseSetPos call (SA style fix)
+	InjectHook(0x48E5F9, ResetMousePos);
 }
 
 void Patch_III_Steam()
@@ -466,6 +486,9 @@ void Patch_III_Steam()
 	InjectHook(0x509AD5, AlteredPrintStringMinus<0x509ACE,0x509AAD>);
 	InjectHook(0x50A1B2, AlteredPrintStringXOnly<0x50A1A9>);
 	InjectHook(0x57EC45, AlteredPrintString<0x57EC3E,0x57EC1D>);
+
+	// RsMouseSetPos call (SA style fix)
+	InjectHook(0x48E589, ResetMousePos);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
