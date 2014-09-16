@@ -3,6 +3,20 @@
 #include "General.h"
 #include "Timer.h"
 
+struct PsGlobalType
+{
+	HWND	window;
+	DWORD	instance;
+	DWORD	fullscreen;
+	DWORD	lastMousePos_X;
+	DWORD	lastMousePos_Y;
+	DWORD	unk;
+	DWORD	diInterface;
+	DWORD	diMouse;
+	void*	diDevice1;
+	void*	diDevice2;
+};
+
 struct RsGlobalType
 {
 	const char*		AppName;
@@ -11,11 +25,13 @@ struct RsGlobalType
 	signed int		MaximumHeight;
 	unsigned int	frameLimit;
 	BOOL			quit;
-	void*			ps;
+	PsGlobalType*	ps;
 	void*			keyboard;
 	void*			mouse;
 	void*			pad;
 };
+
+
 
 struct RwV2d
 {
@@ -87,8 +103,11 @@ static void (* const ConstructRenderList)() = AddressByVersion<void(*)()>(0x4A76
 static void (* const RsMouseSetPos)(RwV2d*) = AddressByVersion<void(*)(RwV2d*)>(0x580D20, 0x581070, 0x580F70);
 void ResetMousePos()
 {
-	RwV2d	vecPos = { RsGlobal->MaximumWidth * 0.5f, RsGlobal->MaximumHeight * 0.5f };
-	RsMouseSetPos(&vecPos);
+	if ( RsGlobal->ps->window == GetFocus() )
+	{
+		RwV2d	vecPos = { RsGlobal->MaximumWidth * 0.5f, RsGlobal->MaximumHeight * 0.5f };
+		RsMouseSetPos(&vecPos);
+	}
 	ConstructRenderList();
 }
 

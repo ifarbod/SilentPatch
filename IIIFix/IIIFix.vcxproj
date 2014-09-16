@@ -77,7 +77,7 @@
       <MinimumRequiredVersion>5.0</MinimumRequiredVersion>
       <EntryPointSymbol>
       </EntryPointSymbol>
-      <AdditionalDependencies>Winmm.lib</AdditionalDependencies>
+      <AdditionalDependencies>Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\gry\Steam\steamapps\common\Grand Theft Auto 3\SilentPatchIII.asi"</Command>
@@ -108,7 +108,7 @@
       <MinimumRequiredVersion>5.0</MinimumRequiredVersion>
       <EntryPointSymbol>
       </EntryPointSymbol>
-      <AdditionalDependencies>Winmm.lib</AdditionalDependencies>
+      <AdditionalDependencies>Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\gry\Steam\steamapps\common\Grand Theft Auto 3\SilentPatchIII.asi"</Command>
