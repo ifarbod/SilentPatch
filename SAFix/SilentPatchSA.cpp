@@ -1482,20 +1482,67 @@ BOOL InjectDelayedPatches_10()
 
 		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
 		bool		bSAMP = GetModuleHandle("samp") != nullptr;
+		bool		bSARender = GetModuleHandle("SARender.asi") != nullptr;
 
 		// PS2 sun - more
 		DoSunAndMoon = (void(*)())(*(int*)0x53C137 + 0x53C136 + 5);
 		InjectHook(0x53C136, SunAndMoonFarClip);
 		
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", FALSE, wcModulePath) != FALSE )
+		if ( !bSARender )
 		{
-			InjectHook(0x4C441F, SetRendererForAtomic<TwoPassAlphaRender>, PATCH_CALL);
-			// Twopass for peds
-			InjectHook(0x733614, RenderPedCB);
-		}
-		else
-		{
-			InjectHook(0x4C441F, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+			// Twopass rendering (experimental)
+			Patch<BYTE>(0x4C441E, 0x57);
+			Patch<DWORD>(0x4C4424, 0x5F04C483);
+			Patch<DWORD>(0x4C4428, 0x0004C25E);
+			if ( GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", FALSE, wcModulePath) != FALSE )
+			{
+				InjectHook(0x4C441F, SetRendererForAtomic<TwoPassAlphaRender>, PATCH_CALL);
+				// Twopass for peds
+				InjectHook(0x733614, RenderPedCB);
+			}
+			else
+			{
+				InjectHook(0x4C441F, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+			}
+
+
+			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", FALSE, wcModulePath) != FALSE )
+			{
+				// Shaders!
+				// plugin-sdk compatibility
+				InitialiseRenderWare = (bool(*)())(*(int*)0x5BF3A2 + 0x5BF3A1 + 5);
+				ShutdownRenderWare = (void(*)())(*(int*)0x53D911 + 0x53D910 + 5);
+				sub_5DA6A0 = (void(*)(void*,void*,void*,void*))(*(int*)0x5D66F2 + 0x5D66F1 + 5);
+
+				InjectHook(0x5DA743, SetShader);
+				InjectHook(0x5D66F1, SetShader2);
+				InjectHook(0x5D6116, UsageIndex1, PATCH_JUMP);
+				InjectHook(0x5D63B7, PassDayColoursToShader, PATCH_JUMP);
+				InjectHook(0x5D637B, HijackEsi, PATCH_JUMP);
+				InjectHook(0x5BF3A1, ShaderAttach);
+				InjectHook(0x53D910, ShaderDetach);
+				Patch<const void*>(0x5D67F4, HijackAtomic);
+				Patch<BYTE>(0x5D7200, 0xC3);
+				Patch<WORD>(0x5D67BB, 0x6890);
+				Patch<WORD>(0x5D67D7, 0x6890);
+				Patch<DWORD>(0x5D67BD, 0x5D5FE0);
+				Patch<DWORD>(0x5D67D9, 0x5D5FE0);
+				Patch<DWORD>(0x5DA73F, 0x90909056);
+
+				Patch<BYTE>(0x5D60D9, D3DDECLTYPE_D3DCOLOR);
+				Patch<BYTE>(0x5D60E2, D3DDECLUSAGE_COLOR);
+				Patch<BYTE>(0x5D60CF, sizeof(D3DCOLOR));
+				Patch<BYTE>(0x5D60EA, sizeof(D3DCOLOR));
+				Patch<BYTE>(0x5D60C2, 0x13);
+				Patch<BYTE>(0x5D62F0, 0xEB);
+
+				// PostFX fix
+				Patch<float>(*(float**)0x7034C0, 0.0);
+			}
+
+			// Weapons rendering
+			InjectHook(0x5E7859, RenderWeapon);
+			InjectHook(0x732F30, RenderWeaponPedsForPC, PATCH_JUMP);
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", TRUE, wcModulePath) != FALSE )
@@ -1514,40 +1561,6 @@ BOOL InjectDelayedPatches_10()
 			// Fixed for Hoodlum
 			InjectHook(0x489A70, StartNewMission_BasketballFix);
 			InjectHook(0x4899F0, StartNewMission_BasketballFix);
-		}
-
-		if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", FALSE, wcModulePath) != FALSE )
-		{
-			// Shaders!
-			// plugin-sdk compatibility
-			InitialiseRenderWare = (bool(*)())(*(int*)0x5BF3A2 + 0x5BF3A1 + 5);
-			ShutdownRenderWare = (void(*)())(*(int*)0x53D911 + 0x53D910 + 5);
-			sub_5DA6A0 = (void(*)(void*,void*,void*,void*))(*(int*)0x5D66F2 + 0x5D66F1 + 5);
-
-			InjectHook(0x5DA743, SetShader);
-			InjectHook(0x5D66F1, SetShader2);
-			InjectHook(0x5D6116, UsageIndex1, PATCH_JUMP);
-			InjectHook(0x5D63B7, PassDayColoursToShader, PATCH_JUMP);
-			InjectHook(0x5D637B, HijackEsi, PATCH_JUMP);
-			InjectHook(0x5BF3A1, ShaderAttach);
-			InjectHook(0x53D910, ShaderDetach);
-			Patch<const void*>(0x5D67F4, HijackAtomic);
-			Patch<BYTE>(0x5D7200, 0xC3);
-			Patch<WORD>(0x5D67BB, 0x6890);
-			Patch<WORD>(0x5D67D7, 0x6890);
-			Patch<DWORD>(0x5D67BD, 0x5D5FE0);
-			Patch<DWORD>(0x5D67D9, 0x5D5FE0);
-			Patch<DWORD>(0x5DA73F, 0x90909056);
-
-			Patch<BYTE>(0x5D60D9, D3DDECLTYPE_D3DCOLOR);
-			Patch<BYTE>(0x5D60E2, D3DDECLUSAGE_COLOR);
-			Patch<BYTE>(0x5D60CF, sizeof(D3DCOLOR));
-			Patch<BYTE>(0x5D60EA, sizeof(D3DCOLOR));
-			Patch<BYTE>(0x5D60C2, 0x13);
-			Patch<BYTE>(0x5D62F0, 0xEB);
-
-			// PostFX fix
-			Patch<float>(*(float**)0x7034C0, 0.0);
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", TRUE, wcModulePath) != FALSE )
@@ -1654,20 +1667,82 @@ BOOL InjectDelayedPatches_11()
 
 		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
 		bool		bSAMP = GetModuleHandle("samp") != nullptr;
+		bool		bSARender = GetModuleHandle("SARender.asi") != nullptr;
 
 		// PS2 sun - more
 		DoSunAndMoon = (void(*)())(*(int*)0x53C5D7 + 0x53C5D6 + 5);
 		InjectHook(0x53C5D6, SunAndMoonFarClip);
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", FALSE, wcModulePath) != FALSE )
+		if ( !bSARender )
 		{
-			InjectHook(0x4C449F, SetRendererForAtomic<TwoPassAlphaRender>, PATCH_CALL);
-			// Twopass for peds
-			InjectHook(0x733E44, RenderPedCB);
-		}
-		else
-		{
-			InjectHook(0x4C449F, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+			// Twopass rendering (experimental)
+			Patch<BYTE>(0x4C449E, 0x57);
+			Patch<DWORD>(0x4C44A4, 0x5F04C483);
+			Patch<DWORD>(0x4C44A8, 0x0004C25E);
+
+			if ( GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", FALSE, wcModulePath) != FALSE )
+			{
+				InjectHook(0x4C449F, SetRendererForAtomic<TwoPassAlphaRender>, PATCH_CALL);
+				// Twopass for peds
+				InjectHook(0x733E44, RenderPedCB);
+			}
+			else
+			{
+				InjectHook(0x4C449F, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+			}
+
+			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", FALSE, wcModulePath) != FALSE )
+			{
+				// Shaders!
+				// plugin-sdk compatibility
+				// 1.01 needs to reverse Initialise3D
+				InitialiseRenderWare = (bool(*)())(*(int*)0x5BFB9F + 0x5BFB9E + 5);
+				ShutdownRenderWare = (void(*)())(*(int*)0x53DDB1 + 0x53DDB0 + 5);
+				sub_5DA6A0 = (void(*)(void*,void*,void*,void*))(*(int*)0x5D6ED2 + 0x5D6ED1 + 5);
+
+				InjectHook(0x5BFB70, Initialise3D, PATCH_JUMP);
+				InjectHook(0x5D6ED1, SetShader2);
+				InjectHook(0x5D68F6, UsageIndex1, PATCH_JUMP);
+				InjectHook(0x5D6B97, PassDayColoursToShader, PATCH_JUMP);
+				InjectHook(0x5D6B5B, HijackEsi, PATCH_JUMP);
+				//InjectHook(0x5BF3A1, ShaderAttach);
+				InjectHook(0x53DDB0, ShaderDetach);
+				Patch<const void*>(0x5D6FD4, HijackAtomic);
+				Patch<BYTE>(0x5D79E0, 0xC3);
+				Patch<WORD>(0x5D6F9B, 0x6890);
+				Patch<WORD>(0x5D6FB7, 0x6890);
+				Patch<DWORD>(0x5D6F9D, 0x5D67C0);
+				Patch<DWORD>(0x5D6FB9, 0x5D67C0);
+
+				Patch<BYTE>(0x5D68B9, D3DDECLTYPE_D3DCOLOR);
+				Patch<BYTE>(0x5D68C2, D3DDECLUSAGE_COLOR);
+				Patch<BYTE>(0x5D68AF, sizeof(D3DCOLOR));
+				Patch<BYTE>(0x5D68CA, sizeof(D3DCOLOR));
+				Patch<BYTE>(0x5D68A2, 0x13);
+				Patch<BYTE>(0x5D6AD0, 0xEB);
+
+				if ( *(DWORD*)0x5DAEC0 == 0x0C2444F6 )
+				{
+					InjectHook(0x5DAEC0 + 0xA3, SetShader);
+					Patch<DWORD>(0x5DAEC0 + 0x9F, 0x90909056);
+				}
+				else
+				{
+					// securom'd EXE
+					if ( *(DWORD*)0x14D0882 == 0x51104E8B )
+					{
+						InjectHook(0x14D088B, SetShader, PATCH_JUMP);
+						Patch<DWORD>(0x14D0882, 0x90909056);
+					}
+				}
+
+				// PostFX fix
+				Patch<float>(*(float**)0x703CF0, 0.0);
+			}
+
+			// Weapons rendering
+			InjectHook(0x5E8079, RenderWeapon);
+			InjectHook(0x733760, RenderWeaponPedsForPC, PATCH_JUMP);
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", TRUE, wcModulePath) != FALSE )
@@ -1686,55 +1761,6 @@ BOOL InjectDelayedPatches_11()
 			// Fixed for Hoodlum
 			InjectHook(0x489A70, StartNewMission_BasketballFix);
 			InjectHook(0x489AF0, StartNewMission_BasketballFix);
-		}
-
-		if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", FALSE, wcModulePath) != FALSE )
-		{
-			// Shaders!
-			// plugin-sdk compatibility
-			// 1.01 needs to reverse Initialise3D
-			InitialiseRenderWare = (bool(*)())(*(int*)0x5BFB9F + 0x5BFB9E + 5);
-			ShutdownRenderWare = (void(*)())(*(int*)0x53DDB1 + 0x53DDB0 + 5);
-			sub_5DA6A0 = (void(*)(void*,void*,void*,void*))(*(int*)0x5D6ED2 + 0x5D6ED1 + 5);
-
-			InjectHook(0x5BFB70, Initialise3D, PATCH_JUMP);
-			InjectHook(0x5D6ED1, SetShader2);
-			InjectHook(0x5D68F6, UsageIndex1, PATCH_JUMP);
-			InjectHook(0x5D6B97, PassDayColoursToShader, PATCH_JUMP);
-			InjectHook(0x5D6B5B, HijackEsi, PATCH_JUMP);
-			//InjectHook(0x5BF3A1, ShaderAttach);
-			InjectHook(0x53DDB0, ShaderDetach);
-			Patch<const void*>(0x5D6FD4, HijackAtomic);
-			Patch<BYTE>(0x5D79E0, 0xC3);
-			Patch<WORD>(0x5D6F9B, 0x6890);
-			Patch<WORD>(0x5D6FB7, 0x6890);
-			Patch<DWORD>(0x5D6F9D, 0x5D67C0);
-			Patch<DWORD>(0x5D6FB9, 0x5D67C0);
-
-			Patch<BYTE>(0x5D68B9, D3DDECLTYPE_D3DCOLOR);
-			Patch<BYTE>(0x5D68C2, D3DDECLUSAGE_COLOR);
-			Patch<BYTE>(0x5D68AF, sizeof(D3DCOLOR));
-			Patch<BYTE>(0x5D68CA, sizeof(D3DCOLOR));
-			Patch<BYTE>(0x5D68A2, 0x13);
-			Patch<BYTE>(0x5D6AD0, 0xEB);
-
-			if ( *(DWORD*)0x5DAEC0 == 0x0C2444F6 )
-			{
-				InjectHook(0x5DAEC0 + 0xA3, SetShader);
-				Patch<DWORD>(0x5DAEC0 + 0x9F, 0x90909056);
-			}
-			else
-			{
-				// securom'd EXE
-				if ( *(DWORD*)0x14D0882 == 0x51104E8B )
-				{
-					InjectHook(0x14D088B, SetShader, PATCH_JUMP);
-					Patch<DWORD>(0x14D0882, 0x90909056);
-				}
-			}
-
-			// PostFX fix
-			Patch<float>(*(float**)0x703CF0, 0.0);
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", TRUE, wcModulePath) != FALSE )
@@ -1834,20 +1860,69 @@ BOOL InjectDelayedPatches_Steam()
 
 		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
 		bool		bSAMP = GetModuleHandle("samp") != nullptr;
+		bool		bSARender = GetModuleHandle("SARender.asi") != nullptr;
 
 		// PS2 sun - more
 		DoSunAndMoon = (void(*)())(*(int*)0x54E0B7 + 0x54E0B6 + 5);
 		InjectHook(0x54E0B6, SunAndMoonFarClip);
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", FALSE, wcModulePath) != FALSE )
+		if ( !bSARender )
 		{
-			InjectHook(0x4CEBF4, SetRendererForAtomic<TwoPassAlphaRender>, PATCH_CALL);
-			// Twopass for peds
-			InjectHook(0x76D88E, RenderPedCB);
-		}
-		else
-		{
-			InjectHook(0x4CEBF4, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+			// Twopass rendering (experimental)
+			Patch<BYTE>(0x4CEBF3, 0x57);
+			Patch<DWORD>(0x4CEBF9, 0xC25E5F5F);
+			Patch<WORD>(0x4CEBFD, 0x0004);
+
+			if ( GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", FALSE, wcModulePath) != FALSE )
+			{
+				InjectHook(0x4CEBF4, SetRendererForAtomic<TwoPassAlphaRender>, PATCH_CALL);
+				// Twopass for peds
+				InjectHook(0x76D88E, RenderPedCB);
+			}
+			else
+			{
+				InjectHook(0x4CEBF4, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+			}
+
+			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", FALSE, wcModulePath) != FALSE )
+			{
+				// Shaders!
+				// plugin-sdk compatibility
+				InitialiseRenderWare = (bool(*)())(*(int*)0x5DE5A2 + 0x5DE5A1 + 5);
+				ShutdownRenderWare = (void(*)())(*(int*)0x550071 + 0x550070 + 5);
+				sub_5DA6A0 = (void(*)(void*,void*,void*,void*))(*(int*)0x5F663F + 0x5F663E + 5);
+
+				InjectHook(0x5F6EB3, SetShader);
+				InjectHook(0x5F2F02, SetShader2);
+				//InjectHook(0x5F292C, UsageIndex1, PATCH_JUMP);
+				InjectHook(0x5F2BAF, PassDayColoursToShader_Steam, PATCH_JUMP);
+				InjectHook(0x5F2B7A, HijackEsi, PATCH_JUMP);
+				InjectHook(0x5DE5A1, ShaderAttach);
+				InjectHook(0x550070, ShaderDetach);
+				Patch<const void*>(0x5F3004, HijackAtomic);
+				Patch<BYTE>(0x5F3760, 0xC3);
+				Patch<WORD>(0x5F2FCB, 0x6890);
+				Patch<WORD>(0x5F2FE7, 0x6890);
+				Patch<DWORD>(0x5F2FCD, 0x5F27C0);
+				Patch<DWORD>(0x5F2FE9, 0x5F27C0);
+				Patch<DWORD>(0x5F6EAF, 0x90909056);
+
+				Patch<BYTE>(0x5F28D0, 1);
+				Patch<BYTE>(0x5F28C1, D3DDECLTYPE_D3DCOLOR);
+				Patch<BYTE>(0x5F28CB, D3DDECLUSAGE_COLOR);
+				//Patch<BYTE>(0x5D60CF, sizeof(D3DCOLOR));
+				//Patch<BYTE>(0x5D60EA, sizeof(D3DCOLOR));
+				InjectHook(0x5F28A7, ChangeEdi_Steam, PATCH_CALL);
+				//Patch<BYTE>(0x5D60C2, 0x13);
+				Patch<BYTE>(0x5F2AE7, 0xEB);
+
+				// PostFX fix
+				Patch<float>(*(float**)0x746E57, 0.0);
+			}
+
+			// Weapons rendering
+			InjectHook(0x604DD9, RenderWeapon);
+			InjectHook(0x76D170, RenderWeaponPedsForPC, PATCH_JUMP);
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", TRUE, wcModulePath) != FALSE )
@@ -1866,42 +1941,6 @@ BOOL InjectDelayedPatches_Steam()
 			// Fixed for Hoodlum
 			InjectHook(0x4907AE, StartNewMission_BasketballFix);
 			InjectHook(0x49072E, StartNewMission_BasketballFix);
-		}
-
-		if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", FALSE, wcModulePath) != FALSE )
-		{
-			// Shaders!
-			// plugin-sdk compatibility
-			InitialiseRenderWare = (bool(*)())(*(int*)0x5DE5A2 + 0x5DE5A1 + 5);
-			ShutdownRenderWare = (void(*)())(*(int*)0x550071 + 0x550070 + 5);
-			sub_5DA6A0 = (void(*)(void*,void*,void*,void*))(*(int*)0x5F663F + 0x5F663E + 5);
-
-			InjectHook(0x5F6EB3, SetShader);
-			InjectHook(0x5F2F02, SetShader2);
-			//InjectHook(0x5F292C, UsageIndex1, PATCH_JUMP);
-			InjectHook(0x5F2BAF, PassDayColoursToShader_Steam, PATCH_JUMP);
-			InjectHook(0x5F2B7A, HijackEsi, PATCH_JUMP);
-			InjectHook(0x5DE5A1, ShaderAttach);
-			InjectHook(0x550070, ShaderDetach);
-			Patch<const void*>(0x5F3004, HijackAtomic);
-			Patch<BYTE>(0x5F3760, 0xC3);
-			Patch<WORD>(0x5F2FCB, 0x6890);
-			Patch<WORD>(0x5F2FE7, 0x6890);
-			Patch<DWORD>(0x5F2FCD, 0x5F27C0);
-			Patch<DWORD>(0x5F2FE9, 0x5F27C0);
-			Patch<DWORD>(0x5F6EAF, 0x90909056);
-
-			Patch<BYTE>(0x5F28D0, 1);
-			Patch<BYTE>(0x5F28C1, D3DDECLTYPE_D3DCOLOR);
-			Patch<BYTE>(0x5F28CB, D3DDECLUSAGE_COLOR);
-			//Patch<BYTE>(0x5D60CF, sizeof(D3DCOLOR));
-			//Patch<BYTE>(0x5D60EA, sizeof(D3DCOLOR));
-			InjectHook(0x5F28A7, ChangeEdi_Steam, PATCH_CALL);
-			//Patch<BYTE>(0x5D60C2, 0x13);
-			Patch<BYTE>(0x5F2AE7, 0xEB);
-
-			// PostFX fix
-			Patch<float>(*(float**)0x746E57, 0.0);
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", TRUE, wcModulePath) == FALSE )
@@ -2047,25 +2086,6 @@ void Patch_SA_10()
 	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
 	Patch<DWORD>(AddressByRegion_10<DWORD>(0x7469A0), 0x9090C030);
 
-	// Weapons rendering
-	/*InjectHook(0x5E7859, RenderWeapon);
-	InjectHook(0x732F30, RenderWeaponsList, PATCH_JUMP);
-	//Patch<WORD>(0x53EAC4, 0x0DEB);
-	//Patch<WORD>(0x705322, 0x0DEB);
-	//Patch<WORD>(0x7271E3, 0x0DEB);
-	//Patch<BYTE>(0x73314E, 0xC3);
-	Patch<DWORD>(0x732F95, 0x560CEC83);
-	Patch<DWORD>(0x732FA2, 0x20245C8B);
-	Patch<WORD>(0x733128, 0x20EB);
-	Patch<WORD>(0x733135, 0x13EB);
-	Nop(0x732FBC, 5);
-	//Nop(0x732F93, 6);
-	//Nop(0x733144, 6);
-	Nop(0x732FA6, 6);
-	//Nop(0x5E46DA, 2);*/
-	InjectHook(0x5E7859, RenderWeapon);
-	InjectHook(0x732F30, RenderWeaponPedsForPC, PATCH_JUMP);
-
 	// Hunter interior & static_rotor for helis
 	InjectHook(0x4C78F2, HunterTest, PATCH_JUMP);
 	InjectHook(0x4C9618, CacheCRC32);
@@ -2088,12 +2108,6 @@ void Patch_SA_10()
 	//Patch<DWORD>(0x733B05, 40);
 	//Patch<DWORD>(0x733B55, 40);
 	//Patch<BYTE>(0x5B3ADD, 4);
-
-	// Twopass rendering (experimental)
-	Patch<BYTE>(0x4C441E, 0x57);
-	//InjectHook(0x4C441F, SetRendererForAtomic, PATCH_CALL);
-	Patch<DWORD>(0x4C4424, 0x5F04C483);
-	Patch<DWORD>(0x4C4428, 0x0004C25E);
 
 	// Lightbeam fix
 	Patch<WORD>(0x6A2E88, 0x0EEB);
@@ -2268,21 +2282,12 @@ void Patch_SA_11()
 	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
 	Patch<DWORD>(AddressByRegion_11<DWORD>(0x747270), 0x9090C030);
 
-	// Weapons rendering
-	InjectHook(0x5E8079, RenderWeapon);
-	InjectHook(0x733760, RenderWeaponPedsForPC, PATCH_JUMP);
-
 	// Hunter interior & static_rotor for helis
 	InjectHook(0x4C7972, HunterTest, PATCH_JUMP);
 	InjectHook(0x4C9818, CacheCRC32);
 
 	// Moonphases
 	InjectHook(0x7142FB, HandleMoonStuffStub, PATCH_JUMP);
-
-	// Twopass rendering (experimental)
-	Patch<BYTE>(0x4C449E, 0x57);
-	Patch<DWORD>(0x4C44A4, 0x5F04C483);
-	Patch<DWORD>(0x4C44A8, 0x0004C25E);
 
 	// Lightbeam fix
 	Patch<WORD>(0x6A36A8, 0x0EEB);
@@ -2473,10 +2478,6 @@ void Patch_SA_Steam()
 	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
 	Patch<DWORD>(0x7807D0, 0x9090C030);
 
-	// Weapons rendering
-	InjectHook(0x604DD9, RenderWeapon);
-	InjectHook(0x76D170, RenderWeaponPedsForPC, PATCH_JUMP);
-
 	// Hunter interior & static_rotor for helis
 	InjectHook(0x4D21E1, HunterTest, PATCH_JUMP);
 	InjectHook(0x4D3F1D, CacheCRC32);
@@ -2487,11 +2488,6 @@ void Patch_SA_Steam()
 
 	// Moonphases
 	InjectHook(0x72F058, HandleMoonStuffStub_Steam, PATCH_JUMP);
-
-	// Twopass rendering (experimental)
-	Patch<BYTE>(0x4CEBF3, 0x57);
-	Patch<DWORD>(0x4CEBF9, 0xC25E5F5F);
-	Patch<WORD>(0x4CEBFD, 0x0004);
 
 	// Lightbeam fix
 	Patch<WORD>(0x6CFEF9, 0x10EB);
