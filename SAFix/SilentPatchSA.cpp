@@ -1485,8 +1485,12 @@ BOOL InjectDelayedPatches_10()
 		bool		bSARender = GetModuleHandle("SARender.asi") != nullptr;
 
 		// PS2 sun - more
-		DoSunAndMoon = (void(*)())(*(int*)0x53C137 + 0x53C136 + 5);
-		InjectHook(0x53C136, SunAndMoonFarClip);
+		if ( !bSAMP )
+		{
+			DoSunAndMoon = (void(*)())(*(int*)0x53C137 + 0x53C136 + 5);
+			InjectHook(0x53C136, SunAndMoonFarClip);
+			Patch<const void*>(0x6FC5AA, &fSunFarClip);
+		}
 		
 		if ( !bSARender )
 		{
@@ -1670,8 +1674,13 @@ BOOL InjectDelayedPatches_11()
 		bool		bSARender = GetModuleHandle("SARender.asi") != nullptr;
 
 		// PS2 sun - more
-		DoSunAndMoon = (void(*)())(*(int*)0x53C5D7 + 0x53C5D6 + 5);
-		InjectHook(0x53C5D6, SunAndMoonFarClip);
+		if ( !bSAMP )
+		{
+			DoSunAndMoon = (void(*)())(*(int*)0x53C5D7 + 0x53C5D6 + 5);
+			InjectHook(0x53C5D6, SunAndMoonFarClip);
+
+			Patch<const void*>(0x6FCDDA, &fSunFarClip);
+		}
 
 		if ( !bSARender )
 		{
@@ -1863,8 +1872,13 @@ BOOL InjectDelayedPatches_Steam()
 		bool		bSARender = GetModuleHandle("SARender.asi") != nullptr;
 
 		// PS2 sun - more
-		DoSunAndMoon = (void(*)())(*(int*)0x54E0B7 + 0x54E0B6 + 5);
-		InjectHook(0x54E0B6, SunAndMoonFarClip);
+		if ( !bSAMP )
+		{
+			DoSunAndMoon = (void(*)())(*(int*)0x54E0B7 + 0x54E0B6 + 5);
+			InjectHook(0x54E0B6, SunAndMoonFarClip);
+
+			Patch<const void*>(0x734DEA, &fSunFarClip);
+		}
 
 		if ( !bSARender )
 		{
@@ -2021,6 +2035,8 @@ BOOL InjectDelayedPatches_Steam()
 	return TRUE;
 }
 
+static char		aNoDesktopMode[64];
+
 void Patch_SA_10()
 {
 	using namespace MemoryVP;
@@ -2131,9 +2147,11 @@ void Patch_SA_10()
 	// PS2 SUN!!!!!!!!!!!!!!!!!
 	static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
 
+	Nop(0x6FB316, 3);
+	Nop(0x6FB480, 3);
+
 	Nop(0x6FB17C, 3);
 	Patch<const void*>(0x6FC5B0, &fSunMult);
-	Patch<const void*>(0x6FC5AA, &fSunFarClip);
 	//Patch<WORD>(0x6FB172, 0x0BEB);
 	//Patch<BYTE>(0x6FB1A7, 8);
 
@@ -2226,6 +2244,15 @@ void Patch_SA_10()
 	// Illumination value from timecyc.dat properly using floats
 	Patch<WORD>(0x5BBFC9, 0x14EB);
 
+	// Default resolution to native resolution
+	RECT			desktop;
+	GetWindowRect(GetDesktopWindow(), &desktop);
+	_snprintf(aNoDesktopMode, sizeof(aNoDesktopMode), "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+
+	Patch<DWORD>(0x746363, desktop.right);
+	Patch<DWORD>(0x746368, desktop.bottom);
+	Patch<const char*>(0x7463C8, aNoDesktopMode);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -2310,9 +2337,11 @@ void Patch_SA_11()
 	// PS2 SUN!!!!!!!!!!!!!!!!!
 	static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
 
+	Nop(0x6FBB46, 3);
+	Nop(0x6FBCB0, 3);
+
 	Nop(0x6FB9AC, 3);
 	Patch<const void*>(0x6FCDE0, &fSunMult);
-	Patch<const void*>(0x6FCDDA, &fSunFarClip);
 
 	// Unlocked widescreen resolutions
 	Patch<DWORD>(0x74619C, 0x9090127D);
@@ -2417,6 +2446,15 @@ void Patch_SA_11()
 	// Illumination value from timecyc.dat properly using floats
 	Patch<WORD>(0x5BC7A9, 0x14EB);
 
+	// Default resolution to native resolution
+	RECT			desktop;
+	GetWindowRect(GetDesktopWindow(), &desktop);
+	_snprintf(aNoDesktopMode, sizeof(aNoDesktopMode), "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+
+	Patch<DWORD>(0x746BE3, desktop.right);
+	Patch<DWORD>(0x746BE8, desktop.bottom);
+	Patch<const char*>(0x746C48, aNoDesktopMode);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E7714;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -2511,9 +2549,11 @@ void Patch_SA_Steam()
 	// PS2 SUN!!!!!!!!!!!!!!!!!
 	static const double		dSunMult = (1050.0 * 0.95) / 1500.0;
 
+	Nop(0x73387E, 2);
+	Nop(0x733A67, 2);
+
 	Nop(0x73362F, 2);
 	Patch<const void*>(0x734DF0, &dSunMult);
-	Patch<const void*>(0x734DEA, &fSunFarClip);
 
 	// Unlocked widescreen resolutions
 	Patch<WORD>(0x77F9F0, 0x6E7d);
@@ -2581,6 +2621,15 @@ void Patch_SA_Steam()
 
 	// Illumination value from timecyc.dat properly using floats
 	Patch<WORD>(0x5DAF6B, 0x2CEB);
+
+	// Default resolution to native resolution
+	RECT			desktop;
+	GetWindowRect(GetDesktopWindow(), &desktop);
+	_snprintf(aNoDesktopMode, sizeof(aNoDesktopMode), "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+
+	Patch<DWORD>(0x780219, desktop.right);
+	Patch<DWORD>(0x78021E, desktop.bottom);
+	Patch<const char*>(0x78027E, aNoDesktopMode);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
