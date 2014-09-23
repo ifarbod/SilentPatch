@@ -1450,6 +1450,129 @@ DarkVehiclesFix4_MakeItDark:
 }
 // 1.0 ONLY ENDS HERE
 
+static void* const	FPSLimit_ReturnTrue = AddressByVersion<void*>(0x748D98, 0x74969D, 0x782D22);
+static void* const	FPSLimit_ReturnFalse = AddressByVersion<void*>(0x748DA3, 0x7496A8, 0x782D2D);
+static int&			FPSLimitVal = **AddressByVersion<int**>(0x619622, 0x619E42, 0x63B112);
+void __declspec(naked) YesFPSLimit()
+{
+	static const double	f1000 = 1000.0;
+	_asm
+	{
+		mov		eax, [FPSLimitVal]
+		fild	[eax]
+		fdivr	[f1000]
+		fcomp   [esp+94h-80h]
+		fnstsw  ax
+		test    ah, 5
+		jp		YesFPSLimit_Skip
+
+		jmp		FPSLimit_ReturnTrue
+
+YesFPSLimit_Skip:
+		jmp		FPSLimit_ReturnFalse
+	}
+}
+
+void __declspec(naked) NoFPSLimit()
+{
+	_asm
+	{
+		test    al, al
+		jnz		YesFPSLimit
+		
+		fld1
+		fcomp   [esp+94h-80h]
+		fnstsw  ax
+		test    ah, 5
+		jp		NoFPSLimit_Skip
+
+		jmp		FPSLimit_ReturnTrue
+
+NoFPSLimit_Skip:
+		jmp		FPSLimit_ReturnFalse
+	}
+}
+
+void __declspec(naked) YesFPSLimit_11()
+{
+	static const double	f1000 = 1000.0;
+	_asm
+	{
+		mov		eax, [FPSLimitVal]
+		fild	[eax]
+		fdivr	[f1000]
+		fcomp   [esp+1Ch]
+		fnstsw  ax
+		test    ah, 5
+		jp		YesFPSLimit_Skip
+
+		jmp		FPSLimit_ReturnTrue
+
+YesFPSLimit_Skip:
+		jmp		FPSLimit_ReturnFalse
+	}
+}
+
+void __declspec(naked) NoFPSLimit_11()
+{
+	_asm
+	{
+		test    al, al
+		jnz		YesFPSLimit_11
+		
+		fld1
+		fcomp   [esp+1Ch]
+		fnstsw  ax
+		test    ah, 5
+		jp		NoFPSLimit_Skip
+
+		jmp		FPSLimit_ReturnTrue
+
+NoFPSLimit_Skip:
+		jmp		FPSLimit_ReturnFalse
+	}
+}
+
+void __declspec(naked) YesFPSLimit_Steam()
+{
+	static const double	f1000 = 1000.0;
+	_asm
+	{
+		mov		eax, [FPSLimitVal]
+		fild	[eax]
+		fdivr	[f1000]
+		fcomp   [esp+90h-78h]
+		fnstsw  ax
+		test    ah, 5
+		jp		YesFPSLimit_Skip
+
+		jmp		FPSLimit_ReturnTrue
+
+YesFPSLimit_Skip:
+		jmp		FPSLimit_ReturnFalse
+	}
+}
+
+void __declspec(naked) NoFPSLimit_Steam()
+{
+	_asm
+	{
+		test    al, al
+		jnz		YesFPSLimit_Steam
+		
+		fld1
+		fcomp   [esp+90h-78h]
+		fnstsw  ax
+		test    ah, 5
+		jp		NoFPSLimit_Skip
+
+		jmp		FPSLimit_ReturnTrue
+
+NoFPSLimit_Skip:
+		jmp		FPSLimit_ReturnFalse
+	}
+}
+
 static const float		fSteamSubtitleSizeX = 0.45f;
 static const float		fSteamSubtitleSizeY = 0.9f;
 static const float		fSteamRadioNamePosY = 33.0f;
@@ -2253,6 +2376,12 @@ void Patch_SA_10()
 	Patch<DWORD>(0x746368, desktop.bottom);
 	Patch<const char*>(0x7463C8, aNoDesktopMode);
 
+	// 1000 FPS cap
+	Patch<BYTE>(0x748D69, 0x18);
+	Patch<BYTE>(0x748D72, 0x0F);
+	InjectHook(0x748D7D, NoFPSLimit, PATCH_JUMP);
+	InjectHook(0x748D82, YesFPSLimit, PATCH_JUMP);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -2455,6 +2584,12 @@ void Patch_SA_11()
 	Patch<DWORD>(0x746BE8, desktop.bottom);
 	Patch<const char*>(0x746C48, aNoDesktopMode);
 
+	// 1000 FPS cap
+	Patch<BYTE>(0x74966E, 0x18);
+	Patch<BYTE>(0x749677, 0x0F);
+	InjectHook(0x749682, NoFPSLimit_11, PATCH_JUMP);
+	InjectHook(0x749687, YesFPSLimit_11, PATCH_JUMP);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E7714;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -2630,6 +2765,12 @@ void Patch_SA_Steam()
 	Patch<DWORD>(0x780219, desktop.right);
 	Patch<DWORD>(0x78021E, desktop.bottom);
 	Patch<const char*>(0x78027E, aNoDesktopMode);
+
+	// 1000 FPS cap
+	Patch<BYTE>(0x782CF1, 0x18);
+	Patch<BYTE>(0x782CFA, 0x0F);
+	InjectHook(0x782D05, NoFPSLimit_Steam, PATCH_JUMP);
+	InjectHook(0x782D0A, YesFPSLimit_Steam, PATCH_JUMP);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
