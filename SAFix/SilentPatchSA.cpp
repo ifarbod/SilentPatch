@@ -2382,6 +2382,9 @@ void Patch_SA_10()
 	InjectHook(0x748D7D, NoFPSLimit, PATCH_JUMP);
 	InjectHook(0x748D82, YesFPSLimit, PATCH_JUMP);
 
+	// Cars drive on water cheat
+	Patch<DWORD>(&(*(DWORD**)0x438513)[34], 0xE5FC92C3);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -2590,6 +2593,9 @@ void Patch_SA_11()
 	InjectHook(0x749682, NoFPSLimit_11, PATCH_JUMP);
 	InjectHook(0x749687, YesFPSLimit_11, PATCH_JUMP);
 
+	// Cars drive on water cheat
+	Patch<DWORD>(&(*(DWORD**)0x438593)[34], 0xE5FC92C3);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E7714;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -2771,6 +2777,9 @@ void Patch_SA_Steam()
 	Patch<BYTE>(0x782CFA, 0x0F);
 	InjectHook(0x782D05, NoFPSLimit_Steam, PATCH_JUMP);
 	InjectHook(0x782D0A, YesFPSLimit_Steam, PATCH_JUMP);
+
+	// Cars drive on water cheat
+	Patch<DWORD>(&(*(DWORD**)0x43B793)[34], 0xE5FC92C3);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
