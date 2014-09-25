@@ -2367,6 +2367,11 @@ void Patch_SA_10()
 	// Illumination value from timecyc.dat properly using floats
 	Patch<WORD>(0x5BBFC9, 0x14EB);
 
+	// Illumination defaults to 1.0
+	Patch<DWORD>(0x5BBB04, 0xCC2484C7);
+	Patch<DWORD>(0x5BBB08, 0x00000000);
+	Patch<DWORD>(0x5BBB0C, 0x903F8000);
+
 	// Default resolution to native resolution
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
@@ -2578,6 +2583,11 @@ void Patch_SA_11()
 	// Illumination value from timecyc.dat properly using floats
 	Patch<WORD>(0x5BC7A9, 0x14EB);
 
+	// Illumination defaults to 1.0
+	Patch<DWORD>(0x5BC2E4, 0xCC2484C7);
+	Patch<DWORD>(0x5BC2E8, 0x00000000);
+	Patch<DWORD>(0x5BC2EC, 0x903F8000);
+
 	// Default resolution to native resolution
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
@@ -2762,6 +2772,11 @@ void Patch_SA_Steam()
 
 	// Illumination value from timecyc.dat properly using floats
 	Patch<WORD>(0x5DAF6B, 0x2CEB);
+
+	// Illumination defaults to 1.0
+	Patch<DWORD>(0x5DA8D4, 0xD82484C7);
+	Patch<DWORD>(0x5DA8D8, 0x00000000);
+	Patch<DWORD>(0x5DA8DC, 0x903F8000);
 
 	// Default resolution to native resolution
 	RECT			desktop;
