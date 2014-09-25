@@ -2372,6 +2372,11 @@ void Patch_SA_10()
 	Patch<DWORD>(0x5BBB08, 0x00000000);
 	Patch<DWORD>(0x5BBB0C, 0x903F8000);
 
+	// All lights get casted at vehicles
+	Patch<BYTE>(0x5D9A88, 8);
+	Patch<BYTE>(0x5D9A91, 8);
+	Patch<BYTE>(0x5D9F1F, 8);
+
 	// Default resolution to native resolution
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
@@ -2588,6 +2593,11 @@ void Patch_SA_11()
 	Patch<DWORD>(0x5BC2E8, 0x00000000);
 	Patch<DWORD>(0x5BC2EC, 0x903F8000);
 
+	// All lights get casted at vehicles
+	Patch<BYTE>(0x5DA297, 8);
+	Patch<BYTE>(0x5DA2A0, 8);
+	Patch<BYTE>(0x5DA73F, 8);
+
 	// Default resolution to native resolution
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
@@ -2777,6 +2787,11 @@ void Patch_SA_Steam()
 	Patch<DWORD>(0x5DA8D4, 0xD82484C7);
 	Patch<DWORD>(0x5DA8D8, 0x00000000);
 	Patch<DWORD>(0x5DA8DC, 0x903F8000);
+
+	// All lights get casted at vehicles
+	Patch<BYTE>(0x5F61C7, 8);
+	Patch<BYTE>(0x5F61D0, 8);
+	Patch<BYTE>(0x5F666D, 8);
 
 	// Default resolution to native resolution
 	RECT			desktop;
