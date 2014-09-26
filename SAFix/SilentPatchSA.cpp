@@ -1593,6 +1593,29 @@ NoFPSLimit_Skip:
 	}
 }
 
+static void* const g_fx = *AddressByVersion<void**>(0x4A9649, 0x4AA4EF, 0x4B2BB9);
+void __declspec(naked) GetMaxExtraDirectionals()
+{
+	_asm
+	{
+		call	CanSeeOutSideFromCurrArea
+		test	al, al
+		jz		GetMaxExtraDirectionals_Six
+		
+		// Low details?
+		mov		eax, [g_fx]
+		cmp		dword ptr [eax+54h], 0
+		jne		GetMaxExtraDirectionals_Six
+		mov		ebx, 4
+		retn
+
+GetMaxExtraDirectionals_Six:
+		mov		ebx, 6
+		retn
+	}
+}
+
+
 static const float		fSteamSubtitleSizeX = 0.45f;
 static const float		fSteamSubtitleSizeY = 0.9f;
 static const float		fSteamRadioNamePosY = 33.0f;
@@ -2397,6 +2420,10 @@ void Patch_SA_10()
 	Patch<BYTE>(0x5D9A91, 8);
 	Patch<BYTE>(0x5D9F1F, 8);
 
+	// 6 extra directionals on Medium and higher
+	InjectHook(0x735881, GetMaxExtraDirectionals, PATCH_CALL);
+	Patch<WORD>(0x735886, 0x07EB);
+
 	// Default resolution to native resolution
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
@@ -2626,6 +2653,10 @@ void Patch_SA_11()
 	Patch<BYTE>(0x5DA2A0, 8);
 	Patch<BYTE>(0x5DA73F, 8);
 
+	// 6 extra directionals on Medium and higher
+	InjectHook(0x7360B1, GetMaxExtraDirectionals, PATCH_CALL);
+	Patch<WORD>(0x7360B6, 0x07EB);
+
 	// Default resolution to native resolution
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
@@ -2828,6 +2859,10 @@ void Patch_SA_Steam()
 	Patch<BYTE>(0x5F61C7, 8);
 	Patch<BYTE>(0x5F61D0, 8);
 	Patch<BYTE>(0x5F666D, 8);
+
+	// 6 extra directionals on Medium and higher
+	InjectHook(0x768046, GetMaxExtraDirectionals, PATCH_CALL);
+	Patch<WORD>(0x76804B, 0x0AEB);
 
 	// Default resolution to native resolution
 	RECT			desktop;

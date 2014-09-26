@@ -134,7 +134,7 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 	switch ( *bVer )
 	{
 	case 1:
-		//assert(address11);
+		assert(address11);
 
 		// Safety measures - if null, return dummy var pointer to prevent a crash
 		if ( !address11 )
