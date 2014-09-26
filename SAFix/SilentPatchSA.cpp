@@ -661,6 +661,26 @@ void SunAndMoonFarClip()
 	DoSunAndMoon();
 }
 
+// STEAM ONLY
+template<bool bX1, bool bY1, bool bX2, bool bY2>
+void DrawRect_HalfPixel_Steam(CRect& rect, const CRGBA& rgba)
+{
+	if ( bX1 )
+		rect.x1 -= 0.5f;
+
+	if ( bY1 )
+		rect.y1 -= 0.5f;
+
+	if ( bX2 )
+		rect.x2 -= 0.5f;
+
+	if ( bY2 )
+		rect.y2 -= 0.5f;
+
+	// Steam CSprite2d::DrawRect
+	((void(*)(const CRect&, const CRGBA&))0x75CDA0)(rect, rgba);
+}
+
 #include "nvc.h"
 
 static IDirect3DVertexShader9*	pNVCShader = nullptr;
@@ -2392,6 +2412,14 @@ void Patch_SA_10()
 	InjectHook(0x748D7D, NoFPSLimit, PATCH_JUMP);
 	InjectHook(0x748D82, YesFPSLimit, PATCH_JUMP);
 
+	// Corrected Map screen 1px issue
+	Patch<float>(0x575DE7, -0.5f);
+	Patch<float>(0x575DA7, -0.5f);
+	Patch<float>(0x575DAF, -0.5f);
+	Patch<float>(0x575D5C, -0.5f);
+	Patch<float>(0x575CDA, -0.5f);
+	Patch<float>(0x575D0C, -0.5f);
+
 	// Cars drive on water cheat
 	Patch<DWORD>(&(*(DWORD**)0x438513)[34], 0xE5FC92C3);
 
@@ -2613,6 +2641,14 @@ void Patch_SA_11()
 	InjectHook(0x749682, NoFPSLimit_11, PATCH_JUMP);
 	InjectHook(0x749687, YesFPSLimit_11, PATCH_JUMP);
 
+	// Corrected Map screen 1px issue
+	Patch<float>(0x576357, -0.5f);
+	Patch<float>(0x576317, -0.5f);
+	Patch<float>(0x57631F, -0.5f);
+	Patch<float>(0x5762CC, -0.5f);
+	Patch<float>(0x57624A, -0.5f);
+	Patch<float>(0x57627C, -0.5f);
+
 	// Cars drive on water cheat
 	Patch<DWORD>(&(*(DWORD**)0x438593)[34], 0xE5FC92C3);
 
@@ -2807,6 +2843,18 @@ void Patch_SA_Steam()
 	Patch<BYTE>(0x782CFA, 0x0F);
 	InjectHook(0x782D05, NoFPSLimit_Steam, PATCH_JUMP);
 	InjectHook(0x782D0A, YesFPSLimit_Steam, PATCH_JUMP);
+
+	// Corrected Map screen 1px issue
+	/*Patch<float>(0x575DE7, -5.0f);
+	Patch<float>(0x575DA7, -5.0f);
+	Patch<float>(0x575DAF, -5.0f);
+	Patch<float>(0x575D5C, -5.0f);
+	Patch<float>(0x575CDA, -5.0f);
+	Patch<float>(0x575D0C, -5.0f);*/
+	InjectHook(0x58B0F8, DrawRect_HalfPixel_Steam<true,false,false,true>);
+	InjectHook(0x58B146, DrawRect_HalfPixel_Steam<true,false,false,false>);
+	InjectHook(0x58B193, DrawRect_HalfPixel_Steam<true,false,false,true>);
+	InjectHook(0x58B1E1, DrawRect_HalfPixel_Steam<false,false,false,true>);
 
 	// Cars drive on water cheat
 	Patch<DWORD>(&(*(DWORD**)0x43B793)[34], 0xE5FC92C3);
