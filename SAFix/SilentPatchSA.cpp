@@ -2402,10 +2402,13 @@ void Patch_SA_10()
 
 	// Bilinear filtering for license plates
 	//Patch<BYTE>(0x6FD528, rwFILTERLINEAR);
-	//Patch<BYTE>(0x6FDF47, rwFILTERLINEAR);
+	Patch<BYTE>(0x6FDF47, rwFILTERLINEAR);
 
 	// -//- Roadsign maganer
 	//Patch<BYTE>(0x6FE147, rwFILTERLINEAR);
+
+	// Bilinear filtering with mipmaps for weapon icons
+	Patch<BYTE>(0x58D7DA, rwFILTERMIPLINEAR);
 
 	// Illumination value from timecyc.dat properly using floats
 	Patch<WORD>(0x5BBFC9, 0x14EB);
@@ -2640,6 +2643,16 @@ void Patch_SA_11()
 	Patch<bool*>(0x448C5B, *(bool**)0x44AD18);
 	Patch<BYTE>(0x448C5F, 0xC3);
 
+	// Bilinear filtering for license plates
+	//Patch<BYTE>(0x6FD528, rwFILTERLINEAR);
+	Patch<BYTE>(0x6FE777, rwFILTERLINEAR);
+
+	// -//- Roadsign maganer
+	//Patch<BYTE>(0x6FE147, rwFILTERLINEAR);
+
+	// Bilinear filtering with mipmaps for weapon icons
+	Patch<BYTE>(0x58DFAA, rwFILTERMIPLINEAR);
+
 	// Illumination value from timecyc.dat properly using floats
 	Patch<WORD>(0x5BC7A9, 0x14EB);
 
@@ -2846,6 +2859,16 @@ void Patch_SA_Steam()
 	Patch<BYTE>(0x44CB57, 0x05);
 	Patch<bool*>(0x44CB58, *(bool**)0x44EEBA);
 	Patch<WORD>(0x44CB5C, 0x0000);
+
+	// Bilinear filtering for license plates
+	//Patch<BYTE>(0x6FD528, rwFILTERLINEAR);
+	Patch<BYTE>(0x736B30, rwFILTERLINEAR);
+
+	// -//- Roadsign maganer
+	//Patch<BYTE>(0x6FE147, rwFILTERLINEAR);
+
+	// Bilinear filtering with mipmaps for weapon icons
+	Patch<BYTE>(0x59BD9C, rwFILTERMIPLINEAR);
 
 	// Illumination value from timecyc.dat properly using floats
 	Patch<WORD>(0x5DAF6B, 0x2CEB);
