@@ -8,8 +8,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _USE_MATH_DEFINES
 
-#define WINVER 0x0500
-#define _WIN32_WINNT 0x0500
+#define WINVER 0x0501
+#define _WIN32_WINNT 0x0501
 
 #include <windows.h>
 #include <mmsystem.h>

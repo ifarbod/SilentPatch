@@ -99,11 +99,30 @@ void PurpleNinesGlitchFix()
 		pGangModelOverrides[i * 16] = -1;
 }
 
+static bool bGameInFocus = true;
+
+static LRESULT (CALLBACK **OldWndProc)(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch ( uMsg )
+	{
+	case WM_KILLFOCUS:
+		bGameInFocus = false;
+		break;
+	case WM_SETFOCUS:
+		bGameInFocus = true;
+		break;
+	}
+
+	return (*OldWndProc)(hwnd, uMsg, wParam, lParam);
+}
+static auto* pCustomWndProc = CustomWndProc;
+
 static void (* const ConstructRenderList)() = AddressByVersion<void(*)()>(0x4A76B0, 0x4A77A0, 0x4A7730);
 static void (* const RsMouseSetPos)(RwV2d*) = AddressByVersion<void(*)(RwV2d*)>(0x580D20, 0x581070, 0x580F70);
 void ResetMousePos()
 {
-	if ( RsGlobal->ps->window == GetFocus() )
+	if ( bGameInFocus )
 	{
 		RwV2d	vecPos = { RsGlobal->MaximumWidth * 0.5f, RsGlobal->MaximumHeight * 0.5f };
 		RsMouseSetPos(&vecPos);
@@ -304,6 +323,10 @@ void Patch_III_10()
 	// RsMouseSetPos call (SA style fix)
 	InjectHook(0x48E539, ResetMousePos);
 
+	// New wndproc
+	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x581C74;
+	Patch(0x581C74, &pCustomWndProc);
+
 	// Armour cheat as TORTOISE - like in 1.1 and Steam
 	Patch<const char*>(0x4925FB, "ESIOTROT");
 	
@@ -414,6 +437,10 @@ void Patch_III_11()
 
 	// RsMouseSetPos call (SA style fix)
 	InjectHook(0x48E5F9, ResetMousePos);
+
+	// New wndproc
+	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x581FB4;
+	Patch(0x581FB4, &pCustomWndProc);
 }
 
 void Patch_III_Steam()
@@ -515,6 +542,10 @@ void Patch_III_Steam()
 
 	// RsMouseSetPos call (SA style fix)
 	InjectHook(0x48E589, ResetMousePos);
+
+	// New wndproc
+	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x581EA4;
+	Patch(0x581EA4, &pCustomWndProc);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
@@ -528,6 +559,11 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		else if (*(DWORD*)0x5C2130 == 0x53E58955) Patch_III_11();
 		else if (*(DWORD*)0x5C6FD0 == 0x53E58955) Patch_III_Steam();
 		else return FALSE;
+
+		CTimer::Initialise();
+
+		HMODULE		hDummyHandle;
+		GetModuleHandleEx(0, "SilentPatchIII.asi", &hDummyHandle);
 	}
 	return TRUE;
 }
