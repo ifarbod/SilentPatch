@@ -19,18 +19,6 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 		HMODULE		hLib = LoadLibraryW(wcSystemPath);
 		pDirectDrawCreateEx = (HRESULT(WINAPI*)(GUID FAR*, LPVOID*, REFIID, IUnknown FAR*))GetProcAddress(hLib, "DirectDrawCreateEx");
 
-		bLoaded = true;
-	}
-	return pDirectDrawCreateEx(lpGUID, lplpDD, iid, pUnkOuter);
-}
-
-BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
-{
-	UNREFERENCED_PARAMETER(hinstDLL);
-	UNREFERENCED_PARAMETER(lpvReserved);
-
-	if ( fdwReason == DLL_PROCESS_ATTACH )
-	{
 		static char		aNoDesktopMode[64];
 		using namespace MemoryVP;
 
@@ -45,6 +33,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			Patch<DWORD>(0x581E68, desktop.bottom);
 			Patch<BYTE>(0x581E72, 32);
 			Patch<const char*>(0x581EA8, aNoDesktopMode);
+
+			// No 12mb vram check
+			Patch<BYTE>(0x581411, 0xEB);
 		}
 		else if (*(DWORD*)0x5C2130 == 0x53E58955)
 		{
@@ -57,6 +48,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			Patch<DWORD>(0x5821A8, desktop.bottom);
 			Patch<BYTE>(0x5821B2, 32);
 			Patch<const char*>(0x5821E8, aNoDesktopMode);
+
+			// No 12mb vram check
+			Patch<BYTE>(0x581753, 0xEB);
 		}
 		else if (*(DWORD*)0x5C6FD0 == 0x53E58955)
 		{
@@ -69,6 +63,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			Patch<DWORD>(0x582098, desktop.bottom);
 			Patch<BYTE>(0x5820A2, 32);
 			Patch<const char*>(0x5820D8, aNoDesktopMode);
+
+			// No 12mb vram check
+			Patch<BYTE>(0x581653, 0xEB);
 		}
 		else if (*(DWORD*)0x667BF0 == 0x53E58955)
 		{
@@ -106,6 +103,18 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			Patch<BYTE>(0x600AF2, 32);
 			Patch<const char*>(0x600B28, aNoDesktopMode);
 		}
+
+
+		bLoaded = true;
 	}
+	return pDirectDrawCreateEx(lpGUID, lplpDD, iid, pUnkOuter);
+}
+
+BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+{
+	UNREFERENCED_PARAMETER(hinstDLL);
+	UNREFERENCED_PARAMETER(fdwReason);
+	UNREFERENCED_PARAMETER(lpvReserved);
+
 	return TRUE;
 }
