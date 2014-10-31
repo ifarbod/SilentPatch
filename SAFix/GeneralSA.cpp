@@ -67,6 +67,14 @@ void CObject::Render()
 		SetEditableMaterialsCB(reinterpret_cast<RpAtomic*>(m_pRwObject), &pData);
 		pData->first = nullptr;
 
+		// Disable backface culling for the part
+#ifdef _DEBUG
+		RwCullMode		oldCullMode;
+		RwRenderStateGet(rwRENDERSTATECULLMODE, &oldCullMode);
+		assert(oldCullMode == rwCULLMODECULLBACK);
+#endif
+		RwRenderStateSet(rwRENDERSTATECULLMODE, reinterpret_cast<void*>(rwCULLMODECULLNONE));
+
 		bCallRestore = true;
 	}
 	else
@@ -75,7 +83,10 @@ void CObject::Render()
 	CEntity::Render();
 
 	if ( bCallRestore )
+	{
 		ResetEditableMaterials(materialRestoreData);
+		RwRenderStateSet(rwRENDERSTATECULLMODE, reinterpret_cast<void*>(rwCULLMODECULLBACK));
+	}
 }
 
 RwCamera* CShadowCamera::Update(CEntity* pEntity)
