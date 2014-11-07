@@ -35,6 +35,12 @@ inline void* GetDummy()
 	return &dwDummy;
 }
 
+inline ptrdiff_t GetModule()
+{
+	static HMODULE		hModule = GetModuleHandle(nullptr);
+	return (ptrdiff_t)hModule;
+}
+
 #if defined SILENTPATCH_III_VER
 
 // This function initially detects III version then chooses the address basing on game version
@@ -104,7 +110,13 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 
 	if ( *bVer == -1 )
 	{
-		if ( *(DWORD*)0x82457C == 0x94BF )
+		if ( *(DWORD*)(GetModule()+0x458D21) == 0x3539F633 )
+		{
+			*bVer = 3;
+			*bEuropean = false;
+		}
+
+		else if ( *(DWORD*)0x82457C == 0x94BF )
 		{
 			*bVer = 0;
 			*bEuropean = false;
@@ -156,6 +168,9 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 			return (T)GetDummy();
 
 		return (T)addressSteam;
+	case 3:
+		// TODO: DO
+		return (T)GetDummy();
 	default:
 		assert(address10);
 		// Adjust to EU if needed
@@ -290,7 +305,6 @@ namespace MemoryVP
 
 	template<typename AT>
 	inline void		Nop(AT address, unsigned int nCount)
-	// TODO: Finish multibyte nops
 	{
 		DWORD		dwProtect[2];
 		VirtualProtect((void*)address, nCount, PAGE_EXECUTE_READWRITE, &dwProtect[0]);
@@ -329,6 +343,27 @@ namespace MemoryVP
 		else
 			VirtualProtect((void*)address, 5, dwProtect[0], &dwProtect[1]);
 	}
+
+	namespace DynBase
+	{
+		template<typename T, typename AT>
+		inline void		Patch(AT address, T value)
+		{
+			MemoryVP::Patch(GetModule() - 0x400000 + address, value);
+		}
+
+		template<typename AT>
+		inline void		Nop(AT address, unsigned int nCount)
+		{
+			MemoryVP::Nop(GetModule() - 0x400000 + address, nCount);
+		}
+
+		template<typename AT, typename HT>
+		inline void		InjectHook(AT address, HT hook, unsigned int nType=PATCH_NOTHING)
+		{
+			MemoryVP::InjectHook(GetModule() - 0x400000 + address, hook, nType);
+		}
+	};
 };
 
 #endif

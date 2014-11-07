@@ -1201,7 +1201,7 @@ void __declspec(naked) TrailerDoubleRWheelsFix2_Steam()
 	}
 }
 
-static void*	LoadFLAC_JumpBack = AddressByVersion<void*>(0x4F3743, *(BYTE*)0x4F3A50 == 0x6A ? 0x4F3BA3 : 0x5B6B81, 0x4FFC3F);
+static void*	LoadFLAC_JumpBack = AddressByVersion<void*>(0x4F3743, *GetVer() == 1 ? (*(BYTE*)0x4F3A50 == 0x6A ? 0x4F3BA3 : 0x5B6B81) : 0, 0x4FFC3F);
 void __declspec(naked) LoadFLAC()
 {
 	_asm
@@ -2938,6 +2938,47 @@ void Patch_SA_Steam()
 	InjectHook(0x5EDFD9, 0x5EE0FA, PATCH_JUMP);
 }
 
+void Patch_SA_NewSteam()
+{
+	using namespace MemoryVP::DynBase;
+
+	// No framedelay
+	InjectHook(0x54ECC6, GetModule() + 0x14ED0C, PATCH_JUMP);
+	Patch<BYTE>(0x54ED45, 0x4);
+	Nop(0x54ED47, 1);
+
+	// Unlock 1.0/1.01 saves loading 
+	Patch<WORD>(0x5ED3E9, 0xE990);
+
+	// Old .set files working again
+	static const DWORD		dwSetVersion = 6;
+	Patch<const void*>(0x59058A, &dwSetVersion);
+	Patch<BYTE>(0x59086D, 6);
+	Patch<BYTE>(0x53EC4A, 6);
+
+	// Unlocked widescreen resolutions
+	Patch<WORD>(0x779BAD, 0x607D);
+	// TODO: Do the rest
+
+	// Disable re-initialization of DirectInput mouse device by the game
+	Patch<BYTE>(0x58A891, 0xEB);
+	Patch<BYTE>(0x58AA77, 0xEB);
+	Patch<BYTE>(0x58AB59, 0xEB);
+
+	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
+	Nop(0x77AB3F, 1);
+	Patch<WORD>(0x77AB40, 0x01B0);
+	//Nop(0x77AB3B, 3);
+	//Nop(0x77AB3F, 3);
+
+
+	// Proper aspect ratios
+	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
+	Patch<const void*>(0x73424B, &f169);
+	Patch<const void*>(0x734267, &f54);
+	Patch<const void*>(0x73427A, &f43);
+}
+
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
@@ -2947,9 +2988,12 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	{
 		hDLLModule = hinstDLL;
 
-		if (*(DWORD*)0x82457C == 0x94BF || *(DWORD*)0x8245BC == 0x94BF) Patch_SA_10();
+		if ( *(DWORD*)(GetModule()+0x458D21) == 0x3539F633) Patch_SA_NewSteam();
+
+		else if (*(DWORD*)0x82457C == 0x94BF || *(DWORD*)0x8245BC == 0x94BF) Patch_SA_10();
 		else if (*(DWORD*)0x8252FC == 0x94BF || *(DWORD*)0x82533C == 0x94BF) Patch_SA_11();
 		else if (*(DWORD*)0x85EC4A == 0x94BF) Patch_SA_Steam();
+		
 		else return FALSE;
 	}
 	return TRUE;
