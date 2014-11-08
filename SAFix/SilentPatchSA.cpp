@@ -1392,9 +1392,9 @@ void __declspec(naked) HandleMoonStuffStub_Steam()
 
 // 1.0 ONLY BEGINS HERE
 static bool			bDarkVehicleThing;
-static RpLight*&	pDirect = **(RpLight***)0x5BA573;
+static RpLight**	pDirect;
 
-static void* DarkVehiclesFix1_JumpBack = AddressByRegion_10<void*>(0x756D90);//*GetEuropean() == true ? (void*)0x756DE0 : (void*)0x756D90;
+static void* DarkVehiclesFix1_JumpBack;
 void __declspec(naked) DarkVehiclesFix1()
 {
 	_asm
@@ -2212,6 +2212,10 @@ void Patch_SA_10()
 	IsAlreadyRunning = (BOOL(*)())(*(int*)(pIsAlreadyRunning+1) + pIsAlreadyRunning + 5);
 	InjectHook(pIsAlreadyRunning, InjectDelayedPatches_10);
 
+	// Newsteam crash fix
+	pDirect = *(RpLight***)0x5BA573;
+	DarkVehiclesFix1_JumpBack = AddressByRegion_10<void*>(0x756D90);
+
 	// Set CAEDataStream to use an old structure
 	CAEDataStream::SetStructType(false);
 
@@ -2961,6 +2965,9 @@ void Patch_SA_NewSteam()
 	// Unlocked widescreen resolutions
 	//Patch<WORD>(0x779BAD, 0x607D);
 	Patch<WORD>(0x779BB8, 0x557D);
+
+	// TEST
+	//Nop(0x779C2F, 2);
 	// TODO: Do the rest
 
 	// Disable re-initialization of DirectInput mouse device by the game
