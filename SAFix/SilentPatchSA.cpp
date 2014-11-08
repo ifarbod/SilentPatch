@@ -2965,6 +2965,9 @@ void Patch_SA_NewSteam()
 	// Unlocked widescreen resolutions
 	//Patch<WORD>(0x779BAD, 0x607D);
 	Patch<WORD>(0x779BB8, 0x557D);
+	Patch<DWORD>(0x7799D8, 0x9090117D);
+	Nop(0x779A45, 2);
+	Nop(0x7799DC, 2);
 
 	// TEST
 	//Nop(0x779C2F, 2);
@@ -2980,6 +2983,15 @@ void Patch_SA_NewSteam()
 	Patch<WORD>(0x77AB40, 0x01B0);
 	//Nop(0x77AB3B, 3);
 	//Nop(0x77AB3F, 3);
+
+	// Default resolution to native resolution
+	RECT			desktop;
+	GetWindowRect(GetDesktopWindow(), &desktop);
+	_snprintf(aNoDesktopMode, sizeof(aNoDesktopMode), "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+
+	Patch<DWORD>(0x77A3EF, desktop.right);
+	Patch<DWORD>(0x77A3F4, desktop.bottom);
+	Patch<const char*>(0x77A44B, aNoDesktopMode);
 
 
 	// Proper aspect ratios
