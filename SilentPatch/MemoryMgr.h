@@ -41,6 +41,12 @@ inline ptrdiff_t GetModule()
 	return (ptrdiff_t)hModule;
 }
 
+template<typename AT>
+inline AT DynBaseAddress(AT address)
+{
+	return GetModule() - 0x400000 + address;
+}
+
 #if defined SILENTPATCH_III_VER
 
 // This function initially detects III version then chooses the address basing on game version
@@ -110,33 +116,33 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 
 	if ( *bVer == -1 )
 	{
-		if ( *(DWORD*)(GetModule()+0x458D21) == 0x3539F633 )
+		if ( *(DWORD*)DynBaseAddress(0x858D21) == 0x3539F633 )
 		{
 			*bVer = 3;
 			*bEuropean = false;
 		}
 
-		else if ( *(DWORD*)0x82457C == 0x94BF )
+		else if ( *(DWORD*)DynBaseAddress(0x82457C) == 0x94BF )
 		{
 			*bVer = 0;
 			*bEuropean = false;
 		}
-		else if ( *(DWORD*)0x8245BC == 0x94BF )
+		else if ( *(DWORD*)DynBaseAddress(0x8245BC) == 0x94BF )
 		{
 			*bVer = 0;
 			*bEuropean = true;
 		}
-		else if ( *(DWORD*)0x8252FC == 0x94BF )
+		else if ( *(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF )
 		{
 			*bVer = 1;
 			*bEuropean = false;
 		}	
-		else if ( *(DWORD*)0x82533C == 0x94BF )
+		else if ( *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF )
 		{
 			*bVer = 1;
 			*bEuropean = true;
 		}
-		else if (*(DWORD*)0x85EC4A == 0x94BF )
+		else if (*(DWORD*)DynBaseAddress(0x85EC4A) == 0x94BF )
 		{
 			*bVer = 2;
 			*bEuropean = false;
@@ -288,7 +294,7 @@ namespace Memory
 			break;
 		}
 
-		*(DWORD*)((DWORD)address + 1) = dwHook - (DWORD)address - 5;
+		*(ptrdiff_t*)((DWORD)address + 1) = dwHook - (DWORD)address - 5;
 	}
 };
 
@@ -337,7 +343,7 @@ namespace MemoryVP
 			mov		dwHook, eax
 		}
 
-		*(DWORD*)((DWORD)address + 1) = (DWORD)dwHook - (DWORD)address - 5;
+		*(ptrdiff_t*)((DWORD)address + 1) = (DWORD)dwHook - (DWORD)address - 5;
 		if ( nType == PATCH_NOTHING )
 			VirtualProtect((void*)((DWORD)address + 1), 4, dwProtect[0], &dwProtect[1]);
 		else
@@ -349,19 +355,19 @@ namespace MemoryVP
 		template<typename T, typename AT>
 		inline void		Patch(AT address, T value)
 		{
-			MemoryVP::Patch(GetModule() - 0x400000 + address, value);
+			MemoryVP::Patch(DynBaseAddress(address), value);
 		}
 
 		template<typename AT>
 		inline void		Nop(AT address, unsigned int nCount)
 		{
-			MemoryVP::Nop(GetModule() - 0x400000 + address, nCount);
+			MemoryVP::Nop(DynBaseAddress(address), nCount);
 		}
 
 		template<typename AT, typename HT>
 		inline void		InjectHook(AT address, HT hook, unsigned int nType=PATCH_NOTHING)
 		{
-			MemoryVP::InjectHook(GetModule() - 0x400000 + address, hook, nType);
+			MemoryVP::InjectHook(DynBaseAddress(address), hook, nType);
 		}
 	};
 };

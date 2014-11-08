@@ -2328,7 +2328,8 @@ void Patch_SA_10()
 #endif
 
 	// Unlocked widescreen resolutions
-	Patch<DWORD>(0x745B71, 0x9090687D);
+	//Patch<DWORD>(0x745B71, 0x9090687D);
+	Patch<DWORD>(0x745B81, 0x9090587D);
 	Patch<DWORD>(0x74596C, 0x9090127D);
 	Nop(0x745970, 2);
 	Nop(0x745B75, 2);
@@ -2797,7 +2798,8 @@ void Patch_SA_Steam()
 	Patch<const void*>(0x734DF0, &dSunMult);
 
 	// Unlocked widescreen resolutions
-	Patch<WORD>(0x77F9F0, 0x6E7d);
+	//Patch<WORD>(0x77F9F0, 0x6E7D);
+	Patch<WORD>(0x77F9FC, 0x627D);
 	Patch<DWORD>(0x77F80B, 0x9090127D);
 	Nop(0x77F80F, 2);
 	Nop(0x77F880, 2);
@@ -2957,7 +2959,8 @@ void Patch_SA_NewSteam()
 	Patch<BYTE>(0x53EC4A, 6);
 
 	// Unlocked widescreen resolutions
-	Patch<WORD>(0x779BAD, 0x607D);
+	//Patch<WORD>(0x779BAD, 0x607D);
+	Patch<WORD>(0x779BB8, 0x557D);
 	// TODO: Do the rest
 
 	// Disable re-initialization of DirectInput mouse device by the game
@@ -2988,11 +2991,11 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	{
 		hDLLModule = hinstDLL;
 
-		if ( *(DWORD*)(GetModule()+0x458D21) == 0x3539F633) Patch_SA_NewSteam();
+		if (*(DWORD*)DynBaseAddress(0x82457C) == 0x94BF || *(DWORD*)DynBaseAddress(0x8245BC) == 0x94BF) Patch_SA_10();
+		else if (*(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF || *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF) Patch_SA_11();
+		else if (*(DWORD*)DynBaseAddress(0x85EC4A) == 0x94BF) Patch_SA_Steam();
 
-		else if (*(DWORD*)0x82457C == 0x94BF || *(DWORD*)0x8245BC == 0x94BF) Patch_SA_10();
-		else if (*(DWORD*)0x8252FC == 0x94BF || *(DWORD*)0x82533C == 0x94BF) Patch_SA_11();
-		else if (*(DWORD*)0x85EC4A == 0x94BF) Patch_SA_Steam();
+		else if ( *(DWORD*)DynBaseAddress(0x858D21) == 0x3539F633) Patch_SA_NewSteam();
 		
 		else return FALSE;
 	}
