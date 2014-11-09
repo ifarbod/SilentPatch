@@ -2948,19 +2948,54 @@ void Patch_SA_NewSteam()
 {
 	using namespace MemoryVP::DynBase;
 
-	// No framedelay
-	InjectHook(0x54ECC6, GetModule() + 0x14ED0C, PATCH_JUMP);
-	Patch<BYTE>(0x54ED45, 0x4);
-	Nop(0x54ED47, 1);
+	// Nazi EXE?
+	if ( *(DWORD*)DynBaseAddress(0x49F810) == 0x64EC8B55 )
+	{
+		// Regular
 
-	// Unlock 1.0/1.01 saves loading 
-	Patch<WORD>(0x5ED3E9, 0xE990);
+		// No framedelay
+		InjectHook(0x54ECC6, DynBaseAddress(0x54ED0C), PATCH_JUMP);
+		Patch<BYTE>(0x54ED45, 0x4);
+		Nop(0x54ED47, 1);
 
-	// Old .set files working again
-	static const DWORD		dwSetVersion = 6;
-	Patch<const void*>(0x59058A, &dwSetVersion);
-	Patch<BYTE>(0x59086D, 6);
-	Patch<BYTE>(0x53EC4A, 6);
+		// Unlock 1.0/1.01 saves loading 
+		Patch<WORD>(0x5ED3E9, 0xE990);
+
+		// Old .set files working again
+		static const DWORD		dwSetVersion = 6;
+		Patch<const void*>(0x59058A, &dwSetVersion);
+		Patch<BYTE>(0x59086D, 6);
+		Patch<BYTE>(0x53EC4A, 6);
+
+		// Disable re-initialization of DirectInput mouse device by the game
+		Patch<BYTE>(0x58A891, 0xEB);
+		Patch<BYTE>(0x58AA77, 0xEB);
+		Patch<BYTE>(0x58AB59, 0xEB);
+	}
+	else
+	{
+		// Nazi
+
+		// No framedelay
+		InjectHook(0x54EC06, DynBaseAddress(0x54EC4C), PATCH_JUMP);
+		Patch<BYTE>(0x54EC85, 0x4);
+		Nop(0x54EC87, 1);
+
+		// Unlock 1.0/1.01 saves loading 
+		Patch<WORD>(0x5ED349, 0xE990);
+
+		// Old .set files working again
+		static const DWORD		dwSetVersion = 6;
+		Patch<const void*>(0x5904DA, &dwSetVersion);
+		Patch<BYTE>(0x5907BD, 6);
+		Patch<BYTE>(0x53EB9A, 6);
+
+		// Disable re-initialization of DirectInput mouse device by the game
+		Patch<BYTE>(0x58A7D1, 0xEB);
+		Patch<BYTE>(0x58A9B7, 0xEB);
+		Patch<BYTE>(0x58AA99, 0xEB);
+	}
+
 
 	// Unlocked widescreen resolutions
 	//Patch<WORD>(0x779BAD, 0x607D);
@@ -2969,20 +3004,9 @@ void Patch_SA_NewSteam()
 	Nop(0x779A45, 2);
 	Nop(0x7799DC, 2);
 
-	// TEST
-	//Nop(0x779C2F, 2);
-	// TODO: Do the rest
-
-	// Disable re-initialization of DirectInput mouse device by the game
-	Patch<BYTE>(0x58A891, 0xEB);
-	Patch<BYTE>(0x58AA77, 0xEB);
-	Patch<BYTE>(0x58AB59, 0xEB);
-
 	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
 	Nop(0x77AB3F, 1);
 	Patch<WORD>(0x77AB40, 0x01B0);
-	//Nop(0x77AB3B, 3);
-	//Nop(0x77AB3F, 3);
 
 	// Default resolution to native resolution
 	RECT			desktop;
