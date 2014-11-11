@@ -2442,10 +2442,10 @@ void Patch_SA_10()
 	Patch<const char*>(0x7463C8, aNoDesktopMode);
 
 	// 1000 FPS cap
-	Patch<BYTE>(0x748D69, 0x18);
-	Patch<BYTE>(0x748D72, 0x0F);
-	InjectHook(0x748D7D, NoFPSLimit, PATCH_JUMP);
-	InjectHook(0x748D82, YesFPSLimit, PATCH_JUMP);
+	Patch<BYTE>(AddressByRegion_10<DWORD>(0x748D69), 0x18);
+	Patch<BYTE>(AddressByRegion_10<DWORD>(0x748D72), 0x0F);
+	InjectHook(AddressByRegion_10<DWORD>(0x748D7D), NoFPSLimit, PATCH_JUMP);
+	InjectHook(AddressByRegion_10<DWORD>(0x748D82), YesFPSLimit, PATCH_JUMP);
 
 	// Corrected Map screen 1px issue
 	Patch<float>(0x575DE7, -0.5f);
@@ -2685,10 +2685,10 @@ void Patch_SA_11()
 	Patch<const char*>(0x746C48, aNoDesktopMode);
 
 	// 1000 FPS cap
-	Patch<BYTE>(0x74966E, 0x18);
-	Patch<BYTE>(0x749677, 0x0F);
-	InjectHook(0x749682, NoFPSLimit_11, PATCH_JUMP);
-	InjectHook(0x749687, YesFPSLimit_11, PATCH_JUMP);
+	Patch<BYTE>(AddressByRegion_11<DWORD>(0x74966E), 0x18);
+	Patch<BYTE>(AddressByRegion_11<DWORD>(0x749677), 0x0F);
+	InjectHook(AddressByRegion_11<DWORD>(0x749682), NoFPSLimit_11, PATCH_JUMP);
+	InjectHook(AddressByRegion_11<DWORD>(0x749687), YesFPSLimit_11, PATCH_JUMP);
 
 	// Corrected Map screen 1px issue
 	Patch<float>(0x576357, -0.5f);
