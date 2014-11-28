@@ -37,10 +37,6 @@ static void* varRwD3D9CreateVertexShader = AddressByVersion<void*>(0x7FAC60, 0x7
 WRAPPER RwBool RwD3D9CreateVertexShader(const RwUInt32 *function, void **shader) { VARJMP(varRwD3D9CreateVertexShader); }
 static void* varRwD3D9DeleteVertexShader = AddressByVersion<void*>(0x7FAC90, 0x7FB590, 0x834C50);
 WRAPPER void RwD3D9DeleteVertexShader(void *shader) { VARJMP(varRwD3D9DeleteVertexShader); }
-static void* var_rwD3D9VSGetComposedTransformMatrix = AddressByVersion<void*>(0x7646E0, 0x764FF0, 0x79E6A0);
-WRAPPER void _rwD3D9VSGetComposedTransformMatrix(void *transformMatrix) { VARJMP(var_rwD3D9VSGetComposedTransformMatrix); }
-static void* var_rwD3D9VSSetActiveWorldMatrix = AddressByVersion<void*>(0x764650, 0x764F60, 0x79E610);
-WRAPPER void _rwD3D9VSSetActiveWorldMatrix(const RwMatrix *worldMatrix) { VARJMP(var_rwD3D9VSSetActiveWorldMatrix); }
 static void* var_rwD3D9SetVertexShaderConstant = AddressByVersion<void*>(0x7FACA0, 0x7FB5A0, 0x834C60);
 WRAPPER void _rwD3D9SetVertexShaderConstant(RwUInt32 registerAddress,
                                const void *constantData,
@@ -51,7 +47,7 @@ WRAPPER RwBool _rpD3D9VertexDeclarationInstColor(RwUInt8 *mem,
                                   RwInt32 numVerts,
 								  RwUInt32 stride) { VARJMP(var_rpD3D9VertexDeclarationInstColor); }
 
-static void* varRwD3D9GetTransform = AddressByVersion<void*>(0x007FA4F0, 0x007FA4F0, 0x007FA4F0);
+static void* varRwD3D9GetTransform = AddressByVersion<void*>(0x7FA4F0, 0x7FADF0, 0x8344B0);
 WRAPPER void _RwD3D9GetTransform(RwUInt32 state, void* matrix) { VARJMP(varRwD3D9GetTransform); }
 
 RwCamera* RwCameraBeginUpdate(RwCamera* camera)
@@ -721,10 +717,8 @@ BOOL Initialise3D(void* pParam)
 
 void SetShader(RxD3D9InstanceData* pInstData)
 {
-	//GetAsyncKeyState(VK_F5) && 
 	if (bRenderNVC )
 	{
-		D3DMATRIX		outMat;
 		float			fEnvVars[2] = { m_fDNBalanceParam, RpMaterialGetColor(pInstData->material)->alpha * (1.0f/255.0f) };
 		RwRGBAReal*		AmbientLight = RpLightGetColor(pAmbient);
 
@@ -736,21 +730,20 @@ void SetShader(RxD3D9InstanceData* pInstData)
 
 		RwD3D9SetVertexShader(pNVCShader);
 
-		_rwD3D9VSSetActiveWorldMatrix(RwFrameGetLTM(RpAtomicGetFrame(pRenderedAtomic)));
+		//_rwD3D9VSSetActiveWorldMatrix(RwFrameGetLTM(RpAtomicGetFrame(pRenderedAtomic)));
 		//_rwD3D9VSSetActiveWorldMatrix(RwFrameGetMatrix(RpAtomicGetFrame(pRenderedAtomic)));
-		_rwD3D9VSGetComposedTransformMatrix(&outMat);
+		//_rwD3D9VSGetComposedTransformMatrix(&outMat);
 
 		D3DMATRIX	worldMat, viewMat, projMat;
 		_RwD3D9GetTransform(D3DTS_WORLD, &worldMat);
 		_RwD3D9GetTransform(D3DTS_VIEW, &viewMat);
 		_RwD3D9GetTransform(D3DTS_PROJECTION, &projMat);
-		RwD3D9SetVertexShaderConstant(6, &worldMat, 4);
-		RwD3D9SetVertexShaderConstant(10, &viewMat, 4);
-		RwD3D9SetVertexShaderConstant(14, &projMat, 4);
+		RwD3D9SetVertexShaderConstant(2, &worldMat, 4);
+		RwD3D9SetVertexShaderConstant(6, &viewMat, 4);
+		RwD3D9SetVertexShaderConstant(10, &projMat, 4);
 
-		RwD3D9SetVertexShaderConstant(0, &outMat, 4);
-		RwD3D9SetVertexShaderConstant(4, fEnvVars, 1);
-		RwD3D9SetVertexShaderConstant(5, AmbientLight, 1);
+		RwD3D9SetVertexShaderConstant(0, fEnvVars, 1);
+		RwD3D9SetVertexShaderConstant(1, AmbientLight, 1);
 	}
 	else
 		RwD3D9SetVertexShader(pInstData->vertexShader);
