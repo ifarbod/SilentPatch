@@ -1,4 +1,5 @@
 #include "StdAfxSA.h"
+#include <limits>
 
 #include "ScriptSA.h"
 #include "GeneralSA.h"
@@ -50,6 +51,8 @@ WRAPPER RwBool _rpD3D9VertexDeclarationInstColor(RwUInt8 *mem,
                                   RwInt32 numVerts,
 								  RwUInt32 stride) { VARJMP(var_rpD3D9VertexDeclarationInstColor); }
 
+static void* varRwD3D9GetTransform = AddressByVersion<void*>(0x007FA4F0, 0x007FA4F0, 0x007FA4F0);
+WRAPPER void _RwD3D9GetTransform(RwUInt32 state, void* matrix) { VARJMP(varRwD3D9GetTransform); }
 
 RwCamera* RwCameraBeginUpdate(RwCamera* camera)
 {
@@ -718,7 +721,8 @@ BOOL Initialise3D(void* pParam)
 
 void SetShader(RxD3D9InstanceData* pInstData)
 {
-	if ( bRenderNVC )
+	//GetAsyncKeyState(VK_F5) && 
+	if (bRenderNVC )
 	{
 		D3DMATRIX		outMat;
 		float			fEnvVars[2] = { m_fDNBalanceParam, RpMaterialGetColor(pInstData->material)->alpha * (1.0f/255.0f) };
@@ -735,7 +739,15 @@ void SetShader(RxD3D9InstanceData* pInstData)
 		_rwD3D9VSSetActiveWorldMatrix(RwFrameGetLTM(RpAtomicGetFrame(pRenderedAtomic)));
 		//_rwD3D9VSSetActiveWorldMatrix(RwFrameGetMatrix(RpAtomicGetFrame(pRenderedAtomic)));
 		_rwD3D9VSGetComposedTransformMatrix(&outMat);
-		
+
+		D3DMATRIX	worldMat, viewMat, projMat;
+		_RwD3D9GetTransform(D3DTS_WORLD, &worldMat);
+		_RwD3D9GetTransform(D3DTS_VIEW, &viewMat);
+		_RwD3D9GetTransform(D3DTS_PROJECTION, &projMat);
+		RwD3D9SetVertexShaderConstant(6, &worldMat, 4);
+		RwD3D9SetVertexShaderConstant(10, &viewMat, 4);
+		RwD3D9SetVertexShaderConstant(14, &projMat, 4);
+
 		RwD3D9SetVertexShaderConstant(0, &outMat, 4);
 		RwD3D9SetVertexShaderConstant(4, fEnvVars, 1);
 		RwD3D9SetVertexShaderConstant(5, AmbientLight, 1);
