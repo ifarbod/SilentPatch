@@ -372,11 +372,11 @@ RpAtomic* OnePassAlphaRender(RpAtomic* atomic)
 	return atomic;
 }
 
-RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
+RpAtomic* TwoPassAlphaRender_aap(RpAtomic* atomic)
 {
 	// For cutscenes, fall back to one-pass render
 	if ( CCutsceneMgr__ms_running && !CanSeeOutSideFromCurrArea() )
-		return OnePassAlphaRender(atomic);
+		return AtomicDefaultRenderCallBack(atomic);
 
 	int		nPushedAlpha, nAlphaFunction;
 	int		nZWrite;
@@ -412,11 +412,11 @@ RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
 	return atomic;
 }
 
-RpAtomic* TwoPassAlphaRenderSilent(RpAtomic* atomic)
+RpAtomic* TwoPassAlphaRender_Silent(RpAtomic* atomic)
 {
 	// For cutscenes, fall back to one-pass render
 	if ( CCutsceneMgr__ms_running && !CanSeeOutSideFromCurrArea() )
-		return OnePassAlphaRender(atomic);
+		return AtomicDefaultRenderCallBack(atomic);
 
 	int		nPushedAlpha, nAlphaFunction;
 	int		nZWrite;
@@ -465,6 +465,7 @@ RpAtomic* StaticPropellerRender(RpAtomic* pAtomic)
 	return pAtomic;
 }
 
+template <RpAtomic* renderer(RpAtomic*)>
 RpAtomic* RenderBigVehicleActomic(RpAtomic* pAtomic, float fComp)
 {
 	UNREFERENCED_PARAMETER(fComp);
@@ -472,7 +473,7 @@ RpAtomic* RenderBigVehicleActomic(RpAtomic* pAtomic, float fComp)
 	const char*		pNodeName = GetFrameNodeName(RpAtomicGetFrame(pAtomic));
 
 	if ( !strncmp(pNodeName, "moving_prop", 11) )
-		return TwoPassAlphaRender(pAtomic);
+		return renderer(pAtomic);
 
 	if ( !strncmp(pNodeName, "static_prop", 11) )
 		return StaticPropellerRender(pAtomic);
@@ -497,8 +498,14 @@ void SetRendererForAtomic(RpAtomic* pAtomic)
 	BOOL	bHasAlpha = FALSE;
 
 	RpGeometryForAllMaterials(RpAtomicGetGeometry(pAtomic), AlphaTest, &bHasAlpha);
-//	if ( bHasAlpha )
+	if ( bHasAlpha )
 		RpAtomicSetRenderCallBack(pAtomic, renderer);
+}
+
+template <RpAtomic* renderer(RpAtomic*)>
+void SetRendererForAtomic_NoTest(RpAtomic* pAtomic)
+{
+	RpAtomicSetRenderCallBack(pAtomic, renderer);
 }
 
 void RenderWeapon(CPed* pPed)
@@ -549,13 +556,14 @@ void RenderWeaponPedsForPC()
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
 }*/
 
+template <RpAtomic* renderer(RpAtomic*)>
 RpAtomic* RenderPedCB(RpAtomic* pAtomic)
 {
 	BOOL	bHasAlpha = FALSE;
 
 	RpGeometryForAllMaterials(RpAtomicGetGeometry(pAtomic), AlphaTest, &bHasAlpha);
 	if ( bHasAlpha )
-		return TwoPassAlphaRender(pAtomic);
+		return renderer(pAtomic);
 	
 	return AtomicDefaultRenderCallBack(pAtomic);
 }
@@ -1706,22 +1714,40 @@ BOOL InjectDelayedPatches_10()
 		if ( !bSARender )
 		{
 			// Twopass rendering (experimental)
+			unsigned int	dwTwoPassMethod = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", 0, wcModulePath);
 			Patch<BYTE>(0x4C441E, 0x57);
 			Patch<DWORD>(0x4C4424, 0x5F04C483);
 			Patch<DWORD>(0x4C4428, 0x0004C25E);
-			if ( GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", FALSE, wcModulePath) != FALSE )
+			if ( dwTwoPassMethod == 1 )
 			{
-				InjectHook(0x4C441F, SetRendererForAtomic<TwoPassAlphaRender>, PATCH_CALL);
+				// Silent's twopass
+				InjectHook(0x4C441F, SetRendererForAtomic<TwoPassAlphaRender_Silent>, PATCH_CALL);
+				Patch<const void*>(0x7341D9, TwoPassAlphaRender_Silent);
+				Patch<const void*>(0x734127, TwoPassAlphaRender_Silent);
+				Patch(0x73445E, RenderBigVehicleActomic<TwoPassAlphaRender_Silent>);
 				// Twopass for peds
-				InjectHook(0x733614, RenderPedCB);
+				InjectHook(0x733614, RenderPedCB<TwoPassAlphaRender_Silent>);
+			}
+			else if ( dwTwoPassMethod == 2 )
+			{
+				// aap's twopass
+				InjectHook(0x4C441F, SetRendererForAtomic_NoTest<TwoPassAlphaRender_aap>, PATCH_CALL);
+				Patch<const void*>(0x7341D9, TwoPassAlphaRender_aap);
+				Patch<const void*>(0x734127, TwoPassAlphaRender_aap);
+				Patch(0x73445E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
+				// Twopass for peds
+				InjectHook(0x733614, RenderPedCB<TwoPassAlphaRender_aap>);
 			}
 			else
 			{
+				Patch<const void*>(0x7341D9, TwoPassAlphaRender_aap);
+				Patch<const void*>(0x734127, TwoPassAlphaRender_aap);
+				Patch(0x73445E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
 				InjectHook(0x4C441F, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
 			}
 
 
-			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", FALSE, wcModulePath) != FALSE )
+			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", TRUE, wcModulePath) != FALSE )
 			{
 				// Shaders!
 				// plugin-sdk compatibility
@@ -1896,22 +1922,40 @@ BOOL InjectDelayedPatches_11()
 		if ( !bSARender )
 		{
 			// Twopass rendering (experimental)
+			unsigned int	dwTwoPassMethod = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", 0, wcModulePath);
 			Patch<BYTE>(0x4C449E, 0x57);
 			Patch<DWORD>(0x4C44A4, 0x5F04C483);
 			Patch<DWORD>(0x4C44A8, 0x0004C25E);
 
-			if ( GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", FALSE, wcModulePath) != FALSE )
+			if ( dwTwoPassMethod == 1 )
 			{
-				InjectHook(0x4C449F, SetRendererForAtomic<TwoPassAlphaRender>, PATCH_CALL);
+				// Silent's twopass
+				InjectHook(0x4C449F, SetRendererForAtomic<TwoPassAlphaRender_Silent>, PATCH_CALL);
+				Patch<const void*>(0x734A09, TwoPassAlphaRender_Silent);
+				Patch<const void*>(0x734957, TwoPassAlphaRender_Silent);
+				Patch(0x734C8E, RenderBigVehicleActomic<TwoPassAlphaRender_Silent>);
 				// Twopass for peds
-				InjectHook(0x733E44, RenderPedCB);
+				InjectHook(0x733E44, RenderPedCB<TwoPassAlphaRender_Silent>);
+			}
+			else if ( dwTwoPassMethod == 2 )
+			{
+				// aap's twopass
+				InjectHook(0x4C449F, SetRendererForAtomic_NoTest<TwoPassAlphaRender_aap>, PATCH_CALL);
+				Patch<const void*>(0x734A09, TwoPassAlphaRender_aap);
+				Patch<const void*>(0x734957, TwoPassAlphaRender_aap);
+				Patch(0x734C8E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
+				// Twopass for peds
+				InjectHook(0x733E44, RenderPedCB<TwoPassAlphaRender_aap>);
 			}
 			else
 			{
 				InjectHook(0x4C449F, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+				Patch<const void*>(0x734A09, TwoPassAlphaRender_aap);
+				Patch<const void*>(0x734957, TwoPassAlphaRender_aap);
+				Patch(0x734C8E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
 			}
 
-			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", FALSE, wcModulePath) != FALSE )
+			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", TRUE, wcModulePath) != FALSE )
 			{
 				// Shaders!
 				// plugin-sdk compatibility
@@ -2094,22 +2138,40 @@ BOOL InjectDelayedPatches_Steam()
 		if ( !bSARender )
 		{
 			// Twopass rendering (experimental)
+			unsigned int	dwTwoPassMethod = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", 0, wcModulePath);
 			Patch<BYTE>(0x4CEBF3, 0x57);
 			Patch<DWORD>(0x4CEBF9, 0xC25E5F5F);
 			Patch<WORD>(0x4CEBFD, 0x0004);
 
-			if ( GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", FALSE, wcModulePath) != FALSE )
+			if ( dwTwoPassMethod == 1 )
 			{
-				InjectHook(0x4CEBF4, SetRendererForAtomic<TwoPassAlphaRender>, PATCH_CALL);
+				// Silent's twopass
+				InjectHook(0x4CEBF4, SetRendererForAtomic<TwoPassAlphaRender_Silent>, PATCH_CALL);
+				Patch<const void*>(0x76E230, TwoPassAlphaRender_Silent);
+				Patch<const void*>(0x76E160, TwoPassAlphaRender_Silent);
+				Patch(0x76E4F0, RenderBigVehicleActomic<TwoPassAlphaRender_Silent>);
 				// Twopass for peds
-				InjectHook(0x76D88E, RenderPedCB);
+				InjectHook(0x76D88E, RenderPedCB<TwoPassAlphaRender_Silent>);
+			}
+			else if ( dwTwoPassMethod == 2 )
+			{
+				// aap's twopass
+				InjectHook(0x4CEBF4, SetRendererForAtomic_NoTest<TwoPassAlphaRender_aap>, PATCH_CALL);
+				Patch<const void*>(0x76E230, TwoPassAlphaRender_aap);
+				Patch<const void*>(0x76E160, TwoPassAlphaRender_aap);
+				Patch(0x76E4F0, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
+				// Twopass for peds
+				InjectHook(0x76D88E, RenderPedCB<TwoPassAlphaRender_aap>);
 			}
 			else
 			{
 				InjectHook(0x4CEBF4, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+				Patch<const void*>(0x76E230, TwoPassAlphaRender_aap);
+				Patch<const void*>(0x76E160, TwoPassAlphaRender_aap);
+				Patch(0x76E4F0, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
 			}
 
-			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", FALSE, wcModulePath) != FALSE )
+			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", TRUE, wcModulePath) != FALSE )
 			{
 				// Shaders!
 				// plugin-sdk compatibility
@@ -2271,9 +2333,6 @@ void Patch_SA_10()
 	InjectHook(0x6CAB70, &CPlane::Render_Stub, PATCH_JUMP);
 	InjectHook(0x6C4400, &CHeli::Render_Stub, PATCH_JUMP);
 	//InjectHook(0x553318, RenderAlphaAtomics);
-	Patch<const void*>(0x7341D9, TwoPassAlphaRender);
-	Patch<const void*>(0x734127, TwoPassAlphaRender);
-	Patch<const void*>(0x73445E, RenderBigVehicleActomic);
 	//Patch<const void*>(0x73406E, TwoPassAlphaRender);
 
 	// Boats
@@ -2524,9 +2583,6 @@ void Patch_SA_11()
 	// Heli rotors
 	InjectHook(0x6CB390, &CPlane::Render_Stub, PATCH_JUMP);
 	InjectHook(0x6C4C20, &CHeli::Render_Stub, PATCH_JUMP);
-	Patch<const void*>(0x734A09, TwoPassAlphaRender);
-	Patch<const void*>(0x734957, TwoPassAlphaRender);
-	Patch<const void*>(0x734C8E, RenderBigVehicleActomic);
 
 	// RefFix
 	static const float						fRefZVal = 1.0f;
@@ -2772,9 +2828,6 @@ void Patch_SA_Steam()
 	// Heli rotors
 	InjectHook(0x700620, &CPlane::Render_Stub, PATCH_JUMP);
 	InjectHook(0x6F9550, &CHeli::Render_Stub, PATCH_JUMP);
-	Patch<const void*>(0x76E230, TwoPassAlphaRender);
-	Patch<const void*>(0x76E160, TwoPassAlphaRender);
-	Patch<const void*>(0x76E4F0, RenderBigVehicleActomic);
 
 	// RefFix
 	static const float						fRefZVal = 1.0f;
