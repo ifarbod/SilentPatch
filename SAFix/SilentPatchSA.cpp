@@ -389,8 +389,9 @@ RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
 
 	// 1st pass
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, FALSE);
-//	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(255));
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONGREATEREQUAL));
+	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONALWAYS));
+//	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
+	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
 
 	atomic = AtomicDefaultRenderCallBack(atomic);
 
@@ -398,15 +399,16 @@ RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
 	{
 		// 2nd pass
 		RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
-		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
-		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
+		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONGREATEREQUAL));
+//		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
+		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
 
 		AtomicDefaultRenderCallBack(atomic);
 	}
 
 //	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
-	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
+//	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
 
 	return atomic;
