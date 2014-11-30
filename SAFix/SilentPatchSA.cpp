@@ -382,16 +382,55 @@ RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
 	int		nZWrite;
 	int		nAlphaBlending;
 
-//	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
+	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
 	RwRenderStateGet(rwRENDERSTATEZWRITEENABLE, &nZWrite);
 	RwRenderStateGet(rwRENDERSTATEVERTEXALPHAENABLE, &nAlphaBlending);
 	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTION, &nAlphaFunction);
 
 	// 1st pass
-	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, FALSE);
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONALWAYS));
-//	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
-	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
+	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
+	if (nPushedAlpha == 100)	// or should we just force it? do we ever use something else anyway?
+		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(128));
+	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONGREATEREQUAL));
+
+	atomic = AtomicDefaultRenderCallBack(atomic);
+
+	if ( atomic )
+	{
+		// 2nd pass
+		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
+		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
+
+		AtomicDefaultRenderCallBack(atomic);
+	}
+
+	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
+	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
+	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
+	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
+
+	return atomic;
+}
+
+RpAtomic* TwoPassAlphaRenderSilent(RpAtomic* atomic)
+{
+	// For cutscenes, fall back to one-pass render
+	if ( CCutsceneMgr__ms_running && !CanSeeOutSideFromCurrArea() )
+		return OnePassAlphaRender(atomic);
+
+	int		nPushedAlpha, nAlphaFunction;
+	int		nZWrite;
+	int		nAlphaBlending;
+
+	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
+	RwRenderStateGet(rwRENDERSTATEZWRITEENABLE, &nZWrite);
+	RwRenderStateGet(rwRENDERSTATEVERTEXALPHAENABLE, &nAlphaBlending);
+	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTION, &nAlphaFunction);
+
+	// 1st pass
+	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(FALSE));
+	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(255));
+	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONEQUAL));
 
 	atomic = AtomicDefaultRenderCallBack(atomic);
 
@@ -399,16 +438,15 @@ RpAtomic* TwoPassAlphaRender(RpAtomic* atomic)
 	{
 		// 2nd pass
 		RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
-		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONGREATEREQUAL));
-//		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
-		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
+		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
+		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
 
 		AtomicDefaultRenderCallBack(atomic);
 	}
 
-//	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
+	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
-//	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
+	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
 
 	return atomic;
@@ -459,7 +497,7 @@ void SetRendererForAtomic(RpAtomic* pAtomic)
 	BOOL	bHasAlpha = FALSE;
 
 	RpGeometryForAllMaterials(RpAtomicGetGeometry(pAtomic), AlphaTest, &bHasAlpha);
-	if ( bHasAlpha )
+//	if ( bHasAlpha )
 		RpAtomicSetRenderCallBack(pAtomic, renderer);
 }
 
