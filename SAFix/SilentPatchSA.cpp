@@ -2440,7 +2440,8 @@ void Patch_SA_10()
 	Patch<DWORD>(0x745B81, 0x9090587D);
 	Patch<DWORD>(0x74596C, 0x9090127D);
 	Nop(0x745970, 2);
-	Nop(0x745B75, 2);
+	//Nop(0x745B75, 2);
+	Nop(0x745B85, 2);
 	Nop(0x7459E1, 2);
 
 	// Heap corruption fix
