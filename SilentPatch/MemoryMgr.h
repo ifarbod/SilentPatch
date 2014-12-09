@@ -35,16 +35,10 @@ inline void* GetDummy()
 	return &dwDummy;
 }
 
-inline ptrdiff_t GetModule()
-{
-	static HMODULE		hModule = GetModuleHandle(nullptr);
-	return (ptrdiff_t)hModule;
-}
-
 template<typename AT>
 inline AT DynBaseAddress(AT address)
 {
-	return GetModule() - 0x400000 + address;
+	return (ptrdiff_t)GetModuleHandle(nullptr) - 0x400000 + address;
 }
 
 #if defined SILENTPATCH_III_VER
@@ -116,35 +110,47 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 
 	if ( *bVer == -1 )
 	{
-		if ( *(DWORD*)DynBaseAddress(0x858D21) == 0x3539F633 )
+		if ( *(DWORD*)DynBaseAddress(0x82457C) == 0x94BF )
 		{
-			*bVer = 3;
-			*bEuropean = false;
-		}
-
-		else if ( *(DWORD*)DynBaseAddress(0x82457C) == 0x94BF )
-		{
+			// 1.0 US
 			*bVer = 0;
 			*bEuropean = false;
 		}
 		else if ( *(DWORD*)DynBaseAddress(0x8245BC) == 0x94BF )
 		{
+			// 1.0 EU
 			*bVer = 0;
 			*bEuropean = true;
 		}
 		else if ( *(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF )
 		{
+			// 1.01 US
 			*bVer = 1;
 			*bEuropean = false;
 		}	
 		else if ( *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF )
 		{
+			// 1.01 EU
 			*bVer = 1;
 			*bEuropean = true;
 		}
 		else if (*(DWORD*)DynBaseAddress(0x85EC4A) == 0x94BF )
 		{
+			// 3.0
 			*bVer = 2;
+			*bEuropean = false;
+		}
+
+		else if ( *(DWORD*)DynBaseAddress(0x858D21) == 0x3539F633 )
+		{
+			// newsteam r1
+			*bVer = 3;
+			*bEuropean = false;
+		}
+		else if ( *(DWORD*)DynBaseAddress(0x858D51) == 0x3539F633 )
+		{
+			// newsteam r2
+			*bVer = 4;
 			*bEuropean = false;
 		}
 	}
@@ -177,6 +183,9 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 	case 3:
 		// TODO: DO
 		return (T)GetDummy();
+	case 4:
+		// TODO: DO
+		return (T)GetDummy(); 
 	default:
 		assert(address10);
 		// Adjust to EU if needed
