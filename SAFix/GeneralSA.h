@@ -163,7 +163,7 @@ public:
     /********** END CFLAGS **************/
 
     WORD			RandomSeed;					// 0x20
-    short			m_nModelIndex;				// 0x22
+    unsigned short	m_nModelIndex;				// 0x22
     void*			pReferences;				// 0x24
     void*			m_pLastRenderedLink;		// 0x28
     WORD			m_nScanCode;				// 0x2C
@@ -184,11 +184,6 @@ public:
 	{
 		// Dummy ctor
 	}
-
-	inline short&	ModelIndex()
-						{ return m_nModelIndex; };
-	inline short	GetModelIndex()
-					{ return m_nModelIndex; }
 
 	void			UpdateRW();
 	void			RegisterReference(CEntity** pAddress);
