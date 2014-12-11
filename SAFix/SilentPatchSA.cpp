@@ -3128,54 +3128,24 @@ void Patch_SA_NewSteam_r2()
 {
 	using namespace MemoryVP::DynBase;
 
-	// Nazi EXE?
-	if ( *(DWORD*)DynBaseAddress(0x49F810) == 0x64EC8B55 )
-	{
-		// Regular
+	// No framedelay
+	InjectHook(0x54ECC6, DynBaseAddress(0x54ED0C), PATCH_JUMP);
+	Patch<BYTE>(0x54ED45, 0x4);
+	Nop(0x54ED47, 1);
 
-		// No framedelay
-		InjectHook(0x54ECC6, DynBaseAddress(0x54ED0C), PATCH_JUMP);
-		Patch<BYTE>(0x54ED45, 0x4);
-		Nop(0x54ED47, 1);
+	// Unlock 1.0/1.01 saves loading 
+	Patch<WORD>(0x5ED349, 0xE990);
 
-		// Unlock 1.0/1.01 saves loading 
-		Patch<WORD>(0x5ED349, 0xE990);
+	// Old .set files working again
+	static const DWORD		dwSetVersion = 6;
+	Patch<const void*>(0x5904CA, &dwSetVersion);
+	Patch<BYTE>(0x5907AD, 6);
+	Patch<BYTE>(0x53EC4A, 6);
 
-		// Old .set files working again
-		static const DWORD		dwSetVersion = 6;
-		Patch<const void*>(0x5904CA, &dwSetVersion);
-		Patch<BYTE>(0x5907AD, 6);
-		Patch<BYTE>(0x53EC4A, 6);
-
-		// Disable re-initialization of DirectInput mouse device by the game
-		Patch<BYTE>(0x58A881, 0xEB);
-		Patch<BYTE>(0x58AA67, 0xEB);
-		Patch<BYTE>(0x58AB49, 0xEB);
-	}
-	else
-	{
-		// Nazi
-
-		// No framedelay
-		InjectHook(0x54EC06, DynBaseAddress(0x54EC4C), PATCH_JUMP);
-		Patch<BYTE>(0x54EC85, 0x4);
-		Nop(0x54EC87, 1);
-
-		// Unlock 1.0/1.01 saves loading 
-		Patch<WORD>(0x5ED349, 0xE990);
-
-		// Old .set files working again
-		static const DWORD		dwSetVersion = 6;
-		Patch<const void*>(0x5904DA, &dwSetVersion);
-		Patch<BYTE>(0x5907BD, 6);
-		Patch<BYTE>(0x53EB9A, 6);
-
-		// Disable re-initialization of DirectInput mouse device by the game
-		Patch<BYTE>(0x58A7D1, 0xEB);
-		Patch<BYTE>(0x58A9B7, 0xEB);
-		Patch<BYTE>(0x58AA99, 0xEB);
-	}
-
+	// Disable re-initialization of DirectInput mouse device by the game
+	Patch<BYTE>(0x58A881, 0xEB);
+	Patch<BYTE>(0x58AA67, 0xEB);
+	Patch<BYTE>(0x58AB49, 0xEB);
 
 	// Unlocked widescreen resolutions
 	//Patch<WORD>(0x779BAD, 0x607D);
@@ -3185,6 +3155,7 @@ void Patch_SA_NewSteam_r2()
 	Nop(0x7799DC, 2);
 
 	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
+	// TODO: Nazi exe
 	Nop(0x77AB6F, 1);
 	Patch<WORD>(0x77AB70, 0x01B0);
 
@@ -3205,6 +3176,57 @@ void Patch_SA_NewSteam_r2()
 	Patch<const void*>(0x73427A, &f43);
 }
 
+void Patch_SA_NewSteam_r2_lv()
+{
+	using namespace MemoryVP::DynBase;
+
+	// No framedelay
+	InjectHook(0x54EC06, DynBaseAddress(0x54EC4C), PATCH_JUMP);
+	Patch<BYTE>(0x54EC85, 0x4);
+	Nop(0x54EC87, 1);
+
+	// Unlock 1.0/1.01 saves loading 
+	Patch<WORD>(0x5ED299, 0xE990);
+
+	// Old .set files working again
+	static const DWORD		dwSetVersion = 6;
+	Patch<const void*>(0x59040A, &dwSetVersion);
+	Patch<BYTE>(0x5906ED, 6);
+	Patch<BYTE>(0x53EB9A, 6);
+
+	// Disable re-initialization of DirectInput mouse device by the game
+	Patch<BYTE>(0x58A7C1, 0xEB);
+	Patch<BYTE>(0x58A9A7, 0xEB);
+	Patch<BYTE>(0x58AA89, 0xEB);
+
+	// Unlocked widescreen resolutions
+	//Patch<WORD>(0x779BAD, 0x607D);
+	Patch<WORD>(0x779AB8, 0x697D);
+	Patch<DWORD>(0x7798C8, 0x9090117D);
+	Nop(0x779946, 2);
+	Nop(0x7798CC, 2);
+
+	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
+	Nop(0x77AA5F, 1);
+	Patch<WORD>(0x77AA60, 0x01B0);
+
+	// Default resolution to native resolution
+	RECT			desktop;
+	GetWindowRect(GetDesktopWindow(), &desktop);
+	_snprintf(aNoDesktopMode, sizeof(aNoDesktopMode), "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+
+	Patch<DWORD>(0x77A30F, desktop.right);
+	Patch<DWORD>(0x77A314, desktop.bottom);
+	Patch<const char*>(0x77A36B, aNoDesktopMode);
+
+
+	// Proper aspect ratios
+	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
+	Patch<const void*>(0x73414B, &f169);
+	Patch<const void*>(0x734167, &f54);
+	Patch<const void*>(0x73417A, &f43);
+}
+
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
@@ -3220,6 +3242,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 		else if ( *(DWORD*)DynBaseAddress(0x858D21) == 0x3539F633) Patch_SA_NewSteam_r1();
 		else if ( *(DWORD*)DynBaseAddress(0x858D51) == 0x3539F633) Patch_SA_NewSteam_r2();
+		else if ( *(DWORD*)DynBaseAddress(0x858C61) == 0x3539F633) Patch_SA_NewSteam_r2_lv();
 		
 		else return FALSE;
 	}

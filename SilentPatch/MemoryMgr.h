@@ -153,6 +153,12 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 			*bVer = 4;
 			*bEuropean = false;
 		}
+		else if ( *(DWORD*)DynBaseAddress(0x858C61) == 0x3539F633 )
+		{
+			// newsteam r2 lv
+			*bVer = 5;
+			*bEuropean = false;
+		}
 	}
 
 	switch ( *bVer )
@@ -181,11 +187,10 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 
 		return (T)addressSteam;
 	case 3:
+	case 4:
+	case 5:
 		// TODO: DO
 		return (T)GetDummy();
-	case 4:
-		// TODO: DO
-		return (T)GetDummy(); 
 	default:
 		assert(address10);
 		// Adjust to EU if needed
