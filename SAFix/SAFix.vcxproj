@@ -61,7 +61,9 @@
       <AdditionalDependencies>winmm.lib;Shlwapi.lib;libFLAC_static_d.lib;win_utf8_io_static_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"</Command>
+      <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"
+copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\gta-sa_newsteam_r2\SilentPatchSA.asi"
+copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowviolence_gta-sa\SilentPatchSA.asi"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -89,7 +91,9 @@
       <AdditionalDependencies>winmm.lib;Shlwapi.lib;libFLAC_static.lib;win_utf8_io_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"</Command>
+      <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"
+copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\gta-sa_newsteam_r2\SilentPatchSA.asi"
+copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowviolence_gta-sa\SilentPatchSA.asi"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
