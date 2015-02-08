@@ -728,8 +728,6 @@ void DrawRect_HalfPixel_Steam(CRect& rect, const CRGBA& rgba)
 	((void(*)(const CRect&, const CRGBA&))0x75CDA0)(rect, rgba);
 }
 
-#include "nvc.h"
-
 static IDirect3DVertexShader9*	pNVCShader = nullptr;
 static bool						bRenderNVC = false;
 static RpAtomic*				pRenderedAtomic;
@@ -739,7 +737,15 @@ bool ShaderAttach()
 	// CGame::InitialiseRenderWare
 	if ( InitialiseRenderWare() )
 	{
-		RwD3D9CreateVertexShader(reinterpret_cast<const RwUInt32*>(g_vs20_NVC_vertex_shader), reinterpret_cast<void**>(&pNVCShader));
+		HMODULE thisModule;
+		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)ShaderAttach, &thisModule);
+
+		HRSRC		resource = FindResource(thisModule, MAKEINTRESOURCE(IDR_NVCSHADER), RT_RCDATA);
+		RwUInt32*	shader = static_cast<RwUInt32*>(LoadResource(thisModule, resource));
+
+		RwD3D9CreateVertexShader(shader, reinterpret_cast<void**>(&pNVCShader));
+
+		FreeResource(shader);
 		return true;
 	}
 	return false;

@@ -114,12 +114,12 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
   <ItemGroup>
     <CustomBuild Include="..\SilentPatch\nvc.fx">
       <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /T vs_2_0 /E NVC_vertex_shader /Fh ..\SilentPatch\nvc.h ..\SilentPatch\nvc.fx</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\SilentPatch\nvc.h</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /T vs_2_0 /E NVC_vertex_shader /Fo ..\SilentPatch\nvc.cso ..\SilentPatch\nvc.fx</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\SilentPatch\nvc.cso</Outputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling shaders...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fxc /T vs_2_0 /E NVC_vertex_shader /Fh ..\SilentPatch\nvc.h ..\SilentPatch\nvc.fx</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fxc /T vs_2_0 /E NVC_vertex_shader /Fo ..\SilentPatch\nvc.cso ..\SilentPatch\nvc.fx</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling shaders...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\SilentPatch\nvc.h</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\SilentPatch\nvc.cso</Outputs>
     </CustomBuild>
     <MASM Include="..\SilentPatch\win2000.asm">
       <FileType>Document</FileType>
@@ -141,10 +141,14 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClInclude Include="ModelInfoSA.h" />
     <ClInclude Include="PedSA.h" />
     <ClInclude Include="PNGFile.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="ScriptSA.h" />
     <ClInclude Include="StdAfxSA.h" />
     <ClInclude Include="TimerSA.h" />
     <ClInclude Include="VehicleSA.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Shaders.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
