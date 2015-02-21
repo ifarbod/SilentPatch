@@ -38,6 +38,10 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 			// No 12mb vram check
 			Patch<BYTE>(0x581411, 0xEB);
+
+			// No DirectPlay dependency
+			Patch<BYTE>(0x5812D6, 0xB8);
+			Patch<DWORD>(0x5812D7, 0x900);
 		}
 		else if (*(DWORD*)0x5C2130 == 0x53E58955)
 		{
@@ -49,6 +53,10 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 			// No 12mb vram check
 			Patch<BYTE>(0x581753, 0xEB);
+
+			// No DirectPlay dependency
+			Patch<BYTE>(0x581620, 0xB8);
+			Patch<DWORD>(0x581621, 0x900);
 		}
 		else if (*(DWORD*)0x5C6FD0 == 0x53E58955)
 		{
@@ -60,6 +68,10 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 			// No 12mb vram check
 			Patch<BYTE>(0x581653, 0xEB);
+
+			// No DirectPlay dependency
+			Patch<BYTE>(0x581520, 0xB8);
+			Patch<DWORD>(0x581521, 0x900);
 		}
 
 		else if (*(DWORD*)0x667BF0 == 0x53E58955)
@@ -72,6 +84,10 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 			// No 12mb vram check
 			Patch<BYTE>(0x601E26, 0xEB);
+
+			// No DirectPlay dependency
+			Patch<BYTE>(0x601CA0, 0xB8);
+			Patch<DWORD>(0x601CA1, 0x900);
 		}
 		else if (*(DWORD*)0x667C40 == 0x53E58955)
 		{
@@ -83,6 +99,10 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 			// No 12mb vram check
 			Patch<BYTE>(0x601E56, 0xEB);
+
+			// No DirectPlay dependency
+			Patch<BYTE>(0x601CD0, 0xB8);
+			Patch<DWORD>(0x601CD1, 0x900);
 		}
 		else if (*(DWORD*)0x666BA0 == 0x53E58955)
 		{
@@ -94,6 +114,10 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 			// No 12mb vram check
 			Patch<BYTE>(0x601A96, 0xEB);
+
+			// No DirectPlay dependency
+			Patch<BYTE>(0x601910, 0xB8);
+			Patch<DWORD>(0x601911, 0x900);
 		}
 
 		// Give _rwcseg proper access rights
