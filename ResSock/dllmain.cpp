@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <Shlwapi.h>
+#include <cstdint>
 #include "MemoryMgr.h"
 
 extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, REFIID iid, IUnknown FAR *pUnkOuter)
@@ -103,7 +104,7 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 		for ( WORD i = 0; i < NumberOfSections; i++ )
 		{
-			if ( !strncmp((char*)pSection->Name, "_rwcseg", 8) )
+			if ( *(uint64_t*)(pSection->Name) == 0x006765736377725F )	// _rwcseg
 			{
 				DWORD	dwProtect;
 				VirtualProtect((LPVOID)((ptrdiff_t)hModule + pSection->VirtualAddress), pSection->Misc.VirtualSize, PAGE_EXECUTE_READ, &dwProtect);
