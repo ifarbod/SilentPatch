@@ -14,6 +14,7 @@
 #include <windows.h>
 #include <mmsystem.h>
 #include <cassert>
+#include <cstdio>
 
 #include "MemoryMgr.h"
 

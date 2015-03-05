@@ -106,8 +106,9 @@ void __declspec(naked) SubtitlesShadowFix()
 	}
 }
 
+static char		aNoDesktopMode[64];
 
-void Patch_VC_10()
+void Patch_VC_10(const RECT& desktop)
 {
 	using namespace MemoryVP;
 
@@ -163,9 +164,25 @@ void Patch_VC_10()
 
 	InjectHook(0x5FA1FD, AlteredPrintString<0x5FA1F6,0x5FA1D5>);
 	InjectHook(0x54474D, AlteredPrintStringMinus<0x544727,0x544727>);
+
+	// Mouse fucking fix!
+	Patch<DWORD>(0x601740, 0xC3C030);
+
+	// Default to desktop res
+	Patch<DWORD>(0x600E7E, desktop.right);
+	Patch<DWORD>(0x600E88, desktop.bottom);
+	Patch<BYTE>(0x600E92, 32);
+	Patch<const char*>(0x600EC8, aNoDesktopMode);
+
+	// No 12mb vram check
+	Patch<BYTE>(0x601E26, 0xEB);
+
+	// No DirectPlay dependency
+	Patch<BYTE>(0x601CA0, 0xB8);
+	Patch<DWORD>(0x601CA1, 0x900);
 }
 
-void Patch_VC_11()
+void Patch_VC_11(const RECT& desktop)
 {
 	using namespace MemoryVP;
 
@@ -221,9 +238,25 @@ void Patch_VC_11()
 
 	InjectHook(0x5FA21D, AlteredPrintString<0x5FA216,0x5FA1F5>);
 	InjectHook(0x54476D, AlteredPrintStringMinus<0x544747,0x544747>);
+
+	// Mouse fucking fix!
+	Patch<DWORD>(0x601770, 0xC3C030);
+
+	// Default to desktop res
+	Patch<DWORD>(0x600E9E, desktop.right);
+	Patch<DWORD>(0x600EA8, desktop.bottom);
+	Patch<BYTE>(0x600EB2, 32);
+	Patch<const char*>(0x600EE8, aNoDesktopMode);
+
+	// No 12mb vram check
+	Patch<BYTE>(0x601E56, 0xEB);
+
+	// No DirectPlay dependency
+	Patch<BYTE>(0x601CD0, 0xB8);
+	Patch<DWORD>(0x601CD1, 0x900);
 }
 
-void Patch_VC_Steam()
+void Patch_VC_Steam(const RECT& desktop)
 {
 	using namespace MemoryVP;
 
@@ -279,6 +312,22 @@ void Patch_VC_Steam()
 
 	InjectHook(0x5F9E5D, AlteredPrintString<0x5F9E56,0x5F9E35>);
 	InjectHook(0x54463D, AlteredPrintStringMinus<0x544617,0x544617>);
+
+	// Mouse fucking fix!
+	Patch<DWORD>(0x6013B0, 0xC3C030);
+
+	// Default to desktop res
+	Patch<DWORD>(0x600ADE, desktop.right);
+	Patch<DWORD>(0x600AE8, desktop.bottom);
+	Patch<BYTE>(0x600AF2, 32);
+	Patch<const char*>(0x600B28, aNoDesktopMode);
+
+	// No 12mb vram check
+	Patch<BYTE>(0x601A96, 0xEB);
+
+	// No DirectPlay dependency
+	Patch<BYTE>(0x601910, 0xB8);
+	Patch<DWORD>(0x601911, 0x900);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
@@ -288,12 +337,19 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 	if ( fdwReason == DLL_PROCESS_ATTACH )
 	{
-		if(*(DWORD*)0x667BF0 == 0x53E58955) Patch_VC_10();
-		else if(*(DWORD*)0x667C40 == 0x53E58955) Patch_VC_11();
-		else if (*(DWORD*)0x666BA0 == 0x53E58955) Patch_VC_Steam();
+		RECT			desktop;
+		GetWindowRect(GetDesktopWindow(), &desktop);
+		sprintf(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+
+		if(*(DWORD*)0x667BF0 == 0x53E58955) Patch_VC_10(desktop);
+		else if(*(DWORD*)0x667C40 == 0x53E58955) Patch_VC_11(desktop);
+		else if (*(DWORD*)0x666BA0 == 0x53E58955) Patch_VC_Steam(desktop);
 		else return FALSE;
 
 		CTimer::Initialise();
+
+		HMODULE		hDummyHandle;
+		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCSTR)&DllMain, &hDummyHandle);
 	}
 	return TRUE;
 }

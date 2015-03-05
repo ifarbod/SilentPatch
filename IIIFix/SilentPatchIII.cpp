@@ -219,7 +219,9 @@ void __declspec(naked) SubtitlesShadowFix()
 	}
 }
 
-void Patch_III_10()
+static char		aNoDesktopMode[64];
+
+void Patch_III_10(const RECT& desktop)
 {
 	using namespace MemoryVP;
 
@@ -332,9 +334,22 @@ void Patch_III_10()
 	
 	// BOOOOORING fixed
 	Patch<BYTE>(0x4925D7, 10);
+
+	// Default to desktop res
+	Patch<DWORD>(0x581E5E, desktop.right);
+	Patch<DWORD>(0x581E68, desktop.bottom);
+	Patch<BYTE>(0x581E72, 32);
+	Patch<const char*>(0x581EA8, aNoDesktopMode);
+
+	// No 12mb vram check
+	Patch<BYTE>(0x581411, 0xEB);
+
+	// No DirectPlay dependency
+	Patch<BYTE>(0x5812D6, 0xB8);
+	Patch<DWORD>(0x5812D7, 0x900);
 }
 
-void Patch_III_11()
+void Patch_III_11(const RECT& desktop)
 {
 	using namespace MemoryVP;
 
@@ -441,9 +456,22 @@ void Patch_III_11()
 	// New wndproc
 	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x581FB4;
 	Patch(0x581FB4, &pCustomWndProc);
+
+	// Default to desktop res
+	Patch<DWORD>(0x58219E, desktop.right);
+	Patch<DWORD>(0x5821A8, desktop.bottom);
+	Patch<BYTE>(0x5821B2, 32);
+	Patch<const char*>(0x5821E8, aNoDesktopMode);
+
+	// No 12mb vram check
+	Patch<BYTE>(0x581753, 0xEB);
+
+	// No DirectPlay dependency
+	Patch<BYTE>(0x581620, 0xB8);
+	Patch<DWORD>(0x581621, 0x900);
 }
 
-void Patch_III_Steam()
+void Patch_III_Steam(const RECT& desktop)
 {
 	using namespace MemoryVP;
 
@@ -546,6 +574,19 @@ void Patch_III_Steam()
 	// New wndproc
 	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x581EA4;
 	Patch(0x581EA4, &pCustomWndProc);
+
+	// Default to desktop res
+	Patch<DWORD>(0x58208E, desktop.right);
+	Patch<DWORD>(0x582098, desktop.bottom);
+	Patch<BYTE>(0x5820A2, 32);
+	Patch<const char*>(0x5820D8, aNoDesktopMode);
+
+	// No 12mb vram check
+	Patch<BYTE>(0x581653, 0xEB);
+
+	// No DirectPlay dependency
+	Patch<BYTE>(0x581520, 0xB8);
+	Patch<DWORD>(0x581521, 0x900);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
@@ -555,15 +596,19 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 	if ( fdwReason == DLL_PROCESS_ATTACH )
 	{
-		if (*(DWORD*)0x5C1E70 == 0x53E58955) Patch_III_10();
-		else if (*(DWORD*)0x5C2130 == 0x53E58955) Patch_III_11();
-		else if (*(DWORD*)0x5C6FD0 == 0x53E58955) Patch_III_Steam();
+		RECT			desktop;
+		GetWindowRect(GetDesktopWindow(), &desktop);
+		sprintf(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+
+		if (*(DWORD*)0x5C1E70 == 0x53E58955) Patch_III_10(desktop);
+		else if (*(DWORD*)0x5C2130 == 0x53E58955) Patch_III_11(desktop);
+		else if (*(DWORD*)0x5C6FD0 == 0x53E58955) Patch_III_Steam(desktop);
 		else return FALSE;
 
 		CTimer::Initialise();
 
 		HMODULE		hDummyHandle;
-		GetModuleHandleEx(0, "SilentPatchIII.asi", &hDummyHandle);
+		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCSTR)&DllMain, &hDummyHandle);
 	}
 	return TRUE;
 }
