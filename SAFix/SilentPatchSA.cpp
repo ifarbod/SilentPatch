@@ -567,15 +567,26 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 {
 	if ( !gpMoonMask )
 	{
-		HMODULE thisModule;
-		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)DrawMoonWithPhases, &thisModule);
+		
+		if ( GetFileAttributes("lunar.png") != INVALID_FILE_ATTRIBUTES )
+		{
+			// load from file
+			gpMoonMask = CPNGFile::ReadFromFile("lunar.png");
+		}
+		else
+		{
+			// Load from memory
 
-		HRSRC		resource = FindResource(thisModule, MAKEINTRESOURCE(IDR_LUNAR64), RT_RCDATA);
-		void*		pMoonMask = static_cast<void*>(LoadResource(thisModule, resource));
+			HMODULE thisModule;
+			GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)DrawMoonWithPhases, &thisModule);
 
-		gpMoonMask = CPNGFile::ReadFromMemory(pMoonMask, SizeofResource(thisModule, resource));
+			HRSRC		resource = FindResource(thisModule, MAKEINTRESOURCE(IDR_LUNAR64), RT_RCDATA);
+			void*		pMoonMask = static_cast<void*>(LoadResource(thisModule, resource));
 
-		FreeResource(pMoonMask);
+			gpMoonMask = CPNGFile::ReadFromMemory(pMoonMask, SizeofResource(thisModule, resource));
+
+			FreeResource(pMoonMask);
+		}
 	}
 	//D3DPERF_BeginEvent(D3DCOLOR_ARGB(0,0,0,0), L"render moon");
 
