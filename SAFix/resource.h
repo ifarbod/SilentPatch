@@ -1,1 +1,2 @@
 #define IDR_NVCSHADER			101
+#define IDR_LUNAR64				102
