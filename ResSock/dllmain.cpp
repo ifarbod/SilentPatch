@@ -1,9 +1,12 @@
 #define WIN32_LEAN_AND_MEAN
 #define _CRT_SECURE_NO_WARNINGS
+#define WINVER 0x0501
+#define _WIN32_WINNT 0x0501
 
 #include <windows.h>
 #include <stdio.h>
 #include <Shlwapi.h>
+#include <ShlObj.h>
 #include <cstdint>
 #include "MemoryMgr.h"
 
@@ -142,11 +145,68 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 	return pDirectDrawCreateEx(lpGUID, lplpDD, iid, pUnkOuter);
 }
 
+char** ppUserFilesDir;
+
+char* GetMyDocumentsPath()
+{
+	static char	cUserFilesPath[MAX_PATH];
+
+	if ( cUserFilesPath[0] == '\0' )
+	{	
+		SHGetFolderPath(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, cUserFilesPath);
+		PathAppend(cUserFilesPath, *ppUserFilesDir);
+		CreateDirectory(cUserFilesPath, nullptr);
+	}
+	return cUserFilesPath;
+}
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	UNREFERENCED_PARAMETER(hinstDLL);
-	UNREFERENCED_PARAMETER(fdwReason);
 	UNREFERENCED_PARAMETER(lpvReserved);
+
+	if ( fdwReason == DLL_PROCESS_ATTACH )
+	{
+		using namespace MemoryVP;
+		DisableThreadLibraryCalls(hinstDLL);
+
+		// TODO: Offset by a byte, or 5
+		if (*(DWORD*)0x5C1E70 == 0x53E58955)
+		{
+			// III 1.0
+			
+		}
+		else if (*(DWORD*)0x5C2130 == 0x53E58955)
+		{
+			// III 1.1
+
+		}
+		else if (*(DWORD*)0x5C6FD0 == 0x53E58955)
+		{
+			// III Steam
+
+		}
+
+		else if (*(DWORD*)0x667BF5 == 0xB85548EC)
+		{
+			// VC 1.0
+			ppUserFilesDir = (char**)0x6022AA;
+			InjectHook(0x602240, GetMyDocumentsPath, PATCH_JUMP);
+
+			InjectHook(0x601A40, GetMyDocumentsPath, PATCH_CALL);
+			InjectHook(0x601A45, 0x601B2F, PATCH_JUMP);
+		}
+		else if (*(DWORD*)0x667C40 == 0x53E58955)
+		{
+			// VC 1.1
+
+		}
+		else if (*(DWORD*)0x666BA0 == 0x53E58955)
+		{
+			// VC Steam
+
+		}
+	}
 
 	return TRUE;
 }
