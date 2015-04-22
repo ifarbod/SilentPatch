@@ -9,6 +9,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B695EC1B-7258-426A-81CF-9323C016ACFB}</ProjectGuid>
     <RootNamespace>ResSock</RootNamespace>
+    <ProjectName>DDraw</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -54,7 +55,7 @@
       <MinimumRequiredVersion>5.0</MinimumRequiredVersion>
       <EntryPointSymbol>DllMain@12</EntryPointSymbol>
       <AdditionalDependencies>ntdllp.lib;shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>ResSock.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>DDraw.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\gry\Steam\steamapps\common\Grand Theft Auto Vice City\ddraw.dll"

@@ -1,0 +1,3 @@
+LIBRARY DDRAW
+EXPORTS
+	DirectDrawCreateEx=_DirectDrawCreateEx@16 @10

@@ -196,15 +196,23 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			InjectHook(0x601A40, GetMyDocumentsPath, PATCH_CALL);
 			InjectHook(0x601A45, 0x601B2F, PATCH_JUMP);
 		}
-		else if (*(DWORD*)0x667C40 == 0x53E58955)
+		else if (*(DWORD*)0x667C45 == 0xB85548EC)
 		{
 			// VC 1.1
+			ppUserFilesDir = (char**)0x60228A;
+			InjectHook(0x602220, GetMyDocumentsPath, PATCH_JUMP);
 
+			InjectHook(0x601A70, GetMyDocumentsPath, PATCH_CALL);
+			InjectHook(0x601A75, 0x601B5F, PATCH_JUMP);
 		}
-		else if (*(DWORD*)0x666BA0 == 0x53E58955)
+		else if (*(DWORD*)0x666BA5 == 0xB85548EC)
 		{
 			// VC Steam
+			ppUserFilesDir = (char**)0x601ECA;
+			InjectHook(0x601E60, GetMyDocumentsPath, PATCH_JUMP);
 
+			InjectHook(0x6016B0, GetMyDocumentsPath, PATCH_CALL);
+			InjectHook(0x6016B5, 0x60179F, PATCH_JUMP);
 		}
 	}
 

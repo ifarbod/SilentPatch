@@ -1,4 +1,0 @@
-#include "resource.h"
-
-IDR_NVCSHADER	RCDATA	"..\\SilentPatch\\nvc.cso"
-IDR_LUNAR64		RCDATA	"lunar64.png"
