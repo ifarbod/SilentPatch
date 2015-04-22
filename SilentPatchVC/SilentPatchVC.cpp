@@ -106,6 +106,21 @@ void __declspec(naked) SubtitlesShadowFix()
 	}
 }
 
+char** const ppUserFilesDir = AddressByVersion<char**>(0x6022AA, 0x60228A, 0x601ECA);
+
+char* GetMyDocumentsPath()
+{
+	static char	cUserFilesPath[MAX_PATH];
+
+	if ( cUserFilesPath[0] == '\0' )
+	{	
+		SHGetFolderPath(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, cUserFilesPath);
+		PathAppend(cUserFilesPath, *ppUserFilesDir);
+		CreateDirectory(cUserFilesPath, nullptr);
+	}
+	return cUserFilesPath;
+}
+
 static char		aNoDesktopMode[64];
 
 void Patch_VC_10(const RECT& desktop)
@@ -180,6 +195,12 @@ void Patch_VC_10(const RECT& desktop)
 	// No DirectPlay dependency
 	Patch<BYTE>(0x601CA0, 0xB8);
 	Patch<DWORD>(0x601CA1, 0x900);
+
+	// SHGetFolderPath on User Files
+	InjectHook(0x602240, GetMyDocumentsPath, PATCH_JUMP);
+
+	InjectHook(0x601A40, GetMyDocumentsPath, PATCH_CALL);
+	InjectHook(0x601A45, 0x601B2F, PATCH_JUMP);
 }
 
 void Patch_VC_11(const RECT& desktop)
@@ -254,6 +275,12 @@ void Patch_VC_11(const RECT& desktop)
 	// No DirectPlay dependency
 	Patch<BYTE>(0x601CD0, 0xB8);
 	Patch<DWORD>(0x601CD1, 0x900);
+
+	// SHGetFolderPath on User Files
+	InjectHook(0x602220, GetMyDocumentsPath, PATCH_JUMP);
+
+	InjectHook(0x601A70, GetMyDocumentsPath, PATCH_CALL);
+	InjectHook(0x601A75, 0x601B5F, PATCH_JUMP);
 }
 
 void Patch_VC_Steam(const RECT& desktop)
@@ -328,6 +355,12 @@ void Patch_VC_Steam(const RECT& desktop)
 	// No DirectPlay dependency
 	Patch<BYTE>(0x601910, 0xB8);
 	Patch<DWORD>(0x601911, 0x900);
+
+	// SHGetFolderPath on User Files
+	InjectHook(0x601E60, GetMyDocumentsPath, PATCH_JUMP);
+
+	InjectHook(0x6016B0, GetMyDocumentsPath, PATCH_CALL);
+	InjectHook(0x6016B5, 0x60179F, PATCH_JUMP);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
@@ -341,9 +374,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		GetWindowRect(GetDesktopWindow(), &desktop);
 		sprintf(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
-		if(*(DWORD*)0x667BF0 == 0x53E58955) Patch_VC_10(desktop);
-		else if(*(DWORD*)0x667C40 == 0x53E58955) Patch_VC_11(desktop);
-		else if (*(DWORD*)0x666BA0 == 0x53E58955) Patch_VC_Steam(desktop);
+		if(*(DWORD*)0x667BF5 == 0xB85548EC) Patch_VC_10(desktop);
+		else if(*(DWORD*)0x667C45 == 0xB85548EC) Patch_VC_11(desktop);
+		else if (*(DWORD*)0x666BA5 == 0xB85548EC) Patch_VC_Steam(desktop);
 		else return FALSE;
 
 		CTimer::Initialise();

@@ -170,21 +170,23 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		using namespace MemoryVP;
 		DisableThreadLibraryCalls(hinstDLL);
 
-		// TODO: Offset by a byte, or 5
-		if (*(DWORD*)0x5C1E70 == 0x53E58955)
+		if (*(DWORD*)0x5C1E75 == 0xB85548EC)
 		{
 			// III 1.0
-			
+			ppUserFilesDir = (char**)0x580C16;
+			InjectHook(0x580BB0, GetMyDocumentsPath, PATCH_JUMP);		
 		}
-		else if (*(DWORD*)0x5C2130 == 0x53E58955)
+		else if (*(DWORD*)0x5C2135 == 0xB85548EC)
 		{
 			// III 1.1
-
+			ppUserFilesDir = (char**)0x580F66;
+			InjectHook(0x580F00, GetMyDocumentsPath, PATCH_JUMP);
 		}
-		else if (*(DWORD*)0x5C6FD0 == 0x53E58955)
+		else if (*(DWORD*)0x5C6FD5 == 0xB85548EC)
 		{
 			// III Steam
-
+			ppUserFilesDir = (char**)0x580E66;
+			InjectHook(0x580E00, GetMyDocumentsPath, PATCH_JUMP);
 		}
 
 		else if (*(DWORD*)0x667BF5 == 0xB85548EC)
