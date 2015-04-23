@@ -206,6 +206,118 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 }
 
 template<typename T>
+inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam, DWORD addressNewsteamR2, DWORD addressNewsteamR2_LV)
+{
+	signed char*	bVer = GetVer();
+	bool*			bEuropean = GetEuropean();
+
+	if ( *bVer == -1 )
+	{
+		if ( *(DWORD*)DynBaseAddress(0x82457C) == 0x94BF )
+		{
+			// 1.0 US
+			*bVer = 0;
+			*bEuropean = false;
+		}
+		else if ( *(DWORD*)DynBaseAddress(0x8245BC) == 0x94BF )
+		{
+			// 1.0 EU
+			*bVer = 0;
+			*bEuropean = true;
+		}
+		else if ( *(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF )
+		{
+			// 1.01 US
+			*bVer = 1;
+			*bEuropean = false;
+		}	
+		else if ( *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF )
+		{
+			// 1.01 EU
+			*bVer = 1;
+			*bEuropean = true;
+		}
+		else if (*(DWORD*)DynBaseAddress(0x85EC4A) == 0x94BF )
+		{
+			// 3.0
+			*bVer = 2;
+			*bEuropean = false;
+		}
+
+		else if ( *(DWORD*)DynBaseAddress(0x858D21) == 0x3539F633 )
+		{
+			// newsteam r1
+			*bVer = 3;
+			*bEuropean = false;
+		}
+		else if ( *(DWORD*)DynBaseAddress(0x858D51) == 0x3539F633 )
+		{
+			// newsteam r2
+			*bVer = 4;
+			*bEuropean = false;
+		}
+		else if ( *(DWORD*)DynBaseAddress(0x858C61) == 0x3539F633 )
+		{
+			// newsteam r2 lv
+			*bVer = 5;
+			*bEuropean = false;
+		}
+	}
+
+	switch ( *bVer )
+	{
+	case 1:
+		assert(address11);
+
+		// Safety measures - if null, return dummy var pointer to prevent a crash
+		if ( !address11 )
+			return (T)GetDummy();
+
+		// Adjust to US if needed
+		if ( !(*bEuropean) && address11 > 0x746FA0 )
+		{
+			if ( address11 < 0x7BB240 )
+				address11 -= 0x50;
+			else
+				address11 -= 0x40;
+		}
+		return (T)address11;
+	case 2:
+		assert(addressSteam);
+		// Safety measures - if null, return dummy var pointer to prevent a crash
+		if ( !addressSteam )
+			return (T)GetDummy();
+
+		return (T)addressSteam;
+	case 3:
+		return (T)GetDummy();
+	case 4:
+		assert(addressNewsteamR2);
+		if ( !addressNewsteamR2 )
+			return (T)GetDummy();
+
+		return (T)DynBaseAddress(addressNewsteamR2);
+	case 5:
+		assert(addressNewsteamR2_LV);
+		if ( !addressNewsteamR2_LV )
+			return (T)GetDummy();
+
+		return (T)DynBaseAddress(addressNewsteamR2_LV);
+	default:
+		assert(address10);
+		// Adjust to EU if needed
+		if ( *bEuropean && address10 > 0x7466D0 )
+		{
+			if ( address10 < 0x7BA940 )
+				address10 += 0x50;
+			else
+				address10 += 0x40;
+		}
+		return (T)address10;
+	}
+}
+
+template<typename T>
 inline T AddressByRegion_10(DWORD address10)
 {
 	bool*			bEuropean = GetEuropean();

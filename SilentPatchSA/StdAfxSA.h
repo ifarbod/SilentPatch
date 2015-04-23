@@ -15,14 +15,8 @@
 #include <utility> 
 #include <cassert>
 #include <tuple>
-
-/*#include <windows.h>
-#include <limits>
-#include <utility> 
-#include <mmsystem.h>
 #include <Shlwapi.h>
-#include <tuple>
-#include <cassert>*/
+#include <ShlObj.h>
 
 #define RwEngineInstance (*rwengine)
 

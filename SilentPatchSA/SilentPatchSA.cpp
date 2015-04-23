@@ -67,7 +67,7 @@ RwCamera* RwCameraClear(RwCamera* camera, RwRGBA* colour, RwInt32 clearMode)
 
 RwFrame* RwFrameForAllChildren(RwFrame* frame, RwFrameCallBack callBack, void* data)
 {
-	for ( RwFrame* curFrame = frame->child; curFrame; curFrame = curFrame->next )
+	for ( RwFrame* curFrame = frame->child; curFrame != nullptr; curFrame = curFrame->next )
 	{
 		if ( !callBack(curFrame, data) )
 			break;
@@ -661,7 +661,32 @@ void DrawRect_HalfPixel_Steam(CRect& rect, const CRGBA& rgba)
 	((void(*)(const CRect&, const CRGBA&))0x75CDA0)(rect, rgba);
 }
 
-static IDirect3DVertexShader9*	pNVCShader = nullptr;
+static char** const ppUserFilesDir = AddressByVersion<char**>(0x74503F, 0x74586F, 0x77EE50, 0x77902B, 0x778F1B);
+
+char* GetMyDocumentsPath()
+{
+	static char	cUserFilesPath[MAX_PATH];
+
+	if ( cUserFilesPath[0] == '\0' )
+	{	
+		char		cTmpPath[MAX_PATH];
+
+		SHGetFolderPath(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, cUserFilesPath);
+		PathAppend(cUserFilesPath, *ppUserFilesDir);
+		CreateDirectory(cUserFilesPath, nullptr);
+
+		strcpy(cTmpPath, cUserFilesPath);
+		PathAppend(cTmpPath, "Gallery");
+		CreateDirectory(cTmpPath, nullptr);
+
+		strcpy(cTmpPath, cUserFilesPath);
+		PathAppend(cTmpPath, "User Tracks");
+		CreateDirectory(cTmpPath, nullptr);
+	}
+	return cUserFilesPath;
+}
+
+static void*					pNVCShader = nullptr;
 static bool						bRenderNVC = false;
 static RpAtomic*				pRenderedAtomic;
 
@@ -2506,6 +2531,9 @@ void Patch_SA_10()
 	Patch<BYTE>(AddressByRegion_10<DWORD>(0x74754A), 0xB8);
 	Patch<DWORD>(AddressByRegion_10<DWORD>(0x74754B), 0x900);
 
+	// SHGetFolderPath on User Files
+	InjectHook(0x744FB0, GetMyDocumentsPath, PATCH_JUMP);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -2750,6 +2778,9 @@ void Patch_SA_11()
 	Patch<BYTE>(AddressByRegion_11<DWORD>(0x747E1A), 0xB8);
 	Patch<DWORD>(AddressByRegion_11<DWORD>(0x747E1B), 0x900);
 
+	// SHGetFolderPath on User Files
+	InjectHook(0x7457E0, GetMyDocumentsPath, PATCH_JUMP);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E7714;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -2973,6 +3004,9 @@ void Patch_SA_Steam()
 	Patch<BYTE>(0x781456, 0xB8);
 	Patch<DWORD>(0x781457, 0x900);
 
+	// SHGetFolderPath on User Files
+	InjectHook(0x77EDC0, GetMyDocumentsPath, PATCH_JUMP);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -3123,6 +3157,9 @@ void Patch_SA_NewSteam_r2()
 	Patch<BYTE>(0x77B46E, 0xB8);
 	Patch<DWORD>(0x77B46F, 0x900);
 
+	// SHGetFolderPath on User Files
+	InjectHook(0x778FA0, GetMyDocumentsPath, PATCH_JUMP);
+
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
 	Patch<const void*>(0x73424B, &f169);
@@ -3176,6 +3213,9 @@ void Patch_SA_NewSteam_r2_lv()
 	// No DirectPlay dependency
 	Patch<BYTE>(0x77B35E, 0xB8);
 	Patch<DWORD>(0x77B35F, 0x900);
+
+	// SHGetFolderPath on User Files
+	InjectHook(0x778E90, GetMyDocumentsPath, PATCH_JUMP);
 
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
