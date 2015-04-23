@@ -686,9 +686,11 @@ char* GetMyDocumentsPath()
 	return cUserFilesPath;
 }
 
+#include <xnamath.h>
+
 static void*					pNVCShader = nullptr;
 static bool						bRenderNVC = false;
-static RpAtomic*				pRenderedAtomic;
+static bool						bXMSupported;
 
 bool ShaderAttach()
 {
@@ -704,6 +706,8 @@ bool ShaderAttach()
 		RwD3D9CreateVertexShader(shader, reinterpret_cast<void**>(&pNVCShader));
 
 		FreeResource(shader);
+
+		bXMSupported = XMVerifyCPUSupport();
 		return true;
 	}
 	return false;
@@ -746,30 +750,52 @@ void SetShader(RxD3D9InstanceData* pInstData)
 		//_rwD3D9VSSetActiveWorldMatrix(RwFrameGetMatrix(RpAtomicGetFrame(pRenderedAtomic)));
 		//_rwD3D9VSGetComposedTransformMatrix(&outMat);
 
-		D3DMATRIX	worldMat, viewMat, projMat;
+		XMMATRIX	worldMat, viewMat, projMat;
+		XMMATRIX	worldViewProjMat;
 		_RwD3D9GetTransform(D3DTS_WORLD, &worldMat);
 		_RwD3D9GetTransform(D3DTS_VIEW, &viewMat);
 		_RwD3D9GetTransform(D3DTS_PROJECTION, &projMat);
-		RwD3D9SetVertexShaderConstant(2, &worldMat, 4);
-		RwD3D9SetVertexShaderConstant(6, &viewMat, 4);
-		RwD3D9SetVertexShaderConstant(10, &projMat, 4);
+
+		if ( bXMSupported )
+		{
+			worldViewProjMat = XMMatrixMultiply(XMMatrixMultiply(worldMat, viewMat), projMat);
+		}
+		else
+		{
+			XMMATRIX		tempMat;
+			ZeroMemory(&worldViewProjMat, sizeof(worldViewProjMat));
+			ZeroMemory(&tempMat, sizeof(tempMat));
+
+			for( int i = 0; i < 4; i++ )
+			{ 
+				for( int j = 0; j < 4; j++ )
+				{ 
+					for(int x = 0; x < 4; x++)
+						tempMat.m[i][j] += worldMat.m[i][x] * viewMat.m[x][j];
+				}
+			}
+
+			for( int i = 0; i < 4; i++ )
+			{ 
+				for( int j = 0; j < 4; j++ )
+				{ 
+					for(int x = 0; x < 4; x++)
+						worldViewProjMat.m[i][j] += tempMat.m[i][x] * projMat.m[x][j];
+				}
+			}
+
+		}
+
+		//RwD3D9SetVertexShaderConstant(2, &worldMat, 4);
+		//RwD3D9SetVertexShaderConstant(6, &viewMat, 4);
+		//RwD3D9SetVertexShaderConstant(10, &projMat, 4);
+		RwD3D9SetVertexShaderConstant(2, &worldViewProjMat, 4);
 
 		RwD3D9SetVertexShaderConstant(0, fEnvVars, 1);
 		RwD3D9SetVertexShaderConstant(1, AmbientLight, 1);
 	}
 	else
 		RwD3D9SetVertexShader(pInstData->vertexShader);
-}
-
-static void*	HijackAtomic_JumpBack = AddressByVersion<void*>(0x5D6480, 0x5D6C60, 0x5F2C80);
-void __declspec(naked) HijackAtomic()
-{
-	_asm
-	{
-		mov		eax, [esp+8]
-		mov		pRenderedAtomic, eax
-		jmp		HijackAtomic_JumpBack
-	}
 }
 
 void __declspec(naked) SetShader2()
@@ -1726,7 +1752,6 @@ BOOL InjectDelayedPatches_10()
 				InjectHook(0x5D637B, HijackEsi, PATCH_JUMP);
 				InjectHook(0x5BF3A1, ShaderAttach);
 				InjectHook(0x53D910, ShaderDetach);
-				Patch<const void*>(0x5D67F4, HijackAtomic);
 				Patch<BYTE>(0x5D7200, 0xC3);
 				Patch<WORD>(0x5D67BB, 0x6890);
 				Patch<WORD>(0x5D67D7, 0x6890);
@@ -1935,7 +1960,6 @@ BOOL InjectDelayedPatches_11()
 				InjectHook(0x5D6B5B, HijackEsi, PATCH_JUMP);
 				//InjectHook(0x5BF3A1, ShaderAttach);
 				InjectHook(0x53DDB0, ShaderDetach);
-				Patch<const void*>(0x5D6FD4, HijackAtomic);
 				Patch<BYTE>(0x5D79E0, 0xC3);
 				Patch<WORD>(0x5D6F9B, 0x6890);
 				Patch<WORD>(0x5D6FB7, 0x6890);
@@ -2150,7 +2174,6 @@ BOOL InjectDelayedPatches_Steam()
 				InjectHook(0x5F2B7A, HijackEsi, PATCH_JUMP);
 				InjectHook(0x5DE5A1, ShaderAttach);
 				InjectHook(0x550070, ShaderDetach);
-				Patch<const void*>(0x5F3004, HijackAtomic);
 				Patch<BYTE>(0x5F3760, 0xC3);
 				Patch<WORD>(0x5F2FCB, 0x6890);
 				Patch<WORD>(0x5F2FE7, 0x6890);
