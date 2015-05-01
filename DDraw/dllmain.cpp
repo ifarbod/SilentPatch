@@ -13,8 +13,7 @@
 extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, REFIID iid, IUnknown FAR *pUnkOuter)
 {
 	static HRESULT	(WINAPI *pDirectDrawCreateEx)(GUID FAR*, LPVOID*, REFIID, IUnknown FAR*);
-	static bool		bLoaded = false;
-	if ( !bLoaded )
+	if ( pDirectDrawCreateEx == nullptr )
 	{
 		wchar_t		wcSystemPath[MAX_PATH];
 		GetSystemDirectoryW(wcSystemPath, MAX_PATH);
@@ -115,8 +114,6 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 			}
 			pSection++;
 		}
-
-		bLoaded = true;
 	}
 	return pDirectDrawCreateEx(lpGUID, lplpDD, iid, pUnkOuter);
 }
