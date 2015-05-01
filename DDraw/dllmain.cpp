@@ -41,10 +41,6 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 			// No 12mb vram check
 			Patch<BYTE>(0x581411, 0xEB);
-
-			// No DirectPlay dependency
-			Patch<BYTE>(0x5812D6, 0xB8);
-			Patch<DWORD>(0x5812D7, 0x900);
 		}
 		else if (*(DWORD*)0x5C2130 == 0x53E58955)
 		{
@@ -56,10 +52,6 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 			// No 12mb vram check
 			Patch<BYTE>(0x581753, 0xEB);
-
-			// No DirectPlay dependency
-			Patch<BYTE>(0x581620, 0xB8);
-			Patch<DWORD>(0x581621, 0x900);
 		}
 		else if (*(DWORD*)0x5C6FD0 == 0x53E58955)
 		{
@@ -71,10 +63,6 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 			// No 12mb vram check
 			Patch<BYTE>(0x581653, 0xEB);
-
-			// No DirectPlay dependency
-			Patch<BYTE>(0x581520, 0xB8);
-			Patch<DWORD>(0x581521, 0x900);
 		}
 
 		else if (*(DWORD*)0x667BF0 == 0x53E58955)
@@ -87,10 +75,6 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 			// No 12mb vram check
 			Patch<BYTE>(0x601E26, 0xEB);
-
-			// No DirectPlay dependency
-			Patch<BYTE>(0x601CA0, 0xB8);
-			Patch<DWORD>(0x601CA1, 0x900);
 		}
 		else if (*(DWORD*)0x667C40 == 0x53E58955)
 		{
@@ -102,10 +86,6 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 			// No 12mb vram check
 			Patch<BYTE>(0x601E56, 0xEB);
-
-			// No DirectPlay dependency
-			Patch<BYTE>(0x601CD0, 0xB8);
-			Patch<DWORD>(0x601CD1, 0x900);
 		}
 		else if (*(DWORD*)0x666BA0 == 0x53E58955)
 		{
@@ -117,10 +97,6 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 			// No 12mb vram check
 			Patch<BYTE>(0x601A96, 0xEB);
-
-			// No DirectPlay dependency
-			Patch<BYTE>(0x601910, 0xB8);
-			Patch<DWORD>(0x601911, 0x900);
 		}
 
 		// Give _rwcseg proper access rights
@@ -174,19 +150,31 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		{
 			// III 1.0
 			ppUserFilesDir = (char**)0x580C16;
-			InjectHook(0x580BB0, GetMyDocumentsPath, PATCH_JUMP);		
+			InjectHook(0x580BB0, GetMyDocumentsPath, PATCH_JUMP);	
+
+			// No DirectPlay dependency
+			Patch<BYTE>(0x5812D6, 0xB8);
+			Patch<DWORD>(0x5812D7, 0x900);
 		}
 		else if (*(DWORD*)0x5C2135 == 0xB85548EC)
 		{
 			// III 1.1
 			ppUserFilesDir = (char**)0x580F66;
 			InjectHook(0x580F00, GetMyDocumentsPath, PATCH_JUMP);
+
+			// No DirectPlay dependency
+			Patch<BYTE>(0x581620, 0xB8);
+			Patch<DWORD>(0x581621, 0x900);
 		}
 		else if (*(DWORD*)0x5C6FD5 == 0xB85548EC)
 		{
 			// III Steam
 			ppUserFilesDir = (char**)0x580E66;
 			InjectHook(0x580E00, GetMyDocumentsPath, PATCH_JUMP);
+
+			// No DirectPlay dependency
+			Patch<BYTE>(0x581520, 0xB8);
+			Patch<DWORD>(0x581521, 0x900);
 		}
 
 		else if (*(DWORD*)0x667BF5 == 0xB85548EC)
@@ -197,6 +185,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 			InjectHook(0x601A40, GetMyDocumentsPath, PATCH_CALL);
 			InjectHook(0x601A45, 0x601B2F, PATCH_JUMP);
+
+			// No DirectPlay dependency
+			Patch<BYTE>(0x601CA0, 0xB8);
+			Patch<DWORD>(0x601CA1, 0x900);
 		}
 		else if (*(DWORD*)0x667C45 == 0xB85548EC)
 		{
@@ -206,6 +198,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 			InjectHook(0x601A70, GetMyDocumentsPath, PATCH_CALL);
 			InjectHook(0x601A75, 0x601B5F, PATCH_JUMP);
+
+			// No DirectPlay dependency
+			Patch<BYTE>(0x601CD0, 0xB8);
+			Patch<DWORD>(0x601CD1, 0x900);
 		}
 		else if (*(DWORD*)0x666BA5 == 0xB85548EC)
 		{
@@ -215,6 +211,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 			InjectHook(0x6016B0, GetMyDocumentsPath, PATCH_CALL);
 			InjectHook(0x6016B5, 0x60179F, PATCH_JUMP);
+
+			// No DirectPlay dependency
+			Patch<BYTE>(0x601910, 0xB8);
+			Patch<DWORD>(0x601911, 0x900);
 		}
 	}
 
