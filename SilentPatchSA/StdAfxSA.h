@@ -8,8 +8,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _USE_MATH_DEFINES
 
-#define WINVER 0x0501
-#define _WIN32_WINNT 0x0501
+#define WINVER 0x0502
+#define _WIN32_WINNT 0x0502
 
 #include <windows.h>
 #include <utility> 

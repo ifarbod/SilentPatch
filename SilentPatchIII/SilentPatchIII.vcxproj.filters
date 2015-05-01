@@ -26,11 +26,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <MASM Include="..\SilentPatch\win2000.asm">
-      <Filter>Source Files</Filter>
-    </MASM>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\SilentPatch\MemoryMgr.h">
       <Filter>Header Files</Filter>
     </ClInclude>

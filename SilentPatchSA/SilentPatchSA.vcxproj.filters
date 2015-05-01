@@ -115,18 +115,11 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\SilentPatch\nvc.fx">
-      <Filter>Shaders</Filter>
-    </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
-    <MASM Include="..\SilentPatch\win2000.asm">
-      <Filter>Source Files</Filter>
-    </MASM>
-  </ItemGroup>
-  <ItemGroup>
     <ResourceCompile Include="Shaders.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\SilentPatch\nvc.fx" />
   </ItemGroup>
 </Project>

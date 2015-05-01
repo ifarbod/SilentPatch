@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -20,13 +20,14 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v120_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120_xp</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -53,14 +54,13 @@
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PreprocessorDefinitions>SILENTPATCH_SA_VER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9;$(DXSDK_DIR)\Include;..\SilentPatch</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9;..\SilentPatch;$(DXSDK_DIR)\include</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>StdAfxSA.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <MinimumRequiredVersion>5.0</MinimumRequiredVersion>
       <AdditionalDependencies>winmm.lib;Shlwapi.lib;libFLAC_static_d.lib;win_utf8_io_static_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
@@ -68,6 +68,9 @@
 copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\gta-sa_newsteam_r2\SilentPatchSA.asi"
 copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowviolence_gta-sa\SilentPatchSA.asi"</Command>
     </PostBuildEvent>
+    <FxCompile>
+      <ShaderModel>2.0</ShaderModel>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -81,16 +84,15 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
       <PreprocessorDefinitions>SILENTPATCH_SA_VER;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9;$(DXSDK_DIR)\Include;..\SilentPatch</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9;..\SilentPatch;$(DXSDK_DIR)\include</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>StdAfxSA.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Windows</SubSystem>
-      <MinimumRequiredVersion>5.0</MinimumRequiredVersion>
       <AdditionalDependencies>winmm.lib;Shlwapi.lib;libFLAC_static.lib;win_utf8_io_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
@@ -98,6 +100,9 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
 copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\gta-sa_newsteam_r2\SilentPatchSA.asi"
 copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowviolence_gta-sa\SilentPatchSA.asi"</Command>
     </PostBuildEvent>
+    <FxCompile>
+      <ShaderModel>2.0</ShaderModel>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AudioHardwareSA.cpp" />
@@ -115,7 +120,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClCompile Include="VehicleSA.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\SilentPatch\nvc.fx">
+    <FxCompile Include="..\SilentPatch\nvc.fx">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /T vs_2_0 /E NVC_vertex_shader /Fo ..\SilentPatch\nvc.cso ..\SilentPatch\nvc.fx</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\SilentPatch\nvc.cso</Outputs>
@@ -123,10 +128,11 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fxc /T vs_2_0 /E NVC_vertex_shader /Fo ..\SilentPatch\nvc.cso ..\SilentPatch\nvc.fx</Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling shaders...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\SilentPatch\nvc.cso</Outputs>
-    </CustomBuild>
-    <MASM Include="..\SilentPatch\win2000.asm">
-      <FileType>Document</FileType>
-    </MASM>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NVC_vertex_shader</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NVC_vertex_shader</EntryPointName>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\SilentPatch\FLAC\callback.h" />
