@@ -1693,6 +1693,8 @@ BOOL InjectDelayedPatches_10()
 		bool		bSAMP = GetModuleHandle("samp") != nullptr;
 		bool		bSARender = GetModuleHandle("SARender.asi") != nullptr;
 
+		ReadRotorFixExceptions(wcModulePath);
+
 		// PS2 sun - more
 		if ( !bSAMP )
 		{
@@ -1898,6 +1900,8 @@ BOOL InjectDelayedPatches_11()
 		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
 		bool		bSAMP = GetModuleHandle("samp") != nullptr;
 		bool		bSARender = GetModuleHandle("SARender.asi") != nullptr;
+
+		ReadRotorFixExceptions(wcModulePath);
 
 		// PS2 sun - more
 		if ( !bSAMP )
@@ -2113,6 +2117,8 @@ BOOL InjectDelayedPatches_Steam()
 		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
 		bool		bSAMP = GetModuleHandle("samp") != nullptr;
 		bool		bSARender = GetModuleHandle("SARender.asi") != nullptr;
+
+		ReadRotorFixExceptions(wcModulePath);
 
 		// PS2 sun - more
 		if ( !bSAMP )

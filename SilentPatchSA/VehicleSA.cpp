@@ -1,7 +1,10 @@
 #include "StdAfxSA.h"
 
+#include <set>
 #include "VehicleSA.h"
 #include "TimerSA.h"
+
+std::set<unsigned int>		vecRotorExceptions;
 
 static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0x6D1680, 0x70C0B0);
 WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
@@ -22,7 +25,7 @@ static RwFrame* GetFrameFromNameCB(RwFrame* pFrame, void* pData)
 {
 	// Is this a frame we want?
 	std::pair<const char*,RwFrame*>*	pFindData = static_cast<std::pair<const char*,RwFrame*>*>(pData);
-	if ( !strncmp(pFindData->first, GetFrameNodeName(pFrame), 24) )
+	if ( !strcmp(pFindData->first, GetFrameNodeName(pFrame)) )
 	{
 		pFindData->second = pFrame;
 		return nullptr;
@@ -37,6 +40,37 @@ static RpMaterial* SetCompAlphaCB(RpMaterial* pMaterial, void* data)
 {
 	pMaterial->color.alpha = reinterpret_cast<RwUInt8>(data);
 	return pMaterial;
+}
+
+void ReadRotorFixExceptions(const wchar_t* pPath)
+{
+	if ( FILE* hFile = _wfopen(pPath, L"r") )
+	{
+		char	buf[1024];
+		bool	bBeganParsing = false;
+
+		while ( fgets(buf, _countof(buf), hFile) )
+		{
+			if ( bBeganParsing )
+			{
+				if ( buf[0] != ';' )
+				{
+					unsigned int		nToList = atoi(buf);
+
+					if ( nToList != 0 )
+						vecRotorExceptions.insert(nToList);
+				}
+			}
+			else
+			{
+				if ( strstr(buf, "[RotorFixExceptions]") != nullptr )
+					bBeganParsing = true;
+			}
+		}
+
+		fclose(hFile);
+	}
+
 }
 
 void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha)
@@ -125,8 +159,8 @@ void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo
 void CHeli::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
-	bool		bHasMovingRotor = m_pCarNode[13] != nullptr;
-	bool		bHasMovingRotor2 = m_pCarNode[15] != nullptr;
+	bool		bHasMovingRotor = m_pCarNode[13] != nullptr && vecRotorExceptions.count(m_nModelIndex) == 0;
+	bool		bHasMovingRotor2 = m_pCarNode[15] != nullptr && vecRotorExceptions.count(m_nModelIndex) == 0;;
 
 	m_nTimeTillWeNeedThisCar = CTimer::m_snTimeInMilliseconds + 3000;
 
@@ -158,20 +192,20 @@ void CHeli::Render()
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingRotor2 ? nStaticRotorAlpha : 255);
 	}
 
-	if ( bHasMovingRotor )
+	if ( m_pCarNode[13] )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
 		RwFrameForAllObjects(m_pCarNode[13], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
-			SetComponentAtomicAlpha(pOutAtomic, nMovingRotorAlpha);
+			SetComponentAtomicAlpha(pOutAtomic, bHasMovingRotor ? nMovingRotorAlpha : 0);
 	}
 
-	if ( bHasMovingRotor2 )
+	if ( m_pCarNode[15] )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
 		RwFrameForAllObjects(m_pCarNode[15], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
-			SetComponentAtomicAlpha(pOutAtomic, nMovingRotorAlpha);
+			SetComponentAtomicAlpha(pOutAtomic, bHasMovingRotor2 ? nMovingRotorAlpha : 0);
 	}
 
 	CEntity::Render();
@@ -180,8 +214,8 @@ void CHeli::Render()
 void CPlane::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
-	bool		bHasMovingProp = m_pCarNode[13] != nullptr;
-	bool		bHasMovingProp2 = m_pCarNode[15] != nullptr;
+	bool		bHasMovingProp = m_pCarNode[13] != nullptr && vecRotorExceptions.count(m_nModelIndex) == 0;
+	bool		bHasMovingProp2 = m_pCarNode[15] != nullptr && vecRotorExceptions.count(m_nModelIndex) == 0;
 
 	m_nTimeTillWeNeedThisCar = CTimer::m_snTimeInMilliseconds + 3000;
 
@@ -213,20 +247,20 @@ void CPlane::Render()
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingProp2 ? nStaticRotorAlpha : 255);
 	}
 
-	if ( bHasMovingProp )
+	if ( m_pCarNode[13] )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
 		RwFrameForAllObjects(m_pCarNode[13], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
-			SetComponentAtomicAlpha(pOutAtomic, nMovingRotorAlpha);
+			SetComponentAtomicAlpha(pOutAtomic, bHasMovingProp ? nMovingRotorAlpha : 0);
 	}
 
-	if ( bHasMovingProp2 )
+	if ( m_pCarNode[15] )
 	{
 		RpAtomic*	pOutAtomic = nullptr;
 		RwFrameForAllObjects(m_pCarNode[15], GetCurrentAtomicObjectCB, &pOutAtomic);
 		if ( pOutAtomic )
-			SetComponentAtomicAlpha(pOutAtomic, nMovingRotorAlpha);
+			SetComponentAtomicAlpha(pOutAtomic, bHasMovingProp2 ? nMovingRotorAlpha : 0);
 	}
 
 	CVehicle::Render();
