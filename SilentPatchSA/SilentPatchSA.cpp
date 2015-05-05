@@ -661,29 +661,30 @@ void DrawRect_HalfPixel_Steam(CRect& rect, const CRGBA& rgba)
 	((void(*)(const CRect&, const CRGBA&))0x75CDA0)(rect, rgba);
 }
 
-static char** const ppUserFilesDir = AddressByVersion<char**>(0x74503F, 0x74586F, 0x77EE50, 0x77902B, 0x778F1B);
-
 char* GetMyDocumentsPath()
 {
 	static char	cUserFilesPath[MAX_PATH];
+	static char*  ppTempBufPtr = *GetVer() == 0 ? *AddressByRegion_10<char**>(0x744FE5) : cUserFilesPath;
 
-	if ( cUserFilesPath[0] == '\0' )
+	if (ppTempBufPtr[0] == '\0')
 	{	
+		static char** const ppUserFilesDir = AddressByVersion<char**>(0x74503F, 0x74586F, 0x77EE50, 0x77902B, 0x778F1B);
+
 		char		cTmpPath[MAX_PATH];
 
-		SHGetFolderPath(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, cUserFilesPath);
-		PathAppend(cUserFilesPath, *ppUserFilesDir);
-		CreateDirectory(cUserFilesPath, nullptr);
+		SHGetFolderPath(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, ppTempBufPtr);
+		PathAppend(ppTempBufPtr, *ppUserFilesDir);
+		CreateDirectory(ppTempBufPtr, nullptr);
 
-		strcpy(cTmpPath, cUserFilesPath);
+		strcpy(cTmpPath, ppTempBufPtr);
 		PathAppend(cTmpPath, "Gallery");
 		CreateDirectory(cTmpPath, nullptr);
 
-		strcpy(cTmpPath, cUserFilesPath);
+		strcpy(cTmpPath, ppTempBufPtr);
 		PathAppend(cTmpPath, "User Tracks");
 		CreateDirectory(cTmpPath, nullptr);
 	}
-	return cUserFilesPath;
+	return ppTempBufPtr;
 }
 
 #include <xnamath.h>
