@@ -120,6 +120,8 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\SilentPatch\nvc.fx" />
+    <FxCompile Include="..\SilentPatch\nvc.fx">
+      <Filter>Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>
