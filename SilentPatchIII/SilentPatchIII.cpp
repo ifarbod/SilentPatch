@@ -234,6 +234,21 @@ char* GetMyDocumentsPath()
 	return cUserFilesPath;
 }
 
+static LARGE_INTEGER	FrameTime;
+DWORD GetTimeSinceLastFrame()
+{
+	LARGE_INTEGER	curTime;
+	QueryPerformanceCounter(&curTime);
+	return curTime.QuadPart - FrameTime.QuadPart;
+}
+
+static void (*RsEventHandler)(int, void*);
+void NewFrameRender(int nEvent, void* pParam)
+{
+	QueryPerformanceCounter(&FrameTime);
+	RsEventHandler(nEvent, pParam);
+}
+
 static char		aNoDesktopMode[64];
 
 void Patch_III_10(const RECT& desktop)
@@ -349,6 +364,12 @@ void Patch_III_10(const RECT& desktop)
 	
 	// BOOOOORING fixed
 	Patch<BYTE>(0x4925D7, 10);
+
+	// (Hopefully) more precise frame limiter
+	int			pAddress = 0x582EFD;
+	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	InjectHook(pAddress, NewFrameRender);
+	InjectHook(0x582EA4, GetTimeSinceLastFrame);
 
 	// Default to desktop res
 	Patch<DWORD>(0x581E5E, desktop.right);
@@ -475,6 +496,12 @@ void Patch_III_11(const RECT& desktop)
 	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x581FB4;
 	Patch(0x581FB4, &pCustomWndProc);
 
+	// (Hopefully) more precise frame limiter
+	int			pAddress = 0x58323D;
+	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	InjectHook(pAddress, NewFrameRender);
+	InjectHook(0x5831E4, GetTimeSinceLastFrame);
+
 	// Default to desktop res
 	Patch<DWORD>(0x58219E, desktop.right);
 	Patch<DWORD>(0x5821A8, desktop.bottom);
@@ -595,6 +622,12 @@ void Patch_III_Steam(const RECT& desktop)
 	// New wndproc
 	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x581EA4;
 	Patch(0x581EA4, &pCustomWndProc);
+
+	// (Hopefully) more precise frame limiter
+	int			pAddress = 0x58312D;
+	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	InjectHook(pAddress, NewFrameRender);
+	InjectHook(0x5830D4, GetTimeSinceLastFrame);
 
 	// Default to desktop res
 	Patch<DWORD>(0x58208E, desktop.right);
