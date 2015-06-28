@@ -121,6 +121,21 @@ char* GetMyDocumentsPath()
 	return cUserFilesPath;
 }
 
+static LARGE_INTEGER	FrameTime;
+DWORD GetTimeSinceLastFrame()
+{
+	LARGE_INTEGER	curTime;
+	QueryPerformanceCounter(&curTime);
+	return curTime.QuadPart - FrameTime.QuadPart;
+}
+
+static void (*RsEventHandler)(int, void*);
+void NewFrameRender(int nEvent, void* pParam)
+{
+	QueryPerformanceCounter(&FrameTime);
+	RsEventHandler(nEvent, pParam);
+}
+
 static char		aNoDesktopMode[64];
 
 void Patch_VC_10(const RECT& desktop)
@@ -182,6 +197,12 @@ void Patch_VC_10(const RECT& desktop)
 
 	// Mouse fucking fix!
 	Patch<DWORD>(0x601740, 0xC3C030);
+
+	// (Hopefully) more precise frame limiter
+	int			pAddress = 0x6004A2;
+	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	InjectHook(pAddress, NewFrameRender);
+	InjectHook(0x600449, GetTimeSinceLastFrame);
 
 	// Default to desktop res
 	Patch<DWORD>(0x600E7E, desktop.right);
@@ -263,6 +284,12 @@ void Patch_VC_11(const RECT& desktop)
 	// Mouse fucking fix!
 	Patch<DWORD>(0x601770, 0xC3C030);
 
+	// (Hopefully) more precise frame limiter
+	int			pAddress = 0x6004C2;
+	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	InjectHook(pAddress, NewFrameRender);
+	InjectHook(0x600469, GetTimeSinceLastFrame);
+
 	// Default to desktop res
 	Patch<DWORD>(0x600E9E, desktop.right);
 	Patch<DWORD>(0x600EA8, desktop.bottom);
@@ -342,6 +369,12 @@ void Patch_VC_Steam(const RECT& desktop)
 
 	// Mouse fucking fix!
 	Patch<DWORD>(0x6013B0, 0xC3C030);
+
+	// (Hopefully) more precise frame limiter
+	int			pAddress = 0x600102;
+	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	InjectHook(pAddress, NewFrameRender);
+	InjectHook(0x6000A9, GetTimeSinceLastFrame);
 
 	// Default to desktop res
 	Patch<DWORD>(0x600ADE, desktop.right);
