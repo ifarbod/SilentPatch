@@ -687,6 +687,21 @@ char* GetMyDocumentsPath()
 	return ppTempBufPtr;
 }
 
+static LARGE_INTEGER	FrameTime;
+DWORD GetTimeSinceLastFrame()
+{
+	LARGE_INTEGER	curTime;
+	QueryPerformanceCounter(&curTime);
+	return curTime.QuadPart - FrameTime.QuadPart;
+}
+
+static void (*RsEventHandler)(int, void*);
+void NewFrameRender(int nEvent, void* pParam)
+{
+	QueryPerformanceCounter(&FrameTime);
+	RsEventHandler(nEvent, pParam);
+}
+
 #include <xnamath.h>
 
 static void*					pNVCShader = nullptr;
@@ -2317,6 +2332,12 @@ void Patch_SA_10()
 	pDirect = *(RpLight***)0x5BA573;
 	DarkVehiclesFix1_JumpBack = AddressByRegion_10<void*>(0x756D90);
 
+	// (Hopefully) more precise frame limiter
+	int			pAddress = AddressByRegion_10<int>(0x748D9B);
+	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	InjectHook(pAddress, NewFrameRender);
+	InjectHook(AddressByRegion_10<int>(0x748D1F), GetTimeSinceLastFrame);
+
 	// Set CAEDataStream to use an old structure
 	CAEDataStream::SetStructType(false);
 
@@ -2579,6 +2600,12 @@ void Patch_SA_11()
 	IsAlreadyRunning = (BOOL(*)())(*(int*)(pIsAlreadyRunning+1) + pIsAlreadyRunning + 5);
 	InjectHook(pIsAlreadyRunning, InjectDelayedPatches_11);
 
+	// (Hopefully) more precise frame limiter
+	int			pAddress = AddressByRegion_11<int>(0x7496A0);
+	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	InjectHook(pAddress, NewFrameRender);
+	InjectHook(AddressByRegion_11<int>(0x749624), GetTimeSinceLastFrame);
+
 	// Set CAEDataStream to use a NEW structure
 	CAEDataStream::SetStructType(true);
 
@@ -2830,6 +2857,12 @@ void Patch_SA_Steam()
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
 	IsAlreadyRunning = (BOOL(*)())(*(int*)(0x7826ED+1) + 0x7826ED + 5);
 	InjectHook(0x7826ED, InjectDelayedPatches_Steam);
+
+	// (Hopefully) more precise frame limiter
+	int			pAddress = 0x782D25;
+	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	InjectHook(pAddress, NewFrameRender);
+	InjectHook(0x782CA8, GetTimeSinceLastFrame);
 
 	// Set CAEDataStream to use an old structure
 	CAEDataStream::SetStructType(false);
@@ -3143,6 +3176,12 @@ void Patch_SA_NewSteam_r2()
 {
 	using namespace MemoryVP::DynBase;
 
+	// (Hopefully) more precise frame limiter
+	int			pAddress = DynBaseAddress(0x77D55F);
+	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	InjectHook(0x77D55F, NewFrameRender);
+	InjectHook(0x77D4E8, GetTimeSinceLastFrame);
+
 	// No framedelay
 	InjectHook(0x54ECC6, DynBaseAddress(0x54ED0C), PATCH_JUMP);
 	Patch<BYTE>(0x54ED45, 0x4);
@@ -3200,6 +3239,12 @@ void Patch_SA_NewSteam_r2()
 void Patch_SA_NewSteam_r2_lv()
 {
 	using namespace MemoryVP::DynBase;
+
+	// (Hopefully) more precise frame limiter
+	int			pAddress = DynBaseAddress(0x77D44F);
+	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	InjectHook(0x77D44F, NewFrameRender);
+	InjectHook(0x77D3D8, GetTimeSinceLastFrame);
 
 	// No framedelay
 	InjectHook(0x54EC06, DynBaseAddress(0x54EC4C), PATCH_JUMP);
