@@ -702,6 +702,15 @@ void NewFrameRender(int nEvent, void* pParam)
 	RsEventHandler(nEvent, pParam);
 }
 
+#include <ctime>
+#include <random>
+
+unsigned int UnsignedIntRand()
+{
+	static std::ranlux48 generator (time(nullptr));
+	return generator() & 0x7FFFFFFF;
+}
+
 #include <xnamath.h>
 
 static void*					pNVCShader = nullptr;
@@ -2342,6 +2351,10 @@ void Patch_SA_10()
 	CAEDataStream::SetStructType(false);
 
 	//Patch<BYTE>(0x5D7265, 0xEB);
+
+	// Proper randomizations
+	InjectHook(0x44E82E, UnsignedIntRand); // Missing ped paths
+	InjectHook(0x44ECEE, UnsignedIntRand); // Missing ped paths
 
 
 	// Heli rotors
