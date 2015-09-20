@@ -16,6 +16,12 @@ struct RsGlobalType
 	void*			pad;
 };
 
+struct RwV2d
+{
+    float x;   /**< X value*/
+    float y;   /**< Y value */
+};
+
 bool*					bSnapShotActive;
 static const void*		RosieAudioFix_JumpBack;
 
@@ -47,6 +53,37 @@ void __declspec(naked) RosiesAudioFix()
 		mov     byte ptr [ebx+148h], 0
 		jmp		[RosieAudioFix_JumpBack]
 	}
+}
+
+static bool bGameInFocus = true;
+
+static LRESULT (CALLBACK **OldWndProc)(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	switch ( uMsg )
+	{
+	case WM_KILLFOCUS:
+		bGameInFocus = false;
+		break;
+	case WM_SETFOCUS:
+		bGameInFocus = true;
+		break;
+	}
+
+	return (*OldWndProc)(hwnd, uMsg, wParam, lParam);
+}
+static auto* pCustomWndProc = CustomWndProc;
+
+static void (* const ConstructRenderList)() = AddressByVersion<void(*)()>(0x4CA260, 0x4CA280, 0x4CA120);
+static void (* const RsMouseSetPos)(RwV2d*) = AddressByVersion<void(*)(RwV2d*)>(0x6030C0, 0x6030A0, 0x602CE0);
+void ResetMousePos()
+{
+	if ( bGameInFocus )
+	{
+		RwV2d	vecPos = { RsGlobal->MaximumWidth * 0.5f, RsGlobal->MaximumHeight * 0.5f };
+		RsMouseSetPos(&vecPos);
+	}
+	ConstructRenderList();
 }
 
 void __stdcall Recalculate(float& fX, float& fY, signed int nShadow)
@@ -222,6 +259,13 @@ void Patch_VC_10(const RECT& desktop)
 
 	InjectHook(0x601A40, GetMyDocumentsPath, PATCH_CALL);
 	InjectHook(0x601A45, 0x601B2F, PATCH_JUMP);
+
+	// RsMouseSetPos call (SA style fix)
+	InjectHook(0x4A5E45, ResetMousePos);
+
+	// New wndproc
+	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x601727;
+	Patch(0x601727, &pCustomWndProc);
 }
 
 void Patch_VC_11(const RECT& desktop)
@@ -308,6 +352,13 @@ void Patch_VC_11(const RECT& desktop)
 
 	InjectHook(0x601A70, GetMyDocumentsPath, PATCH_CALL);
 	InjectHook(0x601A75, 0x601B5F, PATCH_JUMP);
+
+	// RsMouseSetPos call (SA style fix)
+	InjectHook(0x4A5E65, ResetMousePos);
+
+	// New wndproc
+	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x601757;
+	Patch(0x601757, &pCustomWndProc);
 }
 
 void Patch_VC_Steam(const RECT& desktop)
@@ -394,6 +445,13 @@ void Patch_VC_Steam(const RECT& desktop)
 
 	InjectHook(0x6016B0, GetMyDocumentsPath, PATCH_CALL);
 	InjectHook(0x6016B5, 0x60179F, PATCH_JUMP);
+
+	// RsMouseSetPos call (SA style fix)
+	InjectHook(0x4A5D15, ResetMousePos);
+
+	// New wndproc
+	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x601397;
+	Patch(0x601397, &pCustomWndProc);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
