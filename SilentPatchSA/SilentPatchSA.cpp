@@ -705,7 +705,7 @@ void NewFrameRender(int nEvent, void* pParam)
 #include <ctime>
 #include <random>
 
-unsigned int UnsignedIntRand()
+int Int32Rand()
 {
 	static std::ranlux48 generator (time(nullptr));
 	return generator() & 0x7FFFFFFF;
@@ -2352,11 +2352,6 @@ void Patch_SA_10()
 
 	//Patch<BYTE>(0x5D7265, 0xEB);
 
-	// Proper randomizations
-	InjectHook(0x44E82E, UnsignedIntRand); // Missing ped paths
-	InjectHook(0x44ECEE, UnsignedIntRand); // Missing ped paths
-
-
 	// Heli rotors
 	InjectHook(0x6CAB70, &CPlane::Render_Stub, PATCH_JUMP);
 	InjectHook(0x6C4400, &CHeli::Render_Stub, PATCH_JUMP);
@@ -2597,6 +2592,18 @@ void Patch_SA_10()
 
 	// SHGetFolderPath on User Files
 	InjectHook(0x744FB0, GetMyDocumentsPath, PATCH_JUMP);
+
+	// Fixed muzzleflash not showing from last bullet
+	Nop(0x61ECE4, 2);
+
+	// Proper randomizations
+	InjectHook(0x44E82E, Int32Rand); // Missing ped paths
+	InjectHook(0x44ECEE, Int32Rand); // Missing ped paths
+	InjectHook(0x666EA0, Int32Rand); // Prostitutes
+
+	// Help boxes showing with big message
+	// Game seems to assume they can show together
+	Nop(0x58BA8F, 6);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
@@ -2851,6 +2858,18 @@ void Patch_SA_11()
 	// SHGetFolderPath on User Files
 	InjectHook(0x7457E0, GetMyDocumentsPath, PATCH_JUMP);
 
+	// Fixed muzzleflash not showing from last bullet
+	Nop(0x61F504, 2);
+
+	// Proper randomizations
+	InjectHook(0x44E8AE, Int32Rand); // Missing ped paths
+	InjectHook(0x44ED6E, Int32Rand); // Missing ped paths
+	InjectHook(0x6676C0, Int32Rand); // Prostitutes
+
+	// Help boxes showing with big message
+	// Game seems to assume they can show together
+	Nop(0x58C25F, 6);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E7714;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -3083,6 +3102,18 @@ void Patch_SA_Steam()
 	// SHGetFolderPath on User Files
 	InjectHook(0x77EDC0, GetMyDocumentsPath, PATCH_JUMP);
 
+	// Fixed muzzleflash not showing from last bullet
+	Nop(0x61F504, 2);
+
+	// Proper randomizations
+	InjectHook(0x452CCF, Int32Rand); // Missing ped paths
+	InjectHook(0x45322C, Int32Rand); // Missing ped paths
+	InjectHook(0x690263, Int32Rand); // Prostitutes
+
+	// Help boxes showing with big message
+	// Game seems to assume they can show together
+	Nop(0x599CD3, 6);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
 	strncpy(pScannerNames + (8*113), "WESTP", 8);
@@ -3222,7 +3253,6 @@ void Patch_SA_NewSteam_r2()
 	Nop(0x7799DC, 2);
 
 	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
-	// TODO: Nazi exe
 	Nop(0x77AB6F, 1);
 	Patch<WORD>(0x77AB70, 0x01B0);
 
@@ -3241,6 +3271,18 @@ void Patch_SA_NewSteam_r2()
 
 	// SHGetFolderPath on User Files
 	InjectHook(0x778FA0, GetMyDocumentsPath, PATCH_JUMP);
+
+	// Fixed muzzleflash not showing from last bullet
+	Nop(0x63E8A9, 2);
+
+	// Proper randomizations
+	InjectHook(0x45234C, Int32Rand); // Missing ped paths
+	InjectHook(0x45284C, Int32Rand); // Missing ped paths
+	InjectHook(0x69046F, Int32Rand); // Prostitutes
+
+	// Help boxes showing with big message
+	// Game seems to assume they can show together
+	Nop(0x597EEA, 6);
 
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
@@ -3304,6 +3346,18 @@ void Patch_SA_NewSteam_r2_lv()
 
 	// SHGetFolderPath on User Files
 	InjectHook(0x778E90, GetMyDocumentsPath, PATCH_JUMP);
+
+	// Fixed muzzleflash not showing from last bullet
+	Nop(0x63E789, 2);
+
+	// Proper randomizations
+	InjectHook(0x45234C, Int32Rand); // Missing ped paths
+	InjectHook(0x45284C, Int32Rand); // Missing ped paths
+	InjectHook(0x69034F, Int32Rand); // Prostitutes
+
+	// Help boxes showing with big message
+	// Game seems to assume they can show together
+	Nop(0x597E3A, 6);
 
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
