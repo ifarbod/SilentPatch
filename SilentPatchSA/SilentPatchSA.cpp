@@ -202,7 +202,7 @@ static void				(*sub_5DA6A0)(void*, void*, void*, void*);
 
 // SA variables
 void**					rwengine = *AddressByVersion<void***>(0x58FFC0, 0x53F032, 0x48C194);
-signed int&				ms_extraVertColourPluginOffset = **AddressByVersion<int**>(0x5D6362, 0x5D6B42, 0x5F2B65);
+RwInt32&				ms_extraVertColourPluginOffset = **AddressByVersion<int**>(0x5D6362, 0x5D6B42, 0x5F2B65);
 
 unsigned char&			nGameClockDays = **AddressByVersion<unsigned char**>(0x4E841D, 0x4E886D, 0x4F3871);
 unsigned char&			nGameClockMonths = **AddressByVersion<unsigned char**>(0x4E842D, 0x4E887D, 0x4F3861);
@@ -710,6 +710,21 @@ int Int32Rand()
 	static std::ranlux48 generator (time(nullptr));
 	return generator() & 0x7FFFFFFF;
 }
+
+void (*FlushSpriteBuffer)() = AddressByVersion<void(*)()>(0x70CF20, 0, 0);
+void FlushLensSwitchZ( RwRenderState rwa, void* rwb )
+{
+	FlushSpriteBuffer();
+	RwRenderStateSet( rwa, rwb );
+}
+
+void (*InitSpriteBuffer2D)() = AddressByVersion<void(*)()>(0x70CFD0, 0, 0);
+void InitBufferSwitchZ( RwRenderState rwa, void* rwb )
+{
+	RwRenderStateSet( rwa, rwb );
+	InitSpriteBuffer2D();
+}
+
 
 #include <xnamath.h>
 
@@ -2444,9 +2459,6 @@ void Patch_SA_10()
 	// PS2 SUN!!!!!!!!!!!!!!!!!
 	static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
 
-	Nop(0x6FB316, 3);
-	Nop(0x6FB480, 3);
-
 	Nop(0x6FB17C, 3);
 	Patch<const void*>(0x6FC5B0, &fSunMult);
 	//Patch<WORD>(0x6FB172, 0x0BEB);
@@ -2604,6 +2616,25 @@ void Patch_SA_10()
 	// Help boxes showing with big message
 	// Game seems to assume they can show together
 	Nop(0x58BA8F, 6);
+
+	// Fixed lens flare
+	Patch<DWORD>(0x70F45A, 0);
+	Patch<BYTE>(0x6FB621, 0xC3);
+	Patch<BYTE>(0x6FB600, 0x21);
+	InjectHook(0x6FB622, 0x70CF20, PATCH_CALL);
+	Patch<WORD>(0x6FB627, 0xDCEB);
+
+	Patch<WORD>(0x6FB476, 0xB990);
+	Patch(0x6FB478, &FlushLensSwitchZ);
+	Patch<WORD>(0x6FB480, 0xD1FF);
+	Nop(0x6FB482, 1);
+	Patch<BYTE>(0x6FB621, 0xC3);
+
+	Patch<WORD>(0x6FAF28, 0xB990);
+	Patch(0x6FAF2A, &InitBufferSwitchZ);
+	Patch<WORD>(0x6FAF32, 0xD1FF);
+	Nop(0x6FAF34, 1);
+
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
