@@ -516,7 +516,7 @@ void Patch_III_11(const RECT& desktop)
 	Patch<DWORD>(0x581621, 0x900);
 
 	// SHGetFolderPath on User Files
-	InjectHook(0x580E00, GetMyDocumentsPath, PATCH_JUMP);
+	InjectHook(0x580F00, GetMyDocumentsPath, PATCH_JUMP);
 }
 
 void Patch_III_Steam(const RECT& desktop)
