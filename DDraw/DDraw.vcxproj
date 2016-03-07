@@ -59,8 +59,8 @@
       <ModuleDefinitionFile>DDraw.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "D:\gry\Steam\steamapps\common\Grand Theft Auto Vice City\ddraw.dll"
-copy /y "$(TargetPath)" "D:\gry\Steam\steamapps\common\Grand Theft Auto 3\ddraw.dll"</Command>
+      <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\ddraw.dll"
+copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto 3\ddraw.dll"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

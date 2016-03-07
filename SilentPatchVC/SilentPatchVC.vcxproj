@@ -65,7 +65,7 @@
       <AdditionalDependencies>Winmm.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "D:\gry\Steam\steamapps\common\Grand Theft Auto Vice City\SilentPatchVC.asi"</Command>
+      <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\SilentPatchVC.asi"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -93,7 +93,7 @@
       <AdditionalDependencies>Winmm.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "D:\gry\Steam\steamapps\common\Grand Theft Auto Vice City\SilentPatchVC.asi"</Command>
+      <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\SilentPatchVC.asi"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
