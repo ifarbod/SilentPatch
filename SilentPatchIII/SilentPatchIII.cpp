@@ -219,6 +219,21 @@ void __declspec(naked) SubtitlesShadowFix()
 	}
 }
 
+void __declspec(naked) III_SensResetFix()
+{
+	_asm
+	{
+		mov     ecx, 3A76h
+		mov     edi, ebp
+		fld     dword ptr [ebp+194h]
+		fld     dword ptr [ebp+198h]
+		rep		stosd
+		fstp	dword ptr [ebp+198h]
+		fstp	dword ptr [ebp+194h]
+		retn
+	}
+}
+
 char** const ppUserFilesDir = AddressByVersion<char**>(0x580C16, 0x580F66, 0x580E66);
 
 char* GetMyDocumentsPath()
@@ -364,6 +379,11 @@ void Patch_III_10(const RECT& desktop)
 	
 	// BOOOOORING fixed
 	Patch<BYTE>(0x4925D7, 10);
+
+	// 1.1 mouse sensitivity not resetting fix
+	Patch<WORD>(0x46BE81, 0x12EB);
+	Nop(0x46BAD6, 4);
+	InjectHook(0x46BADA, III_SensResetFix, PATCH_CALL);
 
 	// (Hopefully) more precise frame limiter
 	int			pAddress = 0x582EFD;
