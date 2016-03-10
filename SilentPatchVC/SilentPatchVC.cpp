@@ -266,6 +266,15 @@ void Patch_VC_10(const RECT& desktop)
 	// New wndproc
 	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x601727;
 	Patch(0x601727, &pCustomWndProc);
+
+	// Y axis sensitivity fix
+	// By ThirteenAG
+	float* sens = *(float**)0x4796E5;
+	Patch<const void*>(0x479410 + 0x2E0 + 0x2, sens);
+	Patch<const void*>(0x47A20E + 0x27D + 0x2, sens);
+	Patch<const void*>(0x47AE27 + 0x1CC + 0x2, sens);
+	Patch<const void*>(0x47BE8F + 0x22E + 0x2, sens);
+	Patch<const void*>(0x481AB3 + 0x4FE + 0x2, sens);
 }
 
 void Patch_VC_11(const RECT& desktop)
@@ -359,6 +368,15 @@ void Patch_VC_11(const RECT& desktop)
 	// New wndproc
 	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x601757;
 	Patch(0x601757, &pCustomWndProc);
+
+	// Y axis sensitivity fix
+	// By ThirteenAG
+	float* sens = *(float**)0x4796E5;
+	Patch<const void*>(0x479410 + 0x2E0 + 0x2, sens);
+	Patch<const void*>(0x47A20E + 0x27D + 0x2, sens);
+	Patch<const void*>(0x47AE27 + 0x1CC + 0x2, sens);
+	Patch<const void*>(0x47BE8F + 0x22E + 0x2, sens);
+	Patch<const void*>(0x481AB3 + 0x4FE + 0x2, sens);
 }
 
 void Patch_VC_Steam(const RECT& desktop)
@@ -452,6 +470,15 @@ void Patch_VC_Steam(const RECT& desktop)
 	// New wndproc
 	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x601397;
 	Patch(0x601397, &pCustomWndProc);
+
+	// Y axis sensitivity fix
+	// By ThirteenAG
+	float* sens = *(float**)0x4795C5;
+	Patch<const void*>(0x4792F0 + 0x2E0 + 0x2, sens);
+	Patch<const void*>(0x47A0EE + 0x27D + 0x2, sens);
+	Patch<const void*>(0x47AD07 + 0x1CC + 0x2, sens);
+	Patch<const void*>(0x47BD6F + 0x22E + 0x2, sens);
+	Patch<const void*>(0x481993 + 0x4FE + 0x2, sens);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
