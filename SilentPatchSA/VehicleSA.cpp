@@ -87,7 +87,7 @@ bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 	const char*	pOverrideText = pModelInfo->GetCustomCarPlateText();
 
 	if ( pOverrideText )
-		strncpy(PlateText, pOverrideText, 8);
+		strcpy_s(PlateText, pOverrideText);
 	else
 		CCustomCarPlateMgr::GeneratePlateText(PlateText, 8);
 

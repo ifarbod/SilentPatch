@@ -2638,8 +2638,8 @@ void Patch_SA_10()
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
-	strncpy(pScannerNames + (8*113), "WESTP", 8);
-	strncpy(pScannerNames + (8*134), "????", 8);
+	strcpy(pScannerNames + (8*113), "WESTP");
+	strcpy(pScannerNames + (8*134), "????");
 }
 
 void Patch_SA_11()
@@ -2903,8 +2903,8 @@ void Patch_SA_11()
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E7714;
-	strncpy(pScannerNames + (8*113), "WESTP", 8);
-	strncpy(pScannerNames + (8*134), "????", 8);
+	strcpy(pScannerNames + (8*113), "WESTP");
+	strcpy(pScannerNames + (8*134), "????");
 
 
 	// 1.01 ONLY
@@ -3147,8 +3147,8 @@ void Patch_SA_Steam()
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
-	strncpy(pScannerNames + (8*113), "WESTP", 8);
-	strncpy(pScannerNames + (8*134), "????", 8);
+	strcpy(pScannerNames + (8*113), "WESTP");
+	strcpy(pScannerNames + (8*134), "????");
 
 	// STEAM ONLY
 	// Proper aspect ratios - why Rockstar, why?
