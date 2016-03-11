@@ -481,6 +481,19 @@ void Patch_VC_Steam(const RECT& desktop)
 	Patch<const void*>(0x481993 + 0x4FE + 0x2, sens);
 }
 
+void Patch_VC_JP()
+{
+	using namespace MemoryVP;
+
+	// Y axis sensitivity fix
+	// By ThirteenAG
+	Patch<DWORD>(0x4797E7 + 0x2E0 + 0x2, 0x94ABD8);
+	Patch<DWORD>(0x47A5E5 + 0x27D + 0x2, 0x94ABD8);
+	Patch<DWORD>(0x47B1FE + 0x1CC + 0x2, 0x94ABD8);
+	Patch<DWORD>(0x47C266 + 0x22E + 0x2, 0x94ABD8);
+	Patch<DWORD>(0x481E8A + 0x4FE + 0x2, 0x94ABD8);
+}
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	UNREFERENCED_PARAMETER(hinstDLL);
@@ -495,6 +508,13 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		if(*(DWORD*)0x667BF5 == 0xB85548EC) Patch_VC_10(desktop);
 		else if(*(DWORD*)0x667C45 == 0xB85548EC) Patch_VC_11(desktop);
 		else if (*(DWORD*)0x666BA5 == 0xB85548EC) Patch_VC_Steam(desktop);
+
+		// Y axis sensitivity only
+		else if (*(DWORD*)0x601048 == 0x5E5F5D60)
+		{
+			Patch_VC_JP();
+			return TRUE;
+		}
 		else return FALSE;
 
 		CTimer::Initialise();
