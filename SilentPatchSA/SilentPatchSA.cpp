@@ -2635,6 +2635,15 @@ void Patch_SA_10()
 	Patch<WORD>(0x6FAF32, 0xD1FF);
 	Nop(0x6FAF34, 1);
 
+	// Y axis sensitivity fix
+	// By ThirteenAG
+	float* sens = *(float**)0x50F03C;
+	Patch<const void*>(0x50EB70 + 0x4D6 + 0x2, sens);
+	Patch<const void*>(0x50F970 + 0x1B6 + 0x2, sens);
+	Patch<const void*>(0x5105C0 + 0x666 + 0x2, sens);
+	Patch<const void*>(0x511B50 + 0x2B8 + 0x2, sens);
+	Patch<const void*>(0x521500 + 0xD8C + 0x2, sens);
+
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
@@ -2901,6 +2910,14 @@ void Patch_SA_11()
 	// Game seems to assume they can show together
 	Nop(0x58C25F, 6);
 
+	// Y axis sensitivity fix
+	float* sens = *(float**)0x50F4DC;
+	Patch<const void*>(0x50F4E6 + 0x2, sens);
+	Patch<const void*>(0x50FFC6 + 0x2, sens);
+	Patch<const void*>(0x5110C6 + 0x2, sens);
+	Patch<const void*>(0x5122A8 + 0x2, sens);
+	Patch<const void*>(0x52272C + 0x2, sens);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E7714;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -3145,6 +3162,14 @@ void Patch_SA_Steam()
 	// Game seems to assume they can show together
 	Nop(0x599CD3, 6);
 
+	// Y axis sensitivity fix
+	float* sens = *(float**)0x51D4FA;
+	Patch<const void*>(0x51D508 + 0x2, sens);
+	Patch<const void*>(0x51E25A + 0x2, sens);
+	Patch<const void*>(0x51F459 + 0x2, sens);
+	Patch<const void*>(0x52086A + 0x2, sens);
+	Patch<const void*>(0x532B9B + 0x2, sens);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -3315,6 +3340,14 @@ void Patch_SA_NewSteam_r2()
 	// Game seems to assume they can show together
 	Nop(0x597EEA, 6);
 
+	// Y axis sensitivity fix
+	float* sens = *(float**)DynBaseAddress(0x51B987);
+	Patch<const void*>(0x51B993 + 0x2, sens);
+	Patch<const void*>(0x51C68C + 0x2, sens);
+	Patch<const void*>(0x51D73A + 0x2, sens);
+	Patch<const void*>(0x51EA3A + 0x2, sens);
+	Patch<const void*>(0x52FBE1 + 0x2, sens);
+
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
 	Patch<const void*>(0x73424B, &f169);
@@ -3389,6 +3422,14 @@ void Patch_SA_NewSteam_r2_lv()
 	// Help boxes showing with big message
 	// Game seems to assume they can show together
 	Nop(0x597E3A, 6);
+
+	// Y axis sensitivity fix
+	float* sens = *(float**)DynBaseAddress(0x51B8D7);
+	Patch<const void*>(0x51B8E3 + 0x2, sens);
+	Patch<const void*>(0x51C5DC + 0x2, sens);
+	Patch<const void*>(0x51D68A + 0x2, sens);
+	Patch<const void*>(0x51E98A + 0x2, sens);
+	Patch<const void*>(0x52FB31 + 0x2, sens);
 
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
