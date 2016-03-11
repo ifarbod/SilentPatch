@@ -100,9 +100,7 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 
 #else
 
-// This function initially detects SA version then chooses the address basing on game version
-template<typename T>
-inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
+inline void InitializeVersions()
 {
 	signed char*	bVer = GetVer();
 	bool*			bEuropean = GetEuropean();
@@ -159,6 +157,64 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 			*bEuropean = false;
 		}
 	}
+}
+
+inline void InitializeRegion_10()
+{
+	bool*			bEuropean = GetEuropean();
+	signed char*	bVer = GetVer();
+
+	if ( *bVer == -1 )
+	{
+		if ( *(DWORD*)0x82457C == 0x94BF )
+		{
+			*bVer = 0;
+			*bEuropean = false;
+		}
+		else if ( *(DWORD*)0x8245BC == 0x94BF )
+		{
+			*bVer = 0;
+			*bEuropean = true;
+		}
+		else
+		{
+			assert(!"AddressByRegion_10 on non-1.0 EXE!");
+		}
+	}
+}
+
+inline void InitializeRegion_11()
+{
+	bool*			bEuropean = GetEuropean();
+	signed char*	bVer = GetVer();
+
+	if ( *bVer == -1 )
+	{
+		if ( *(DWORD*)0x8252FC == 0x94BF )
+		{
+			*bVer = 1;
+			*bEuropean = false;
+		}	
+		else if ( *(DWORD*)0x82533C == 0x94BF )
+		{
+			*bVer = 1;
+			*bEuropean = true;
+		}
+		else
+		{
+			assert(!"AddressByRegion_11 on non-1.01 EXE!");
+		}
+	}
+}
+
+// This function initially detects SA version then chooses the address basing on game version
+template<typename T>
+inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
+{
+	InitializeVersions();
+
+	signed char*	bVer = GetVer();
+	bool*			bEuropean = GetEuropean();
 
 	switch ( *bVer )
 	{
@@ -207,61 +263,10 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 template<typename T>
 inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam, DWORD addressNewsteamR2, DWORD addressNewsteamR2_LV)
 {
+	InitializeVersions();
+
 	signed char*	bVer = GetVer();
 	bool*			bEuropean = GetEuropean();
-
-	if ( *bVer == -1 )
-	{
-		if ( *(DWORD*)DynBaseAddress(0x82457C) == 0x94BF )
-		{
-			// 1.0 US
-			*bVer = 0;
-			*bEuropean = false;
-		}
-		else if ( *(DWORD*)DynBaseAddress(0x8245BC) == 0x94BF )
-		{
-			// 1.0 EU
-			*bVer = 0;
-			*bEuropean = true;
-		}
-		else if ( *(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF )
-		{
-			// 1.01 US
-			*bVer = 1;
-			*bEuropean = false;
-		}	
-		else if ( *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF )
-		{
-			// 1.01 EU
-			*bVer = 1;
-			*bEuropean = true;
-		}
-		else if (*(DWORD*)DynBaseAddress(0x85EC4A) == 0x94BF )
-		{
-			// 3.0
-			*bVer = 2;
-			*bEuropean = false;
-		}
-
-		else if ( *(DWORD*)DynBaseAddress(0x858D21) == 0x3539F633 )
-		{
-			// newsteam r1
-			*bVer = 3;
-			*bEuropean = false;
-		}
-		else if ( *(DWORD*)DynBaseAddress(0x858D51) == 0x3539F633 )
-		{
-			// newsteam r2
-			*bVer = 4;
-			*bEuropean = false;
-		}
-		else if ( *(DWORD*)DynBaseAddress(0x858C61) == 0x3539F633 )
-		{
-			// newsteam r2 lv
-			*bVer = 5;
-			*bEuropean = false;
-		}
-	}
 
 	switch ( *bVer )
 	{
@@ -319,26 +324,10 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam, 
 template<typename T>
 inline T AddressByRegion_10(DWORD address10)
 {
+	InitializeRegion_10();
+
 	bool*			bEuropean = GetEuropean();
 	signed char*	bVer = GetVer();
-
-	if ( *bVer == -1 )
-	{
-		if ( *(DWORD*)0x82457C == 0x94BF )
-		{
-			*bVer = 0;
-			*bEuropean = false;
-		}
-		else if ( *(DWORD*)0x8245BC == 0x94BF )
-		{
-			*bVer = 0;
-			*bEuropean = true;
-		}
-		else
-		{
-			assert(!"AddressByRegion_10 on non-1.0 EXE!");
-		}
-	}
 
 	// Adjust to EU if needed
 	if ( *bEuropean && address10 > 0x7466D0 )
@@ -354,26 +343,10 @@ inline T AddressByRegion_10(DWORD address10)
 template<typename T>
 inline T AddressByRegion_11(DWORD address11)
 {
+	InitializeRegion_11();
+
 	bool*			bEuropean = GetEuropean();
 	signed char*	bVer = GetVer();
-
-	if ( *bVer == -1 )
-	{
-		if ( *(DWORD*)0x8252FC == 0x94BF )
-		{
-			*bVer = 1;
-			*bEuropean = false;
-		}	
-		else if ( *(DWORD*)0x82533C == 0x94BF )
-		{
-			*bVer = 1;
-			*bEuropean = true;
-		}
-		else
-		{
-			assert(!"AddressByRegion_11 on non-1.01 EXE!");
-		}
-	}
 
 	// Adjust to US if needed
 	if ( !(*bEuropean) && address11 > 0x746FA0 )
