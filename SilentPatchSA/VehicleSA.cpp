@@ -83,7 +83,7 @@ void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha)
 
 bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 {
-	char		PlateText[8];
+	char		PlateText[10];
 	const char*	pOverrideText = pModelInfo->GetCustomCarPlateText();
 
 	if ( pOverrideText )
