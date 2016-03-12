@@ -42,9 +42,7 @@ inline AT DynBaseAddress(AT address)
 
 #if defined SILENTPATCH_III_VER
 
-// This function initially detects III version then chooses the address basing on game version
-template<typename T>
-inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
+inline void InitializeVersions()
 {
 	signed char*	bVer = GetVer();
 
@@ -54,8 +52,17 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 		else if (*(DWORD*)0x5C2130 == 0x53E58955) *bVer = 1;
 		else if (*(DWORD*)0x5C6FD0 == 0x53E58955) *bVer = 2;
 	}
+}
 
-	switch ( *bVer )
+// This function initially detects III version then chooses the address basing on game version
+template<typename T>
+inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
+{
+	InitializeVersions();
+
+	signed char		bVer = *GetVer();
+
+	switch ( bVer )
 	{
 	case 1:
 		assert(address11);
@@ -71,9 +78,7 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 
 #elif defined SILENTPATCH_VC_VER
 
-// This function initially detects VC version then chooses the address basing on game version
-template<typename T>
-inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
+inline void InitializeVersions()
 {
 	signed char*	bVer = GetVer();
 
@@ -83,8 +88,17 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 		else if (*(DWORD*)0x667C40 == 0x53E58955) *bVer = 1;
 		else if (*(DWORD*)0x666BA0 == 0x53E58955) *bVer = 2;
 	}
+}
 
-	switch ( *bVer )
+// This function initially detects VC version then chooses the address basing on game version
+template<typename T>
+inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
+{
+	InitializeVersions();
+
+	signed char	bVer = *GetVer();
+
+	switch ( bVer )
 	{
 	case 1:
 		assert(address11);
@@ -98,7 +112,7 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 	}
 }
 
-#else
+#elif defined SILENTPATCH_SA_VER
 
 inline void InitializeVersions()
 {
@@ -213,10 +227,10 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 {
 	InitializeVersions();
 
-	signed char*	bVer = GetVer();
-	bool*			bEuropean = GetEuropean();
+	signed char	bVer = *GetVer();
+	bool			bEuropean = *GetEuropean();
 
-	switch ( *bVer )
+	switch ( bVer )
 	{
 	case 1:
 		assert(address11);
@@ -226,7 +240,7 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 			return (T)GetDummy();
 
 		// Adjust to US if needed
-		if ( !(*bEuropean) && address11 > 0x746FA0 )
+		if ( !bEuropean && address11 > 0x746FA0 )
 		{
 			if ( address11 < 0x7BB240 )
 				address11 -= 0x50;
@@ -249,7 +263,7 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 	default:
 		assert(address10);
 		// Adjust to EU if needed
-		if ( *bEuropean && address10 > 0x7466D0 )
+		if ( bEuropean && address10 > 0x7466D0 )
 		{
 			if ( address10 < 0x7BA940 )
 				address10 += 0x50;
@@ -265,10 +279,10 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam, 
 {
 	InitializeVersions();
 
-	signed char*	bVer = GetVer();
-	bool*			bEuropean = GetEuropean();
+	signed char	bVer = *GetVer();
+	bool			bEuropean = *GetEuropean();
 
-	switch ( *bVer )
+	switch ( bVer )
 	{
 	case 1:
 		assert(address11);
@@ -278,7 +292,7 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam, 
 			return (T)GetDummy();
 
 		// Adjust to US if needed
-		if ( !(*bEuropean) && address11 > 0x746FA0 )
+		if ( bEuropean && address11 > 0x746FA0 )
 		{
 			if ( address11 < 0x7BB240 )
 				address11 -= 0x50;
@@ -310,7 +324,7 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam, 
 	default:
 		assert(address10);
 		// Adjust to EU if needed
-		if ( *bEuropean && address10 > 0x7466D0 )
+		if ( bEuropean && address10 > 0x7466D0 )
 		{
 			if ( address10 < 0x7BA940 )
 				address10 += 0x50;
@@ -326,11 +340,10 @@ inline T AddressByRegion_10(DWORD address10)
 {
 	InitializeRegion_10();
 
-	bool*			bEuropean = GetEuropean();
-	signed char*	bVer = GetVer();
+	bool			bEuropean = *GetEuropean();
 
 	// Adjust to EU if needed
-	if ( *bEuropean && address10 > 0x7466D0 )
+	if ( bEuropean && address10 > 0x7466D0 )
 	{
 		if ( address10 < 0x7BA940 )
 			address10 += 0x50;
@@ -345,11 +358,10 @@ inline T AddressByRegion_11(DWORD address11)
 {
 	InitializeRegion_11();
 
-	bool*			bEuropean = GetEuropean();
-	signed char*	bVer = GetVer();
+	bool			bEuropean = *GetEuropean();
 
 	// Adjust to US if needed
-	if ( !(*bEuropean) && address11 > 0x746FA0 )
+	if ( !bEuropean && address11 > 0x746FA0 )
 	{
 		if ( address11 < 0x7BB240 )
 			address11 -= 0x50;
