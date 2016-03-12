@@ -2644,6 +2644,10 @@ void Patch_SA_10()
 	Patch<const void*>(0x511B50 + 0x2B8 + 0x2, sens);
 	Patch<const void*>(0x521500 + 0xD8C + 0x2, sens);
 
+	// Don't lock mouse Y axis during fadeins
+	Patch<WORD>(0x50FBB4, 0x27EB);
+	Patch<WORD>(0x510512, 0xE990);
+	InjectHook(0x524071, 0x524139, PATCH_JUMP);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
@@ -2918,6 +2922,11 @@ void Patch_SA_11()
 	Patch<const void*>(0x5122A8 + 0x2, sens);
 	Patch<const void*>(0x52272C + 0x2, sens);
 
+	// Don't lock mouse Y axis during fadeins
+	Patch<WORD>(0x510054, 0x27EB);
+	Patch<WORD>(0x5109B2, 0xE990);
+	InjectHook(0x524511, 0x5245D9, PATCH_JUMP);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E7714;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -3170,6 +3179,11 @@ void Patch_SA_Steam()
 	Patch<const void*>(0x52086A + 0x2, sens);
 	Patch<const void*>(0x532B9B + 0x2, sens);
 
+	// Don't lock mouse Y axis during fadeins
+	Patch<WORD>(0x51E192, 0x2BEB);
+	Patch<WORD>(0x51ED38, 0xE990);
+	InjectHook(0x534D3E, 0x534DF7, PATCH_JUMP);
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -3348,6 +3362,11 @@ void Patch_SA_NewSteam_r2()
 	Patch<const void*>(0x51EA3A + 0x2, sens);
 	Patch<const void*>(0x52FBE1 + 0x2, sens);
 
+	// Don't lock mouse Y axis during fadeins
+	Patch<WORD>(0x51C5CD, 0x29EB);
+	Patch<WORD>(0x51D053, 0xE990);
+	InjectHook(0x531BBE, DynBaseAddress(0x531C6F), PATCH_JUMP);
+
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
 	Patch<const void*>(0x73424B, &f169);
@@ -3430,6 +3449,11 @@ void Patch_SA_NewSteam_r2_lv()
 	Patch<const void*>(0x51D68A + 0x2, sens);
 	Patch<const void*>(0x51E98A + 0x2, sens);
 	Patch<const void*>(0x52FB31 + 0x2, sens);
+
+	// Don't lock mouse Y axis during fadeins
+	Patch<WORD>(0x51C51D, 0x29EB);
+	Patch<WORD>(0x51CFA3, 0xE990);
+	InjectHook(0x531B1E, DynBaseAddress(0x531BCF), PATCH_JUMP);
 
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
