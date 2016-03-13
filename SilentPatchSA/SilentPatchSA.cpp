@@ -533,6 +533,24 @@ static void BasketballFix(unsigned char* pBuf, int nSize)
 	}
 }
 
+static void MountainCloudBoysFix()
+{
+	static const BYTE bOldCode[22] = {
+		0xD6, 0x00, 0x04, 0x00, 0x39, 0x00, 0x03, 0xEF, 0x00, 0x04, 0x02, 0x4D,
+		0x00, 0x01, 0x90, 0xF2, 0xFF, 0xFF, 0xD6, 0x00, 0x04, 0x01
+		};
+	static const BYTE bNewCode[22] = {
+		0x00, 0x00, 0x00, 0x00, 0xD6, 0x00, 0x04, 0x03, 0x39, 0x00, 0x03, 0x2B,
+		0x00, 0x04, 0x0B, 0x39, 0x00, 0x03, 0xEF, 0x00, 0x04, 0x02
+		};
+
+	// Faulty code lies under offset 3367 - replace it if it matches
+	if ( memcmp( ScriptSpace+200000+3367, bOldCode, sizeof(bOldCode) ) == 0 )
+	{
+		memcpy( ScriptSpace+200000+3367, bNewCode, sizeof(bNewCode) );
+	}
+}
+
 void TheScriptsLoad_BasketballFix()
 {
 	TheScriptsLoad();
@@ -540,12 +558,16 @@ void TheScriptsLoad_BasketballFix()
 	BasketballFix(ScriptSpace+8, *(int*)(ScriptSpace+3));
 }
 
-void StartNewMission_BasketballFix()
+void StartNewMission_SCMFixes()
 {
 	WipeLocalVariableMemoryForMissionScript();
 
+	// INITIAL - Basketball fix
 	if ( ScriptParams[0] == 0 )
 		BasketballFix(ScriptSpace+200000, 69000);
+	// WUZI1 - Mountain Cloud Boys fix
+	else if ( ScriptParams[0] == 53 )
+		MountainCloudBoysFix();
 }
 
 // 1.01 kinda fixed it
@@ -1831,8 +1853,8 @@ BOOL InjectDelayedPatches_10()
 			TheScriptsLoad = (void(*)())(*(int*)0x5D18F1 + 0x5D18F0 + 5);
 			InjectHook(0x5D18F0, TheScriptsLoad_BasketballFix);
 			// Fixed for Hoodlum
-			InjectHook(0x489A70, StartNewMission_BasketballFix);
-			InjectHook(0x4899F0, StartNewMission_BasketballFix);
+			InjectHook(0x489A70, StartNewMission_SCMFixes);
+			InjectHook(0x4899F0, StartNewMission_SCMFixes);
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", TRUE, wcModulePath) != FALSE )
@@ -2055,8 +2077,8 @@ BOOL InjectDelayedPatches_11()
 			TheScriptsLoad = (void(*)())(*(int*)0x5D20D1 + 0x5D20D0 + 5);
 			InjectHook(0x5D20D0, TheScriptsLoad_BasketballFix);
 			// Fixed for Hoodlum
-			InjectHook(0x489A70, StartNewMission_BasketballFix);
-			InjectHook(0x489AF0, StartNewMission_BasketballFix);
+			InjectHook(0x489A70, StartNewMission_SCMFixes);
+			InjectHook(0x489AF0, StartNewMission_SCMFixes);
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", TRUE, wcModulePath) != FALSE )
@@ -2259,8 +2281,8 @@ BOOL InjectDelayedPatches_Steam()
 			TheScriptsLoad = (void(*)())(*(int*)0x5EE018 + 0x5EE017 + 5);
 			InjectHook(0x5EE017, TheScriptsLoad_BasketballFix);
 			// Fixed for Hoodlum
-			InjectHook(0x4907AE, StartNewMission_BasketballFix);
-			InjectHook(0x49072E, StartNewMission_BasketballFix);
+			InjectHook(0x4907AE, StartNewMission_SCMFixes);
+			InjectHook(0x49072E, StartNewMission_SCMFixes);
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", TRUE, wcModulePath) == FALSE )
