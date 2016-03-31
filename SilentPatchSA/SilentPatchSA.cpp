@@ -2597,7 +2597,7 @@ void Patch_SA_10()
 	// Default resolution to native resolution
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
-	_snprintf(aNoDesktopMode, sizeof(aNoDesktopMode), "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
 	Patch<DWORD>(0x746363, desktop.right);
 	Patch<DWORD>(0x746368, desktop.bottom);
@@ -2894,7 +2894,7 @@ void Patch_SA_11()
 	// Default resolution to native resolution
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
-	_snprintf(aNoDesktopMode, sizeof(aNoDesktopMode), "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
 	Patch<DWORD>(0x746BE3, desktop.right);
 	Patch<DWORD>(0x746BE8, desktop.bottom);
@@ -3147,7 +3147,7 @@ void Patch_SA_Steam()
 	// Default resolution to native resolution
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
-	_snprintf(aNoDesktopMode, sizeof(aNoDesktopMode), "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
 	Patch<DWORD>(0x780219, desktop.right);
 	Patch<DWORD>(0x78021E, desktop.bottom);
@@ -3294,7 +3294,7 @@ void Patch_SA_NewSteam_r1()
 	// Default resolution to native resolution
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
-	_snprintf(aNoDesktopMode, sizeof(aNoDesktopMode), "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
 	Patch<DWORD>(0x77A3EF, desktop.right);
 	Patch<DWORD>(0x77A3F4, desktop.bottom);
@@ -3351,7 +3351,7 @@ void Patch_SA_NewSteam_r2()
 	// Default resolution to native resolution
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
-	_snprintf(aNoDesktopMode, sizeof(aNoDesktopMode), "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
 	Patch<DWORD>(0x77A41F, desktop.right);
 	Patch<DWORD>(0x77A424, desktop.bottom);
@@ -3439,7 +3439,7 @@ void Patch_SA_NewSteam_r2_lv()
 	// Default resolution to native resolution
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
-	_snprintf(aNoDesktopMode, sizeof(aNoDesktopMode), "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
 	Patch<DWORD>(0x77A30F, desktop.right);
 	Patch<DWORD>(0x77A314, desktop.bottom);

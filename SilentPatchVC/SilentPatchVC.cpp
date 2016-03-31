@@ -503,7 +503,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	{
 		RECT			desktop;
 		GetWindowRect(GetDesktopWindow(), &desktop);
-		sprintf(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+		sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
 		if(*(DWORD*)0x667BF5 == 0xB85548EC) Patch_VC_10(desktop);
 		else if(*(DWORD*)0x667C45 == 0xB85548EC) Patch_VC_11(desktop);

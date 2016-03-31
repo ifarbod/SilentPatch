@@ -50,7 +50,7 @@ void InjectHooks()
 
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
-	sprintf(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
 	if (*(DWORD*)0x5C1E75 == 0xB85548EC)
 	{
