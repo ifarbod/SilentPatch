@@ -280,6 +280,10 @@ void Patch_VC_10(const RECT& desktop)
 	Patch<BYTE>(0x47C11E, 0xEB);
 	Patch<BYTE>(0x47CD94, 0xEB);
 	Nop(0x47C15A, 2);
+
+	// Scan for A/B drives looking for audio files
+	Patch<DWORD>(0x5D7941, 'A');
+	Patch<DWORD>(0x5D7B04, 'A');
 }
 
 void Patch_VC_11(const RECT& desktop)
@@ -387,6 +391,10 @@ void Patch_VC_11(const RECT& desktop)
 	Patch<BYTE>(0x47C11E, 0xEB);
 	Patch<BYTE>(0x47CD94, 0xEB);
 	Nop(0x47C15A, 2);
+
+	// Scan for A/B drives looking for audio files
+	Patch<DWORD>(0x5D7961, 'A');
+	Patch<DWORD>(0x5D7B24, 'A');
 }
 
 void Patch_VC_Steam(const RECT& desktop)
@@ -494,6 +502,9 @@ void Patch_VC_Steam(const RECT& desktop)
 	Patch<BYTE>(0x47BFFE, 0xEB);
 	Patch<BYTE>(0x47CC74, 0xEB);
 	Nop(0x47C03A, 2);
+
+	// Scan for A/B drives looking for audio files
+	Patch<DWORD>(0x5D7764, 'A');
 }
 
 void Patch_VC_JP()
