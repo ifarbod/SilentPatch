@@ -17,7 +17,7 @@ static void* varRtPNGImageRead = AddressByVersion<void*>(0x7CF9B0, 0x7D02B0, 0x8
 WRAPPER RwImage* RtPNGImageRead(const RwChar* imageName) { WRAPARG(imageName); VARJMP(varRtPNGImageRead); }
 static void* varRwTextureCreate = AddressByVersion<void*>(0x7F37C0, 0x7F40C0, 0x82D780);
 WRAPPER RwTexture* RwTextureCreate(RwRaster* raster) { WRAPARG(raster); VARJMP(varRwTextureCreate); }
-static void* varRwRasterCreate = AddressByVersion<void*>(0x7FB230, 0x7FBB30, 0x8351F0);
+static void* varRwRasterCreate = AddressByVersion<void*>(0x7FB230, 0x7FBB30, 0x8351F0, 0x82FA80, 0x82F950);
 WRAPPER RwRaster* RwRasterCreate(RwInt32 width, RwInt32 height, RwInt32 depth, RwInt32 flags) { WRAPARG(width); WRAPARG(height); WRAPARG(depth); WRAPARG(flags); VARJMP(varRwRasterCreate); }
 static void* varRwImageDestroy = AddressByVersion<void*>(0x802740, 0x803040, 0x83C700);
 WRAPPER RwBool RwImageDestroy(RwImage* image) { WRAPARG(image); VARJMP(varRwImageDestroy); }
@@ -201,7 +201,7 @@ static void				(*sub_5DA6A0)(void*, void*, void*, void*);
 
 
 // SA variables
-void**					rwengine = *AddressByVersion<void***>(0x58FFC0, 0x53F032, 0x48C194);
+void**					rwengine = *AddressByVersion<void***>(0x58FFC0, 0x53F032, 0x48C194, 0x48B167, 0x48B167);
 RwInt32&				ms_extraVertColourPluginOffset = **AddressByVersion<int**>(0x5D6362, 0x5D6B42, 0x5F2B65);
 
 unsigned char&			nGameClockDays = **AddressByVersion<unsigned char**>(0x4E841D, 0x4E886D, 0x4F3871);
@@ -733,20 +733,80 @@ int Int32Rand()
 	return generator() & 0x7FFFFFFF;
 }
 
-void (*FlushSpriteBuffer)() = AddressByVersion<void(*)()>(0x70CF20, 0, 0);
+void (*FlushSpriteBuffer)() = AddressByVersion<void(*)()>(0x70CF20, 0x70D750, 0x7591E0, 0x753AE0, 0x753A00);
 void FlushLensSwitchZ( RwRenderState rwa, void* rwb )
 {
 	FlushSpriteBuffer();
 	RwRenderStateSet( rwa, rwb );
 }
 
-void (*InitSpriteBuffer2D)() = AddressByVersion<void(*)()>(0x70CFD0, 0, 0);
+void (*InitSpriteBuffer2D)() = AddressByVersion<void(*)()>(0x70CFD0, 0x70D800, 0x759290, 0x753B90, 0x753AB0);
 void InitBufferSwitchZ( RwRenderState rwa, void* rwb )
 {
 	RwRenderStateSet( rwa, rwb );
 	InitSpriteBuffer2D();
 }
 
+static void* const g_fx = *AddressByVersion<void**>(0x4A9649, 0x4AA4EF, 0x4B2BB9, 0x4B0BE4, 0x4B0BC4);
+
+DWORD*				msaaValues = *AddressByVersion<DWORD**>(0x4CCBC5, 0x4CCDB5, 0x4D7462, 0x4D6CE5, 0x4D6CB5);
+RwRaster*&			pMirrorBuffer = **AddressByVersion<RwRaster***>(0x723001, 0x723831, 0x754971, 0x74F3E1, 0x74F311);
+RwRaster*&			pMirrorZBuffer = **AddressByVersion<RwRaster***>(0x72301C, 0x72384C, 0x75498C, 0x74F3FC, 0x74F32C);
+void CreateMirrorBuffers()
+{
+	if ( pMirrorBuffer == nullptr )
+	{
+		DWORD oldMsaa[2] = { msaaValues[0], msaaValues[1] };
+		msaaValues[0] = msaaValues[1] = 0;
+
+		DWORD quality = *(DWORD*)((BYTE*)g_fx + 0x54);
+
+		if ( quality >= 3 ) // Very High
+		{
+			pMirrorBuffer = RwRasterCreate( 2048, 1024, 0, rwRASTERTYPECAMERATEXTURE );
+			pMirrorZBuffer = RwRasterCreate( 2048, 1024, 0, rwRASTERTYPEZBUFFER );
+		}
+		else if ( quality >= 1 ) // Medium
+		{
+			pMirrorBuffer = RwRasterCreate( 1024, 512, 0, rwRASTERTYPECAMERATEXTURE );
+			pMirrorZBuffer = RwRasterCreate( 1024, 512, 0, rwRASTERTYPEZBUFFER );
+		}
+		else
+		{
+			pMirrorBuffer = RwRasterCreate( 512, 256, 0, rwRASTERTYPECAMERATEXTURE );
+			pMirrorZBuffer = RwRasterCreate( 512, 256, 0, rwRASTERTYPEZBUFFER );
+		}
+
+		msaaValues[0] = oldMsaa[0];
+		msaaValues[1] = oldMsaa[1];
+	}
+}
+
+RwUInt32 (*orgGetMaxMultiSamplingLevels)();
+RwUInt32 GetMaxMultiSamplingLevels()
+{
+	RwUInt32 maxSamples = orgGetMaxMultiSamplingLevels();
+	RwUInt32 option;
+	_BitScanForward( (DWORD*)&option, maxSamples );
+	return option + 1;
+}
+
+static void (*orgChangeMultiSamplingLevels)(RwUInt32);
+void ChangeMultiSamplingLevels( RwUInt32 level )
+{
+	orgChangeMultiSamplingLevels( 1 << (level - 1) );
+}
+
+static void (*orgSetMultiSamplingLevels)(RwUInt32);
+void SetMultiSamplingLevels( RwUInt32 level )
+{
+	orgSetMultiSamplingLevels( 1 << (level - 1) );
+}
+
+void MSAAText( char* buffer, const char*, DWORD level )
+{
+	sprintf( buffer, "%ux", 1 << level );
+}
 
 #include <xnamath.h>
 
@@ -1698,7 +1758,6 @@ NoFPSLimit_Skip:
 	}
 }
 
-static void* const g_fx = *AddressByVersion<void**>(0x4A9649, 0x4AA4EF, 0x4B2BB9);
 void __declspec(naked) GetMaxExtraDirectionals()
 {
 	_asm
@@ -1716,6 +1775,63 @@ void __declspec(naked) GetMaxExtraDirectionals()
 
 GetMaxExtraDirectionals_Six:
 		mov		ebx, 6
+		retn
+	}
+}
+
+void _declspec(naked) FixedCarDamage()
+{
+	_asm
+	{
+		fldz
+		fcomp	[esp+20h+10h]
+		fnstsw  ax
+		test    ah, 5
+		jp		FixedCarDamage_Negative
+		movzx   eax, byte ptr [edi+21h]
+		retn
+
+FixedCarDamage_Negative:
+		movzx   eax, byte ptr [edi+24h]
+		retn
+	}
+}
+
+void _declspec(naked) FixedCarDamage_Steam()
+{
+	_asm
+	{
+		fldz
+		fcomp	[esp+20h+10h]
+		fnstsw  ax
+		test    ah, 5
+		jp		FixedCarDamage_Negative
+		movzx   eax, byte ptr [edi+21h]
+		test	ecx, ecx
+		retn
+
+FixedCarDamage_Negative:
+		movzx   eax, byte ptr [edi+24h]
+		test	ecx, ecx
+		retn
+	}
+}
+
+void _declspec(naked) FixedCarDamage_Newsteam()
+{
+	_asm
+	{
+		mov		edi, [ebp+10h]
+		fldz
+		fcomp	[ebp+14h]
+		fnstsw  ax
+		test    ah, 5
+		jp		FixedCarDamage_Negative
+		movzx   eax, byte ptr [edi+21h]
+		retn
+
+FixedCarDamage_Negative:
+		movzx   eax, byte ptr [edi+24h]
 		retn
 	}
 }
@@ -2650,7 +2766,6 @@ void Patch_SA_10()
 	Patch(0x6FB478, &FlushLensSwitchZ);
 	Patch<WORD>(0x6FB480, 0xD1FF);
 	Nop(0x6FB482, 1);
-	Patch<BYTE>(0x6FB621, 0xC3);
 
 	Patch<WORD>(0x6FAF28, 0xB990);
 	Patch(0x6FAF2A, &InitBufferSwitchZ);
@@ -2670,6 +2785,42 @@ void Patch_SA_10()
 	Patch<WORD>(0x50FBB4, 0x27EB);
 	Patch<WORD>(0x510512, 0xE990);
 	InjectHook(0x524071, 0x524139, PATCH_JUMP);
+
+	// Fixed mirrors crash
+	Patch<uint64_t>(0x7271CB, 0xC604C4833474C085);
+
+	// Mirrors depth fix & bumped quality
+	InjectHook(0x72701D, CreateMirrorBuffers);
+
+	// Fixed MSAA options
+	Patch<BYTE>(0x57D126, 0xEB);
+	Nop(0x57D0E8, 2);
+
+	Patch<BYTE>(AddressByRegion_10<BYTE*>(0x7F6C9B), 0xEB);
+	Patch<BYTE>(AddressByRegion_10<BYTE*>(0x7F60C6), 0xEB);
+	Patch<WORD>(AddressByRegion_10<BYTE*>(0x7F6683), 0xE990);
+
+	int			pGetMaxMultiSamplingLevels = 0x57D136;
+	orgGetMaxMultiSamplingLevels = (RwUInt32(*)())(*(int*)(pGetMaxMultiSamplingLevels+1) + pGetMaxMultiSamplingLevels + 5);
+	InjectHook(0x57D136, GetMaxMultiSamplingLevels);
+	InjectHook(0x57D0EA, GetMaxMultiSamplingLevels);
+
+	int			pChangeMultiSamplingLevels = 0x5744FD;
+	orgChangeMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pChangeMultiSamplingLevels+1) + pChangeMultiSamplingLevels + 5);
+	InjectHook(0x5744FD, ChangeMultiSamplingLevels);
+	InjectHook(0x57D162, ChangeMultiSamplingLevels);
+	InjectHook(0x57D2A6, ChangeMultiSamplingLevels);
+
+	int			pSetMultiSamplingLevels = 0x746350;
+	orgSetMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pSetMultiSamplingLevels+1) + pSetMultiSamplingLevels + 5);
+	InjectHook(0x746350, SetMultiSamplingLevels);
+
+	Nop(0x57A0FC, 1);
+	InjectHook(0x57A0FD, MSAAText, PATCH_CALL);
+
+	
+	// Fixed car collisions - car you're hitting gets proper damage now
+	InjectHook(0x5428EA, FixedCarDamage, PATCH_CALL);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
@@ -2757,9 +2908,6 @@ void Patch_SA_11()
 
 	// PS2 SUN!!!!!!!!!!!!!!!!!
 	static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
-
-	Nop(0x6FBB46, 3);
-	Nop(0x6FBCB0, 3);
 
 	Nop(0x6FB9AC, 3);
 	Patch<const void*>(0x6FCDE0, &fSunMult);
@@ -2936,6 +3084,23 @@ void Patch_SA_11()
 	// Game seems to assume they can show together
 	Nop(0x58C25F, 6);
 
+	// Fixed lens flare
+	Patch<DWORD>(0x70FC8A, 0);
+	Patch<BYTE>(0x6FBE51, 0xC3);
+	Patch<BYTE>(0x6FBE30, 0x21);
+	InjectHook(0x6FBE52, 0x70D750, PATCH_CALL);
+	Patch<WORD>(0x6FBE57, 0xDCEB);
+
+	Patch<WORD>(0x6FBCA6, 0xB990);
+	Patch(0x6FBCA8, &FlushLensSwitchZ);
+	Patch<WORD>(0x6FBCB0, 0xD1FF);
+	Nop(0x6FBCB2, 1);
+
+	Patch<WORD>(0x6FB758, 0xB990);
+	Patch(0x6FB75A, &InitBufferSwitchZ);
+	Patch<WORD>(0x6FB762, 0xD1FF);
+	Nop(0x6FB764, 1);
+
 	// Y axis sensitivity fix
 	float* sens = *(float**)0x50F4DC;
 	Patch<const void*>(0x50F4E6 + 0x2, sens);
@@ -2948,6 +3113,41 @@ void Patch_SA_11()
 	Patch<WORD>(0x510054, 0x27EB);
 	Patch<WORD>(0x5109B2, 0xE990);
 	InjectHook(0x524511, 0x5245D9, PATCH_JUMP);
+
+	// Fixed mirrors crash
+	Patch<uint64_t>(0x7279FB, 0xC604C4833474C085);
+
+	// Mirrors depth fix & bumped quality
+	InjectHook(0x72784D, CreateMirrorBuffers);
+
+	// Fixed MSAA options
+	Patch<BYTE>(0x57D906, 0xEB);
+	Nop(0x57D8C8, 2);
+
+	Patch<BYTE>(AddressByRegion_11<BYTE*>(0x7F759B), 0xEB);
+	Patch<BYTE>(AddressByRegion_11<BYTE*>(0x7F69C6), 0xEB);
+	Patch<WORD>(AddressByRegion_11<BYTE*>(0x7F6F83), 0xE990);
+
+	int			pGetMaxMultiSamplingLevels = 0x57D916;
+	orgGetMaxMultiSamplingLevels = (RwUInt32(*)())(*(int*)(pGetMaxMultiSamplingLevels+1) + pGetMaxMultiSamplingLevels + 5);
+	InjectHook(0x57D916, GetMaxMultiSamplingLevels);
+	InjectHook(0x57D8CA, GetMaxMultiSamplingLevels);
+
+	int			pChangeMultiSamplingLevels = 0x574A6D;
+	orgChangeMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pChangeMultiSamplingLevels+1) + pChangeMultiSamplingLevels + 5);
+	InjectHook(0x574A6D, ChangeMultiSamplingLevels);
+	InjectHook(0x57D942, ChangeMultiSamplingLevels);
+	InjectHook(0x57DA86, ChangeMultiSamplingLevels);
+
+	int			pSetMultiSamplingLevels = 0x746BD0;
+	orgSetMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pSetMultiSamplingLevels+1) + pSetMultiSamplingLevels + 5);
+	InjectHook(0x746BD0, SetMultiSamplingLevels);
+
+	Nop(0x57A66C, 1);
+	InjectHook(0x57A66D, MSAAText, PATCH_CALL);
+
+	// Fixed car collisions - car you're hitting gets proper damage now
+	InjectHook(0x542D8A, FixedCarDamage, PATCH_CALL);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E7714;
@@ -3045,9 +3245,6 @@ void Patch_SA_Steam()
 
 	// PS2 SUN!!!!!!!!!!!!!!!!!
 	static const double		dSunMult = (1050.0 * 0.95) / 1500.0;
-
-	Nop(0x73387E, 2);
-	Nop(0x733A67, 2);
 
 	Nop(0x73362F, 2);
 	Patch<const void*>(0x734DF0, &dSunMult);
@@ -3193,6 +3390,19 @@ void Patch_SA_Steam()
 	// Game seems to assume they can show together
 	Nop(0x599CD3, 6);
 
+	// Fixed lens flare
+	Nop(0x733C65, 5);
+	Patch<BYTE>(0x733C4E, 0x26);
+	InjectHook(0x733C75, 0x7591E0, PATCH_CALL);
+	Patch<WORD>(0x733C7A, 0xDBEB);
+
+	Nop(0x733A5A, 4);
+	Patch<BYTE>(0x733A5E, 0xB8);
+	Patch(0x733A5F, &FlushLensSwitchZ);
+
+	Patch<DWORD>(0x7333B0, 0xB9909090);
+	Patch(0x7333B4, &InitBufferSwitchZ);
+
 	// Y axis sensitivity fix
 	float* sens = *(float**)0x51D4FA;
 	Patch<const void*>(0x51D508 + 0x2, sens);
@@ -3205,6 +3415,42 @@ void Patch_SA_Steam()
 	Patch<WORD>(0x51E192, 0x2BEB);
 	Patch<WORD>(0x51ED38, 0xE990);
 	InjectHook(0x534D3E, 0x534DF7, PATCH_JUMP);
+
+	// Fixed mirrors crash
+	Patch<uint64_t>(0x75903A, 0xC604C4833474C085);
+
+	// Mirrors depth fix & bumped quality
+	InjectHook(0x758E91, CreateMirrorBuffers);
+
+	// Fixed MSAA options
+	Patch<BYTE>(0x592BBB, 0xEB);
+	Nop(0x592B7F, 2);
+
+	Patch<BYTE>(0x830C5B, 0xEB);
+	Patch<BYTE>(0x830086, 0xEB);
+	Patch<WORD>(0x830643, 0xE990);
+
+	int			pGetMaxMultiSamplingLevels = 0x592BCF;
+	orgGetMaxMultiSamplingLevels = (RwUInt32(*)())(*(int*)(pGetMaxMultiSamplingLevels+1) + pGetMaxMultiSamplingLevels + 5);
+	InjectHook(0x592BCF, GetMaxMultiSamplingLevels);
+	InjectHook(0x592B81, GetMaxMultiSamplingLevels);
+
+	int			pChangeMultiSamplingLevels = 0x5897CD;
+	orgChangeMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pChangeMultiSamplingLevels+1) + pChangeMultiSamplingLevels + 5);
+	InjectHook(0x5897CD, ChangeMultiSamplingLevels);
+	InjectHook(0x592BFB, ChangeMultiSamplingLevels);
+	InjectHook(0x592D2E, ChangeMultiSamplingLevels);
+
+	int			pSetMultiSamplingLevels = 0x780206;
+	orgSetMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pSetMultiSamplingLevels+1) + pSetMultiSamplingLevels + 5);
+	InjectHook(0x780206, SetMultiSamplingLevels);
+
+	Patch<WORD>(0x58F88C, 0xBA90);
+	Patch(0x58F88E, MSAAText);
+
+	// Fixed car collisions - car you're hitting gets proper damage now
+	Nop(0x555AB8, 2);
+	InjectHook(0x555AC0, FixedCarDamage_Steam, PATCH_CALL);
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
@@ -3376,6 +3622,19 @@ void Patch_SA_NewSteam_r2()
 	// Game seems to assume they can show together
 	Nop(0x597EEA, 6);
 
+	// Fixed lens flare
+	Nop(0x7300F8, 5);
+	Patch<BYTE>(0x7300E3, 0x20);
+	InjectHook(0x730104, DynBaseAddress(0x753AE0), PATCH_CALL);
+	Patch<WORD>(0x730109, 0xE1EB);
+
+	Nop(0x72FF17, 4);
+	Patch<BYTE>(0x72FF1B, 0xB8);
+	Patch(0x72FF1C, &FlushLensSwitchZ);
+
+	Patch<DWORD>(0x72F91D, 0xB9909090);
+	Patch(0x72F921, &InitBufferSwitchZ);
+
 	// Y axis sensitivity fix
 	float* sens = *(float**)DynBaseAddress(0x51B987);
 	Patch<const void*>(0x51B993 + 0x2, sens);
@@ -3388,6 +3647,42 @@ void Patch_SA_NewSteam_r2()
 	Patch<WORD>(0x51C5CD, 0x29EB);
 	Patch<WORD>(0x51D053, 0xE990);
 	InjectHook(0x531BBE, DynBaseAddress(0x531C6F), PATCH_JUMP);
+
+	// Fixed mirrors crash
+	Patch<uint64_t>(0x753941, 0xC604C4832F74C085);
+
+	// Mirrors depth fix & bumped quality
+	InjectHook(0x7537A0, CreateMirrorBuffers);
+
+	// Fixed MSAA options
+	Patch<BYTE>(0x590F77, 0xEB);
+	Nop(0x590F34, 2);
+
+	Patch<BYTE>(0x82B4EB, 0xEB);
+	Patch<BYTE>(0x82A916, 0xEB);
+	Patch<WORD>(0x82AED3, 0xE990);
+
+	int			pGetMaxMultiSamplingLevels = DynBaseAddress(0x590F8B);
+	orgGetMaxMultiSamplingLevels = (RwUInt32(*)())(*(int*)(pGetMaxMultiSamplingLevels+1) + pGetMaxMultiSamplingLevels + 5);
+	InjectHook(0x590F8B, GetMaxMultiSamplingLevels);
+	InjectHook(0x590F36, GetMaxMultiSamplingLevels);
+
+	int			pChangeMultiSamplingLevels = DynBaseAddress(0x5881C0);
+	orgChangeMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pChangeMultiSamplingLevels+1) + pChangeMultiSamplingLevels + 5);
+	InjectHook(0x5881C0, ChangeMultiSamplingLevels);
+	InjectHook(0x590FBB, ChangeMultiSamplingLevels);
+	InjectHook(0x591111, ChangeMultiSamplingLevels);
+
+	int			pSetMultiSamplingLevels = DynBaseAddress(0x77A40D);
+	orgSetMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pSetMultiSamplingLevels+1) + pSetMultiSamplingLevels + 5);
+	InjectHook(0x77A40D, SetMultiSamplingLevels);
+
+	Patch<WORD>(0x58DDEF, 0xBA90);
+	Patch(0x58DDF1, MSAAText);
+
+	// Fixed car collisions - car you're hitting gets proper damage now
+	Nop(0x5538D0, 2);
+	InjectHook(0x5538D2, FixedCarDamage_Newsteam, PATCH_CALL);
 
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
@@ -3464,6 +3759,19 @@ void Patch_SA_NewSteam_r2_lv()
 	// Game seems to assume they can show together
 	Nop(0x597E3A, 6);
 
+	// Fixed lens flare
+	Nop(0x72FFF8, 5);
+	Patch<BYTE>(0x72FFE3, 0x20);
+	InjectHook(0x730004, DynBaseAddress(0x753A00), PATCH_CALL);
+	Patch<WORD>(0x730009, 0xE1EB);
+
+	Nop(0x72FE17, 4);
+	Patch<BYTE>(0x72FE1B, 0xB8);
+	Patch(0x72FE1C, &FlushLensSwitchZ);
+
+	Patch<DWORD>(0x72F81D, 0xB9909090);
+	Patch(0x72F821, &InitBufferSwitchZ);
+
 	// Y axis sensitivity fix
 	float* sens = *(float**)DynBaseAddress(0x51B8D7);
 	Patch<const void*>(0x51B8E3 + 0x2, sens);
@@ -3476,6 +3784,42 @@ void Patch_SA_NewSteam_r2_lv()
 	Patch<WORD>(0x51C51D, 0x29EB);
 	Patch<WORD>(0x51CFA3, 0xE990);
 	InjectHook(0x531B1E, DynBaseAddress(0x531BCF), PATCH_JUMP);
+
+	// Fixed mirrors crash
+	Patch<uint64_t>(0x753861, 0xC604C4832F74C085);
+
+	// Mirrors depth fix & bumped quality
+	InjectHook(0x7536C0, CreateMirrorBuffers);
+
+	// Fixed MSAA options
+	Patch<BYTE>(0x590EB7, 0xEB);
+	Nop(0x590E74, 2);
+
+	Patch<BYTE>(0x82B3BB, 0xEB);
+	Patch<BYTE>(0x82A7E6, 0xEB);
+	Patch<WORD>(0x82ADA3, 0xE990);
+
+	int			pGetMaxMultiSamplingLevels = DynBaseAddress(0x590ECB);
+	orgGetMaxMultiSamplingLevels = (RwUInt32(*)())(*(int*)(pGetMaxMultiSamplingLevels+1) + pGetMaxMultiSamplingLevels + 5);
+	InjectHook(0x590ECB, GetMaxMultiSamplingLevels);
+	InjectHook(0x590E76, GetMaxMultiSamplingLevels);
+
+	int			pChangeMultiSamplingLevels = DynBaseAddress(0x588100);
+	orgChangeMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pChangeMultiSamplingLevels+1) + pChangeMultiSamplingLevels + 5);
+	InjectHook(0x588100, ChangeMultiSamplingLevels);
+	InjectHook(0x590EFB, ChangeMultiSamplingLevels);
+	InjectHook(0x591051, ChangeMultiSamplingLevels);
+
+	int			pSetMultiSamplingLevels = DynBaseAddress(0x77A2FD);
+	orgSetMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pSetMultiSamplingLevels+1) + pSetMultiSamplingLevels + 5);
+	InjectHook(0x77A2FD, SetMultiSamplingLevels);
+
+	Patch<WORD>(0x58DD2F, 0xBA90);
+	Patch(0x58DD31, MSAAText);
+
+	// Fixed car collisions - car you're hitting gets proper damage now
+	Nop(0x553800, 2);
+	InjectHook(0x553802, FixedCarDamage_Newsteam, PATCH_CALL);
 
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
