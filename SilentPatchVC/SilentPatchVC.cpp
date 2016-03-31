@@ -275,6 +275,11 @@ void Patch_VC_10(const RECT& desktop)
 	Patch<const void*>(0x47AE27 + 0x1CC + 0x2, sens);
 	Patch<const void*>(0x47BE8F + 0x22E + 0x2, sens);
 	Patch<const void*>(0x481AB3 + 0x4FE + 0x2, sens);
+
+	// Don't lock mouse Y axis during fadeins
+	Patch<BYTE>(0x47C11E, 0xEB);
+	Patch<BYTE>(0x47CD94, 0xEB);
+	Nop(0x47C15A, 2);
 }
 
 void Patch_VC_11(const RECT& desktop)
@@ -377,6 +382,11 @@ void Patch_VC_11(const RECT& desktop)
 	Patch<const void*>(0x47AE27 + 0x1CC + 0x2, sens);
 	Patch<const void*>(0x47BE8F + 0x22E + 0x2, sens);
 	Patch<const void*>(0x481AB3 + 0x4FE + 0x2, sens);
+
+	// Don't lock mouse Y axis during fadeins
+	Patch<BYTE>(0x47C11E, 0xEB);
+	Patch<BYTE>(0x47CD94, 0xEB);
+	Nop(0x47C15A, 2);
 }
 
 void Patch_VC_Steam(const RECT& desktop)
@@ -479,6 +489,11 @@ void Patch_VC_Steam(const RECT& desktop)
 	Patch<const void*>(0x47AD07 + 0x1CC + 0x2, sens);
 	Patch<const void*>(0x47BD6F + 0x22E + 0x2, sens);
 	Patch<const void*>(0x481993 + 0x4FE + 0x2, sens);
+
+	// Don't lock mouse Y axis during fadeins
+	Patch<BYTE>(0x47BFFE, 0xEB);
+	Patch<BYTE>(0x47CC74, 0xEB);
+	Nop(0x47C03A, 2);
 }
 
 void Patch_VC_JP()
