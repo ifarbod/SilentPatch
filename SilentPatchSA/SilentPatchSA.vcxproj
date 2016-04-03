@@ -14,20 +14,21 @@
     <ProjectGuid>{D3E18BC0-A120-451D-A16A-F77072625D66}</ProjectGuid>
     <RootNamespace>SAFix</RootNamespace>
     <ProjectName>SilentPatchSA</ProjectName>
+    <WindowsTargetPlatformVersion>0x0502</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v120_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v120_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -65,7 +66,7 @@
       <AdditionalDependencies>winmm.lib;Shlwapi.lib;libFLAC_static_d.lib;win_utf8_io_static_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "D:\GTA San Andreas clean\SilentPatchSA.asi"
+      <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"
 copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\gta-sa_newsteam_r2\SilentPatchSA.asi"
 copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowviolence_gta-sa\SilentPatchSA.asi"</Command>
     </PostBuildEvent>
@@ -98,7 +99,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
       <AdditionalDependencies>winmm.lib;Shlwapi.lib;libFLAC_static.lib;win_utf8_io_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "D:\GTA San Andreas clean\SilentPatchSA.asi"
+      <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"
 copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\gta-sa_newsteam_r2\SilentPatchSA.asi"
 copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowviolence_gta-sa\SilentPatchSA.asi"</Command>
     </PostBuildEvent>
@@ -134,6 +135,8 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NVC_vertex_shader</EntryPointName>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)\SilentPatch\%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\SilentPatch\%(Filename).cso</ObjectFileOutput>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
