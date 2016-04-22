@@ -113,7 +113,7 @@ bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo)
 {
 	//CCustomCarPlateMgr::SetupPlates(reinterpret_cast<RpClump*>(pModelInfo->pRwObject), PlateTexture, PlateDesign);
-	for ( int i = 0; i < NUM_MAX_PLATES; i++ )
+	for ( ptrdiff_t i = 0; i < NUM_MAX_PLATES; i++ )
 	{
 		if ( pModelInfo->m_apPlateMaterials[i] )
 		{
@@ -269,11 +269,9 @@ void CPlane::Render()
 void CPlane::Fix_SilentPatch()
 {
 	// Reset bouncing panels
-	for ( int i = 0; i < 3; i++ )
+	// No reset on Vortex
+	for ( ptrdiff_t i = m_nModelIndex == 539 ? 1 : 0; i < 3; i++ )
 	{
-		// No reset on Vortex
-		if ( i == 0 && m_nModelIndex == 539 )
-			continue;
 		m_aBouncingPanel[i].m_nNodeIndex = -1;
 	}
 }
@@ -283,11 +281,9 @@ void CAutomobile::Fix_SilentPatch()
 	ResetFrames();
 
 	// Reset bouncing panels
-	for ( int i = 0; i < 3; i++ )
+	for ( ptrdiff_t i = (m_nModelIndex == 525 && m_pCarNode[21]) || (m_nModelIndex == 531 && m_pCarNode[17]) ? 1 : 0; i < 3; i++ )
 	{
 		// Towtruck/Tractor fix
-		if ( i == 0 && ((m_nModelIndex == 525 && m_pCarNode[21]) || (m_nModelIndex == 531 && m_pCarNode[17])) )
-			continue;
 		m_aBouncingPanel[i].m_nNodeIndex = -1;
 	}
 }
@@ -298,7 +294,7 @@ void CAutomobile::ResetFrames()
 	if ( pOrigClump )
 	{
 		// Instead of setting frame rotation to (0,0,0) like R* did, obtain the original frame matrix from CBaseNodelInfo clump
-		for ( int i = 8; i < 25; i++ )
+		for ( ptrdiff_t i = 8; i < 25; i++ )
 		{
 			if ( m_pCarNode[i] )
 			{
