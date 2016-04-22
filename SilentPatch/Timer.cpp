@@ -124,7 +124,7 @@ void CTimer::Update()
 		//*m_snTimeInMillisecondsNonClipped += nDelta;
 	}
 
-#ifdef SILENTPATCH_III_VER
+#ifdef _GTA_III
 	if ( *ms_fTimeStep < 0.01f && !*m_UserPause && !*m_CodePause )
 #else
 	if ( *ms_fTimeStep < 0.01f && !*m_UserPause && !*m_CodePause && !*bSnapShotActive )

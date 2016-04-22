@@ -40,7 +40,7 @@ inline AT DynBaseAddress(AT address)
 	return (ptrdiff_t)GetModuleHandle(nullptr) - 0x400000 + address;
 }
 
-#if defined SILENTPATCH_III_VER
+#if defined _GTA_III
 
 inline void InitializeVersions()
 {
@@ -76,7 +76,7 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 	}
 }
 
-#elif defined SILENTPATCH_VC_VER
+#elif defined _GTA_VC
 
 inline void InitializeVersions()
 {
@@ -112,7 +112,7 @@ inline T AddressByVersion(DWORD address10, DWORD address11, DWORD addressSteam)
 	}
 }
 
-#elif defined SILENTPATCH_SA_VER
+#elif defined _GTA_SA
 
 inline void InitializeVersions()
 {
