@@ -808,6 +808,20 @@ void MSAAText( char* buffer, const char*, DWORD level )
 	sprintf( buffer, "%ux", 1 << level );
 }
 
+
+static RwInt32 numSavedVideoModes;
+static RwInt32 (*orgGetNumVideoModes)();
+RwInt32 GetNumVideoModes_Store()
+{
+	return numSavedVideoModes = orgGetNumVideoModes();
+}
+
+RwInt32 GetNumVideoModes_Retrieve()
+{
+	return numSavedVideoModes;
+}
+
+
 static void* (*orgMemMgrMalloc)(RwUInt32, RwUInt32);
 void* CollisionData_MallocAndInit( RwUInt32 size, RwUInt32 hint )
 {
@@ -2867,6 +2881,16 @@ void Patch_SA_10()
 	orgNewAlloc = (void*(*)(size_t))(*(int*)(pNewAlloc+1) + pNewAlloc + 5);
 	InjectHook(0x40F74C, CollisionData_NewAndInit);
 	InjectHook(0x40F81D, CollisionData_NewAndInit);
+
+
+	// Crash when entering advanced display options on a dual monitor machine after:
+	// - starting game on primary monitor in maximum resolution, exiting,
+	// starting again in maximum resolution on secondary monitor.
+	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
+	int			pGetNumVideoModes = 0x745B1E;
+	orgGetNumVideoModes = (RwInt32(*)())(*(int*)(pGetNumVideoModes+1) + pGetNumVideoModes + 5);
+	InjectHook(0x745B1E, GetNumVideoModes_Store);
+	InjectHook(0x745A81, GetNumVideoModes_Retrieve);
 
 
 	// Fixed police scanner names
