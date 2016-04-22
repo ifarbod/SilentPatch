@@ -50,20 +50,33 @@ typedef struct
     char name[0x18];
 } ColModelFileHeader;
 
-typedef struct
+class CColData
 {
-    WORD                            numColSpheres;
-    WORD                            numColBoxes;
-    WORD                            numColTriangles;
-    BYTE                            ucNumWheels;
-    BYTE                            pad3;
-    CColSphere*						pColSpheres;
-    CColBox*						pColBoxes;
-    void*                           pSuspensionLines;
-    void*                           pUnknown;
-    void*							pColTriangles;
-    void*							pColTrianglePlanes;
-} CColData;
+public:
+	unsigned short   m_wNumSpheres;
+	unsigned short   m_wNumBoxes;
+	unsigned short   m_wNumTriangles;
+	unsigned char    m_bNumLines;
+	unsigned char    m_bFlags;
+	CColSphere        *m_pSpheres;
+	CColBox           *m_pBoxes;
+	/* possibly was the union with some unknown yet collision model which was used for CMtruck only.
+	union{
+	CColLine          *m_pLines;
+	CMtruckColLine    *m_pMtruckLines;
+	};
+	*/
+	void          *m_pLines;
+	void  *m_pVertices;
+	void      *m_pTriangles;
+	void *m_pTrianglePlanes;
+	unsigned int   m_dwNumShadowTriangles;
+	unsigned int   m_dwNumShadowVertices;
+	void  *m_pShadowVertices;
+	void      *m_pShadowTriangles;
+};
+
+static_assert( sizeof(CColData) == 0x30, "Wrong size: CColData" );
 
 class CColModel
 {

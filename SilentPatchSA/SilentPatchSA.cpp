@@ -808,6 +808,28 @@ void MSAAText( char* buffer, const char*, DWORD level )
 	sprintf( buffer, "%ux", 1 << level );
 }
 
+static void* (*orgMemMgrMalloc)(RwUInt32, RwUInt32);
+void* CollisionData_MallocAndInit( RwUInt32 size, RwUInt32 hint )
+{
+	CColData*	mem = (CColData*)orgMemMgrMalloc( size, hint );
+
+	mem->m_bFlags = 0;
+	mem->m_dwNumShadowTriangles = mem->m_dwNumShadowVertices =0;
+	mem->m_pShadowVertices = mem->m_pShadowTriangles = nullptr;
+
+	return mem;
+}
+
+static void* (*orgNewAlloc)(size_t);
+void* CollisionData_NewAndInit( size_t size )
+{
+	CColData*	mem = (CColData*)orgNewAlloc( size );
+
+	mem->m_bFlags = 0;
+
+	return mem;
+}
+
 #include <xnamath.h>
 
 static void*					pNVCShader = nullptr;
@@ -2822,6 +2844,19 @@ void Patch_SA_10()
 	// Fixed car collisions - car you're hitting gets proper damage now
 	InjectHook(0x5428EA, FixedCarDamage, PATCH_CALL);
 
+
+	// Car explosion crash with multimonitor
+	// Unitialized collision data breaking stencil shadows
+	int			pMemMgrMalloc = 0x40F8D3;
+	orgMemMgrMalloc = (void*(*)(RwUInt32,RwUInt32))(*(int*)(pMemMgrMalloc+1) + pMemMgrMalloc + 5);
+	InjectHook(0x40F8D3, CollisionData_MallocAndInit);
+
+	int			pNewAlloc = 0x40F74C;
+	orgNewAlloc = (void*(*)(size_t))(*(int*)(pNewAlloc+1) + pNewAlloc + 5);
+	InjectHook(0x40F74C, CollisionData_NewAndInit);
+	InjectHook(0x40F81D, CollisionData_NewAndInit);
+
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -3684,6 +3719,19 @@ void Patch_SA_NewSteam_r2()
 	Nop(0x5538D0, 2);
 	InjectHook(0x5538D2, FixedCarDamage_Newsteam, PATCH_CALL);
 
+
+	// Car explosion crash with multimonitor
+	// Unitialized collision data breaking stencil shadows
+	int			pMemMgrMalloc = DynBaseAddress(0x41A661);
+	orgMemMgrMalloc = (void*(*)(RwUInt32,RwUInt32))(*(int*)(pMemMgrMalloc+1) + pMemMgrMalloc + 5);
+	InjectHook(0x41A661, CollisionData_MallocAndInit);
+
+	int			pNewAlloc = DynBaseAddress(0x41A4CC);
+	orgNewAlloc = (void*(*)(size_t))(*(int*)(pNewAlloc+1) + pNewAlloc + 5);
+	InjectHook(0x41A4CC, CollisionData_NewAndInit);
+	InjectHook(0x41A5A9, CollisionData_NewAndInit);
+
+
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
 	Patch<const void*>(0x73424B, &f169);
@@ -3820,6 +3868,19 @@ void Patch_SA_NewSteam_r2_lv()
 	// Fixed car collisions - car you're hitting gets proper damage now
 	Nop(0x553800, 2);
 	InjectHook(0x553802, FixedCarDamage_Newsteam, PATCH_CALL);
+
+
+	// Car explosion crash with multimonitor
+	// Unitialized collision data breaking stencil shadows
+	int			pMemMgrMalloc = DynBaseAddress(0x41A661);
+	orgMemMgrMalloc = (void*(*)(RwUInt32,RwUInt32))(*(int*)(pMemMgrMalloc+1) + pMemMgrMalloc + 5);
+	InjectHook(0x41A661, CollisionData_MallocAndInit);
+
+	int			pNewAlloc = DynBaseAddress(0x41A4CC);
+	orgNewAlloc = (void*(*)(size_t))(*(int*)(pNewAlloc+1) + pNewAlloc + 5);
+	InjectHook(0x41A4CC, CollisionData_NewAndInit);
+	InjectHook(0x41A5A9, CollisionData_NewAndInit);
+
 
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
