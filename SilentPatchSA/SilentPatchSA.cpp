@@ -2075,6 +2075,18 @@ BOOL InjectDelayedPatches_10()
 			Patch<DWORD>(0x5B8EB0, 15000);
 		}
 
+		// Adblocker
+#if DISABLE_FLA_DONATION_WINDOW
+		if (  GetModuleHandle("$fastman92limitAdjuster.asi") != nullptr )
+		{
+			if ( *(DWORD*)0x748736 != 0xE8186A53 )
+			{
+				Patch<DWORD>(0x748736, 0xE8186A53);
+				InjectHook(AddressByRegion_10<int>(0x748739), 0x619B60);
+			}
+		}
+#endif
+
 		return FALSE;
 	}
 	return TRUE;

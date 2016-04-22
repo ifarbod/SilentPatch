@@ -56,6 +56,8 @@ inline T random(T a, T b)
 	return a + static_cast<T>(rand() * (1.0f/(RAND_MAX+1)) * (b - a));
 }
 
+#define DISABLE_FLA_DONATION_WINDOW		1
+
 //#define HIDE_MATERIAL
 //#define EXPAND_ALPHA_ENTITY_LISTS		800
 //#define EXPAND_BOAT_ALPHA_ATOMIC_LISTS	400
