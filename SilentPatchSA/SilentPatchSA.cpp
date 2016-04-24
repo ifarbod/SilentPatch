@@ -863,6 +863,20 @@ void UpdateEscalators()
 }
 
 
+static char** pStencilShadowsPad = *AddressByVersion<char***>(0x70FC4F, 0, 0);
+void StencilShadowAlloc( )
+{
+	static char* pMemory = nullptr;
+	if ( pMemory == nullptr )
+	{
+		pMemory = static_cast<char*>( orgNewAlloc( 3 * 0x6000 ) );
+		pStencilShadowsPad[0] = pMemory;
+		pStencilShadowsPad[1] = pMemory+0x6000;
+		pStencilShadowsPad[2] = pMemory+(2*0x6000);
+	}
+}
+
+
 #include <xnamath.h>
 
 static void*					pNVCShader = nullptr;
@@ -2918,6 +2932,13 @@ void Patch_SA_10()
 	orgEscalatorsUpdate = (void(*)())(*(int*)(pUpdateEscalators+1) + pUpdateEscalators + 5);
 	InjectHook(0x7185B5, UpdateEscalators);
 	InjectHook(0x71791F, &CEscalator::SwitchOffNoRemove);
+
+
+	// Don't allocate constant memory for stencil shadows every frame
+	InjectHook(0x711DD5, StencilShadowAlloc, PATCH_CALL);
+	Nop(0x711E0D, 3);
+	Patch<WORD>(0x711DDA, 0x2CEB);
+	Patch<DWORD>(0x711E5F, 0x90C35D5F);	// pop edi, pop ebp, ret
 		
 
 
