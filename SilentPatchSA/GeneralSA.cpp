@@ -109,3 +109,21 @@ RwCamera* CShadowCamera::Update(CEntity* pEntity)
 	}
 	return m_pCamera;
 }
+
+std::vector<CEntity*>	CEscalator::ms_entitiesToRemove;
+void CEscalator::SwitchOffNoRemove()
+{
+	if ( !m_bExists )
+		return;
+
+	for ( int i = 0, j = field_7C + field_80 + field_84; i < j; ++i )
+	{
+		if ( m_pSteps[i] != nullptr )
+		{
+			ms_entitiesToRemove.push_back( m_pSteps[i] );
+			m_pSteps[i] = nullptr;
+		}
+	}
+
+	m_bExists = false;
+}

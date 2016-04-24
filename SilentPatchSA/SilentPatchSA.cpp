@@ -199,6 +199,8 @@ static void				(*ShutdownRenderWare)();
 static void				(*DoSunAndMoon)();
 static void				(*sub_5DA6A0)(void*, void*, void*, void*);
 
+auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0);
+
 
 // SA variables
 void**					rwengine = *AddressByVersion<void***>(0x58FFC0, 0x53F032, 0x48C194, 0x48B167, 0x48B167);
@@ -843,6 +845,23 @@ void* CollisionData_NewAndInit( size_t size )
 
 	return mem;
 }
+
+
+static void (*orgEscalatorsUpdate)();
+void UpdateEscalators()
+{
+	if ( !CEscalator::ms_entitiesToRemove.empty() )
+	{
+		for ( auto it : CEscalator::ms_entitiesToRemove )
+		{
+			WorldRemove( it );
+			delete it;
+		}
+		CEscalator::ms_entitiesToRemove.clear();
+	}
+	orgEscalatorsUpdate();
+}
+
 
 #include <xnamath.h>
 
@@ -2529,6 +2548,7 @@ BOOL InjectDelayedPatches_Steam()
 
 static char		aNoDesktopMode[64];
 
+
 void Patch_SA_10()
 {
 	using namespace MemoryVP;
@@ -2891,6 +2911,14 @@ void Patch_SA_10()
 	orgGetNumVideoModes = (RwInt32(*)())(*(int*)(pGetNumVideoModes+1) + pGetNumVideoModes + 5);
 	InjectHook(0x745B1E, GetNumVideoModes_Store);
 	InjectHook(0x745A81, GetNumVideoModes_Retrieve);
+
+
+	// Fixed escalators crash
+	int			pUpdateEscalators = 0x7185B5;
+	orgEscalatorsUpdate = (void(*)())(*(int*)(pUpdateEscalators+1) + pUpdateEscalators + 5);
+	InjectHook(0x7185B5, UpdateEscalators);
+	InjectHook(0x71791F, &CEscalator::SwitchOffNoRemove);
+		
 
 
 	// Fixed police scanner names

@@ -556,10 +556,42 @@ public:
 	RwCamera*		Update(CEntity* pEntity);
 };
 
+#include <vector>
+
+class CEscalator
+{
+private:
+	CVector		field_0;
+	CVector		field_C;
+	CVector		field_18;
+	CVector		field_24;
+	CMatrix		m_matrix;
+	bool		field_78;
+	bool		m_bExists;
+	bool		field_7A;
+	int			field_7C;
+	int			field_80;
+	int			field_84;
+	char		gap_88[8];
+	CVector		field_90;
+	float		field_9C;
+	float		field_A0;
+	CEntity*	m_pMainEntity;
+	CEntity*	m_pSteps[42];
+
+public:
+	static std::vector<CEntity*>	ms_entitiesToRemove;
+
+public:
+	void		SwitchOffNoRemove();
+};
+
+
 RpAtomic* ShadowCameraRenderCB(RpAtomic* pAtomic, void* pData);
 
 static_assert(sizeof(CEntity) == 0x38, "Wrong size: CEntity");
 static_assert(sizeof(CPhysical) == 0x138, "Wrong size: CPhysical");
 static_assert(sizeof(CObject) == 0x17C, "Wrong size: CObject");
+static_assert(sizeof(CEscalator) == 0x150, "Wrong size: CEscalator");
 
 #endif
