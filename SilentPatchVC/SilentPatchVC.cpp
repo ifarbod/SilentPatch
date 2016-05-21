@@ -284,6 +284,17 @@ void Patch_VC_10(const RECT& desktop)
 	// Scan for A/B drives looking for audio files
 	Patch<DWORD>(0x5D7941, 'A');
 	Patch<DWORD>(0x5D7B04, 'A');
+
+
+	// ~x~ as cyan blip
+	// Shared with GInput
+	Patch<BYTE>(0x550481, 0);
+	Patch<BYTE>(0x550488, 255);
+	Patch<BYTE>(0x55048F, 255);
+
+	Patch<BYTE>(0x5505FF, 0);
+	Patch<BYTE>(0x550603, 255);
+	Patch<BYTE>(0x550607, 255);
 }
 
 void Patch_VC_11(const RECT& desktop)
@@ -395,6 +406,17 @@ void Patch_VC_11(const RECT& desktop)
 	// Scan for A/B drives looking for audio files
 	Patch<DWORD>(0x5D7961, 'A');
 	Patch<DWORD>(0x5D7B24, 'A');
+
+
+	// ~x~ as cyan blip
+	// Shared with GInput
+	Patch<BYTE>(0x5504A1, 0);
+	Patch<BYTE>(0x5504A8, 255);
+	Patch<BYTE>(0x5504AF, 255);
+
+	Patch<BYTE>(0x55061F, 0);
+	Patch<BYTE>(0x550623, 255);
+	Patch<BYTE>(0x550627, 255);
 }
 
 void Patch_VC_Steam(const RECT& desktop)
@@ -505,6 +527,17 @@ void Patch_VC_Steam(const RECT& desktop)
 
 	// Scan for A/B drives looking for audio files
 	Patch<DWORD>(0x5D7764, 'A');
+
+
+	// ~x~ as cyan blip
+	// Shared with GInput
+	Patch<BYTE>(0x550371, 0);
+	Patch<BYTE>(0x550378, 255);
+	Patch<BYTE>(0x55037F, 255);
+
+	Patch<BYTE>(0x5504EF, 0);
+	Patch<BYTE>(0x5504F3, 255);
+	Patch<BYTE>(0x5504F7, 255);
 }
 
 void Patch_VC_JP()
