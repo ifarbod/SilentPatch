@@ -199,7 +199,7 @@ static void				(*ShutdownRenderWare)();
 static void				(*DoSunAndMoon)();
 static void				(*sub_5DA6A0)(void*, void*, void*, void*);
 
-auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370);
+auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370, 0x57C480, 0);
 
 
 // SA variables
@@ -863,7 +863,7 @@ void UpdateEscalators()
 }
 
 
-static char** pStencilShadowsPad = *AddressByVersion<char***>(0x70FC4F, 0, 0x75E286);
+static char** pStencilShadowsPad = *AddressByVersion<char***>(0x70FC4F, 0, 0x75E286, 0x758A47, 0);
 void StencilShadowAlloc( )
 {
 	static char* pMemory = nullptr;
@@ -3887,6 +3887,35 @@ void Patch_SA_NewSteam_r2()
 	orgNewAlloc = (void*(*)(size_t))(*(int*)(pNewAlloc+1) + pNewAlloc + 5);
 	InjectHook(0x41A4CC, CollisionData_NewAndInit);
 	InjectHook(0x41A5A9, CollisionData_NewAndInit);
+
+
+	// Crash when entering advanced display options on a dual monitor machine after:
+	// - starting game on primary monitor in maximum resolution, exiting,
+	// starting again in maximum resolution on secondary monitor.
+	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
+	// Not in 1.01
+	int			pGetNumVideoModes = DynBaseAddress(0x779B71);
+	orgGetNumVideoModes = (RwInt32(*)())(*(int*)(pGetNumVideoModes+1) + pGetNumVideoModes + 5);
+	InjectHook(0x779B71, GetNumVideoModes_Store);
+	InjectHook(0x779AD1, GetNumVideoModes_Retrieve);
+
+
+	// Fixed escalators crash
+	orgEscalatorsUpdate = (void(*)())DynBaseAddress(0x735B90);
+	InjectHook(0x735BC5, UpdateEscalators, PATCH_JUMP);
+
+	Patch<WORD>(0x734BAE, 0x4E8D);
+	Patch<BYTE>(0x734BB0, 0x84);
+	InjectHook(0x734BB1, &CEscalator::SwitchOffNoRemove, PATCH_CALL);
+	Patch<WORD>(0x734BB6, 0x52EB);
+
+
+	// Don't allocate constant memory for stencil shadows every frame
+	InjectHook(0x75ADA9, StencilShadowAlloc, PATCH_CALL);
+	Nop(0x75ADE1, 3);
+	Patch<WORD>(0x75ADAE, 0x2CEB);
+	Patch<DWORD>(0x75AE35, 0x5D5B5E5F);	// pop edi, pop esi, pop ebx, pop ebp, retn
+	Patch<BYTE>(0x75AE39, 0xC3);
 
 
 	// Proper aspect ratios
