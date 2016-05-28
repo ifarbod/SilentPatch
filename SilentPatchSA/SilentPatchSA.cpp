@@ -199,7 +199,7 @@ static void				(*ShutdownRenderWare)();
 static void				(*DoSunAndMoon)();
 static void				(*sub_5DA6A0)(void*, void*, void*, void*);
 
-auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0);
+auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370);
 
 
 // SA variables
@@ -863,7 +863,7 @@ void UpdateEscalators()
 }
 
 
-static char** pStencilShadowsPad = *AddressByVersion<char***>(0x70FC4F, 0, 0);
+static char** pStencilShadowsPad = *AddressByVersion<char***>(0x70FC4F, 0, 0x75E286);
 void StencilShadowAlloc( )
 {
 	static char* pMemory = nullptr;
@@ -2942,6 +2942,7 @@ void Patch_SA_10()
 	// - starting game on primary monitor in maximum resolution, exiting,
 	// starting again in maximum resolution on secondary monitor.
 	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
+	// Not in 1.01
 	int			pGetNumVideoModes = 0x745B1E;
 	orgGetNumVideoModes = (RwInt32(*)())(*(int*)(pGetNumVideoModes+1) + pGetNumVideoModes + 5);
 	InjectHook(0x745B1E, GetNumVideoModes_Store);
@@ -3290,6 +3291,18 @@ void Patch_SA_11()
 	// Fixed car collisions - car you're hitting gets proper damage now
 	InjectHook(0x542D8A, FixedCarDamage, PATCH_CALL);
 
+
+	// Car explosion crash with multimonitor
+	// Unitialized collision data breaking stencil shadows
+	// FUCK THIS IN 1.01
+
+	// Fixed escalators crash
+	// FUCK THIS IN 1.01
+
+
+	// Don't allocate constant memory for stencil shadows every frame
+	// FUCK THIS IN 1.01
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E7714;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -3592,6 +3605,44 @@ void Patch_SA_Steam()
 	// Fixed car collisions - car you're hitting gets proper damage now
 	Nop(0x555AB8, 2);
 	InjectHook(0x555AC0, FixedCarDamage_Steam, PATCH_CALL);
+
+
+	// Car explosion crash with multimonitor
+	// Unitialized collision data breaking stencil shadows
+	int			pMemMgrMalloc = 0x41A216;
+	orgMemMgrMalloc = (void*(*)(RwUInt32,RwUInt32))(*(int*)(pMemMgrMalloc+1) + pMemMgrMalloc + 5);
+	InjectHook(0x41A216, CollisionData_MallocAndInit);
+
+	int			pNewAlloc = 0x41A07C;
+	orgNewAlloc = (void*(*)(size_t))(*(int*)(pNewAlloc+1) + pNewAlloc + 5);
+	InjectHook(0x41A07C, CollisionData_NewAndInit);
+	InjectHook(0x41A159, CollisionData_NewAndInit);
+
+
+	// Crash when entering advanced display options on a dual monitor machine after:
+	// - starting game on primary monitor in maximum resolution, exiting,
+	// starting again in maximum resolution on secondary monitor.
+	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
+	// Not in 1.01
+	int			pGetNumVideoModes = 0x77F99E;
+	orgGetNumVideoModes = (RwInt32(*)())(*(int*)(pGetNumVideoModes+1) + pGetNumVideoModes + 5);
+	InjectHook(0x77F99E, GetNumVideoModes_Store);
+	InjectHook(0x77F901, GetNumVideoModes_Retrieve);
+
+
+	// Fixed escalators crash
+	int			pUpdateEscalators = 0x739975;
+	orgEscalatorsUpdate = (void(*)())(*(int*)(pUpdateEscalators+1) + pUpdateEscalators + 5);
+	InjectHook(0x739975, UpdateEscalators);
+	InjectHook(0x738BBD, &CEscalator::SwitchOffNoRemove);
+
+
+	// Don't allocate constant memory for stencil shadows every frame
+	InjectHook(0x760795, StencilShadowAlloc, PATCH_CALL);
+	Nop(0x7607CD, 3);
+	Patch<WORD>(0x76079A, 0x2CEB);
+	Patch<DWORD>(0x76082C, 0x90C35D5F);	// pop edi, pop ebp, ret
+
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
@@ -4005,7 +4056,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		hDLLModule = hinstDLL;
 
 		if (*(DWORD*)DynBaseAddress(0x82457C) == 0x94BF || *(DWORD*)DynBaseAddress(0x8245BC) == 0x94BF) Patch_SA_10();
-		else if (*(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF || *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF) Patch_SA_11();
+		else if (*(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF || *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF) Patch_SA_11(), MessageBox( nullptr, "You're using a 1.01 executable which is no longer supported by SilentPatch!\n\nI have no idea if anyone was still using it, so if you do - shoot me an e-mail!", "SilentPatch", MB_OK | MB_ICONWARNING );
 		else if (*(DWORD*)DynBaseAddress(0x85EC4A) == 0x94BF) Patch_SA_Steam();
 
 		else if ( *(DWORD*)DynBaseAddress(0x858D21) == 0x3539F633) Patch_SA_NewSteam_r1();
