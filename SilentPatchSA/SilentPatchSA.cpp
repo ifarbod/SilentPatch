@@ -2907,14 +2907,35 @@ void Patch_SA_10()
 
 	// Car explosion crash with multimonitor
 	// Unitialized collision data breaking stencil shadows
-	int			pMemMgrMalloc = 0x40F8D3;
-	orgMemMgrMalloc = (void*(*)(RwUInt32,RwUInt32))(*(int*)(pMemMgrMalloc+1) + pMemMgrMalloc + 5);
-	InjectHook(0x40F8D3, CollisionData_MallocAndInit);
+	{
+		int			pHoodlumCompat;
+		if ( *(BYTE*)0x40F870 == 0xE9 )
+			pHoodlumCompat = 0x40F875 +  *(int*)0x40F871;
+		else
+			pHoodlumCompat = 0x40F870;
 
-	int			pNewAlloc = 0x40F74C;
-	orgNewAlloc = (void*(*)(size_t))(*(int*)(pNewAlloc+1) + pNewAlloc + 5);
-	InjectHook(0x40F74C, CollisionData_NewAndInit);
-	InjectHook(0x40F81D, CollisionData_NewAndInit);
+		int			pMemMgrMalloc = pHoodlumCompat + 0x63;
+		orgMemMgrMalloc = (void*(*)(RwUInt32,RwUInt32))(*(int*)(pMemMgrMalloc+1) + pMemMgrMalloc + 5);
+		InjectHook(pMemMgrMalloc, CollisionData_MallocAndInit);
+	}
+	{
+		int			pHoodlumCompat, pHoodlumCompat2;
+		if ( *(BYTE*)0x40F740 == 0xE9 )
+		{
+			pHoodlumCompat = 0x40F745 +  *(int*)0x40F741;
+			pHoodlumCompat2 = 0x40F815 + *(int*)0x40F811;
+		}
+		else
+		{
+			pHoodlumCompat = 0x40F740;
+			pHoodlumCompat2 = 0x40F810;
+		}
+
+		int			pNewAlloc = pHoodlumCompat + 0xC;
+		orgNewAlloc = (void*(*)(size_t))(*(int*)(pNewAlloc+1) + pNewAlloc + 5);
+		InjectHook(pHoodlumCompat + 0xC, CollisionData_NewAndInit);
+		InjectHook(pHoodlumCompat2 + 0xD, CollisionData_NewAndInit);
+	}
 
 
 	// Crash when entering advanced display options on a dual monitor machine after:
