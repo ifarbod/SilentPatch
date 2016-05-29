@@ -173,6 +173,17 @@ void NewFrameRender(int nEvent, void* pParam)
 	RsEventHandler(nEvent, pParam);
 }
 
+
+static signed int& LastTimeFireTruckCreated = **AddressByVersion<int**>(0x429435, 0x429435, 0x429405);
+static signed int& LastTimeAmbulanceCreated = **AddressByVersion<int**>(0x429449, 0x429449, 0x429419);
+static void (*orgCarCtrlReInit)();
+void CarCtrlReInit_SilentPatch()
+{
+	orgCarCtrlReInit();
+	LastTimeFireTruckCreated = 0;
+	LastTimeAmbulanceCreated = 0;
+}
+
 static char		aNoDesktopMode[64];
 
 void Patch_VC_10(const RECT& desktop)
@@ -299,6 +310,12 @@ void Patch_VC_10(const RECT& desktop)
 	
 	// Corrected crime codes
 	Patch<DWORD>(0x5FDDDB, 0xC5);
+
+
+	// Reinit CCarCtrl fields (firetruck and ambulance generation)
+	int			pCarCtrlReInit = 0x4A489B;
+	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
+	InjectHook(0x4A489B, CarCtrlReInit_SilentPatch);
 
 
 	// Adblocker
@@ -435,6 +452,12 @@ void Patch_VC_11(const RECT& desktop)
 
 	// Corrected crime codes
 	Patch<DWORD>(0x5FDDFB, 0xC5);
+
+
+	// Reinit CCarCtrl fields (firetruck and ambulance generation)
+	int			pCarCtrlReInit = 0x4A48BB;
+	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
+	InjectHook(0x4A48BB, CarCtrlReInit_SilentPatch);
 }
 
 void Patch_VC_Steam(const RECT& desktop)
@@ -560,6 +583,12 @@ void Patch_VC_Steam(const RECT& desktop)
 
 	// Corrected crime codes
 	Patch<DWORD>(0x5FDA3B, 0xC5);
+
+
+	// Reinit CCarCtrl fields (firetruck and ambulance generation)
+	int			pCarCtrlReInit = 0x4A475B;
+	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
+	InjectHook(0x4A475B, CarCtrlReInit_SilentPatch);
 }
 
 void Patch_VC_JP()

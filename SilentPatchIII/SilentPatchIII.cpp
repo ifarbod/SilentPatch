@@ -264,6 +264,16 @@ void NewFrameRender(int nEvent, void* pParam)
 	RsEventHandler(nEvent, pParam);
 }
 
+static signed int& LastTimeFireTruckCreated = **(int**)0x41D2E5;
+static signed int& LastTimeAmbulanceCreated = **(int**)0x41D2F9;
+static void (*orgCarCtrlReInit)();
+void CarCtrlReInit_SilentPatch()
+{
+	orgCarCtrlReInit();
+	LastTimeFireTruckCreated = 0;
+	LastTimeAmbulanceCreated = 0;
+}
+
 static char		aNoDesktopMode[64];
 
 void Patch_III_10(const RECT& desktop)
@@ -408,6 +418,12 @@ void Patch_III_10(const RECT& desktop)
 	InjectHook(0x580BB0, GetMyDocumentsPath, PATCH_JUMP);
 
 
+	// Reinit CCarCtrl fields (firetruck and ambulance generation)
+	int			pCarCtrlReInit = 0x48C4FB;
+	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
+	InjectHook(0x48C4FB, CarCtrlReInit_SilentPatch);
+
+
 	// Adblocker
 #if DISABLE_FLA_DONATION_WINDOW
 	if ( *(DWORD*)0x582749 != 0x006A026A )
@@ -547,6 +563,12 @@ void Patch_III_11(const RECT& desktop)
 
 	// SHGetFolderPath on User Files
 	InjectHook(0x580F00, GetMyDocumentsPath, PATCH_JUMP);
+
+
+	// Reinit CCarCtrl fields (firetruck and ambulance generation)
+	int			pCarCtrlReInit = 0x48C5FB;
+	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
+	InjectHook(0x48C5FB, CarCtrlReInit_SilentPatch);
 }
 
 void Patch_III_Steam(const RECT& desktop)
@@ -674,6 +696,12 @@ void Patch_III_Steam(const RECT& desktop)
 
 	// SHGetFolderPath on User Files
 	InjectHook(0x580E00, GetMyDocumentsPath, PATCH_JUMP);
+
+
+	// Reinit CCarCtrl fields (firetruck and ambulance generation)
+	int			pCarCtrlReInit = 0x48C58B;
+	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
+	InjectHook(0x48C58B, CarCtrlReInit_SilentPatch);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
