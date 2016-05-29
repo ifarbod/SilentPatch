@@ -296,6 +296,10 @@ void Patch_VC_10(const RECT& desktop)
 	Patch<BYTE>(0x550603, 255);
 	Patch<BYTE>(0x550607, 255);
 
+	
+	// Corrected crime codes
+	Patch<DWORD>(0x5FDDDB, 0xC5);
+
 
 	// Adblocker
 #if DISABLE_FLA_DONATION_WINDOW
@@ -427,6 +431,10 @@ void Patch_VC_11(const RECT& desktop)
 	Patch<BYTE>(0x55061F, 0);
 	Patch<BYTE>(0x550623, 255);
 	Patch<BYTE>(0x550627, 255);
+
+
+	// Corrected crime codes
+	Patch<DWORD>(0x5FDDFB, 0xC5);
 }
 
 void Patch_VC_Steam(const RECT& desktop)
@@ -548,6 +556,10 @@ void Patch_VC_Steam(const RECT& desktop)
 	Patch<BYTE>(0x5504EF, 0);
 	Patch<BYTE>(0x5504F3, 255);
 	Patch<BYTE>(0x5504F7, 255);
+
+
+	// Corrected crime codes
+	Patch<DWORD>(0x5FDA3B, 0xC5);
 }
 
 void Patch_VC_JP()
