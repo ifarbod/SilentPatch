@@ -199,7 +199,7 @@ static void				(*ShutdownRenderWare)();
 static void				(*DoSunAndMoon)();
 static void				(*sub_5DA6A0)(void*, void*, void*, void*);
 
-auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370, 0x57C480, 0);
+auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370, 0x57C480, 0x57C3B0);
 
 
 // SA variables
@@ -863,7 +863,7 @@ void UpdateEscalators()
 }
 
 
-static char** pStencilShadowsPad = *AddressByVersion<char***>(0x70FC4F, 0, 0x75E286, 0x758A47, 0);
+static char** pStencilShadowsPad = *AddressByVersion<char***>(0x70FC4F, 0, 0x75E286, 0x758A47, 0x758937);
 void StencilShadowAlloc( )
 {
 	static char* pMemory = nullptr;
@@ -4066,6 +4066,35 @@ void Patch_SA_NewSteam_r2_lv()
 	orgNewAlloc = (void*(*)(size_t))(*(int*)(pNewAlloc+1) + pNewAlloc + 5);
 	InjectHook(0x41A4CC, CollisionData_NewAndInit);
 	InjectHook(0x41A5A9, CollisionData_NewAndInit);
+
+
+	// Crash when entering advanced display options on a dual monitor machine after:
+	// - starting game on primary monitor in maximum resolution, exiting,
+	// starting again in maximum resolution on secondary monitor.
+	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
+	// Not in 1.01
+	int			pGetNumVideoModes = DynBaseAddress(0x779A61);
+	orgGetNumVideoModes = (RwInt32(*)())(*(int*)(pGetNumVideoModes+1) + pGetNumVideoModes + 5);
+	InjectHook(0x779A61, GetNumVideoModes_Store);
+	InjectHook(0x7799C1, GetNumVideoModes_Retrieve);
+
+
+	// Fixed escalators crash
+	orgEscalatorsUpdate = (void(*)())DynBaseAddress(0x735A90);
+	InjectHook(0x735AC5, UpdateEscalators, PATCH_JUMP);
+
+	Patch<WORD>(0x734AAE, 0x4E8D);
+	Patch<BYTE>(0x734AB0, 0x84);
+	InjectHook(0x734AB1, &CEscalator::SwitchOffNoRemove, PATCH_CALL);
+	Patch<WORD>(0x734AB6, 0x52EB);
+
+
+	// Don't allocate constant memory for stencil shadows every frame
+	InjectHook(0x75AC99, StencilShadowAlloc, PATCH_CALL);
+	Nop(0x75ACD1, 3);
+	Patch<WORD>(0x75AC9E, 0x2CEB);
+	Patch<DWORD>(0x75AD25, 0x5D5B5E5F);	// pop edi, pop esi, pop ebx, pop ebp, retn
+	Patch<BYTE>(0x75AD29, 0xC3);
 
 
 	// Proper aspect ratios
