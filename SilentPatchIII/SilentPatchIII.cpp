@@ -424,6 +424,18 @@ void Patch_III_10(const RECT& desktop)
 	InjectHook(0x48C4FB, CarCtrlReInit_SilentPatch);
 
 
+	// Reinit free resprays flag
+	// add esp, 38h
+	// mov CGarages::RespraysAreFree, 0
+	// retn
+	bool* pFreeResprays = *(bool**)0x4224A4;
+	Patch<BYTE>(0x421E06, 0x38);
+	Patch<WORD>(0x421E07, 0x05C6);
+	Patch<const void*>(0x421E09, pFreeResprays);
+	Patch<BYTE>(0x421E0E, 0xC3);
+
+
+
 	// Adblocker
 #if DISABLE_FLA_DONATION_WINDOW
 	if ( *(DWORD*)0x582749 != 0x006A026A )
@@ -569,6 +581,17 @@ void Patch_III_11(const RECT& desktop)
 	int			pCarCtrlReInit = 0x48C5FB;
 	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
 	InjectHook(0x48C5FB, CarCtrlReInit_SilentPatch);
+
+
+	// Reinit free resprays flag
+	// add esp, 38h
+	// mov CGarages::RespraysAreFree, 0
+	// retn
+	bool* pFreeResprays = *(bool**)0x4224A4;
+	Patch<BYTE>(0x421E06, 0x38);
+	Patch<WORD>(0x421E07, 0x05C6);
+	Patch<const void*>(0x421E09, pFreeResprays);
+	Patch<BYTE>(0x421E0E, 0xC3);
 }
 
 void Patch_III_Steam(const RECT& desktop)
@@ -702,6 +725,17 @@ void Patch_III_Steam(const RECT& desktop)
 	int			pCarCtrlReInit = 0x48C58B;
 	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
 	InjectHook(0x48C58B, CarCtrlReInit_SilentPatch);
+
+
+	// Reinit free resprays flag
+	// add esp, 38h
+	// mov CGarages::RespraysAreFree, 0
+	// retn
+	bool* pFreeResprays = *(bool**)0x4224A4;
+	Patch<BYTE>(0x421E06, 0x38);
+	Patch<WORD>(0x421E07, 0x05C6);
+	Patch<const void*>(0x421E09, pFreeResprays);
+	Patch<BYTE>(0x421E0E, 0xC3);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)

@@ -184,6 +184,12 @@ void CarCtrlReInit_SilentPatch()
 	LastTimeAmbulanceCreated = 0;
 }
 
+static bool& RespraysAreFree = **AddressByVersion<bool**>(0x430D17, 0x430D17, 0x430CE7);
+void GaragesInit_SilentPatch()
+{
+	RespraysAreFree = false;
+}
+
 static char		aNoDesktopMode[64];
 
 void Patch_VC_10(const RECT& desktop)
@@ -316,6 +322,10 @@ void Patch_VC_10(const RECT& desktop)
 	int			pCarCtrlReInit = 0x4A489B;
 	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
 	InjectHook(0x4A489B, CarCtrlReInit_SilentPatch);
+
+
+	// Reinit free resprays flag
+	InjectHook(0x4349BB, GaragesInit_SilentPatch, PATCH_JUMP);
 
 
 	// Adblocker
@@ -458,6 +468,10 @@ void Patch_VC_11(const RECT& desktop)
 	int			pCarCtrlReInit = 0x4A48BB;
 	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
 	InjectHook(0x4A48BB, CarCtrlReInit_SilentPatch);
+
+
+	// Reinit free resprays flag
+	InjectHook(0x4349BB, GaragesInit_SilentPatch, PATCH_JUMP);
 }
 
 void Patch_VC_Steam(const RECT& desktop)
@@ -589,6 +603,10 @@ void Patch_VC_Steam(const RECT& desktop)
 	int			pCarCtrlReInit = 0x4A475B;
 	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
 	InjectHook(0x4A475B, CarCtrlReInit_SilentPatch);
+
+
+	// Reinit free resprays flag
+	InjectHook(0x43497B, GaragesInit_SilentPatch, PATCH_JUMP);
 }
 
 void Patch_VC_JP()
