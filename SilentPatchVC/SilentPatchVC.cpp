@@ -295,6 +295,16 @@ void Patch_VC_10(const RECT& desktop)
 	Patch<BYTE>(0x5505FF, 0);
 	Patch<BYTE>(0x550603, 255);
 	Patch<BYTE>(0x550607, 255);
+
+
+	// Adblocker
+#if DISABLE_FLA_DONATION_WINDOW
+	if ( *(DWORD*)0x5FFAE9 != 0x006A026A )
+	{
+		Patch<DWORD>(0x5FFAE9, 0x006A026A);
+		Patch<WORD>(0x5FFAED, 0x006A);
+	}
+#endif
 }
 
 void Patch_VC_11(const RECT& desktop)

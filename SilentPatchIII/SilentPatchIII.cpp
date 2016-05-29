@@ -406,6 +406,16 @@ void Patch_III_10(const RECT& desktop)
 
 	// SHGetFolderPath on User Files
 	InjectHook(0x580BB0, GetMyDocumentsPath, PATCH_JUMP);
+
+
+	// Adblocker
+#if DISABLE_FLA_DONATION_WINDOW
+	if ( *(DWORD*)0x582749 != 0x006A026A )
+	{
+		Patch<DWORD>(0x582749, 0x006A026A);
+		Patch<WORD>(0x58274D, 0x006A);
+	}
+#endif
 }
 
 void Patch_III_11(const RECT& desktop)

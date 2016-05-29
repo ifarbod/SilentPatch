@@ -20,6 +20,8 @@
 
 #include "MemoryMgr.h"
 
+#define DISABLE_FLA_DONATION_WINDOW		1
+
 
 template<typename T>
 inline T random(T a, T b)
