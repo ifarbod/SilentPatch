@@ -234,6 +234,44 @@ void __declspec(naked) III_SensResetFix()
 	}
 }
 
+static void* RadarBoundsCheckCoordBlip_JumpBack = AddressByVersion<void*>(0x4A55B8, 0x4A56A8, 0x4A5638);
+static void* RadarBoundsCheckCoordBlip_Count = AddressByVersion<void*>(0x4A55AF, 0x4A569F, 0x4A562F);
+void __declspec(naked) RadarBoundsCheckCoordBlip()
+{
+	_asm
+	{
+		mov		edx, dword ptr [RadarBoundsCheckCoordBlip_Count]
+		cmp		cl, byte ptr [edx]
+		jnb		OutOfBounds
+		mov     edx, ecx
+		mov     eax, [esp+4]
+		jmp		RadarBoundsCheckCoordBlip_JumpBack
+
+OutOfBounds:
+		or		eax, -1
+		fcompp
+		retn
+	}
+}
+
+static void* RadarBoundsCheckEntityBlip_JumpBack = AddressByVersion<void*>(0x4A565E, 0x4A574E, 0x4A56DE);
+void __declspec(naked) RadarBoundsCheckEntityBlip()
+{
+	_asm
+	{
+		mov		edx, dword ptr [RadarBoundsCheckCoordBlip_Count]
+		cmp		cl, byte ptr [edx]
+		jnb		OutOfBounds
+		mov     edx, ecx
+		mov     eax, [esp+4]
+		jmp		RadarBoundsCheckEntityBlip_JumpBack
+
+		OutOfBounds:
+		or		eax, -1
+		retn
+	}
+}
+
 char** const ppUserFilesDir = AddressByVersion<char**>(0x580C16, 0x580F66, 0x580E66);
 
 char* GetMyDocumentsPath()
@@ -435,6 +473,11 @@ void Patch_III_10(const RECT& desktop)
 	Patch<BYTE>(0x421E0E, 0xC3);
 
 
+	// Radar blips bounds check
+	InjectHook(0x4A55B2, RadarBoundsCheckCoordBlip, PATCH_JUMP);
+	InjectHook(0x4A5658, RadarBoundsCheckEntityBlip, PATCH_JUMP);
+
+
 
 	// Adblocker
 #if DISABLE_FLA_DONATION_WINDOW
@@ -592,6 +635,11 @@ void Patch_III_11(const RECT& desktop)
 	Patch<WORD>(0x421E07, 0x05C6);
 	Patch<const void*>(0x421E09, pFreeResprays);
 	Patch<BYTE>(0x421E0E, 0xC3);
+
+
+	// Radar blips bounds check
+	InjectHook(0x4A56A2, RadarBoundsCheckCoordBlip, PATCH_JUMP);
+	InjectHook(0x4A5748, RadarBoundsCheckEntityBlip, PATCH_JUMP);
 }
 
 void Patch_III_Steam(const RECT& desktop)
@@ -736,6 +784,11 @@ void Patch_III_Steam(const RECT& desktop)
 	Patch<WORD>(0x421E07, 0x05C6);
 	Patch<const void*>(0x421E09, pFreeResprays);
 	Patch<BYTE>(0x421E0E, 0xC3);
+
+
+	// Radar blips bounds check
+	InjectHook(0x4A5632, RadarBoundsCheckCoordBlip, PATCH_JUMP);
+	InjectHook(0x4A56D8, RadarBoundsCheckEntityBlip, PATCH_JUMP);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
