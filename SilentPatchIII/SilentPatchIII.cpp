@@ -478,6 +478,13 @@ void Patch_III_10(const RECT& desktop)
 	InjectHook(0x4A5658, RadarBoundsCheckEntityBlip, PATCH_JUMP);
 
 
+	// No-CD fix (from CLEO)
+	Patch<DWORD>(0x566A15, 0);
+	Nop(0x566A56, 6);
+	Nop(0x581C44, 2);
+	Nop(0x581C52, 6);
+	Patch<const char*>(0x566A3D, "");
+
 
 	// Adblocker
 #if DISABLE_FLA_DONATION_WINDOW
@@ -640,6 +647,14 @@ void Patch_III_11(const RECT& desktop)
 	// Radar blips bounds check
 	InjectHook(0x4A56A2, RadarBoundsCheckCoordBlip, PATCH_JUMP);
 	InjectHook(0x4A5748, RadarBoundsCheckEntityBlip, PATCH_JUMP);
+
+
+	// No-CD fix (from CLEO)
+	Patch<DWORD>(0x566B55, 0);
+	Nop(0x566B96, 6);
+	Nop(0x581F84, 2);
+	Nop(0x581F92, 6);
+	Patch<const char*>(0x566B7D, "");
 }
 
 void Patch_III_Steam(const RECT& desktop)
