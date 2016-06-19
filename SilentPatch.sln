@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+# Visual Studio 2015
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DDraw", "DDraw\DDraw.vcxproj", "{B695EC1B-7258-426A-81CF-9323C016ACFB}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SilentPatchIII", "SilentPatchIII\SilentPatchIII.vcxproj", "{652975D8-60B0-48E4-A973-4F10BA54FFCB}"
