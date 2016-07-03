@@ -898,7 +898,7 @@ bool ShaderAttach()
 
 		FreeResource(shader);
 
-		bXMSupported = XMVerifyCPUSupport();
+		bXMSupported = XMVerifyCPUSupport() != FALSE;
 		return true;
 	}
 	return false;
