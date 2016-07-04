@@ -20,7 +20,7 @@
 
 #include "MemoryMgr.h"
 
-#define DISABLE_FLA_DONATION_WINDOW		1
+#define DISABLE_FLA_DONATION_WINDOW		0
 
 
 template<typename T>
