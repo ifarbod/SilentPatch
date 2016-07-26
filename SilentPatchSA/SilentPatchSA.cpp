@@ -1942,12 +1942,18 @@ BOOL InjectDelayedPatches_10()
 
 		ReadRotorFixExceptions(wcModulePath);
 
-		// PS2 sun - more
-		if ( !bSAMP )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", FALSE, wcModulePath) != FALSE )
 		{
-			DoSunAndMoon = (void(*)())(*(int*)0x53C137 + 0x53C136 + 5);
-			InjectHook(0x53C136, SunAndMoonFarClip);
-			Patch<const void*>(0x6FC5AA, &fSunFarClip);
+			// PS2 sun - more
+			static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
+			Patch<const void*>(0x6FC5B0, &fSunMult);
+
+			if ( !bSAMP )
+			{
+				DoSunAndMoon = (void(*)())(*(int*)0x53C137 + 0x53C136 + 5);
+				InjectHook(0x53C136, SunAndMoonFarClip);
+				Patch<const void*>(0x6FC5AA, &fSunFarClip);
+			}
 		}
 		
 		if ( !bSARender )
@@ -2162,13 +2168,19 @@ BOOL InjectDelayedPatches_11()
 
 		ReadRotorFixExceptions(wcModulePath);
 
-		// PS2 sun - more
-		if ( !bSAMP )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", FALSE, wcModulePath) != FALSE )
 		{
-			DoSunAndMoon = (void(*)())(*(int*)0x53C5D7 + 0x53C5D6 + 5);
-			InjectHook(0x53C5D6, SunAndMoonFarClip);
+			// PS2 sun - more
+			static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
+			Patch<const void*>(0x6FCDE0, &fSunMult);
 
-			Patch<const void*>(0x6FCDDA, &fSunFarClip);
+			if ( !bSAMP )
+			{
+				DoSunAndMoon = (void(*)())(*(int*)0x53C5D7 + 0x53C5D6 + 5);
+				InjectHook(0x53C5D6, SunAndMoonFarClip);
+
+				Patch<const void*>(0x6FCDDA, &fSunFarClip);
+			}
 		}
 
 		if ( !bSARender )
@@ -2379,13 +2391,19 @@ BOOL InjectDelayedPatches_Steam()
 
 		ReadRotorFixExceptions(wcModulePath);
 
-		// PS2 sun - more
-		if ( !bSAMP )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", FALSE, wcModulePath) != FALSE )
 		{
-			DoSunAndMoon = (void(*)())(*(int*)0x54E0B7 + 0x54E0B6 + 5);
-			InjectHook(0x54E0B6, SunAndMoonFarClip);
+			// PS2 sun - more
+			static const double		dSunMult = (1050.0 * 0.95) / 1500.0;
+			Patch<const void*>(0x734DF0, &dSunMult);
 
-			Patch<const void*>(0x734DEA, &fSunFarClip);
+			if ( !bSAMP )
+			{
+				DoSunAndMoon = (void(*)())(*(int*)0x54E0B7 + 0x54E0B6 + 5);
+				InjectHook(0x54E0B6, SunAndMoonFarClip);
+
+				Patch<const void*>(0x734DEA, &fSunFarClip);
+			}
 		}
 
 		if ( !bSARender )
@@ -2677,12 +2695,7 @@ void Patch_SA_10()
 	InjectHook(0x6A2EF7, ResetAlphaFuncRefAfterRender, PATCH_JUMP);
 
 	// PS2 SUN!!!!!!!!!!!!!!!!!
-	static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
-
 	Nop(0x6FB17C, 3);
-	Patch<const void*>(0x6FC5B0, &fSunMult);
-	//Patch<WORD>(0x6FB172, 0x0BEB);
-	//Patch<BYTE>(0x6FB1A7, 8);
 
 #if defined EXPAND_ALPHA_ENTITY_LISTS
 	// Bigger alpha entity lists
@@ -3049,10 +3062,7 @@ void Patch_SA_11()
 	InjectHook(0x6A3717, ResetAlphaFuncRefAfterRender, PATCH_JUMP);
 
 	// PS2 SUN!!!!!!!!!!!!!!!!!
-	static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
-
 	Nop(0x6FB9AC, 3);
-	Patch<const void*>(0x6FCDE0, &fSunMult);
 
 	// Unlocked widescreen resolutions
 	Patch<DWORD>(0x74619C, 0x9090127D);
@@ -3398,10 +3408,7 @@ void Patch_SA_Steam()
 	InjectHook(0x6CFF69, ResetAlphaFuncRefAfterRender_Steam, PATCH_JUMP);
 
 	// PS2 SUN!!!!!!!!!!!!!!!!!
-	static const double		dSunMult = (1050.0 * 0.95) / 1500.0;
-
 	Nop(0x73362F, 2);
-	Patch<const void*>(0x734DF0, &dSunMult);
 
 	// Unlocked widescreen resolutions
 	//Patch<WORD>(0x77F9F0, 0x6E7D);
