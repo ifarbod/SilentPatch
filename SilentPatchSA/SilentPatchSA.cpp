@@ -876,6 +876,29 @@ void StencilShadowAlloc( )
 	}
 }
 
+RwBool GTARtAnimInterpolatorSetCurrentAnim(RtAnimInterpolator* animI, RtAnimAnimation* anim)
+{
+	animI->pCurrentAnim = anim;
+	animI->currentTime = 0.0f;
+
+	const RtAnimInterpolatorInfo* info = anim->interpInfo;
+	animI->currentInterpKeyFrameSize = info->interpKeyFrameSize;
+	animI->currentAnimKeyFrameSize = info->animKeyFrameSize;
+	animI->keyFrameApplyCB = info->keyFrameApplyCB;
+	animI->keyFrameBlendCB = info->keyFrameBlendCB;
+	animI->keyFrameInterpolateCB = info->keyFrameInterpolateCB;
+	animI->keyFrameAddCB = info->keyFrameAddCB;
+
+	for ( RwInt32 i = 0; i < animI->numNodes; ++i )
+		RtAnimKeyFrameInterpolateMacro( animI, rtANIMGETINTERPFRAME( animI, i ),
+			(RwChar*)anim->pFrames + i * animI->currentAnimKeyFrameSize,
+			(RwChar*)anim->pFrames + ( i + animI->numNodes) * animI->currentAnimKeyFrameSize, 0.0f );
+
+	animI->pNextFrame = (RwChar*)anim->pFrames + 2 * animI->currentAnimKeyFrameSize * animI->numNodes;
+
+	return TRUE;
+}
+
 
 #include <xnamath.h>
 
@@ -2974,7 +2997,10 @@ void Patch_SA_10()
 	Nop(0x711E0D, 3);
 	Patch<WORD>(0x711DDA, 0x2CEB);
 	Patch<DWORD>(0x711E5F, 0x90C35D5F);	// pop edi, pop ebp, ret
-		
+
+
+	// "Streaming memory bug" fix
+	InjectHook(0x4C51A9, GTARtAnimInterpolatorSetCurrentAnim);
 
 
 	// Fixed police scanner names
