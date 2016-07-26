@@ -3677,6 +3677,10 @@ void Patch_SA_Steam()
 	Patch<DWORD>(0x76082C, 0x90C35D5F);	// pop edi, pop ebp, ret
 
 
+	// "Streaming memory bug" fix
+	InjectHook(0x4CF9E8, GTARtAnimInterpolatorSetCurrentAnim);
+
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -3951,6 +3955,10 @@ void Patch_SA_NewSteam_r2()
 	Patch<BYTE>(0x75AE39, 0xC3);
 
 
+	// "Streaming memory bug" fix
+	InjectHook(0x4CF1FB, GTARtAnimInterpolatorSetCurrentAnim);
+
+
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
 	Patch<const void*>(0x73424B, &f169);
@@ -4128,6 +4136,10 @@ void Patch_SA_NewSteam_r2_lv()
 	Patch<WORD>(0x75AC9E, 0x2CEB);
 	Patch<DWORD>(0x75AD25, 0x5D5B5E5F);	// pop edi, pop esi, pop ebx, pop ebp, retn
 	Patch<BYTE>(0x75AD29, 0xC3);
+
+
+	// "Streaming memory bug" fix
+	InjectHook(0x4CF1DB, GTARtAnimInterpolatorSetCurrentAnim);
 
 
 	// Proper aspect ratios
