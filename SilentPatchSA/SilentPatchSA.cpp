@@ -3002,6 +3002,17 @@ void Patch_SA_10()
 	// "Streaming memory bug" fix
 	InjectHook(0x4C51A9, GTARtAnimInterpolatorSetCurrentAnim);
 
+	
+	// Fixed ammo for melee weapons in cheats
+	Patch<BYTE>(0x43890B+1, 1); // knife
+	Patch<BYTE>(0x4389F8+1, 1); // knife
+	Patch<BYTE>(0x438B9F+1, 1); // chainsaw
+	Patch<BYTE>(0x438C58+1, 1); // chainsaw
+	Patch<BYTE>(0x4395C8+1, 1); // parachute
+
+	Patch<BYTE>(0x439F1F, 0x53); // katana
+	Patch<WORD>(0x439F20, 0x016A);
+
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
@@ -3681,6 +3692,17 @@ void Patch_SA_Steam()
 	InjectHook(0x4CF9E8, GTARtAnimInterpolatorSetCurrentAnim);
 
 
+	// Fixed ammo for melee weapons in cheats
+	Patch<BYTE>(0x43BB8B+1, 1); // knife
+	Patch<BYTE>(0x43BC78+1, 1); // knife
+	Patch<BYTE>(0x43BE1F+1, 1); // chainsaw
+	Patch<BYTE>(0x43BED8+1, 1); // chainsaw
+	Patch<BYTE>(0x43C868+1, 1); // parachute
+
+	Patch<BYTE>(0x43D24C, 0x53); // katana
+	Patch<WORD>(0x43D24D, 0x016A);
+
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -3959,6 +3981,17 @@ void Patch_SA_NewSteam_r2()
 	InjectHook(0x4CF1FB, GTARtAnimInterpolatorSetCurrentAnim);
 
 
+	// Fixed ammo for melee weapons in cheats
+	Patch<BYTE>(0x43AD0B+1, 1); // knife
+	Patch<BYTE>(0x43ADF8+1, 1); // knife
+	Patch<BYTE>(0x43AF9F+1, 1); // chainsaw
+	Patch<BYTE>(0x43B058+1, 1); // chainsaw
+	Patch<BYTE>(0x43B9B8+1, 1); // parachute
+
+	Patch<BYTE>(0x43C492, 0x53); // katana
+	Patch<WORD>(0x43C493, 0x016A);
+
+
 	// Proper aspect ratios
 	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
 	Patch<const void*>(0x73424B, &f169);
@@ -4140,6 +4173,17 @@ void Patch_SA_NewSteam_r2_lv()
 
 	// "Streaming memory bug" fix
 	InjectHook(0x4CF1DB, GTARtAnimInterpolatorSetCurrentAnim);
+
+
+	// Fixed ammo for melee weapons in cheats
+	Patch<BYTE>(0x43AD0B+1, 1); // knife
+	Patch<BYTE>(0x43ADF8+1, 1); // knife
+	Patch<BYTE>(0x43AF9F+1, 1); // chainsaw
+	Patch<BYTE>(0x43B058+1, 1); // chainsaw
+	Patch<BYTE>(0x43B9B8+1, 1); // parachute
+
+	Patch<BYTE>(0x43C492, 0x53); // katana
+	Patch<WORD>(0x43C493, 0x016A);
 
 
 	// Proper aspect ratios
