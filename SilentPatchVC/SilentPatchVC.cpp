@@ -328,6 +328,11 @@ void Patch_VC_10(const RECT& desktop)
 	InjectHook(0x4349BB, GaragesInit_SilentPatch, PATCH_JUMP);
 
 
+	// Fixed ammo for melee weapons in cheats
+	Patch<BYTE>(0x4AED14+1, 1); // katana
+	Patch<BYTE>(0x4AEB74+1, 1); // chainsaw
+
+
 	// Adblocker
 #if DISABLE_FLA_DONATION_WINDOW
 	if ( *(DWORD*)0x5FFAE9 != 0x006A026A )
@@ -472,6 +477,11 @@ void Patch_VC_11(const RECT& desktop)
 
 	// Reinit free resprays flag
 	InjectHook(0x4349BB, GaragesInit_SilentPatch, PATCH_JUMP);
+
+
+	// Fixed ammo for melee weapons in cheats
+	Patch<BYTE>(0x4AED34+1, 1); // katana
+	Patch<BYTE>(0x4AEB94+1, 1); // chainsaw
 }
 
 void Patch_VC_Steam(const RECT& desktop)
@@ -607,6 +617,11 @@ void Patch_VC_Steam(const RECT& desktop)
 
 	// Reinit free resprays flag
 	InjectHook(0x43497B, GaragesInit_SilentPatch, PATCH_JUMP);
+
+
+	// Fixed ammo for melee weapons in cheats
+	Patch<BYTE>(0x4AEA44+1, 1); // katana
+	Patch<BYTE>(0x4AEBE4+1, 1); // chainsaw
 }
 
 void Patch_VC_JP()
