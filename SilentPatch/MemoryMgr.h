@@ -1,6 +1,9 @@
 #ifndef __MEMORYMGR
 #define __MEMORYMGR
 
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
 #define WRAPPER __declspec(naked)
 #define DEPRECATED __declspec(deprecated)
 #define EAXJMP(a) { _asm mov eax, a _asm jmp eax }
