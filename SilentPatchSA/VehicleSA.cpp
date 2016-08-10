@@ -44,33 +44,28 @@ static RpMaterial* SetCompAlphaCB(RpMaterial* pMaterial, void* data)
 
 void ReadRotorFixExceptions(const wchar_t* pPath)
 {
-	if ( FILE* hFile = _wfopen(pPath, L"r") )
+	const size_t SCRATCH_PAD_SIZE = 32767;
+	wchar_t* buf = new wchar_t[ SCRATCH_PAD_SIZE ];
+
+	GetPrivateProfileSectionW( L"RotorFixExceptions", buf, SCRATCH_PAD_SIZE, pPath );
+	for( wchar_t* raw = buf; *raw != '\0'; ++raw )
 	{
-		char	buf[1024];
-		bool	bBeganParsing = false;
-
-		while ( fgets(buf, _countof(buf), hFile) )
+		// Construct a std::wstring with the line
+		wchar_t fileID[128];
+		wchar_t* ptr = fileID;
+		do
 		{
-			if ( bBeganParsing )
-			{
-				if ( buf[0] != ';' )
-				{
-					unsigned int		nToList = atoi(buf);
-
-					if ( nToList != 0 )
-						vecRotorExceptions.insert(nToList);
-				}
-			}
-			else
-			{
-				if ( strstr(buf, "[RotorFixExceptions]") != nullptr )
-					bBeganParsing = true;
-			}
+			*ptr++ = *raw++;
 		}
+		while ( *raw != '\0' && ptr < fileID + (_countof(fileID)-1) );
+		*ptr = '\0';
 
-		fclose(hFile);
+		unsigned int toList = _wtoi( fileID );
+		if ( toList != 0 )
+			vecRotorExceptions.insert( toList );
 	}
 
+	delete[] buf;
 }
 
 void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha)
