@@ -194,7 +194,8 @@ static char		aNoDesktopMode[64];
 
 void Patch_VC_10(const RECT& desktop)
 {
-	using namespace MemoryVP;
+	using namespace Memory;
+	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	AudioResetTimers = (void(__stdcall*)(unsigned int))0x5F98D0;
 	PrintString = (void(*)(float,float,const wchar_t*))0x551040;
@@ -327,7 +328,6 @@ void Patch_VC_10(const RECT& desktop)
 	// Reinit free resprays flag
 	InjectHook(0x4349BB, GaragesInit_SilentPatch, PATCH_JUMP);
 
-
 	// Fixed ammo for melee weapons in cheats
 	Patch<BYTE>(0x4AED14+1, 1); // katana
 	Patch<BYTE>(0x4AEB74+1, 1); // chainsaw
@@ -345,7 +345,8 @@ void Patch_VC_10(const RECT& desktop)
 
 void Patch_VC_11(const RECT& desktop)
 {
-	using namespace MemoryVP;
+	using namespace Memory;
+	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	AudioResetTimers = (void(__stdcall*)(unsigned int))0x5F98F0;
 	PrintString = (void(*)(float,float,const wchar_t*))0x551060;
@@ -486,7 +487,8 @@ void Patch_VC_11(const RECT& desktop)
 
 void Patch_VC_Steam(const RECT& desktop)
 {
-	using namespace MemoryVP;
+	using namespace Memory;
+	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	AudioResetTimers = (void(__stdcall*)(unsigned int))0x5F9530;
 	PrintString = (void(*)(float,float,const wchar_t*))0x550F30;
@@ -626,7 +628,8 @@ void Patch_VC_Steam(const RECT& desktop)
 
 void Patch_VC_JP()
 {
-	using namespace MemoryVP;
+	using namespace Memory;
+	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	// Y axis sensitivity fix
 	// By ThirteenAG

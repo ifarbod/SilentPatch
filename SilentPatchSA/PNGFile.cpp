@@ -27,7 +27,7 @@ RwTexture* CPNGFile::ReadFromMemory(const void* pMemory, unsigned int nLen)
 	static BYTE*	pMem = AddressByVersion<BYTE*>(0x7CF9CA, 0x7D02CA, 0x80998A);
 	RwTexture*		pTexture = nullptr;
 
-	MemoryVP::Patch<BYTE>(pMem, rwSTREAMMEMORY);
+	Memory::VP::Patch<BYTE>(pMem, rwSTREAMMEMORY);
 
 	RwMemory	PNGMemory;
 	PNGMemory.start = const_cast<RwUInt8*>(static_cast<const RwUInt8*>(pMemory));
@@ -48,7 +48,7 @@ RwTexture* CPNGFile::ReadFromMemory(const void* pMemory, unsigned int nLen)
 		RwImageDestroy(pImage);
 	}
 
-	MemoryVP::Patch<BYTE>(pMem, rwSTREAMFILENAME);
+	Memory::VP::Patch<BYTE>(pMem, rwSTREAMFILENAME);
 
 	return pTexture;
 }

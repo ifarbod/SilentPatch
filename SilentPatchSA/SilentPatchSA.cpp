@@ -1946,7 +1946,9 @@ BOOL InjectDelayedPatches_10()
 {
 	if ( !IsAlreadyRunning() )
 	{
-		using namespace MemoryVP;
+		using namespace Memory;
+		ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
+		ScopedUnprotect::Section Protect2( (HINSTANCE)0x400000, ".rdata" );
 
 		// Obtain a path to the ASI
 		wchar_t			wcModulePath[MAX_PATH];
@@ -2172,7 +2174,9 @@ BOOL InjectDelayedPatches_11()
 {
 	if ( !IsAlreadyRunning() )
 	{
-		using namespace MemoryVP;
+		using namespace Memory;
+		ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
+		ScopedUnprotect::Section Protect2( (HINSTANCE)0x400000, ".rdata" );
 
 		// Obtain a path to the ASI
 		wchar_t			wcModulePath[MAX_PATH];
@@ -2395,7 +2399,9 @@ BOOL InjectDelayedPatches_Steam()
 {
 	if ( !IsAlreadyRunning() )
 	{
-		using namespace MemoryVP;
+		using namespace Memory;
+		ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
+		ScopedUnprotect::Section Protect2( (HINSTANCE)0x400000, ".rdata" );
 
 		// Obtain a path to the ASI
 		wchar_t			wcModulePath[MAX_PATH];
@@ -2606,7 +2612,10 @@ static char		aNoDesktopMode[64];
 
 void Patch_SA_10()
 {
-	using namespace MemoryVP;
+	using namespace Memory;
+	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
+	ScopedUnprotect::Section Protect2( (HINSTANCE)0x400000, ".rdata" );
+
 
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
 	int			pIsAlreadyRunning = AddressByRegion_10<int>(0x74872D);
@@ -3022,7 +3031,9 @@ void Patch_SA_10()
 
 void Patch_SA_11()
 {
-	using namespace MemoryVP;
+	using namespace Memory;
+	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
+	ScopedUnprotect::Section Protect2( (HINSTANCE)0x400000, ".rdata" );
 
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
 	int			pIsAlreadyRunning = AddressByRegion_11<int>(0x749000);
@@ -3364,7 +3375,9 @@ void Patch_SA_11()
 
 void Patch_SA_Steam()
 {
-	using namespace MemoryVP;
+	using namespace Memory;
+	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
+	ScopedUnprotect::Section Protect2( (HINSTANCE)0x400000, ".rdata" );
 
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
 	IsAlreadyRunning = (BOOL(*)())(*(int*)(0x7826ED+1) + 0x7826ED + 5);
@@ -3726,7 +3739,9 @@ void Patch_SA_Steam()
 
 void Patch_SA_NewSteam_r1()
 {
-	using namespace MemoryVP::DynBase;
+	using namespace Memory::DynBase;
+	ScopedUnprotect::Section Protect( GetModuleHandle( nullptr ), ".text" );
+	ScopedUnprotect::Section Protect2( GetModuleHandle( nullptr ), ".rdata" );
 
 	// Nazi EXE?
 	if ( *(DWORD*)DynBaseAddress(0x49F810) == 0x64EC8B55 )
@@ -3807,7 +3822,9 @@ void Patch_SA_NewSteam_r1()
 
 void Patch_SA_NewSteam_r2()
 {
-	using namespace MemoryVP::DynBase;
+	using namespace Memory::DynBase;
+	ScopedUnprotect::Section Protect( GetModuleHandle( nullptr ), ".text" );
+	ScopedUnprotect::Section Protect2( GetModuleHandle( nullptr ), ".rdata" );
 
 	// (Hopefully) more precise frame limiter
 	int			pAddress = DynBaseAddress(0x77D55F);
@@ -4001,7 +4018,9 @@ void Patch_SA_NewSteam_r2()
 
 void Patch_SA_NewSteam_r2_lv()
 {
-	using namespace MemoryVP::DynBase;
+	using namespace Memory::DynBase;
+	ScopedUnprotect::Section Protect( GetModuleHandle( nullptr ), ".text" );
+	ScopedUnprotect::Section Protect2( GetModuleHandle( nullptr ), ".rdata" );
 
 	// (Hopefully) more precise frame limiter
 	int			pAddress = DynBaseAddress(0x77D44F);

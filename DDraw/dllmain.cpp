@@ -44,7 +44,7 @@ char* GetMyDocumentsPath()
 
 void InjectHooks()
 {
-	using namespace MemoryVP;
+	using namespace Memory::VP;
 
 	static char		aNoDesktopMode[64];
 
@@ -179,8 +179,6 @@ VOID WINAPI GetStartupInfoA_Hook(LPSTARTUPINFOA lpStartupInfo)
 	static bool		bPatched = false;
 	if ( !bPatched )
 	{
-		using namespace MemoryVP;
-
 		bPatched = true;
 
 		InjectHooks();

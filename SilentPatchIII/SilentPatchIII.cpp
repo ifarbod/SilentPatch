@@ -316,7 +316,8 @@ static char		aNoDesktopMode[64];
 
 void Patch_III_10(const RECT& desktop)
 {
-	using namespace MemoryVP;
+	using namespace Memory;
+	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	DrawRect = (void(*)(const CRect&,const CRGBA&))0x51F970;
 	SetScale = (void(*)(float,float))0x501B80;
@@ -498,7 +499,8 @@ void Patch_III_10(const RECT& desktop)
 
 void Patch_III_11(const RECT& desktop)
 {
-	using namespace MemoryVP;
+	using namespace Memory;
+	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	DrawRect = (void(*)(const CRect&,const CRGBA&))0x51FBA0;
 	SetScale = (void(*)(float,float))0x501C60;
@@ -659,7 +661,8 @@ void Patch_III_11(const RECT& desktop)
 
 void Patch_III_Steam(const RECT& desktop)
 {
-	using namespace MemoryVP;
+	using namespace Memory;
+	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	DrawRect = (void(*)(const CRect&,const CRGBA&))0x51FB30;
 	SetScale = (void(*)(float,float))0x501BF0;
