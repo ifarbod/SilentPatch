@@ -254,9 +254,8 @@ void Patch_VC_10(const RECT& desktop)
 	Patch<DWORD>(0x601740, 0xC3C030);
 
 	// (Hopefully) more precise frame limiter
-	int			pAddress = 0x6004A2;
-	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
-	InjectHook(pAddress, NewFrameRender);
+	ReadCall( 0x6004A2, RsEventHandler );
+	InjectHook(0x6004A2, NewFrameRender);
 	InjectHook(0x600449, GetTimeSinceLastFrame);
 
 	// Default to desktop res
@@ -320,8 +319,7 @@ void Patch_VC_10(const RECT& desktop)
 
 
 	// Reinit CCarCtrl fields (firetruck and ambulance generation)
-	int			pCarCtrlReInit = 0x4A489B;
-	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
+	ReadCall( 0x4A489B, orgCarCtrlReInit );
 	InjectHook(0x4A489B, CarCtrlReInit_SilentPatch);
 
 
@@ -405,9 +403,8 @@ void Patch_VC_11(const RECT& desktop)
 	Patch<DWORD>(0x601770, 0xC3C030);
 
 	// (Hopefully) more precise frame limiter
-	int			pAddress = 0x6004C2;
-	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
-	InjectHook(pAddress, NewFrameRender);
+	ReadCall( 0x6004C2, RsEventHandler );
+	InjectHook(0x6004C2, NewFrameRender);
 	InjectHook(0x600469, GetTimeSinceLastFrame);
 
 	// Default to desktop res
@@ -471,8 +468,7 @@ void Patch_VC_11(const RECT& desktop)
 
 
 	// Reinit CCarCtrl fields (firetruck and ambulance generation)
-	int			pCarCtrlReInit = 0x4A48BB;
-	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
+	ReadCall( 0x4A48BB, orgCarCtrlReInit );
 	InjectHook(0x4A48BB, CarCtrlReInit_SilentPatch);
 
 
@@ -547,9 +543,8 @@ void Patch_VC_Steam(const RECT& desktop)
 	Patch<DWORD>(0x6013B0, 0xC3C030);
 
 	// (Hopefully) more precise frame limiter
-	int			pAddress = 0x600102;
-	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
-	InjectHook(pAddress, NewFrameRender);
+	ReadCall( 0x600102, RsEventHandler );
+	InjectHook(0x600102, NewFrameRender);
 	InjectHook(0x6000A9, GetTimeSinceLastFrame);
 
 	// Default to desktop res
@@ -612,8 +607,7 @@ void Patch_VC_Steam(const RECT& desktop)
 
 
 	// Reinit CCarCtrl fields (firetruck and ambulance generation)
-	int			pCarCtrlReInit = 0x4A475B;
-	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
+	ReadCall( 0x4A475B, orgCarCtrlReInit );
 	InjectHook(0x4A475B, CarCtrlReInit_SilentPatch);
 
 

@@ -939,7 +939,8 @@ void ShaderDetach()
 // Function for 1.01
 BOOL Initialise3D(void* pParam)
 {
-	RwBool	(*RsRwInitialize)(void*) = (RwBool(*)(void*))(*(int*)0x5BFB93 + 0x5BFB92 + 5);
+	RwBool	(*RsRwInitialize)(void*);
+	Memory::ReadCall( 0x5BFB92, RsRwInitialize);
 	if ( RsRwInitialize(pParam) )
 		return ShaderAttach();
 	return false;
@@ -1975,7 +1976,7 @@ BOOL InjectDelayedPatches_10()
 
 			if ( !bSAMP )
 			{
-				DoSunAndMoon = (void(*)())(*(int*)0x53C137 + 0x53C136 + 5);
+				ReadCall( 0x53C136, DoSunAndMoon );
 				InjectHook(0x53C136, SunAndMoonFarClip);
 				Patch<const void*>(0x6FC5AA, &fSunFarClip);
 			}
@@ -2021,9 +2022,9 @@ BOOL InjectDelayedPatches_10()
 			{
 				// Shaders!
 				// plugin-sdk compatibility
-				InitialiseRenderWare = (bool(*)())(*(int*)0x5BF3A2 + 0x5BF3A1 + 5);
-				ShutdownRenderWare = (void(*)())(*(int*)0x53D911 + 0x53D910 + 5);
-				sub_5DA6A0 = (void(*)(void*,void*,void*,void*))(*(int*)0x5D66F2 + 0x5D66F1 + 5);
+				ReadCall( 0x5BF3A1, InitialiseRenderWare );
+				ReadCall( 0x53D910, ShutdownRenderWare );
+				ReadCall( 0x5D66F1, sub_5DA6A0 );
 
 				InjectHook(0x5DA743, SetShader);
 				InjectHook(0x5D66F1, SetShader2);
@@ -2065,8 +2066,8 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x470B05, &CRunningScript::GetDay_GymGlitch, PATCH_CALL);
 
 			// Basketball fix
-			WipeLocalVariableMemoryForMissionScript = (void(*)())(*(int*)0x489A71 + 0x489A70 + 5);
-			TheScriptsLoad = (void(*)())(*(int*)0x5D18F1 + 0x5D18F0 + 5);
+			ReadCall( 0x489A70, WipeLocalVariableMemoryForMissionScript );
+			ReadCall( 0x5D18F0, TheScriptsLoad );
 			InjectHook(0x5D18F0, TheScriptsLoad_BasketballFix);
 			// Fixed for Hoodlum
 			InjectHook(0x489A70, StartNewMission_SCMFixes);
@@ -2203,7 +2204,7 @@ BOOL InjectDelayedPatches_11()
 
 			if ( !bSAMP )
 			{
-				DoSunAndMoon = (void(*)())(*(int*)0x53C5D7 + 0x53C5D6 + 5);
+				ReadCall( 0x53C5D6, DoSunAndMoon );
 				InjectHook(0x53C5D6, SunAndMoonFarClip);
 
 				Patch<const void*>(0x6FCDDA, &fSunFarClip);
@@ -2251,9 +2252,9 @@ BOOL InjectDelayedPatches_11()
 				// Shaders!
 				// plugin-sdk compatibility
 				// 1.01 needs to reverse Initialise3D
-				InitialiseRenderWare = (bool(*)())(*(int*)0x5BFB9F + 0x5BFB9E + 5);
-				ShutdownRenderWare = (void(*)())(*(int*)0x53DDB1 + 0x53DDB0 + 5);
-				sub_5DA6A0 = (void(*)(void*,void*,void*,void*))(*(int*)0x5D6ED2 + 0x5D6ED1 + 5);
+				ReadCall( 0x5BFB9E, InitialiseRenderWare );
+				ReadCall( 0x53DDB0, ShutdownRenderWare );
+				ReadCall( 0x5D6ED1, sub_5DA6A0 );
 
 				InjectHook(0x5BFB70, Initialise3D, PATCH_JUMP);
 				InjectHook(0x5D6ED1, SetShader2);
@@ -2309,8 +2310,8 @@ BOOL InjectDelayedPatches_11()
 			InjectHook(0x470B85, &CRunningScript::GetDay_GymGlitch, PATCH_CALL);
 
 			// Basketball fix
-			WipeLocalVariableMemoryForMissionScript = (void(*)())(*(int*)0x489AF1 + 0x489AF0 + 5);
-			TheScriptsLoad = (void(*)())(*(int*)0x5D20D1 + 0x5D20D0 + 5);
+			ReadCall( 0x489AF0, WipeLocalVariableMemoryForMissionScript );
+			ReadCall( 0x5D20D0, TheScriptsLoad );
 			InjectHook(0x5D20D0, TheScriptsLoad_BasketballFix);
 			// Fixed for Hoodlum
 			InjectHook(0x489A70, StartNewMission_SCMFixes);
@@ -2428,7 +2429,7 @@ BOOL InjectDelayedPatches_Steam()
 
 			if ( !bSAMP )
 			{
-				DoSunAndMoon = (void(*)())(*(int*)0x54E0B7 + 0x54E0B6 + 5);
+				ReadCall( 0x54E0B6, DoSunAndMoon );
 				InjectHook(0x54E0B6, SunAndMoonFarClip);
 
 				Patch<const void*>(0x734DEA, &fSunFarClip);
@@ -2475,9 +2476,9 @@ BOOL InjectDelayedPatches_Steam()
 			{
 				// Shaders!
 				// plugin-sdk compatibility
-				InitialiseRenderWare = (bool(*)())(*(int*)0x5DE5A2 + 0x5DE5A1 + 5);
-				ShutdownRenderWare = (void(*)())(*(int*)0x550071 + 0x550070 + 5);
-				sub_5DA6A0 = (void(*)(void*,void*,void*,void*))(*(int*)0x5F663F + 0x5F663E + 5);
+				ReadCall( 0x5DE5A1, InitialiseRenderWare );
+				ReadCall( 0x550070, ShutdownRenderWare );
+				ReadCall( 0x5F663E, sub_5DA6A0 );
 
 				InjectHook(0x5F6EB3, SetShader);
 				InjectHook(0x5F2F02, SetShader2);
@@ -2521,8 +2522,8 @@ BOOL InjectDelayedPatches_Steam()
 			InjectHook(0x476C2C, &CRunningScript::GetDay_GymGlitch, PATCH_CALL);
 
 			// Basketball fix
-			WipeLocalVariableMemoryForMissionScript = (void(*)())(*(int*)0x4907AF + 0x4907AE + 5);
-			TheScriptsLoad = (void(*)())(*(int*)0x5EE018 + 0x5EE017 + 5);
+			ReadCall( 0x4907AE, WipeLocalVariableMemoryForMissionScript );
+			ReadCall( 0x5EE017, TheScriptsLoad );
 			InjectHook(0x5EE017, TheScriptsLoad_BasketballFix);
 			// Fixed for Hoodlum
 			InjectHook(0x4907AE, StartNewMission_SCMFixes);
@@ -2619,7 +2620,7 @@ void Patch_SA_10()
 
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
 	int			pIsAlreadyRunning = AddressByRegion_10<int>(0x74872D);
-	IsAlreadyRunning = (BOOL(*)())(*(int*)(pIsAlreadyRunning+1) + pIsAlreadyRunning + 5);
+	ReadCall( pIsAlreadyRunning, IsAlreadyRunning );
 	InjectHook(pIsAlreadyRunning, InjectDelayedPatches_10);
 
 	// Newsteam crash fix
@@ -2628,7 +2629,7 @@ void Patch_SA_10()
 
 	// (Hopefully) more precise frame limiter
 	int			pAddress = AddressByRegion_10<int>(0x748D9B);
-	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	ReadCall( pAddress, RsEventHandler );
 	InjectHook(pAddress, NewFrameRender);
 	InjectHook(AddressByRegion_10<int>(0x748D1F), GetTimeSinceLastFrame);
 
@@ -2927,19 +2928,16 @@ void Patch_SA_10()
 	Patch<BYTE>(AddressByRegion_10<BYTE*>(0x7F60C6), 0xEB);
 	Patch<WORD>(AddressByRegion_10<BYTE*>(0x7F6683), 0xE990);
 
-	int			pGetMaxMultiSamplingLevels = 0x57D136;
-	orgGetMaxMultiSamplingLevels = (RwUInt32(*)())(*(int*)(pGetMaxMultiSamplingLevels+1) + pGetMaxMultiSamplingLevels + 5);
+	ReadCall( 0x57D136, orgGetMaxMultiSamplingLevels );
 	InjectHook(0x57D136, GetMaxMultiSamplingLevels);
 	InjectHook(0x57D0EA, GetMaxMultiSamplingLevels);
 
-	int			pChangeMultiSamplingLevels = 0x5744FD;
-	orgChangeMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pChangeMultiSamplingLevels+1) + pChangeMultiSamplingLevels + 5);
+	ReadCall( 0x5744FD, orgChangeMultiSamplingLevels );
 	InjectHook(0x5744FD, ChangeMultiSamplingLevels);
 	InjectHook(0x57D162, ChangeMultiSamplingLevels);
 	InjectHook(0x57D2A6, ChangeMultiSamplingLevels);
 
-	int			pSetMultiSamplingLevels = 0x746350;
-	orgSetMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pSetMultiSamplingLevels+1) + pSetMultiSamplingLevels + 5);
+	ReadCall( 0x746350, orgSetMultiSamplingLevels );
 	InjectHook(0x746350, SetMultiSamplingLevels);
 
 	Nop(0x57A0FC, 1);
@@ -2960,7 +2958,7 @@ void Patch_SA_10()
 			pHoodlumCompat = 0x40F870;
 
 		int			pMemMgrMalloc = pHoodlumCompat + 0x63;
-		orgMemMgrMalloc = (void*(*)(RwUInt32,RwUInt32))(*(int*)(pMemMgrMalloc+1) + pMemMgrMalloc + 5);
+		ReadCall( pMemMgrMalloc, orgMemMgrMalloc );
 		InjectHook(pMemMgrMalloc, CollisionData_MallocAndInit);
 	}
 	{
@@ -2977,7 +2975,7 @@ void Patch_SA_10()
 		}
 
 		int			pNewAlloc = pHoodlumCompat + 0xC;
-		orgNewAlloc = (void*(*)(size_t))(*(int*)(pNewAlloc+1) + pNewAlloc + 5);
+		ReadCall( pNewAlloc, orgNewAlloc );
 		InjectHook(pHoodlumCompat + 0xC, CollisionData_NewAndInit);
 		InjectHook(pHoodlumCompat2 + 0xD, CollisionData_NewAndInit);
 	}
@@ -2988,15 +2986,13 @@ void Patch_SA_10()
 	// starting again in maximum resolution on secondary monitor.
 	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
 	// Not in 1.01
-	int			pGetNumVideoModes = 0x745B1E;
-	orgGetNumVideoModes = (RwInt32(*)())(*(int*)(pGetNumVideoModes+1) + pGetNumVideoModes + 5);
+	ReadCall( 0x745B1E, orgGetNumVideoModes );
 	InjectHook(0x745B1E, GetNumVideoModes_Store);
 	InjectHook(0x745A81, GetNumVideoModes_Retrieve);
 
 
 	// Fixed escalators crash
-	int			pUpdateEscalators = 0x7185B5;
-	orgEscalatorsUpdate = (void(*)())(*(int*)(pUpdateEscalators+1) + pUpdateEscalators + 5);
+	ReadCall( 0x7185B5, orgEscalatorsUpdate );
 	InjectHook(0x7185B5, UpdateEscalators);
 	InjectHook(0x71791F, &CEscalator::SwitchOffNoRemove);
 
@@ -3037,12 +3033,12 @@ void Patch_SA_11()
 
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
 	int			pIsAlreadyRunning = AddressByRegion_11<int>(0x749000);
-	IsAlreadyRunning = (BOOL(*)())(*(int*)(pIsAlreadyRunning+1) + pIsAlreadyRunning + 5);
+	ReadCall( pIsAlreadyRunning, IsAlreadyRunning );
 	InjectHook(pIsAlreadyRunning, InjectDelayedPatches_11);
 
 	// (Hopefully) more precise frame limiter
 	int			pAddress = AddressByRegion_11<int>(0x7496A0);
-	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	ReadCall( pAddress, RsEventHandler );
 	InjectHook(pAddress, NewFrameRender);
 	InjectHook(AddressByRegion_11<int>(0x749624), GetTimeSinceLastFrame);
 
@@ -3328,19 +3324,16 @@ void Patch_SA_11()
 	Patch<BYTE>(AddressByRegion_11<BYTE*>(0x7F69C6), 0xEB);
 	Patch<WORD>(AddressByRegion_11<BYTE*>(0x7F6F83), 0xE990);
 
-	int			pGetMaxMultiSamplingLevels = 0x57D916;
-	orgGetMaxMultiSamplingLevels = (RwUInt32(*)())(*(int*)(pGetMaxMultiSamplingLevels+1) + pGetMaxMultiSamplingLevels + 5);
+	ReadCall( 0x57D916, orgGetMaxMultiSamplingLevels );
 	InjectHook(0x57D916, GetMaxMultiSamplingLevels);
 	InjectHook(0x57D8CA, GetMaxMultiSamplingLevels);
 
-	int			pChangeMultiSamplingLevels = 0x574A6D;
-	orgChangeMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pChangeMultiSamplingLevels+1) + pChangeMultiSamplingLevels + 5);
+	ReadCall( 0x574A6D, orgChangeMultiSamplingLevels );
 	InjectHook(0x574A6D, ChangeMultiSamplingLevels);
 	InjectHook(0x57D942, ChangeMultiSamplingLevels);
 	InjectHook(0x57DA86, ChangeMultiSamplingLevels);
 
-	int			pSetMultiSamplingLevels = 0x746BD0;
-	orgSetMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pSetMultiSamplingLevels+1) + pSetMultiSamplingLevels + 5);
+	ReadCall( 0x746BD0, orgSetMultiSamplingLevels );
 	InjectHook(0x746BD0, SetMultiSamplingLevels);
 
 	Nop(0x57A66C, 1);
@@ -3380,13 +3373,12 @@ void Patch_SA_Steam()
 	ScopedUnprotect::Section Protect2( (HINSTANCE)0x400000, ".rdata" );
 
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
-	IsAlreadyRunning = (BOOL(*)())(*(int*)(0x7826ED+1) + 0x7826ED + 5);
+	ReadCall( 0x7826ED, IsAlreadyRunning );
 	InjectHook(0x7826ED, InjectDelayedPatches_Steam);
 
 	// (Hopefully) more precise frame limiter
-	int			pAddress = 0x782D25;
-	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
-	InjectHook(pAddress, NewFrameRender);
+	ReadCall( 0x782D25, RsEventHandler );
+	InjectHook(0x782D25, NewFrameRender);
 	InjectHook(0x782CA8, GetTimeSinceLastFrame);
 
 	// Set CAEDataStream to use an old structure
@@ -3641,19 +3633,16 @@ void Patch_SA_Steam()
 	Patch<BYTE>(0x830086, 0xEB);
 	Patch<WORD>(0x830643, 0xE990);
 
-	int			pGetMaxMultiSamplingLevels = 0x592BCF;
-	orgGetMaxMultiSamplingLevels = (RwUInt32(*)())(*(int*)(pGetMaxMultiSamplingLevels+1) + pGetMaxMultiSamplingLevels + 5);
+	ReadCall( 0x592BCF, orgGetMaxMultiSamplingLevels );
 	InjectHook(0x592BCF, GetMaxMultiSamplingLevels);
 	InjectHook(0x592B81, GetMaxMultiSamplingLevels);
 
-	int			pChangeMultiSamplingLevels = 0x5897CD;
-	orgChangeMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pChangeMultiSamplingLevels+1) + pChangeMultiSamplingLevels + 5);
+	ReadCall( 0x5897CD, orgChangeMultiSamplingLevels );
 	InjectHook(0x5897CD, ChangeMultiSamplingLevels);
 	InjectHook(0x592BFB, ChangeMultiSamplingLevels);
 	InjectHook(0x592D2E, ChangeMultiSamplingLevels);
 
-	int			pSetMultiSamplingLevels = 0x780206;
-	orgSetMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pSetMultiSamplingLevels+1) + pSetMultiSamplingLevels + 5);
+	ReadCall( 0x780206, orgSetMultiSamplingLevels );
 	InjectHook(0x780206, SetMultiSamplingLevels);
 
 	Patch<WORD>(0x58F88C, 0xBA90);
@@ -3666,12 +3655,10 @@ void Patch_SA_Steam()
 
 	// Car explosion crash with multimonitor
 	// Unitialized collision data breaking stencil shadows
-	int			pMemMgrMalloc = 0x41A216;
-	orgMemMgrMalloc = (void*(*)(RwUInt32,RwUInt32))(*(int*)(pMemMgrMalloc+1) + pMemMgrMalloc + 5);
+	ReadCall( 0x41A216, orgMemMgrMalloc );
 	InjectHook(0x41A216, CollisionData_MallocAndInit);
 
-	int			pNewAlloc = 0x41A07C;
-	orgNewAlloc = (void*(*)(size_t))(*(int*)(pNewAlloc+1) + pNewAlloc + 5);
+	ReadCall( 0x41A07C, orgNewAlloc );
 	InjectHook(0x41A07C, CollisionData_NewAndInit);
 	InjectHook(0x41A159, CollisionData_NewAndInit);
 
@@ -3681,15 +3668,13 @@ void Patch_SA_Steam()
 	// starting again in maximum resolution on secondary monitor.
 	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
 	// Not in 1.01
-	int			pGetNumVideoModes = 0x77F99E;
-	orgGetNumVideoModes = (RwInt32(*)())(*(int*)(pGetNumVideoModes+1) + pGetNumVideoModes + 5);
+	ReadCall( 0x77F99E, orgGetNumVideoModes );
 	InjectHook(0x77F99E, GetNumVideoModes_Store);
 	InjectHook(0x77F901, GetNumVideoModes_Retrieve);
 
 
 	// Fixed escalators crash
-	int			pUpdateEscalators = 0x739975;
-	orgEscalatorsUpdate = (void(*)())(*(int*)(pUpdateEscalators+1) + pUpdateEscalators + 5);
+	ReadCall( 0x739975, orgEscalatorsUpdate );
 	InjectHook(0x739975, UpdateEscalators);
 	InjectHook(0x738BBD, &CEscalator::SwitchOffNoRemove);
 
@@ -3827,8 +3812,7 @@ void Patch_SA_NewSteam_r2()
 	ScopedUnprotect::Section Protect2( GetModuleHandle( nullptr ), ".rdata" );
 
 	// (Hopefully) more precise frame limiter
-	int			pAddress = DynBaseAddress(0x77D55F);
-	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	ReadCall( DynBaseAddress(0x77D55F), RsEventHandler );
 	InjectHook(0x77D55F, NewFrameRender);
 	InjectHook(0x77D4E8, GetTimeSinceLastFrame);
 
@@ -3930,19 +3914,16 @@ void Patch_SA_NewSteam_r2()
 	Patch<BYTE>(0x82A916, 0xEB);
 	Patch<WORD>(0x82AED3, 0xE990);
 
-	int			pGetMaxMultiSamplingLevels = DynBaseAddress(0x590F8B);
-	orgGetMaxMultiSamplingLevels = (RwUInt32(*)())(*(int*)(pGetMaxMultiSamplingLevels+1) + pGetMaxMultiSamplingLevels + 5);
+	ReadCall( DynBaseAddress(0x590F8B), orgGetMaxMultiSamplingLevels );
 	InjectHook(0x590F8B, GetMaxMultiSamplingLevels);
 	InjectHook(0x590F36, GetMaxMultiSamplingLevels);
 
-	int			pChangeMultiSamplingLevels = DynBaseAddress(0x5881C0);
-	orgChangeMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pChangeMultiSamplingLevels+1) + pChangeMultiSamplingLevels + 5);
+	ReadCall( DynBaseAddress(0x5881C0), orgChangeMultiSamplingLevels );
 	InjectHook(0x5881C0, ChangeMultiSamplingLevels);
 	InjectHook(0x590FBB, ChangeMultiSamplingLevels);
 	InjectHook(0x591111, ChangeMultiSamplingLevels);
 
-	int			pSetMultiSamplingLevels = DynBaseAddress(0x77A40D);
-	orgSetMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pSetMultiSamplingLevels+1) + pSetMultiSamplingLevels + 5);
+	ReadCall( DynBaseAddress(0x77A40D), orgSetMultiSamplingLevels );
 	InjectHook(0x77A40D, SetMultiSamplingLevels);
 
 	Patch<WORD>(0x58DDEF, 0xBA90);
@@ -3955,12 +3936,10 @@ void Patch_SA_NewSteam_r2()
 
 	// Car explosion crash with multimonitor
 	// Unitialized collision data breaking stencil shadows
-	int			pMemMgrMalloc = DynBaseAddress(0x41A661);
-	orgMemMgrMalloc = (void*(*)(RwUInt32,RwUInt32))(*(int*)(pMemMgrMalloc+1) + pMemMgrMalloc + 5);
+	ReadCall( DynBaseAddress(0x41A661), orgMemMgrMalloc );
 	InjectHook(0x41A661, CollisionData_MallocAndInit);
 
-	int			pNewAlloc = DynBaseAddress(0x41A4CC);
-	orgNewAlloc = (void*(*)(size_t))(*(int*)(pNewAlloc+1) + pNewAlloc + 5);
+	ReadCall( DynBaseAddress(0x41A4CC), orgNewAlloc );
 	InjectHook(0x41A4CC, CollisionData_NewAndInit);
 	InjectHook(0x41A5A9, CollisionData_NewAndInit);
 
@@ -3970,8 +3949,7 @@ void Patch_SA_NewSteam_r2()
 	// starting again in maximum resolution on secondary monitor.
 	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
 	// Not in 1.01
-	int			pGetNumVideoModes = DynBaseAddress(0x779B71);
-	orgGetNumVideoModes = (RwInt32(*)())(*(int*)(pGetNumVideoModes+1) + pGetNumVideoModes + 5);
+	ReadCall( DynBaseAddress(0x779B71), orgGetNumVideoModes );
 	InjectHook(0x779B71, GetNumVideoModes_Store);
 	InjectHook(0x779AD1, GetNumVideoModes_Retrieve);
 
@@ -4023,8 +4001,7 @@ void Patch_SA_NewSteam_r2_lv()
 	ScopedUnprotect::Section Protect2( GetModuleHandle( nullptr ), ".rdata" );
 
 	// (Hopefully) more precise frame limiter
-	int			pAddress = DynBaseAddress(0x77D44F);
-	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
+	ReadCall( DynBaseAddress(0x77D44F), RsEventHandler );
 	InjectHook(0x77D44F, NewFrameRender);
 	InjectHook(0x77D3D8, GetTimeSinceLastFrame);
 
@@ -4126,19 +4103,16 @@ void Patch_SA_NewSteam_r2_lv()
 	Patch<BYTE>(0x82A7E6, 0xEB);
 	Patch<WORD>(0x82ADA3, 0xE990);
 
-	int			pGetMaxMultiSamplingLevels = DynBaseAddress(0x590ECB);
-	orgGetMaxMultiSamplingLevels = (RwUInt32(*)())(*(int*)(pGetMaxMultiSamplingLevels+1) + pGetMaxMultiSamplingLevels + 5);
+	ReadCall( DynBaseAddress(0x590ECB), orgGetMaxMultiSamplingLevels );
 	InjectHook(0x590ECB, GetMaxMultiSamplingLevels);
 	InjectHook(0x590E76, GetMaxMultiSamplingLevels);
 
-	int			pChangeMultiSamplingLevels = DynBaseAddress(0x588100);
-	orgChangeMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pChangeMultiSamplingLevels+1) + pChangeMultiSamplingLevels + 5);
+	ReadCall( DynBaseAddress(0x588100), orgChangeMultiSamplingLevels );
 	InjectHook(0x588100, ChangeMultiSamplingLevels);
 	InjectHook(0x590EFB, ChangeMultiSamplingLevels);
 	InjectHook(0x591051, ChangeMultiSamplingLevels);
 
-	int			pSetMultiSamplingLevels = DynBaseAddress(0x77A2FD);
-	orgSetMultiSamplingLevels = (void(*)(RwUInt32))(*(int*)(pSetMultiSamplingLevels+1) + pSetMultiSamplingLevels + 5);
+	ReadCall( DynBaseAddress(0x77A2FD), orgSetMultiSamplingLevels );
 	InjectHook(0x77A2FD, SetMultiSamplingLevels);
 
 	Patch<WORD>(0x58DD2F, 0xBA90);
@@ -4151,12 +4125,10 @@ void Patch_SA_NewSteam_r2_lv()
 
 	// Car explosion crash with multimonitor
 	// Unitialized collision data breaking stencil shadows
-	int			pMemMgrMalloc = DynBaseAddress(0x41A661);
-	orgMemMgrMalloc = (void*(*)(RwUInt32,RwUInt32))(*(int*)(pMemMgrMalloc+1) + pMemMgrMalloc + 5);
+	ReadCall( DynBaseAddress(0x41A661), orgMemMgrMalloc );
 	InjectHook(0x41A661, CollisionData_MallocAndInit);
 
-	int			pNewAlloc = DynBaseAddress(0x41A4CC);
-	orgNewAlloc = (void*(*)(size_t))(*(int*)(pNewAlloc+1) + pNewAlloc + 5);
+	ReadCall( DynBaseAddress(0x41A4CC), orgNewAlloc );
 	InjectHook(0x41A4CC, CollisionData_NewAndInit);
 	InjectHook(0x41A5A9, CollisionData_NewAndInit);
 
@@ -4166,8 +4138,7 @@ void Patch_SA_NewSteam_r2_lv()
 	// starting again in maximum resolution on secondary monitor.
 	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
 	// Not in 1.01
-	int			pGetNumVideoModes = DynBaseAddress(0x779A61);
-	orgGetNumVideoModes = (RwInt32(*)())(*(int*)(pGetNumVideoModes+1) + pGetNumVideoModes + 5);
+	ReadCall( DynBaseAddress(0x779A61), orgGetNumVideoModes );
 	InjectHook(0x779A61, GetNumVideoModes_Store);
 	InjectHook(0x7799C1, GetNumVideoModes_Retrieve);
 

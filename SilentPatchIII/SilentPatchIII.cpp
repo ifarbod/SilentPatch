@@ -435,9 +435,8 @@ void Patch_III_10(const RECT& desktop)
 	InjectHook(0x46BADA, III_SensResetFix, PATCH_CALL);
 
 	// (Hopefully) more precise frame limiter
-	int			pAddress = 0x582EFD;
-	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
-	InjectHook(pAddress, NewFrameRender);
+	ReadCall( 0x582EFD, RsEventHandler );
+	InjectHook(0x582EFD, NewFrameRender);
 	InjectHook(0x582EA4, GetTimeSinceLastFrame);
 
 	// Default to desktop res
@@ -458,8 +457,7 @@ void Patch_III_10(const RECT& desktop)
 
 
 	// Reinit CCarCtrl fields (firetruck and ambulance generation)
-	int			pCarCtrlReInit = 0x48C4FB;
-	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
+	ReadCall( 0x48C4FB, orgCarCtrlReInit );
 	InjectHook(0x48C4FB, CarCtrlReInit_SilentPatch);
 
 
@@ -607,9 +605,8 @@ void Patch_III_11(const RECT& desktop)
 	Patch(0x581FB4, &pCustomWndProc);
 
 	// (Hopefully) more precise frame limiter
-	int			pAddress = 0x58323D;
-	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
-	InjectHook(pAddress, NewFrameRender);
+	ReadCall( 0x58323D, RsEventHandler );
+	InjectHook(0x58323D, NewFrameRender);
 	InjectHook(0x5831E4, GetTimeSinceLastFrame);
 
 	// Default to desktop res
@@ -630,8 +627,7 @@ void Patch_III_11(const RECT& desktop)
 
 
 	// Reinit CCarCtrl fields (firetruck and ambulance generation)
-	int			pCarCtrlReInit = 0x48C5FB;
-	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
+	ReadCall( 0x48C5FB, orgCarCtrlReInit );
 	InjectHook(0x48C5FB, CarCtrlReInit_SilentPatch);
 
 
@@ -765,9 +761,8 @@ void Patch_III_Steam(const RECT& desktop)
 	Patch(0x581EA4, &pCustomWndProc);
 
 	// (Hopefully) more precise frame limiter
-	int			pAddress = 0x58312D;
-	RsEventHandler = (void(*)(int,void*))(*(int*)(pAddress+1) + pAddress + 5);
-	InjectHook(pAddress, NewFrameRender);
+	ReadCall( 0x58312D, RsEventHandler );
+	InjectHook(0x58312D, NewFrameRender);
 	InjectHook(0x5830D4, GetTimeSinceLastFrame);
 
 	// Default to desktop res
@@ -788,8 +783,7 @@ void Patch_III_Steam(const RECT& desktop)
 
 
 	// Reinit CCarCtrl fields (firetruck and ambulance generation)
-	int			pCarCtrlReInit = 0x48C58B;
-	orgCarCtrlReInit = (void(*)())(*(int*)(pCarCtrlReInit+1) + pCarCtrlReInit + 5);
+	ReadCall( 0x48C58B, orgCarCtrlReInit );
 	InjectHook(0x48C58B, CarCtrlReInit_SilentPatch);
 
 
