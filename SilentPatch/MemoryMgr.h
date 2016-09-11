@@ -591,7 +591,7 @@ public:
 	class Section
 	{
 	public:
-		inline Section( HINSTANCE hInstance, const char* name )
+		Section( HINSTANCE hInstance, const char* name )
 		{
 			IMAGE_NT_HEADERS*		ntHeader = (IMAGE_NT_HEADERS*)((BYTE*)hInstance + ((IMAGE_DOS_HEADER*)hInstance)->e_lfanew);
 			IMAGE_SECTION_HEADER*	pSection = IMAGE_FIRST_SECTION(ntHeader);
@@ -624,7 +624,7 @@ public:
 			}
 		};
 
-		inline ~Section()
+		~Section()
 		{
 			for ( auto& it : m_queriedProtects )
 			{
