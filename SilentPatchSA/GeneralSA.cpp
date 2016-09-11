@@ -116,7 +116,7 @@ void CEscalator::SwitchOffNoRemove()
 	if ( !m_bExists )
 		return;
 
-	for ( int i = 0, j = field_7C + field_80 + field_84; i < j; ++i )
+	for ( ptrdiff_t i = 0, j = field_7C + field_80 + field_84; i < j; ++i )
 	{
 		if ( m_pSteps[i] != nullptr )
 		{

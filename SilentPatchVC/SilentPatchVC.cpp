@@ -195,7 +195,6 @@ static char		aNoDesktopMode[64];
 void Patch_VC_10(const RECT& desktop)
 {
 	using namespace Memory;
-	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	AudioResetTimers = (void(__stdcall*)(unsigned int))0x5F98D0;
 	PrintString = (void(*)(float,float,const wchar_t*))0x551040;
@@ -344,7 +343,6 @@ void Patch_VC_10(const RECT& desktop)
 void Patch_VC_11(const RECT& desktop)
 {
 	using namespace Memory;
-	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	AudioResetTimers = (void(__stdcall*)(unsigned int))0x5F98F0;
 	PrintString = (void(*)(float,float,const wchar_t*))0x551060;
@@ -484,7 +482,6 @@ void Patch_VC_11(const RECT& desktop)
 void Patch_VC_Steam(const RECT& desktop)
 {
 	using namespace Memory;
-	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	AudioResetTimers = (void(__stdcall*)(unsigned int))0x5F9530;
 	PrintString = (void(*)(float,float,const wchar_t*))0x550F30;
@@ -644,6 +641,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		RECT			desktop;
 		GetWindowRect(GetDesktopWindow(), &desktop);
 		sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+
+		ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 		if(*(DWORD*)0x667BF5 == 0xB85548EC) Patch_VC_10(desktop);
 		else if(*(DWORD*)0x667C45 == 0xB85548EC) Patch_VC_11(desktop);

@@ -317,7 +317,6 @@ static char		aNoDesktopMode[64];
 void Patch_III_10(const RECT& desktop)
 {
 	using namespace Memory;
-	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	DrawRect = (void(*)(const CRect&,const CRGBA&))0x51F970;
 	SetScale = (void(*)(float,float))0x501B80;
@@ -498,7 +497,6 @@ void Patch_III_10(const RECT& desktop)
 void Patch_III_11(const RECT& desktop)
 {
 	using namespace Memory;
-	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	DrawRect = (void(*)(const CRect&,const CRGBA&))0x51FBA0;
 	SetScale = (void(*)(float,float))0x501C60;
@@ -658,7 +656,6 @@ void Patch_III_11(const RECT& desktop)
 void Patch_III_Steam(const RECT& desktop)
 {
 	using namespace Memory;
-	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	DrawRect = (void(*)(const CRect&,const CRGBA&))0x51FB30;
 	SetScale = (void(*)(float,float))0x501BF0;
@@ -813,6 +810,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		RECT			desktop;
 		GetWindowRect(GetDesktopWindow(), &desktop);
 		sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+
+		ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 		if (*(DWORD*)0x5C1E75 == 0xB85548EC) Patch_III_10(desktop);
 		else if (*(DWORD*)0x5C2135 == 0xB85548EC) Patch_III_11(desktop);

@@ -193,10 +193,9 @@ void PatchIAT()
 	IMAGE_NT_HEADERS*			ntHeader = (IMAGE_NT_HEADERS*)((DWORD)hInstance + ((IMAGE_DOS_HEADER*)hInstance)->e_lfanew);
 
 	// Give _rwcseg proper access rights
-	WORD					NumberOfSections = ntHeader->FileHeader.NumberOfSections;
 	IMAGE_SECTION_HEADER*	pSection = IMAGE_FIRST_SECTION(ntHeader);
 
-	for ( WORD i = 0; i < NumberOfSections; i++, pSection++ )
+	for ( SIZE_T i = 0, j = ntHeader->FileHeader.NumberOfSections; i < j; i++, pSection++ )
 	{
 		if ( *(uint64_t*)(pSection->Name) == 0x006765736377725F )	// _rwcseg
 		{

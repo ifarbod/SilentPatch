@@ -2614,9 +2614,6 @@ static char		aNoDesktopMode[64];
 void Patch_SA_10()
 {
 	using namespace Memory;
-	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
-	ScopedUnprotect::Section Protect2( (HINSTANCE)0x400000, ".rdata" );
-
 
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
 	int			pIsAlreadyRunning = AddressByRegion_10<int>(0x74872D);
@@ -3028,8 +3025,6 @@ void Patch_SA_10()
 void Patch_SA_11()
 {
 	using namespace Memory;
-	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
-	ScopedUnprotect::Section Protect2( (HINSTANCE)0x400000, ".rdata" );
 
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
 	int			pIsAlreadyRunning = AddressByRegion_11<int>(0x749000);
@@ -3369,8 +3364,6 @@ void Patch_SA_11()
 void Patch_SA_Steam()
 {
 	using namespace Memory;
-	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
-	ScopedUnprotect::Section Protect2( (HINSTANCE)0x400000, ".rdata" );
 
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
 	ReadCall( 0x7826ED, IsAlreadyRunning );
@@ -3725,8 +3718,6 @@ void Patch_SA_Steam()
 void Patch_SA_NewSteam_r1()
 {
 	using namespace Memory::DynBase;
-	ScopedUnprotect::Section Protect( GetModuleHandle( nullptr ), ".text" );
-	ScopedUnprotect::Section Protect2( GetModuleHandle( nullptr ), ".rdata" );
 
 	// Nazi EXE?
 	if ( *(DWORD*)DynBaseAddress(0x49F810) == 0x64EC8B55 )
@@ -3808,8 +3799,6 @@ void Patch_SA_NewSteam_r1()
 void Patch_SA_NewSteam_r2()
 {
 	using namespace Memory::DynBase;
-	ScopedUnprotect::Section Protect( GetModuleHandle( nullptr ), ".text" );
-	ScopedUnprotect::Section Protect2( GetModuleHandle( nullptr ), ".rdata" );
 
 	// (Hopefully) more precise frame limiter
 	ReadCall( DynBaseAddress(0x77D55F), RsEventHandler );
@@ -3997,8 +3986,6 @@ void Patch_SA_NewSteam_r2()
 void Patch_SA_NewSteam_r2_lv()
 {
 	using namespace Memory::DynBase;
-	ScopedUnprotect::Section Protect( GetModuleHandle( nullptr ), ".text" );
-	ScopedUnprotect::Section Protect2( GetModuleHandle( nullptr ), ".rdata" );
 
 	// (Hopefully) more precise frame limiter
 	ReadCall( DynBaseAddress(0x77D44F), RsEventHandler );
@@ -4191,6 +4178,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	if ( fdwReason == DLL_PROCESS_ATTACH )
 	{
 		hDLLModule = hinstDLL;
+
+		HINSTANCE hGameHandle = GetModuleHandle( nullptr );
+		ScopedUnprotect::Section Protect( hGameHandle, ".text" );
+		ScopedUnprotect::Section Protect2( hGameHandle, ".rdata" );
 
 		if (*(DWORD*)DynBaseAddress(0x82457C) == 0x94BF || *(DWORD*)DynBaseAddress(0x8245BC) == 0x94BF) Patch_SA_10();
 		else if (*(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF || *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF) Patch_SA_11(), MessageBox( nullptr, "You're using a 1.01 executable which is no longer supported by SilentPatch!\n\nI have no idea if anyone was still using it, so if you do - shoot me an e-mail!", "SilentPatch", MB_OK | MB_ICONWARNING );
