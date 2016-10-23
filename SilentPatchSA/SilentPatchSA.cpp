@@ -219,7 +219,6 @@ int&					MoonSize = **AddressByVersion<int**>(0x713B0C, 0x71433C, 0x72F0AB);
 
 CZoneInfo*&				pCurrZoneInfo = **AddressByVersion<CZoneInfo***>(0x58ADB1, 0x58B581, 0x407F93);
 CRGBA*					HudColour = *AddressByVersion<CRGBA**>(0x58ADF6, 0x58B5C6, 0x440648);
-unsigned char*			ZonesVisited = *AddressByVersion<unsigned char**>(0x57216A, 0, 0x5870E8) - 9;		// 1.01 fixed it!
 
 float&					m_fDNBalanceParam = **AddressByVersion<float**>(0x4A9062, 0x4A90F2, 0x4B2512);
 RpLight*&				pAmbient = **AddressByVersion<RpLight***>(0x5BA53A, 0x735D11, 0x5D90F0);
@@ -575,12 +574,19 @@ void StartNewMission_SCMFixes()
 // 1.01 kinda fixed it
 bool GetCurrentZoneLockedOrUnlocked(float fPosX, float fPosY)
 {
-	int		Xindex = (fPosX+3000.0f) * (1.0f/600.0f);
-	int		Yindex = (fPosY+3000.0f) * (1.0f/600.0f);
+	// Exploit RAII really bad
+	static const float		GridXOffset = **AddressByVersion<float**>(0x572135+2, 0, 0 /*TODO*/), GridYOffset = **AddressByVersion<float**>(0x57214A+2, 0, 0 /*TODO*/);
+	static const float		GridXSize = **AddressByVersion<float**>(0x57213B+2, 0, 0 /*TODO*/), GridYSize = **AddressByVersion<float**>(0x572153+2, 0, 0 /*TODO*/);
+	static const int		GridXNum = (2.0f*GridXOffset) * GridXSize, GridYNum = (2.0f*GridYOffset) * GridYSize;
+
+	static unsigned char* const	ZonesVisited = *AddressByVersion<unsigned char**>(0x57216A, 0, 0x5870E8) - (GridYNum-1);		// 1.01 fixed it!
+
+	int		Xindex = (fPosX+GridXOffset) * GridXSize;
+	int		Yindex = (fPosY+GridYOffset) * GridYSize;
 
 	// "Territories fix"
-	if ( (Xindex >= 0 && Xindex < 10) && (Yindex >= 0 && Yindex < 10) )
-		return ZonesVisited[10*Xindex - Yindex + 9] != 0;
+	if ( (Xindex >= 0 && Xindex < GridXNum) && (Yindex >= 0 && Yindex < GridYNum) )
+		return ZonesVisited[GridXNum*Xindex - Yindex + (GridYNum-1)] != 0;
 	
 	// Outside of map bounds
 	return true;
