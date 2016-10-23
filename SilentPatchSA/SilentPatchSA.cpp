@@ -550,6 +550,18 @@ static void InitializeScriptGlobals()
 	}
 }
 
+static void SweetsGirlFix()
+{
+	InitializeScriptGlobals();
+
+	// Changes @ == int to @ >= int in two places
+	if ( *(uint16_t*)(ScriptSpace+ScriptFileSize+2510) == 0x0039 )
+		*(uint16_t*)(ScriptSpace+ScriptFileSize+2510) = 0x0029;
+
+	if ( *(uint16_t*)(ScriptSpace+ScriptFileSize+2680) == 0x0039 )
+		*(uint16_t*)(ScriptSpace+ScriptFileSize+2680) = 0x0029;
+}
+
 static void MountainCloudBoysFix()
 {
 	static const BYTE bOldCode[22] = {
@@ -586,6 +598,9 @@ void StartNewMission_SCMFixes()
 	// INITIAL - Basketball fix
 	if ( ScriptParams[0] == 0 )
 		BasketballFix(ScriptSpace+ScriptFileSize, ScriptMissionSize);
+	// HOODS5 - Sweet's Girl fix
+	else if ( ScriptParams[0] == 18 )
+		SweetsGirlFix();
 	// WUZI1 - Mountain Cloud Boys fix
 	else if ( ScriptParams[0] == 53 )
 		MountainCloudBoysFix();
