@@ -210,8 +210,6 @@ unsigned char&			nGameClockDays = **AddressByVersion<unsigned char**>(0x4E841D, 
 unsigned char&			nGameClockMonths = **AddressByVersion<unsigned char**>(0x4E842D, 0x4E887D, 0x4F3861);
 void*&					pUserTracksStuff = **AddressByVersion<void***>(0x4D9B7B, 0x4DA06C, 0x4E4A43);
 bool&					CCutsceneMgr__ms_running = **AddressByVersion<bool**>(0x53F92D, 0x434241, 0x422061);
-unsigned char*			ScriptSpace = *AddressByVersion<unsigned char**>(0x5D5380, 0x5D5B60, 0x450E34);
-int*					ScriptParams = *AddressByVersion<int**>(0x48995B, 0x46410A, 0x46979A);
 
 float&					fFarClipZ = **AddressByVersion<float**>(0x70D21F, 0x70DA4F, 0x421AB2);
 RwTexture** const		gpCoronaTexture = *AddressByVersion<RwTexture***>(0x6FAA8C, 0x6FB2BC, 0x5480BF);
@@ -534,6 +532,24 @@ static void BasketballFix(unsigned char* pBuf, int nSize)
 	}
 }
 
+static unsigned char*	ScriptSpace;
+static int*				ScriptParams;
+static size_t			ScriptFileSize, ScriptMissionSize;
+
+static void InitializeScriptGlobals()
+{
+	static bool		bInitScriptStuff = false;
+	if ( !bInitScriptStuff )
+	{
+		ScriptSpace = *AddressByVersion<unsigned char**>(0x5D5380, 0x5D5B60, 0x450E34);
+		ScriptParams = *AddressByVersion<int**>(0x48995B, 0x46410A, 0x46979A);
+		ScriptFileSize = *AddressByVersion<size_t*>( 0x468E74+1, 0, 0 /*TODO*/);
+		ScriptMissionSize = *AddressByVersion<size_t*>( 0x489A5A+1, 0, 0 /*TODO*/);
+
+		bInitScriptStuff = true;
+	}
+}
+
 static void MountainCloudBoysFix()
 {
 	static const BYTE bOldCode[22] = {
@@ -545,16 +561,19 @@ static void MountainCloudBoysFix()
 		0x00, 0x04, 0x0B, 0x39, 0x00, 0x03, 0xEF, 0x00, 0x04, 0x02
 		};
 
+	InitializeScriptGlobals();
+
 	// Faulty code lies under offset 3367 - replace it if it matches
-	if ( memcmp( ScriptSpace+200000+3367, bOldCode, sizeof(bOldCode) ) == 0 )
+	if ( memcmp( ScriptSpace+ScriptFileSize+3367, bOldCode, sizeof(bOldCode) ) == 0 )
 	{
-		memcpy( ScriptSpace+200000+3367, bNewCode, sizeof(bNewCode) );
+		memcpy( ScriptSpace+ScriptFileSize+3367, bNewCode, sizeof(bNewCode) );
 	}
 }
 
 void TheScriptsLoad_BasketballFix()
 {
 	TheScriptsLoad();
+	InitializeScriptGlobals();
 
 	BasketballFix(ScriptSpace+8, *(int*)(ScriptSpace+3));
 }
@@ -562,10 +581,11 @@ void TheScriptsLoad_BasketballFix()
 void StartNewMission_SCMFixes()
 {
 	WipeLocalVariableMemoryForMissionScript();
+	InitializeScriptGlobals();
 
 	// INITIAL - Basketball fix
 	if ( ScriptParams[0] == 0 )
-		BasketballFix(ScriptSpace+200000, 69000);
+		BasketballFix(ScriptSpace+ScriptFileSize, ScriptMissionSize);
 	// WUZI1 - Mountain Cloud Boys fix
 	else if ( ScriptParams[0] == 53 )
 		MountainCloudBoysFix();
