@@ -8,6 +8,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _USE_MATH_DEFINES
 
+#define NOMINMAX
 #define WINVER 0x0502
 #define _WIN32_WINNT 0x0502
 
@@ -49,12 +50,6 @@ extern RpHAnimHierarchy* (*GetAnimHierarchyFromSkinClump)(RpClump*);
 
 extern unsigned char& nGameClockDays;
 extern unsigned char& nGameClockMonths;
-
-template<typename T>
-inline T random(T a, T b)
-{
-	return a + static_cast<T>(rand() * (1.0f/(RAND_MAX+1)) * (b - a));
-}
 
 #define DISABLE_FLA_DONATION_WINDOW		0
 

@@ -1,15 +1,26 @@
 #include "StdAfxSA.h"
 
-#include <set>
+#include <algorithm>
+#include <vector>
 #include "VehicleSA.h"
 #include "TimerSA.h"
 
-std::set<unsigned int>		vecRotorExceptions;
+std::vector<unsigned int>		vecRotorExceptions;
+
+static bool ShouldIgnoreRotor( unsigned int id )
+{
+	return std::find( vecRotorExceptions.begin(), vecRotorExceptions.end(), id ) != vecRotorExceptions.end();
+}
 
 static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0x6D1680, 0x70C0B0);
 WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
 static void*	varIsLawEnforcementVehicle = AddressByVersion<void*>(0x6D2370, 0x6D2BA0, 0x70D8C0);
 WRAPPER bool CVehicle::IsLawEnforcementVehicle() { VARJMP(varIsLawEnforcementVehicle); }
+
+static int32_t random(int32_t from, int32_t to)
+{
+	return from + ( rand() % (to-from) );
+}
 
 static RwObject* GetCurrentAtomicObjectCB(RwObject* pObject, void* data)
 {
@@ -62,7 +73,7 @@ void ReadRotorFixExceptions(const wchar_t* pPath)
 
 		unsigned int toList = _wtoi( fileID );
 		if ( toList != 0 )
-			vecRotorExceptions.insert( toList );
+			vecRotorExceptions.push_back( toList );
 	}
 
 	delete[] buf;
@@ -93,7 +104,7 @@ bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 	else if ( IsLawEnforcementVehicle() )
 		PlateDesign = CCustomCarPlateMgr::GetMapRegionPlateDesign();
 	else
- 		PlateDesign = random(0, 20) == 0 ? random<signed char>(0, 3) : CCustomCarPlateMgr::GetMapRegionPlateDesign();
+ 		PlateDesign = random(0, 20) == 0 ? random(0, 3) : CCustomCarPlateMgr::GetMapRegionPlateDesign();
 
 	assert(PlateDesign >= 0 && PlateDesign < 3);
 
@@ -154,13 +165,14 @@ void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo
 void CHeli::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
-	bool		bHasMovingRotor = m_pCarNode[13] != nullptr && vecRotorExceptions.count(m_nModelIndex) == 0;
-	bool		bHasMovingRotor2 = m_pCarNode[15] != nullptr && vecRotorExceptions.count(m_nModelIndex) == 0;;
+	bool		bDisplayRotors = !ShouldIgnoreRotor( m_nModelIndex );
+	bool		bHasMovingRotor = m_pCarNode[13] != nullptr && bDisplayRotors;
+	bool		bHasMovingRotor2 = m_pCarNode[15] != nullptr && bDisplayRotors;
 
 	m_nTimeTillWeNeedThisCar = CTimer::m_snTimeInMilliseconds + 3000;
 
 	if ( m_fRotorSpeed > 0.0 )
-		dRotorsSpeed = min(1.7 * (1.0/0.22) * m_fRotorSpeed, 1.5);
+		dRotorsSpeed = std::min(1.7 * (1.0/0.22) * m_fRotorSpeed, 1.5);
 	else
 		dRotorsSpeed = 0.0;
 
@@ -168,8 +180,8 @@ void CHeli::Render()
 	if ( dMovingRotorSpeed < 0.0 )
 		dMovingRotorSpeed = 0.0;
 
-	int			nStaticRotorAlpha = static_cast<int>(min((1.5-dRotorsSpeed) * 255.0, 255));
-	int			nMovingRotorAlpha = static_cast<int>(min(dMovingRotorSpeed * 175.0, 175));
+	int			nStaticRotorAlpha = static_cast<int>(std::min((1.5-dRotorsSpeed) * 255.0, 255.0));
+	int			nMovingRotorAlpha = static_cast<int>(std::min(dMovingRotorSpeed * 175.0, 175.0));
 
 	if ( m_pCarNode[12] )
 	{
@@ -209,13 +221,14 @@ void CHeli::Render()
 void CPlane::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
-	bool		bHasMovingProp = m_pCarNode[13] != nullptr && vecRotorExceptions.count(m_nModelIndex) == 0;
-	bool		bHasMovingProp2 = m_pCarNode[15] != nullptr && vecRotorExceptions.count(m_nModelIndex) == 0;
+	bool		bDisplayRotors = !ShouldIgnoreRotor( m_nModelIndex );
+	bool		bHasMovingProp = m_pCarNode[13] != nullptr && bDisplayRotors;
+	bool		bHasMovingProp2 = m_pCarNode[15] != nullptr && bDisplayRotors;
 
 	m_nTimeTillWeNeedThisCar = CTimer::m_snTimeInMilliseconds + 3000;
 
 	if ( m_fPropellerSpeed > 0.0 )
-		dRotorsSpeed = min(1.7 * (1.0/0.31) * m_fPropellerSpeed, 1.5);
+		dRotorsSpeed = std::min(1.7 * (1.0/0.31) * m_fPropellerSpeed, 1.5);
 	else
 		dRotorsSpeed = 0.0;
 
@@ -223,8 +236,8 @@ void CPlane::Render()
 	if ( dMovingRotorSpeed < 0.0 )
 		dMovingRotorSpeed = 0.0;
 
-	int			nStaticRotorAlpha = static_cast<int>(min((1.5-dRotorsSpeed) * 255.0, 255));
-	int			nMovingRotorAlpha = static_cast<int>(min(dMovingRotorSpeed * 175.0, 175));
+	int			nStaticRotorAlpha = static_cast<int>(std::min((1.5-dRotorsSpeed) * 255.0, 255.0));
+	int			nMovingRotorAlpha = static_cast<int>(std::min(dMovingRotorSpeed * 175.0, 175.0));
 
 	if ( m_pCarNode[12] )
 	{

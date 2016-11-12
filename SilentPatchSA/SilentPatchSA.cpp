@@ -1,5 +1,6 @@
 #include "StdAfxSA.h"
 #include <limits>
+#include <algorithm>
 
 #include "ScriptSA.h"
 #include "GeneralSA.h"
@@ -69,7 +70,7 @@ RwFrame* RwFrameForAllChildren(RwFrame* frame, RwFrameCallBack callBack, void* d
 {
 	for ( RwFrame* curFrame = frame->child; curFrame != nullptr; curFrame = curFrame->next )
 	{
-		if ( !callBack(curFrame, data) )
+		if ( callBack(curFrame, data) == NULL )
 			break;
 	}
 	return frame;
@@ -79,7 +80,7 @@ RwFrame* RwFrameForAllObjects(RwFrame* frame, RwObjectCallBack callBack, void* d
 {
 	for ( RwLLLink* link = rwLinkListGetFirstLLLink(&frame->objectList); link != rwLinkListGetTerminator(&frame->objectList); link = rwLLLinkGetNext(link) )
 	{
-		if ( !callBack(&rwLLLinkGetData(link, RwObjectHasFrame, lFrame)->object, data) )
+		if ( callBack(&rwLLLinkGetData(link, RwObjectHasFrame, lFrame)->object, data) == NULL )
 			break;
 	}
 
@@ -131,7 +132,7 @@ RpClump* RpClumpForAllAtomics(RpClump* clump, RpAtomicCallBack callback, void* p
 {
 	for ( RwLLLink* link = rwLinkListGetFirstLLLink(&clump->atomicList); link != rwLinkListGetTerminator(&clump->atomicList); link = rwLLLinkGetNext(link) )
 	{
-		if ( !callback(rwLLLinkGetData(link, RpAtomic, inClumpLink), pData) )
+		if ( callback(rwLLLinkGetData(link, RpAtomic, inClumpLink), pData) == NULL )
 			break;
 	}
 	return clump;
@@ -148,7 +149,7 @@ RpClump* RpClumpRender(RpClump* clump)
 		{
 			// Not sure why they need this
 			RwFrameGetLTM(RpAtomicGetFrame(curAtomic));
-			if ( !RpAtomicRender(curAtomic) )
+			if ( RpAtomicRender(curAtomic) == NULL )
 				retClump = NULL;
 		}
 	}
@@ -159,7 +160,7 @@ RpGeometry* RpGeometryForAllMaterials(RpGeometry* geometry, RpMaterialCallBack f
 {
 	for ( RwInt32 i = 0, j = geometry->matList.numMaterials; i < j; i++ )
 	{
-		if ( !fpCallBack(geometry->matList.materials[i], pData) )
+		if ( fpCallBack(geometry->matList.materials[i], pData) == NULL )
 			break;
 	}
 	return geometry;
@@ -306,13 +307,13 @@ RpAtomic* TwoPassAlphaRender_aap(RpAtomic* atomic)
 
 	atomic = AtomicDefaultRenderCallBack(atomic);
 
-	if ( atomic )
+	if ( atomic != nullptr )
 	{
 		// 2nd pass
 		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
 		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
 
-		AtomicDefaultRenderCallBack(atomic);
+		atomic = AtomicDefaultRenderCallBack(atomic);
 	}
 
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
@@ -345,14 +346,14 @@ RpAtomic* TwoPassAlphaRender_Silent(RpAtomic* atomic)
 
 	atomic = AtomicDefaultRenderCallBack(atomic);
 
-	if ( atomic )
+	if ( atomic != nullptr )
 	{
 		// 2nd pass
 		RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
 		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
 		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
 
-		AtomicDefaultRenderCallBack(atomic);
+		atomic = AtomicDefaultRenderCallBack(atomic);
 	}
 
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
@@ -630,9 +631,8 @@ bool GetCurrentZoneLockedOrUnlocked(float fPosX, float fPosY)
 // By NTAuthority
 void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float sizeY)
 {
-	if ( !gpMoonMask )
-	{
-		
+	if ( gpMoonMask == nullptr )
+	{	
 		if ( GetFileAttributes("lunar.png") != INVALID_FILE_ATTRIBUTES )
 		{
 			// load from file
@@ -692,9 +692,10 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 	//D3DPERF_EndEvent();
 }
 
-CRGBA* CRGBA::BlendGangColour(unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+CRGBA* CRGBA::BlendGangColour(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
-	*this = Blend(CRGBA(r, g, b), pCurrZoneInfo->ZoneColour.a, HudColour[3], static_cast<BYTE>(255-pCurrZoneInfo->ZoneColour.a));
+	double colourIntensity = static_cast<double>(pCurrZoneInfo->ZoneColour.a) / 255.0;
+	*this = BlendSqr(CRGBA(r, g, b), HudColour[3], colourIntensity);
 	this->a = a;
 
 	return this;
@@ -702,7 +703,7 @@ CRGBA* CRGBA::BlendGangColour(unsigned char r, unsigned char g, unsigned char b,
 
 void SunAndMoonFarClip()
 {
-	fSunFarClip = min(1500.0f, fFarClipZ);
+	fSunFarClip = std::min(1500.0f, fFarClipZ);
 	DoSunAndMoon();
 }
 

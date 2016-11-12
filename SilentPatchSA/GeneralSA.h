@@ -1,6 +1,8 @@
 #ifndef __GENERAL
 #define __GENERAL
 
+#include <stdint.h>
+
 class CSimpleTransform
 {
 public:
@@ -11,7 +13,7 @@ public:
 class CRGBA
 {
 public:
-	BYTE r, g, b, a;
+	uint8_t r, g, b, a;
 
 	inline CRGBA() {}
 
@@ -19,33 +21,31 @@ public:
 		: r(in.r), g(in.g), b(in.b), a(in.a)
 	{}
 
-	inline CRGBA(const CRGBA& in, BYTE alpha)
+	inline CRGBA(const CRGBA& in, uint8_t alpha)
 		: r(in.r), g(in.g), b(in.b), a(alpha)
 	{}
 
 
-	inline CRGBA(BYTE red, BYTE green, BYTE blue, BYTE alpha = 255)
+	inline CRGBA(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255)
 		: r(red), g(green), b(blue), a(alpha)
 	{}
 
-	template <typename T>
-	friend CRGBA Blend(const CRGBA& One, T OneStrength, const CRGBA& Two, T TwoStrength)
-		{	T	TotalStrength = OneStrength + TwoStrength;
-			return CRGBA(	((One.r * OneStrength) + (Two.r * TwoStrength))/TotalStrength,
-							((One.g * OneStrength) + (Two.g * TwoStrength))/TotalStrength,
-							((One.b * OneStrength) + (Two.b * TwoStrength))/TotalStrength,
-							((One.a * OneStrength) + (Two.a * TwoStrength))/TotalStrength); }
+	friend CRGBA Blend(const CRGBA& From, const CRGBA& To, double BlendVal)
+		{	double InvBlendVal = 1.0 - BlendVal;
+			return CRGBA(	To.r * BlendVal + From.r * InvBlendVal,
+			To.g * BlendVal + From.g * InvBlendVal,
+			To.b * BlendVal + From.b * InvBlendVal,
+			To.a * BlendVal + From.a * InvBlendVal); }
 
-	template <typename T>
-	friend CRGBA Blend(const CRGBA& One, T OneStrength, const CRGBA& Two, T TwoStrength, const CRGBA& Three, T ThreeStrength)
-		{	T	TotalStrength = OneStrength + TwoStrength + ThreeStrength;
-			return CRGBA(	((One.r * OneStrength) + (Two.r * TwoStrength) + (Three.r * ThreeStrength))/TotalStrength,
-							((One.g * OneStrength) + (Two.g * TwoStrength) + (Three.g * ThreeStrength))/TotalStrength,
-							((One.b * OneStrength) + (Two.b * TwoStrength) + (Three.b * ThreeStrength))/TotalStrength,
-							((One.a * OneStrength) + (Two.a * TwoStrength) + (Three.a * ThreeStrength))/TotalStrength); }
+	friend CRGBA BlendSqr(const CRGBA& From, const CRGBA& To, double BlendVal)
+		{	double InvBlendVal = 1.0 - BlendVal;
+			return CRGBA(	sqrt((To.r * To.r) * BlendVal + (From.r * From.r) * InvBlendVal),
+			sqrt((To.g * To.g) * BlendVal + (From.g * From.g) * InvBlendVal),
+			sqrt((To.b * To.b) * BlendVal + (From.b * From.b) * InvBlendVal),
+			sqrt((To.a * To.a) * BlendVal + (From.a * From.a) * InvBlendVal)); }
 
 	// SilentPatch
-	CRGBA*			BlendGangColour(unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+	CRGBA*			BlendGangColour(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 };
 
 class CRect
