@@ -401,7 +401,7 @@ void RenderVehicleHiDetailAlphaCB_HunterDoor(RpAtomic* pAtomic)
 	NewObject.fCompareValue = -std::numeric_limits<float>::infinity();
 	NewObject.pAtomic = pAtomic;
 
-	m_alphaList.InsertSorted(NewObject);
+	m_alphaList.InsertFront(NewObject);
 }
 
 template <RpAtomic* renderer(RpAtomic*)>
@@ -431,7 +431,7 @@ void RenderWeaponPedsForPC()
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
 
-	for ( auto it = ms_weaponPedsForPC.m_lnListHead.m_pNext; it != &ms_weaponPedsForPC.m_lnListTail; it = it->m_pNext )
+	for ( auto it = ms_weaponPedsForPC.Next( nullptr ); it != nullptr; it = ms_weaponPedsForPC.Next( it ) )
 	{
 		it->V()->SetupLighting();
 		it->V()->RenderWeapon(true, false);

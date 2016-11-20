@@ -13,6 +13,14 @@ public:
 		m_pNext = pAttach;
 	}
 
+	inline void InsertBefore(CLinkSA<T>* pAttach) {
+		pAttach->m_pPrev = m_pPrev;
+		m_pPrev->m_pNext = pAttach;
+
+		pAttach->m_pNext = this;
+		m_pPrev = pAttach;
+	}
+
 	inline void Remove(void) {
 		m_pNext->m_pPrev = m_pPrev;
 		m_pPrev->m_pNext = m_pNext;
@@ -38,7 +46,7 @@ public:
 	{
 	}
 
-	void Init(int nNumLinks) {
+	void Init(size_t nNumLinks) {
 		m_plnLinks = new CLinkSA<T>[nNumLinks];
 
 		m_lnListHead.m_pNext = &m_lnListTail;
@@ -47,8 +55,8 @@ public:
 		m_lnFreeListHead.m_pNext = &m_lnFreeListTail;
 		m_lnFreeListTail.m_pPrev = &m_lnFreeListHead;
 
-		for(int i = nNumLinks - 1; i >= 0; i--) {
-			m_lnFreeListHead.Insert(&m_plnLinks[i]);
+		for(size_t i = nNumLinks; i > 0; --i) {
+			m_lnFreeListHead.Insert(&m_plnLinks[i - 1]);
 		}
 	}
 
@@ -95,9 +103,28 @@ public:
 		return pLink;
 	}
 
+	CLinkSA<T>* InsertFront(const T& pItem) {
+		return Insert(pItem);
+	}
+
+	CLinkSA<T>* InsertBack(const T& pItem) {
+		CLinkSA<T>* pLink = m_lnFreeListHead.m_pNext;
+
+		if(pLink == &m_lnFreeListTail) {
+			return nullptr;
+		}
+
+		pLink->m_pItem = pItem;
+
+		pLink->Remove();
+		m_lnListTail.InsertBefore(pLink);
+
+		return pLink;
+	}
+
 	void Clear(void) {
 		while(m_lnListHead.m_pNext != &m_lnListTail) {
-			m_lnListHead.m_pNext->Remove();
+			Remove( m_lnListHead.m_pNext );
 		}
 	}
 
@@ -107,15 +134,28 @@ public:
 	}
 
 	CLinkSA<T>* Next(CLinkSA<T>* pCurrent) {
-		if(pCurrent == 0) {
+		if(pCurrent == nullptr) {
 			pCurrent = &m_lnListHead;
 		}
 
 		if(pCurrent->m_pNext == &m_lnListTail) {
-			return 0;
+			return nullptr;
 		}
 		else {
 			return pCurrent->m_pNext;
+		}
+	}
+
+	CLinkSA<T>* Prev(CLinkSA<T>* pCurrent) {
+		if(pCurrent == nullptr) {
+			pCurrent = &m_lnListTail;
+		}
+
+		if(pCurrent->m_pPrev == &m_lnListHead) {
+			return nullptr;
+		}
+		else {
+			return pCurrent->m_pPrev;
 		}
 	}
 
