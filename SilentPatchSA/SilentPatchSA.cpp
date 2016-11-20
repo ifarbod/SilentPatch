@@ -941,6 +941,14 @@ RwBool GTARtAnimInterpolatorSetCurrentAnim(RtAnimInterpolator* animI, RtAnimAnim
 	return TRUE;
 }
 
+void __stdcall CdStreamSetFilePointer( HANDLE hFile, uint32_t distanceToMove, void*, DWORD dwMoveMethod )
+{
+	LARGE_INTEGER li;
+	li.QuadPart = int64_t(distanceToMove) << 11;
+	SetFilePointerEx( hFile, li, nullptr, dwMoveMethod );
+}
+static auto* pCdStreamSetFilePointer = CdStreamSetFilePointer;
+
 
 #include <xnamath.h>
 
@@ -1967,6 +1975,21 @@ void _declspec(naked) FixedCarDamage_Newsteam()
 
 FixedCarDamage_Negative:
 		movzx   eax, byte ptr [edi+24h]
+		retn
+	}
+}
+
+void __declspec(naked) CdStreamThreadHighSize()
+{
+	_asm
+	{
+		xor		edx, edx
+		shld	edx, ecx, 11
+		shl		ecx, 11
+		mov		[esi+1Ch+8], ecx // OVERLAPPED.Offset
+		mov		[esi+1Ch+0Ch], edx // OVERLAPPED.OffsetHigh
+
+		mov		edx, [esi+4]
 		retn
 	}
 }
@@ -3062,6 +3085,12 @@ void Patch_SA_10()
 	char*			pScannerNames = *(char**)0x4E72D4;
 	strcpy(pScannerNames + (8*113), "WESTP");
 	strcpy(pScannerNames + (8*134), "????");
+
+	// Handle IMGs bigger than 4GB
+	Nop( 0x4065BB, 3 );
+	Nop( 0x4065C2, 1 );
+	InjectHook( 0x4065C2+1, CdStreamThreadHighSize, PATCH_CALL );
+	Patch<const void*>( 0x406620+2, &pCdStreamSetFilePointer );
 }
 
 void Patch_SA_11()
