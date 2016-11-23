@@ -1,0 +1,31 @@
+III:
+- Alt + F4
+- NickJ's pathfinding stuff
+- NickJ's FuckCarCompletely
+- Filtering on player skin
+- space's bugged cargen command (014C)
+- port big imgs stuff from SA
+- remove censorships?
+
+VC:
+- Alt + F4
+- NickJ's pathfinding stuff
+- NickJ's FuckCarCompletely
+- space's bugged justify command
+- space's bugged cargen command (014C)
+- port big imgs stuff from SA
+- remove censorships?
+- check if extras can be fixed with bikes (so they move with the part they are attached to)
+
+SA:
+- Alt + F4
+- NickJ's pathfinding stuff
+- NickJ's FuckCarCompletely
+- Bicycle exploding?
+- CarAI timers
+- space's bugged cargen command (014C)
+- https://kb.speeddemosarchive.com/Grand_Theft_Auto:_San_Andreas/Game_Mechanics_and_Glitches#Harder_AI_after_having_been_in_a_car
+  (does this affect III/VC?)
+- check if Tram signs are fixable without Wesser flipping out
+
+More? since I lost the orig list
