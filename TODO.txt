@@ -2,8 +2,10 @@ III:
 - Alt + F4
 - NickJ's pathfinding stuff
 - NickJ's FuckCarCompletely
+- NickJ's remote bomb ownership bug
 - Filtering on player skin
 - space's bugged cargen command (014C)
+- space's bugged sniper bullet checks (047B, 047C, and 037E)
 - port big imgs stuff from SA
 - remove censorships?
 - possibly leaking TXD handle somewhere
@@ -12,8 +14,10 @@ VC:
 - Alt + F4
 - NickJ's pathfinding stuff
 - NickJ's FuckCarCompletely
+- NickJ's remote bomb ownership bug
 - space's bugged justify command
 - space's bugged cargen command (014C)
+- space's bugged sniper bullet checks (047B, 047C, and 037E)
 - port big imgs stuff from SA
 - remove censorships?
 - check if extras can be fixed with bikes (so they move with the part they are attached to)
@@ -23,9 +27,11 @@ SA:
 - Alt + F4
 - NickJ's pathfinding stuff
 - NickJ's FuckCarCompletely
+- NickJ's remote bomb ownership bug (maybe)
 - Bicycle exploding?
 - CarAI timers
 - space's bugged cargen command (014C)
+- space's bugged sniper bullet checks (047B, 047C, and 037E) (maybe)
 - https://kb.speeddemosarchive.com/Grand_Theft_Auto:_San_Andreas/Game_Mechanics_and_Glitches#Harder_AI_after_having_been_in_a_car
   (does this affect III/VC?)
 - check if Tram signs are fixable without Wesser flipping out
