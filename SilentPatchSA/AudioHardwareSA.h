@@ -42,10 +42,7 @@ public:
 		GTAdelete(data);
 	}
 
-	CAEDataStreamOld(DWORD index, char* pName, int startPos, int len, bool encrypted)
-		:	pFilename(pName), bOpened(false), dwCurrentPosition(0), dwStartPosition(startPos),
-			dwLength(len), dwID(index), bEncrypted(encrypted), nRefCount(1)
-	{}
+	CAEDataStreamOld() = delete;
 
 	~CAEDataStreamOld()
 	{
@@ -113,10 +110,7 @@ public:
 		GTAdelete(data);
 	}
 
-	CAEDataStreamNew(DWORD index, char* pName, int startPos, int len, bool encrypted)
-		:	pFilename(pName), bOpened(false), dwCurrentPosition(0), dwStartPosition(startPos),
-			dwLength(len), dwID(index), bEncrypted(encrypted), nRefCount(1)
-	{}
+	CAEDataStreamNew() = delete;
 
 	~CAEDataStreamNew()
 	{
@@ -168,9 +162,8 @@ private:
 	static bool			m_bUseNewStruct;
 
 private:
-	// Make sure we never destruct/construct this
-	~CAEDataStream();
-	CAEDataStream();
+	~CAEDataStream() = delete;
+	CAEDataStream() = delete;
 
 public:
 	static void			SetStructType(bool bNew)
@@ -260,7 +253,7 @@ private:
 
 public:
 	CAEWaveDecoder(CAEDataStream* stream)
-		: CAEStreamingDecoder(stream)//, bInitialised(false)
+		: CAEStreamingDecoder(stream)
 	{}
 
 	virtual bool			Initialise() override;
