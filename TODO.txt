@@ -8,7 +8,6 @@ III:
 - space's bugged sniper bullet checks (047B, 047C, and 037E)
 - port big imgs stuff from SA
 - remove censorships?
-- possibly leaking TXD handle somewhere
 
 VC:
 - Alt + F4
@@ -21,7 +20,6 @@ VC:
 - port big imgs stuff from SA
 - remove censorships?
 - check if extras can be fixed with bikes (so they move with the part they are attached to)
-- leaking TXD handle somewhere
 
 SA:
 - Alt + F4
