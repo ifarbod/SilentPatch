@@ -21,10 +21,3 @@
 #include "MemoryMgr.h"
 
 #define DISABLE_FLA_DONATION_WINDOW		0
-
-
-template<typename T>
-inline T random(T a, T b)
-{
-	return a + static_cast<T>(rand() * (1.0f/(RAND_MAX+1)) * (b - a));
-}
