@@ -272,15 +272,11 @@ RpAtomic* OnePassAlphaRender(RpAtomic* atomic)
 	BOOL	nAlphaBlending;
 
 	RwRenderStateGet(rwRENDERSTATEVERTEXALPHAENABLE, &nAlphaBlending);
+	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
 
-	// RW caches those anyway, no need to duplicate caching
-	//if ( nAlphaBlending != TRUE )
-	//	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
 	atomic = AtomicDefaultRenderCallBack(atomic);
 
-	//if ( nAlphaBlending != TRUE )
-		RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
-
+	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
 	return atomic;
 }
 
