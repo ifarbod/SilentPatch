@@ -932,9 +932,11 @@ RwBool GTARtAnimInterpolatorSetCurrentAnim(RtAnimInterpolator* animI, RtAnimAnim
 	animI->keyFrameAddCB = info->keyFrameAddCB;
 
 	for ( RwInt32 i = 0; i < animI->numNodes; ++i )
-		RtAnimKeyFrameInterpolateMacro( animI, rtANIMGETINTERPFRAME( animI, i ),
+	{
+		RtAnimKeyFrameInterpolate( animI, rtANIMGETINTERPFRAME( animI, i ),
 			(RwChar*)anim->pFrames + i * animI->currentAnimKeyFrameSize,
 			(RwChar*)anim->pFrames + ( i + animI->numNodes) * animI->currentAnimKeyFrameSize, 0.0f );
+	}
 
 	animI->pNextFrame = (RwChar*)anim->pFrames + 2 * animI->currentAnimKeyFrameSize * animI->numNodes;
 
