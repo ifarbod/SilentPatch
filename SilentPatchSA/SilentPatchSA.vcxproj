@@ -113,6 +113,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AudioHardwareSA.cpp" />
+    <ClCompile Include="FLACDecoderSA.cpp" />
     <ClCompile Include="GeneralSA.cpp" />
     <ClCompile Include="ModelInfoSA.cpp" />
     <ClCompile Include="PedSA.cpp" />
@@ -125,6 +126,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     </ClCompile>
     <ClCompile Include="TimerSA.cpp" />
     <ClCompile Include="VehicleSA.cpp" />
+    <ClCompile Include="WaveDecoderSA.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\SilentPatch\nvc.fx">
@@ -153,6 +155,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClInclude Include="..\SilentPatch\MemoryMgr.h" />
     <ClInclude Include="..\SilentPatch\Timer.h" />
     <ClInclude Include="AudioHardwareSA.h" />
+    <ClInclude Include="FLACDecoderSA.h" />
     <ClInclude Include="GeneralSA.h" />
     <ClInclude Include="LinkListSA.h" />
     <ClInclude Include="Maths.h" />
@@ -164,6 +167,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClInclude Include="StdAfxSA.h" />
     <ClInclude Include="TimerSA.h" />
     <ClInclude Include="VehicleSA.h" />
+    <ClInclude Include="WaveDecoderSA.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Shaders.rc" />

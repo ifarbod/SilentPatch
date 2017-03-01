@@ -19,6 +19,9 @@
     <Filter Include="Header Files\FLAC">
       <UniqueIdentifier>{57615a2f-8bc4-461f-b9f6-86d5f8286d7a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\decoders">
+      <UniqueIdentifier>{f4ecbe23-228b-461b-b37f-d718e7ca92ae}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SilentPatchSA.cpp">
@@ -50,6 +53,12 @@
     </ClCompile>
     <ClCompile Include="PedSA.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WaveDecoderSA.cpp">
+      <Filter>Source Files\decoders</Filter>
+    </ClCompile>
+    <ClCompile Include="FLACDecoderSA.cpp">
+      <Filter>Source Files\decoders</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -112,6 +121,12 @@
     </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WaveDecoderSA.h">
+      <Filter>Source Files\decoders</Filter>
+    </ClInclude>
+    <ClInclude Include="FLACDecoderSA.h">
+      <Filter>Source Files\decoders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

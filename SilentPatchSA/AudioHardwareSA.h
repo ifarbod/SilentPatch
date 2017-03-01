@@ -3,7 +3,6 @@
 
 // libflac
 #define FLAC__NO_DLL
-#include "share\compat.h"
 #include "FLAC\stream_decoder.h"
 #include "FLAC\metadata.h"
 
@@ -232,86 +231,6 @@ public:
 	virtual					~CAEStreamingDecoder();
 
 	virtual unsigned int	GetStreamID()=0;
-};
-
-class CAEWaveDecoder : public CAEStreamingDecoder
-{
-private:
-	unsigned int	nDataSize;
-	unsigned int	nOffsetToData;
-	//bool			bInitialised;
-
-	struct FormatChunk
-	{
-		unsigned short		audioFormat;
-		unsigned short		numChannels;
-		unsigned int		sampleRate;
-		unsigned int		byteRate;
-		unsigned short		blockAlign;
-		unsigned short		bitsPerSample;
-	}				formatChunk;
-
-public:
-	CAEWaveDecoder(CAEDataStream* stream)
-		: CAEStreamingDecoder(stream)
-	{}
-
-	virtual bool			Initialise() override;
-	virtual unsigned int	FillBuffer(void* pBuf, unsigned long nLen) override;
-
-	virtual unsigned int	GetStreamLengthMs() override
-		{ return static_cast<unsigned long long>(nDataSize) * 8000 / (formatChunk.sampleRate*formatChunk.bitsPerSample*formatChunk.numChannels); }
-	virtual unsigned int	GetStreamPlayTimeMs() override
-	{ return static_cast<unsigned long long>(GetStream()->GetCurrentPosition() - nOffsetToData) * 8000 / (formatChunk.sampleRate*formatChunk.bitsPerSample*formatChunk.numChannels); }		
-
-	virtual void			SetCursor(unsigned int nTime) override
-		{	auto nPos = static_cast<unsigned long long>(nTime) * (formatChunk.sampleRate*formatChunk.bitsPerSample*formatChunk.numChannels) /  8000;
-			auto nModulo = (formatChunk.numChannels*formatChunk.bitsPerSample/8);
-			auto nExtra = nPos % nModulo ? nModulo - (nPos % nModulo) : 0;
-			GetStream()->Seek(nOffsetToData + nPos + nExtra, FILE_BEGIN); }
-
-	virtual unsigned int	GetSampleRate() override
-	{ return formatChunk.sampleRate; }
-
-	virtual unsigned int	GetStreamID() override
-		{ return GetStream()->GetID(); }
-};
-
-class CAEFLACDecoder : public CAEStreamingDecoder
-{
-private:
-	FLAC__StreamDecoder*		pFLACDecoder;
-	FLAC__StreamMetadata*		pStreamInfo;
-	unsigned int				nCurrentSample;
-
-private:
-	static FLAC__StreamDecoderReadStatus	read_cb(const FLAC__StreamDecoder* decoder, FLAC__byte buffer[], size_t* bytes, void* client_data);
-	static FLAC__StreamDecoderWriteStatus	write_cb(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC__int32 *const buffer[], void *client_data);
-	static void								meta_cb(const FLAC__StreamDecoder* decoder, const FLAC__StreamMetadata *metadata, void *client_data);
-	static void								error_cb(const FLAC__StreamDecoder* decoder, FLAC__StreamDecoderErrorStatus status, void* client_data);
-	static FLAC__StreamDecoderSeekStatus	seek_cb(const FLAC__StreamDecoder *decoder, FLAC__uint64 absolute_byte_offset, void *client_data);
-	static FLAC__StreamDecoderTellStatus	tell_cb(const FLAC__StreamDecoder *decoder, FLAC__uint64 *absolute_byte_offset, void *client_data);
-	static FLAC__StreamDecoderLengthStatus	length_cb(const FLAC__StreamDecoder *decoder, FLAC__uint64 *stream_length, void *client_data);
-	static FLAC__bool						eof_cb(const FLAC__StreamDecoder *decoder, void *client_data);
-
-public:
-	CAEFLACDecoder(CAEDataStream* stream)
-		: CAEStreamingDecoder(stream), pFLACDecoder(nullptr)
-	{}
-
-	virtual					~CAEFLACDecoder();
-	virtual bool			Initialise() override;
-	virtual unsigned int	FillBuffer(void* pBuf, unsigned long nLen) override;
-	virtual unsigned int	GetStreamLengthMs() override
-		{ return pStreamInfo->data.stream_info.total_samples * 1000 / pStreamInfo->data.stream_info.sample_rate; }
-	virtual unsigned int	GetStreamPlayTimeMs() override
-		{ return nCurrentSample * 1000 / pStreamInfo->data.stream_info.sample_rate; }
-	virtual void			SetCursor(unsigned int nTime) override
-		{ FLAC__stream_decoder_seek_absolute(pFLACDecoder, nTime * pStreamInfo->data.stream_info.sample_rate / 1000); }
-	virtual unsigned int	GetSampleRate() override
-		{ return pStreamInfo->data.stream_info.sample_rate; }
-	virtual unsigned int	GetStreamID() override
-		{ return GetStream()->GetID(); }
 };
 
 #endif

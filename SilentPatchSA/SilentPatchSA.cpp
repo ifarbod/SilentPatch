@@ -11,6 +11,9 @@
 #include "LinkListSA.h"
 #include "PNGFile.h"
 
+#include "WaveDecoderSA.h"
+#include "FLACDecoderSA.h"
+
 // RW wrappers
 static void* varAtomicDefaultRenderCallBack = AddressByVersion<void*>(0x7491C0, 0x749AD0, 0x783180);
 WRAPPER RpAtomic* AtomicDefaultRenderCallBack(RpAtomic* atomic) { WRAPARG(atomic); VARJMP(varAtomicDefaultRenderCallBack); }
