@@ -13,35 +13,18 @@
 #define _WIN32_WINNT 0x0502
 
 #include <windows.h>
-#include <utility> 
 #include <cassert>
-#include <tuple>
-#include <Shlwapi.h>
-#include <ShlObj.h>
 
 #define RwEngineInstance (*rwengine)
 
 #include <rwcore.h>
-#include <rpworld.h>
 #include <rphanim.h>
 #include <rtpng.h>
-
-#include <d3d9.h>
 
 #include "resource.h"
 
 #include "MemoryMgr.h"
 #include "Maths.h"
-
-struct AlphaObjectInfo
-{
-	RpAtomic*	pAtomic;
-	RpAtomic*	(*callback)(RpAtomic*, float);
-	float		fCompareValue;
-
-	friend bool operator < (const AlphaObjectInfo &a, const AlphaObjectInfo &b) 
-	{ return a.fCompareValue < b.fCompareValue; }
-};
 
 // SA operator delete
 extern void	(*GTAdelete)(void* data);
@@ -52,7 +35,3 @@ extern unsigned char& nGameClockDays;
 extern unsigned char& nGameClockMonths;
 
 #define DISABLE_FLA_DONATION_WINDOW		0
-
-//#define HIDE_MATERIAL
-//#define EXPAND_ALPHA_ENTITY_LISTS		800
-//#define EXPAND_BOAT_ALPHA_ATOMIC_LISTS	400

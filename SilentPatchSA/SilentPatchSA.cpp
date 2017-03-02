@@ -1,6 +1,9 @@
 #include "StdAfxSA.h"
 #include <limits>
 #include <algorithm>
+#include <d3d9.h>
+#include <Shlwapi.h>
+#include <ShlObj.h>
 
 #include "ScriptSA.h"
 #include "GeneralSA.h"
@@ -183,6 +186,16 @@ RwMatrix* RpHAnimHierarchyGetMatrixArray(RpHAnimHierarchy* hierarchy)
 {
 	return hierarchy->pMatrixArray;
 }
+
+struct AlphaObjectInfo
+{
+	RpAtomic*	pAtomic;
+	RpAtomic*	(*callback)(RpAtomic*, float);
+	float		fCompareValue;
+
+	friend bool operator < (const AlphaObjectInfo &a, const AlphaObjectInfo &b)
+	{ return a.fCompareValue < b.fCompareValue; }
+};
 
 // Other wrappers
 void					(*GTAdelete)(void*) = AddressByVersion<void(*)(void*)>(0x82413F, 0x824EFF, 0x85E58C);
