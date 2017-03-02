@@ -432,9 +432,10 @@ void RenderWeaponPedsForPC()
 
 	for ( auto it = ms_weaponPedsForPC.Next( nullptr ); it != nullptr; it = ms_weaponPedsForPC.Next( it ) )
 	{
-		it->V()->SetupLighting();
-		it->V()->RenderWeapon(true, false);
-		it->V()->RemoveLighting();
+		CPed* ped = **it;
+		ped->SetupLighting();
+		ped->RenderWeapon(true, false);
+		ped->RemoveLighting();
 	}
 }
 

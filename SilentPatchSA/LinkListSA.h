@@ -4,6 +4,9 @@
 template <class T>
 class CLinkSA
 {
+	template <class T>
+	friend class CLinkListSA;
+
 public:
 	inline void Insert(CLinkSA<T>* pAttach) {
 		pAttach->m_pNext = m_pNext;
@@ -26,10 +29,15 @@ public:
 		m_pPrev->m_pNext = m_pNext;
 	}
 
-	inline T& V(void) {
+	inline T& operator*(void) {
 		return m_pItem;
 	}
 
+	inline const T& operator*(void) const {
+		return m_pItem;
+	}
+
+private:
 	T m_pItem; // 0-4
 	// an item
 	CLinkSA<T>* m_pPrev; // 4-8
@@ -141,9 +149,7 @@ public:
 		if(pCurrent->m_pNext == &m_lnListTail) {
 			return nullptr;
 		}
-		else {
-			return pCurrent->m_pNext;
-		}
+		return pCurrent->m_pNext;
 	}
 
 	CLinkSA<T>* Prev(CLinkSA<T>* pCurrent) {
@@ -154,11 +160,10 @@ public:
 		if(pCurrent->m_pPrev == &m_lnListHead) {
 			return nullptr;
 		}
-		else {
-			return pCurrent->m_pPrev;
-		}
+		return pCurrent->m_pPrev;
 	}
 
+private:
 	CLinkSA<T> m_lnListHead; // 0-12
 	//head of the list of active links
 	CLinkSA<T> m_lnListTail; // 12-24
