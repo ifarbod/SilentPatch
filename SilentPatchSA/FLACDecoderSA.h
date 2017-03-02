@@ -26,15 +26,15 @@ public:
 
 	virtual					~CAEFLACDecoder();
 	virtual bool			Initialise() override;
-	virtual unsigned int	FillBuffer(void* pBuf, unsigned long nLen) override;
-	virtual unsigned int	GetStreamLengthMs() override
+	virtual uint32_t		FillBuffer(void* pBuf, uint32_t nLen) override;
+	virtual uint32_t		GetStreamLengthMs() override
 	{ return pStreamInfo->data.stream_info.total_samples * 1000 / pStreamInfo->data.stream_info.sample_rate; }
-	virtual unsigned int	GetStreamPlayTimeMs() override
+	virtual uint32_t		GetStreamPlayTimeMs() override
 	{ return nCurrentSample * 1000 / pStreamInfo->data.stream_info.sample_rate; }
-	virtual void			SetCursor(unsigned int nTime) override
+	virtual void			SetCursor(uint32_t nTime) override
 	{ FLAC__stream_decoder_seek_absolute(pFLACDecoder, nTime * pStreamInfo->data.stream_info.sample_rate / 1000); }
-	virtual unsigned int	GetSampleRate() override
+	virtual uint32_t		GetSampleRate() override
 	{ return pStreamInfo->data.stream_info.sample_rate; }
-	virtual unsigned int	GetStreamID() override
+	virtual uint32_t		GetStreamID() override
 	{ return GetStream()->GetID(); }
 };

@@ -25,22 +25,22 @@ public:
 	{}
 
 	virtual bool			Initialise() override;
-	virtual unsigned int	FillBuffer(void* pBuf, unsigned long nLen) override;
+	virtual uint32_t		FillBuffer(void* pBuf, uint32_t nLen) override;
 
-	virtual unsigned int	GetStreamLengthMs() override
+	virtual uint32_t		GetStreamLengthMs() override
 	{ return static_cast<unsigned long long>(nDataSize) * 8000 / (formatChunk.sampleRate*formatChunk.bitsPerSample*formatChunk.numChannels); }
-	virtual unsigned int	GetStreamPlayTimeMs() override
+	virtual uint32_t		GetStreamPlayTimeMs() override
 	{ return static_cast<unsigned long long>(GetStream()->GetCurrentPosition() - nOffsetToData) * 8000 / (formatChunk.sampleRate*formatChunk.bitsPerSample*formatChunk.numChannels); }		
 
-	virtual void			SetCursor(unsigned int nTime) override
+	virtual void			SetCursor(uint32_t nTime) override
 	{	auto nPos = static_cast<unsigned long long>(nTime) * (formatChunk.sampleRate*formatChunk.bitsPerSample*formatChunk.numChannels) /  8000;
 	auto nModulo = (formatChunk.numChannels*formatChunk.bitsPerSample/8);
 	auto nExtra = nPos % nModulo ? nModulo - (nPos % nModulo) : 0;
 	GetStream()->Seek(nOffsetToData + nPos + nExtra, FILE_BEGIN); }
 
-	virtual unsigned int	GetSampleRate() override
+	virtual uint32_t		GetSampleRate() override
 	{ return formatChunk.sampleRate; }
 
-	virtual unsigned int	GetStreamID() override
+	virtual uint32_t		GetStreamID() override
 	{ return GetStream()->GetID(); }
 };

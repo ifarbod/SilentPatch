@@ -56,7 +56,7 @@ bool CAEWaveDecoder::Initialise()
 	return formatChunk.sampleRate <= 48000 && formatChunk.numChannels <= 2 && (formatChunk.bitsPerSample == 8 || formatChunk.bitsPerSample == 16 || formatChunk.bitsPerSample == 24);
 }
 
-unsigned int CAEWaveDecoder::FillBuffer(void* pBuf, unsigned long nLen)
+uint32_t CAEWaveDecoder::FillBuffer(void* pBuf, uint32_t nLen)
 {
 	if ( formatChunk.bitsPerSample == 8 )
 	{

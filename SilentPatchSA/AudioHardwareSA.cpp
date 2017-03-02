@@ -12,54 +12,62 @@ void*			pMalloc = nullptr;
 unsigned int	nBlockSize = 0;
 unsigned int	nLastMallocSize = 0;
 
-unsigned int CAEDataStreamOld::Seek(long nToSeek, int nPoint)
+DWORD CAEDataStreamOld::Seek(LONG nToSeek, DWORD nPoint)
 {
+	LARGE_INTEGER filePosition;
 	switch ( nPoint )
 	{
 	case FILE_BEGIN:
-		nToSeek = nToSeek + dwStartPosition;
+		filePosition.QuadPart = nToSeek + dwStartPosition;
 		break;
 	case FILE_END:
 		nPoint = FILE_BEGIN;
-		nToSeek = dwStartPosition + dwLength - nToSeek;
+		filePosition.QuadPart = dwStartPosition + dwLength - nToSeek;
+		break;
+	default:
+		filePosition.QuadPart = nToSeek;
 		break;
 	}
 
-	dwCurrentPosition = SetFilePointer(hHandle, nToSeek, nullptr, nPoint);
+	SetFilePointerEx(hHandle, filePosition, &filePosition, nPoint);
+	dwCurrentPosition = filePosition.LowPart;
 
 	return dwCurrentPosition - dwStartPosition;
 }
 
-unsigned int CAEDataStreamOld::FillBuffer(void* pBuf, unsigned long nLen)
+DWORD CAEDataStreamOld::FillBuffer(void* pBuf, DWORD nLen)
 {
 	ReadFile(hHandle, pBuf, nLen, &nLen, nullptr);
-
 	dwCurrentPosition += nLen;
 	return nLen;
 }
 
-unsigned int CAEDataStreamNew::Seek(long nToSeek, int nPoint)
+DWORD CAEDataStreamNew::Seek(LONG nToSeek, DWORD nPoint)
 {
+	LARGE_INTEGER filePosition;
 	switch ( nPoint )
 	{
 	case FILE_BEGIN:
-		nToSeek = nToSeek + dwStartPosition;
+		filePosition.QuadPart = nToSeek + dwStartPosition;
 		break;
 	case FILE_END:
 		nPoint = FILE_BEGIN;
-		nToSeek = dwStartPosition + dwLength - nToSeek;
+		filePosition.QuadPart = dwStartPosition + dwLength - nToSeek;
+		break;
+	default:
+		filePosition.QuadPart = nToSeek;
 		break;
 	}
 
-	dwCurrentPosition = SetFilePointer(hHandle, nToSeek, nullptr, nPoint);
+	SetFilePointerEx(hHandle, filePosition, &filePosition, nPoint);
+	dwCurrentPosition = filePosition.LowPart;
 
 	return dwCurrentPosition - dwStartPosition;
 }
 
-unsigned int CAEDataStreamNew::FillBuffer(void* pBuf, unsigned long nLen)
+DWORD CAEDataStreamNew::FillBuffer(void* pBuf, DWORD nLen)
 {
 	ReadFile(hHandle, pBuf, nLen, &nLen, nullptr);
-
 	dwCurrentPosition += nLen;
 	return nLen;
 }

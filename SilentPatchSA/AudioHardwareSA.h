@@ -50,7 +50,11 @@ public:
 			CloseHandle(hHandle);
 			bOpened = false;
 		}
-		GTAdelete(pFilename);
+		if ( pFilename != nullptr )
+		{
+			GTAdelete(pFilename);
+			pFilename = nullptr;
+		}
 	}
 
 	inline DWORD	GetID()
@@ -81,10 +85,15 @@ public:
 
 public:
 	// Custom methods
-	unsigned int		Seek(long nToSeek, int nPoint);
-	unsigned int		FillBuffer(void* pBuf, unsigned long nLen);
-	unsigned int		GetCurrentPosition()
-		{ return SetFilePointer(hHandle, 0, nullptr, FILE_CURRENT) - dwStartPosition; }
+	DWORD		Seek(LONG nToSeek, DWORD nPoint);
+	DWORD		FillBuffer(void* pBuf, DWORD nLen);
+	DWORD		GetCurrentPosition()
+	{
+		LARGE_INTEGER filePointer;
+		filePointer.QuadPart = 0;
+		SetFilePointerEx( hHandle, filePointer, &filePointer, FILE_CURRENT );	
+		return DWORD(filePointer.QuadPart - dwStartPosition);
+	}
 };
 
 // 1.01 structure
@@ -118,7 +127,11 @@ public:
 			CloseHandle(hHandle);
 			bOpened = false;
 		}
-		GTAdelete(pFilename);
+		if ( pFilename != nullptr )
+		{
+			GTAdelete(pFilename);
+			pFilename = nullptr;
+		}
 	}
 
 	inline DWORD	GetID()
@@ -149,10 +162,15 @@ public:
 
 public:
 	// Custom methods
-	unsigned int		Seek(long nToSeek, int nPoint);
-	unsigned int		FillBuffer(void* pBuf, unsigned long nLen);
-	unsigned int		GetCurrentPosition()
-		{ return SetFilePointer(hHandle, 0, nullptr, FILE_CURRENT) - dwStartPosition; }
+	DWORD		Seek(LONG nToSeek, DWORD nPoint);
+	DWORD		FillBuffer(void* pBuf, DWORD nLen);
+	DWORD		GetCurrentPosition()
+	{
+		LARGE_INTEGER filePointer;
+		filePointer.QuadPart = 0;
+		SetFilePointerEx( hHandle, filePointer, &filePointer, FILE_CURRENT );	
+		return DWORD(filePointer.QuadPart - dwStartPosition);
+	}
 };
 
 class CAEDataStream
@@ -213,7 +231,7 @@ public:
 	{
 		++nMallocRefCount;
 
-		if ( stream )
+		if ( stream != nullptr )
 			stream->Initialise();
 	}
 
@@ -221,16 +239,19 @@ public:
 		{ return pStream; }
 
 	virtual bool			Initialise()=0;
-	virtual unsigned int	FillBuffer(void* pBuf,unsigned long nLen)=0;
+	virtual uint32_t		FillBuffer(void* pBuf,uint32_t nLen)=0;
 
-	virtual unsigned int	GetStreamLengthMs()=0;
-	virtual unsigned int	GetStreamPlayTimeMs()=0;
-	virtual void			SetCursor(unsigned int nTime)=0;
-	virtual unsigned int	GetSampleRate()=0;
+	virtual uint32_t		GetStreamLengthMs()=0;
+	virtual uint32_t		GetStreamPlayTimeMs()=0;
+	virtual void			SetCursor(uint32_t nTime)=0;
+	virtual uint32_t		GetSampleRate()=0;
 
 	virtual					~CAEStreamingDecoder();
 
-	virtual unsigned int	GetStreamID()=0;
+	virtual uint32_t		GetStreamID()=0;
 };
+
+static_assert(sizeof(CAEDataStreamOld) == 0x28, "Wrong size: CAEDataStreamOld");
+static_assert(sizeof(CAEDataStreamNew) == 0x2C, "Wrong size: CAEDataStreamNew");
 
 #endif

@@ -124,7 +124,7 @@ bool CAEFLACDecoder::Initialise()
 	return false;
 }
 
-unsigned int CAEFLACDecoder::FillBuffer(void* pBuf, unsigned long nLen)
+uint32_t CAEFLACDecoder::FillBuffer(void* pBuf, uint32_t nLen)
 {
 	unsigned int		nBytesDecoded = 0;
 	FLAC__int16*		pBuffer = static_cast<FLAC__int16*>(pBuf);
