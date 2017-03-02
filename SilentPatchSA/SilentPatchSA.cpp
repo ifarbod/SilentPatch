@@ -201,7 +201,7 @@ static void				(*WipeLocalVariableMemoryForMissionScript)();
 static bool				(*InitialiseRenderWare)();
 static void				(*ShutdownRenderWare)();
 static void				(*DoSunAndMoon)();
-static void				(*sub_5DA6A0)(void*, void*, void*, void*);
+static void				(*D3D9RenderPreLit)(void*, void*, void*, void*);
 
 auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370, 0x57C480, 0x57C3B0);
 
@@ -1073,7 +1073,7 @@ void __declspec(naked) SetShader2()
 		push    edx
 		push    edi
 		push    ebp
-		call	sub_5DA6A0
+		call	D3D9RenderPreLit
 		add		esp, 10h
 		mov		bRenderNVC, 0
 		retn
@@ -2090,7 +2090,7 @@ BOOL InjectDelayedPatches_10()
 				// plugin-sdk compatibility
 				ReadCall( 0x5BF3A1, InitialiseRenderWare );
 				ReadCall( 0x53D910, ShutdownRenderWare );
-				ReadCall( 0x5D66F1, sub_5DA6A0 );
+				ReadCall( 0x5D66F1, D3D9RenderPreLit );
 
 				InjectHook(0x5DA743, SetShader);
 				InjectHook(0x5D66F1, SetShader2);
@@ -2320,7 +2320,7 @@ BOOL InjectDelayedPatches_11()
 				// 1.01 needs to reverse Initialise3D
 				ReadCall( 0x5BFB9E, InitialiseRenderWare );
 				ReadCall( 0x53DDB0, ShutdownRenderWare );
-				ReadCall( 0x5D6ED1, sub_5DA6A0 );
+				ReadCall( 0x5D6ED1, D3D9RenderPreLit );
 
 				InjectHook(0x5BFB70, Initialise3D, PATCH_JUMP);
 				InjectHook(0x5D6ED1, SetShader2);
@@ -2544,7 +2544,7 @@ BOOL InjectDelayedPatches_Steam()
 				// plugin-sdk compatibility
 				ReadCall( 0x5DE5A1, InitialiseRenderWare );
 				ReadCall( 0x550070, ShutdownRenderWare );
-				ReadCall( 0x5F663E, sub_5DA6A0 );
+				ReadCall( 0x5F663E, D3D9RenderPreLit );
 
 				InjectHook(0x5F6EB3, SetShader);
 				InjectHook(0x5F2F02, SetShader2);
