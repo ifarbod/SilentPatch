@@ -221,6 +221,7 @@ uint32_t CAEFLACDecoder::FillBuffer(void* pBuf, uint32_t nLen)
 			}
 		}
 
+		m_currentSample += samplesThisIteration;
 		m_bufferCursor += samplesThisIteration;
 		samplesToDecode -= samplesThisIteration;
 		bytesDecoded += samplesThisIteration * 2 * sizeof(int16_t);
