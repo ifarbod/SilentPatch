@@ -1,91 +1,95 @@
 #include "StdAfxSA.h"
 #include "FLACDecoderSA.h"
-
-extern void*			pMalloc;
-extern unsigned int		nBlockSize;
-extern unsigned int		nLastMallocSize;
-
-static unsigned int		nSamplesLeftToProcess = 0;
+#include <algorithm>
+#include <iterator>
 
 FLAC__StreamDecoderReadStatus CAEFLACDecoder::read_cb(const FLAC__StreamDecoder* decoder, FLAC__byte buffer[], size_t* bytes, void* client_data)
 {
 	UNREFERENCED_PARAMETER(decoder);
 	CAEFLACDecoder*	pClientData = static_cast<CAEFLACDecoder*>(client_data);
 
-	ReadFile(pClientData->GetStream()->GetFile(), buffer, *bytes, reinterpret_cast<LPDWORD>(bytes), nullptr); //*bytes = pClientData->GetStream()->FillBuffer(buffer, *bytes);
-																											  //*bytes = pClientData->GetStream()->FillBuffer(buffer, *bytes);
-																											  //bEOFFlag = GetLastError() == ERROR_HANDLE_EOF;
+	DWORD size = *bytes;
+	BOOL result = ReadFile(pClientData->GetStream()->GetFile(), buffer, size, &size, nullptr);
+	*bytes = size;
 
-	auto result = *bytes ? FLAC__STREAM_DECODER_READ_STATUS_CONTINUE : FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;
+	if ( result == FALSE )
+		return FLAC__STREAM_DECODER_READ_STATUS_ABORT;
 
-	return result;
+	if ( size == 0 )
+	{
+		pClientData->m_eof = true;
+		return FLAC__STREAM_DECODER_READ_STATUS_END_OF_STREAM;
+	}
+	pClientData->m_eof = false;
+	return FLAC__STREAM_DECODER_READ_STATUS_CONTINUE;
 }
 
 FLAC__StreamDecoderWriteStatus CAEFLACDecoder::write_cb(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC__int32 *const buffer[], void *client_data)
 {
+	UNREFERENCED_PARAMETER(decoder);
 	CAEFLACDecoder*	pClientData = static_cast<CAEFLACDecoder*>(client_data);
+	size_t processedChannels;
 
 	// Obtain current sample
-	pClientData->nCurrentSample = frame->header.number_type == FLAC__FRAME_NUMBER_TYPE_SAMPLE_NUMBER ?
-		frame->header.number.sample_number :
-		frame->header.number.frame_number * frame->header.blocksize;
+	pClientData->m_currentSample = frame->header.number_type == FLAC__FRAME_NUMBER_TYPE_SAMPLE_NUMBER ? frame->header.number.sample_number : frame->header.number.frame_number;
+	processedChannels = std::min<size_t>(2, frame->header.channels);
+	pClientData->m_curBlockSize = frame->header.blocksize;
+	pClientData->m_bufferCursor = 0;
 
-	// Mono/stereo?
-	unsigned int			nNumChannelsToAlloc = pClientData->pStreamInfo->data.stream_info.channels > 1 ? 2 : 1;
-
-	if ( frame->header.blocksize * sizeof(FLAC__int32) * nNumChannelsToAlloc > nLastMallocSize )
+	if ( pClientData->m_curBlockSize > pClientData->m_maxBlockSize )
 	{
-		// Realloc needed
-		if ( pMalloc )
-			operator delete(pMalloc);
-
-		nLastMallocSize = frame->header.blocksize * sizeof(FLAC__int32) * nNumChannelsToAlloc;
-		pMalloc = operator new(nLastMallocSize);	// TODO: More channels?
+		delete pClientData->m_buffer;
+		pClientData->m_buffer = new FLAC__int32[pClientData->m_curBlockSize * processedChannels];
+		pClientData->m_maxBlockSize = pClientData->m_curBlockSize;
 	}
-	nBlockSize = frame->header.blocksize;
-
-	memcpy(pMalloc, buffer[0], nBlockSize * sizeof(FLAC__int32));
-	if ( nNumChannelsToAlloc > 1 )
-		memcpy(static_cast<FLAC__int32*>(pMalloc)+nBlockSize, buffer[1], nBlockSize * sizeof(FLAC__int32));
+	
+	std::copy_n( buffer[0], pClientData->m_curBlockSize, stdext::checked_array_iterator<FLAC__int32*>(pClientData->m_buffer, pClientData->m_curBlockSize) );
+	if ( processedChannels > 1 )
+	{
+		std::copy_n( buffer[1], pClientData->m_curBlockSize, stdext::checked_array_iterator<FLAC__int32*>(pClientData->m_buffer+pClientData->m_curBlockSize, pClientData->m_curBlockSize) );
+	}
 
 	return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
 }
 
 void CAEFLACDecoder::meta_cb(const FLAC__StreamDecoder* decoder, const FLAC__StreamMetadata *metadata, void *client_data)
 {
+	UNREFERENCED_PARAMETER(decoder);
 	if ( metadata->type == FLAC__METADATA_TYPE_STREAMINFO )
 	{
 		// Cache the header
 		CAEFLACDecoder*	pClientData = static_cast<CAEFLACDecoder*>(client_data);
-		pClientData->pStreamInfo = FLAC__metadata_object_clone(metadata);
+		pClientData->m_streamMeta = FLAC__metadata_object_clone(metadata);
+		assert( pClientData->m_streamMeta != nullptr );
 	}
 }
 
 FLAC__StreamDecoderSeekStatus CAEFLACDecoder::seek_cb(const FLAC__StreamDecoder *decoder, FLAC__uint64 absolute_byte_offset, void *client_data)
 {
+	UNREFERENCED_PARAMETER(decoder);
 	CAEFLACDecoder*	pClientData = static_cast<CAEFLACDecoder*>(client_data);
 	LARGE_INTEGER	li;
 	li.QuadPart = absolute_byte_offset;
 
-	li.LowPart = SetFilePointer(pClientData->GetStream()->GetFile(), li.LowPart, &li.HighPart, FILE_BEGIN);
-
-	return li.LowPart == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR ? FLAC__STREAM_DECODER_SEEK_STATUS_ERROR : FLAC__STREAM_DECODER_SEEK_STATUS_OK;
+	return SetFilePointerEx(pClientData->GetStream()->GetFile(), li, nullptr, FILE_BEGIN) != 0 ? FLAC__STREAM_DECODER_SEEK_STATUS_OK : FLAC__STREAM_DECODER_SEEK_STATUS_ERROR;
 }
 
 FLAC__StreamDecoderTellStatus CAEFLACDecoder::tell_cb(const FLAC__StreamDecoder *decoder, FLAC__uint64 *absolute_byte_offset, void *client_data)
 {
+	UNREFERENCED_PARAMETER(decoder);
 	CAEFLACDecoder*	pClientData = static_cast<CAEFLACDecoder*>(client_data);
 	LARGE_INTEGER	li;
 	li.QuadPart = 0;
 
-	li.LowPart = SetFilePointer(pClientData->GetStream()->GetFile(), 0, &li.HighPart, FILE_CURRENT);
+	BOOL result = SetFilePointerEx(pClientData->GetStream()->GetFile(), li, &li, FILE_CURRENT);
 	*absolute_byte_offset = li.QuadPart;
 
-	return li.LowPart == INVALID_SET_FILE_POINTER && GetLastError() != NO_ERROR ? FLAC__STREAM_DECODER_TELL_STATUS_ERROR : FLAC__STREAM_DECODER_TELL_STATUS_OK;
+	return result != 0 ? FLAC__STREAM_DECODER_TELL_STATUS_OK : FLAC__STREAM_DECODER_TELL_STATUS_ERROR;
 }
 
 FLAC__StreamDecoderLengthStatus	CAEFLACDecoder::length_cb(const FLAC__StreamDecoder *decoder, FLAC__uint64 *stream_length, void *client_data)
 {
+	UNREFERENCED_PARAMETER(decoder);
 	CAEFLACDecoder*	pClientData = static_cast<CAEFLACDecoder*>(client_data);
 	LARGE_INTEGER	li;
 
@@ -97,10 +101,9 @@ FLAC__StreamDecoderLengthStatus	CAEFLACDecoder::length_cb(const FLAC__StreamDeco
 
 FLAC__bool CAEFLACDecoder::eof_cb(const FLAC__StreamDecoder* decoder, void* client_data)
 {
-	// Not implemented
 	UNREFERENCED_PARAMETER(decoder);
-	UNREFERENCED_PARAMETER(client_data);
-	return false;
+	CAEFLACDecoder*	pClientData = static_cast<CAEFLACDecoder*>(client_data);
+	return pClientData->m_eof;
 }
 
 void CAEFLACDecoder::error_cb(const FLAC__StreamDecoder* decoder, FLAC__StreamDecoderErrorStatus status, void* client_data)
@@ -114,133 +117,126 @@ void CAEFLACDecoder::error_cb(const FLAC__StreamDecoder* decoder, FLAC__StreamDe
 
 bool CAEFLACDecoder::Initialise()
 {
-	pFLACDecoder = FLAC__stream_decoder_new();
-	if ( FLAC__stream_decoder_init_stream(pFLACDecoder, read_cb, seek_cb, tell_cb, length_cb, eof_cb, write_cb, meta_cb, error_cb, this) == FLAC__STREAM_DECODER_INIT_STATUS_OK )
-	{
-		FLAC__stream_decoder_process_until_end_of_metadata(pFLACDecoder);
+	m_FLACdecoder = FLAC__stream_decoder_new();
+	assert( m_FLACdecoder != nullptr );
+	if ( m_FLACdecoder == nullptr )
+		return false;
 
-		return pStreamInfo->data.stream_info.sample_rate <= 48000 && (pStreamInfo->data.stream_info.bits_per_sample == 8 || pStreamInfo->data.stream_info.bits_per_sample == 16 || pStreamInfo->data.stream_info.bits_per_sample == 24);
-	}
-	return false;
+	if ( FLAC__stream_decoder_init_stream(m_FLACdecoder, read_cb, seek_cb, tell_cb, length_cb, eof_cb, write_cb, meta_cb, error_cb, this) != FLAC__STREAM_DECODER_INIT_STATUS_OK )
+		return false;
+
+	if ( FLAC__stream_decoder_process_until_end_of_metadata(m_FLACdecoder) == false )
+		return false;
+
+	if ( m_streamMeta == nullptr )
+		return false;
+
+	m_eof = false;
+	return m_streamMeta->data.stream_info.sample_rate <= 48000 && (m_streamMeta->data.stream_info.bits_per_sample == 8 || m_streamMeta->data.stream_info.bits_per_sample == 16 || m_streamMeta->data.stream_info.bits_per_sample == 24);
 }
 
 uint32_t CAEFLACDecoder::FillBuffer(void* pBuf, uint32_t nLen)
 {
-	unsigned int		nBytesDecoded = 0;
-	FLAC__int16*		pBuffer = static_cast<FLAC__int16*>(pBuf);
+	uint32_t		samplesToDecode = nLen / (2 * sizeof(int16_t));
+	uint32_t		bytesDecoded = 0;
+	int16_t*		outputBuffer = static_cast<int16_t*>(pBuf);
+	FLAC__int32*	inputBuffer[] = { m_buffer+m_bufferCursor, m_buffer+m_bufferCursor+m_curBlockSize };
 
-	const unsigned int	nSampleRate = pStreamInfo->data.stream_info.bits_per_sample;
-	const bool			bStereo = pStreamInfo->data.stream_info.channels > 1;
+	const uint32_t	sampleWidth = m_streamMeta->data.stream_info.bits_per_sample;
+	const bool		stereo = m_streamMeta->data.stream_info.channels > 1;
 
-	while ( nBytesDecoded < nLen )
+	while ( bytesDecoded < nLen )
 	{
-		unsigned int		nToWrite;
-		// No samples left from a previous fetch?
-		if ( !nSamplesLeftToProcess )
+		if ( m_bufferCursor >= m_curBlockSize )
 		{
-			FLAC__stream_decoder_process_single(pFLACDecoder);
+			// New FLAC frame needed
+			if ( FLAC__stream_decoder_get_state(m_FLACdecoder) == FLAC__STREAM_DECODER_END_OF_STREAM )
+				break;
 
-			if ( (nLen - nBytesDecoded) / 4 >= nBlockSize )
-				nToWrite = nBlockSize;
-			else
-				nToWrite = (nLen - nBytesDecoded) / 4;
-
-			nSamplesLeftToProcess = nBlockSize;
+			FLAC__stream_decoder_process_single(m_FLACdecoder);
+			inputBuffer[0] = m_buffer;
+			inputBuffer[1] = m_buffer+m_curBlockSize;
 		}
-		else
-			nToWrite = nSamplesLeftToProcess;
 
-		FLAC__int32*		pCurrentPtr[2] = { static_cast<FLAC__int32*>(pMalloc), static_cast<FLAC__int32*>(pMalloc)+nBlockSize };
-		const unsigned int	ExtraIndex = nBlockSize - nSamplesLeftToProcess;
-
-		// Write channels
-		if ( nSampleRate == 8 )
+		size_t samplesThisIteration = std::min( m_curBlockSize-m_bufferCursor, samplesToDecode );
+		if ( sampleWidth == 8 )
 		{
-			// 8-bit
-			if ( bStereo )
+			if ( stereo )
 			{
-				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
+				for ( size_t i = 0; i < samplesThisIteration; ++i )
 				{
-					pBuffer[0] = pCurrentPtr[0][ExtraIndex+i] << 8;
-					pBuffer[1] = pCurrentPtr[1][ExtraIndex+i] << 8;
-
-					pBuffer += 2;
+					outputBuffer[0] = int16_t(*inputBuffer[0]++ << 8);
+					outputBuffer[1] = int16_t(*inputBuffer[1]++ << 8);
+					outputBuffer += 2;
 				}
 			}
 			else
 			{
-				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
+				for ( size_t i = 0; i < samplesThisIteration; ++i )
 				{
-					pBuffer[0] = pBuffer[1] = pCurrentPtr[0][ExtraIndex+i] << 8;
-
-					pBuffer += 2;
+					outputBuffer[0] = outputBuffer[1] = int16_t(*inputBuffer[0]++ << 8);
+					outputBuffer += 2;
 				}
 			}
 		}
-		else if ( nSampleRate == 24 )
+		else if ( sampleWidth == 24 )
 		{
 			// 24-bit
-			if ( bStereo )
+			if ( stereo )
 			{
-				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
+				for ( size_t i = 0; i < samplesThisIteration; ++i )
 				{
-					pBuffer[0] = pCurrentPtr[0][ExtraIndex+i] >> 8;
-					pBuffer[1] = pCurrentPtr[1][ExtraIndex+i] >> 8;
-
-					pBuffer += 2;
+					outputBuffer[0] = int16_t(*inputBuffer[0]++ >> 8);
+					outputBuffer[1] = int16_t(*inputBuffer[1]++ >> 8);
+					outputBuffer += 2;
 				}
 			}
 			else
 			{
-				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
+				for ( size_t i = 0; i < samplesThisIteration; ++i )
 				{
-					pBuffer[0] = pBuffer[1] = pCurrentPtr[0][ExtraIndex+i] >> 8;
-
-					pBuffer += 2;
+					outputBuffer[0] = outputBuffer[1] = int16_t(*inputBuffer[0]++ >> 8);
+					outputBuffer += 2;
 				}
 			}
 		}
 		else
 		{
-			// 16-bit
-			if ( bStereo )
+			if ( stereo )
 			{
-				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
+				for ( size_t i = 0; i < samplesThisIteration; ++i )
 				{
-					pBuffer[0] = pCurrentPtr[0][ExtraIndex+i];
-					pBuffer[1] = pCurrentPtr[1][ExtraIndex+i];
-
-					pBuffer += 2;
+					outputBuffer[0] = int16_t(*inputBuffer[0]++);
+					outputBuffer[1] = int16_t(*inputBuffer[1]++);
+					outputBuffer += 2;
 				}
 			}
 			else
 			{
-				for ( unsigned int i = 0; i < nToWrite; i++, nSamplesLeftToProcess-- )
+				for ( size_t i = 0; i < samplesThisIteration; ++i )
 				{
-					pBuffer[0] = pBuffer[1] = pCurrentPtr[0][ExtraIndex+i];
-
-					pBuffer += 2;
+					outputBuffer[0] = outputBuffer[1] = int16_t(*inputBuffer[0]++);
+					outputBuffer += 2;
 				}
 			}
 		}
 
-		nBytesDecoded += nToWrite*4;
-
-		if ( FLAC__stream_decoder_get_state(pFLACDecoder) == FLAC__STREAM_DECODER_END_OF_STREAM )
-			break;
+		m_bufferCursor += samplesThisIteration;
+		samplesToDecode -= samplesThisIteration;
+		bytesDecoded += samplesThisIteration * 2 * sizeof(int16_t);
 	}
-	return nBytesDecoded;
+	return bytesDecoded;
 }
 
 CAEFLACDecoder::~CAEFLACDecoder()
 {
-	nSamplesLeftToProcess = 0;
-	if ( pFLACDecoder )
+	if ( m_FLACdecoder != nullptr )
 	{
-		FLAC__stream_decoder_finish(pFLACDecoder);
-		FLAC__stream_decoder_delete(pFLACDecoder);
+		FLAC__stream_decoder_finish(m_FLACdecoder);
+		FLAC__stream_decoder_delete(m_FLACdecoder);
 
-		FLAC__metadata_object_delete(pStreamInfo);
-		pFLACDecoder = nullptr;
+		if ( m_streamMeta != nullptr )
+			FLAC__metadata_object_delete(m_streamMeta);
 	}
+	delete m_buffer;
 }

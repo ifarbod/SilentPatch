@@ -78,7 +78,6 @@ CAEStreamingDecoder::~CAEStreamingDecoder()
 		delete reinterpret_cast<CAEDataStreamNew*>(pStream);
 	else
 		delete reinterpret_cast<CAEDataStreamOld*>(pStream);
-	pStream = nullptr;
 
 	if ( --nMallocRefCount == 0 )
 	{
