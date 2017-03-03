@@ -5,42 +5,51 @@
 class CAEWaveDecoder : public CAEStreamingDecoder
 {
 private:
-	unsigned int	nDataSize;
-	unsigned int	nOffsetToData;
-	//bool			bInitialised;
+	uint32_t	m_dataSize;
+	uint32_t	m_offsetToData;
+	size_t		m_maxBlockSize;
+	void*		m_buffer;
 
 	struct FormatChunk
 	{
-		unsigned short		audioFormat;
-		unsigned short		numChannels;
-		unsigned int		sampleRate;
-		unsigned int		byteRate;
-		unsigned short		blockAlign;
-		unsigned short		bitsPerSample;
-	}				formatChunk;
+		uint16_t		audioFormat;
+		uint16_t		numChannels;
+		uint32_t		sampleRate;
+		uint32_t		byteRate;
+		uint16_t		blockAlign;
+		uint16_t		bitsPerSample;
+	}				m_formatChunk;
 
 public:
 	CAEWaveDecoder(CAEDataStream* stream)
-		: CAEStreamingDecoder(stream)
+		: CAEStreamingDecoder(stream), m_buffer(nullptr), m_maxBlockSize(0)
 	{}
+
+	virtual ~CAEWaveDecoder() override
+	{
+		delete[] m_buffer;
+	}
 
 	virtual bool			Initialise() override;
 	virtual uint32_t		FillBuffer(void* pBuf, uint32_t nLen) override;
 
 	virtual uint32_t		GetStreamLengthMs() override
-	{ return static_cast<unsigned long long>(nDataSize) * 8000 / (formatChunk.sampleRate*formatChunk.bitsPerSample*formatChunk.numChannels); }
+	{ return (static_cast<uint64_t>(m_dataSize) * 1000) / m_formatChunk.blockAlign; }
 	virtual uint32_t		GetStreamPlayTimeMs() override
-	{ return static_cast<unsigned long long>(GetStream()->GetCurrentPosition() - nOffsetToData) * 8000 / (formatChunk.sampleRate*formatChunk.bitsPerSample*formatChunk.numChannels); }		
+	{ return (static_cast<uint64_t>(GetStream()->GetCurrentPosition() - m_offsetToData) * 1000) / m_formatChunk.blockAlign; }
 
 	virtual void			SetCursor(uint32_t nTime) override
-	{	auto nPos = static_cast<unsigned long long>(nTime) * (formatChunk.sampleRate*formatChunk.bitsPerSample*formatChunk.numChannels) /  8000;
-	auto nModulo = (formatChunk.numChannels*formatChunk.bitsPerSample/8);
-	auto nExtra = nPos % nModulo ? nModulo - (nPos % nModulo) : 0;
-	GetStream()->Seek(nOffsetToData + nPos + nExtra, FILE_BEGIN); }
+	{
+		uint64_t sampleNum = (static_cast<uint64_t>(nTime) * m_formatChunk.sampleRate) / 1000;
+		GetStream()->Seek( m_offsetToData + (static_cast<uint32_t>(sampleNum) * m_formatChunk.blockAlign), FILE_BEGIN );
+	}
 
 	virtual uint32_t		GetSampleRate() override
-	{ return formatChunk.sampleRate; }
+	{ return m_formatChunk.sampleRate; }
 
 	virtual uint32_t		GetStreamID() override
 	{ return GetStream()->GetID(); }
+	
+private:
+	size_t					CalcBufferSize( uint32_t outputBuf );
 };

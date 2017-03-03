@@ -6,12 +6,6 @@ bool			CAEDataStream::m_bUseNewStruct;
 static void* CAEDataStream__Initialise = AddressByVersion<void*>(0x4DC2B0, 0x4DC7A0, 0x4E7550);
 WRAPPER bool CAEDataStream::Initialise() { VARJMP(CAEDataStream__Initialise); }
 
-unsigned int			CAEStreamingDecoder::nMallocRefCount = 0;
-
-void*			pMalloc = nullptr;
-unsigned int	nBlockSize = 0;
-unsigned int	nLastMallocSize = 0;
-
 DWORD CAEDataStreamOld::Seek(LONG nToSeek, DWORD nPoint)
 {
 	LARGE_INTEGER filePosition;
@@ -78,12 +72,4 @@ CAEStreamingDecoder::~CAEStreamingDecoder()
 		delete reinterpret_cast<CAEDataStreamNew*>(pStream);
 	else
 		delete reinterpret_cast<CAEDataStreamOld*>(pStream);
-
-	if ( --nMallocRefCount == 0 )
-	{
-		operator delete(pMalloc);
-		pMalloc = nullptr;
-
-		nLastMallocSize = 0;
-	}
 }

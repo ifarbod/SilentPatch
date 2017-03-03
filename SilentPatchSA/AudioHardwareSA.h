@@ -223,14 +223,10 @@ class CAEStreamingDecoder
 private:
 	CAEDataStream*		pStream;
 
-	static unsigned int	nMallocRefCount;
-
 public:
 	CAEStreamingDecoder(CAEDataStream* stream)
 		: pStream(stream)
 	{
-		++nMallocRefCount;
-
 		if ( stream != nullptr )
 			stream->Initialise();
 	}
