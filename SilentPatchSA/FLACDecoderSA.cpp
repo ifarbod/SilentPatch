@@ -38,7 +38,7 @@ FLAC__StreamDecoderWriteStatus CAEFLACDecoder::write_cb(const FLAC__StreamDecode
 
 	if ( pClientData->m_curBlockSize > pClientData->m_maxBlockSize )
 	{
-		delete pClientData->m_buffer;
+		delete[] pClientData->m_buffer;
 		pClientData->m_buffer = new FLAC__int32[pClientData->m_curBlockSize * processedChannels];
 		pClientData->m_maxBlockSize = pClientData->m_curBlockSize;
 	}
@@ -239,5 +239,5 @@ CAEFLACDecoder::~CAEFLACDecoder()
 		if ( m_streamMeta != nullptr )
 			FLAC__metadata_object_delete(m_streamMeta);
 	}
-	delete m_buffer;
+	delete[] m_buffer;
 }
