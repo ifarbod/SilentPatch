@@ -2009,6 +2009,22 @@ void __declspec(naked) CdStreamThreadHighSize()
 	}
 }
 
+void __declspec(naked) WeaponRangeMult_VehicleCheck()
+{
+	_asm
+	{
+		mov		eax, [edx]CPed.pedFlags
+		test    ah, 1
+		jz		WeaponRangeMult_VehicleCheck_NotInCar
+		mov		eax, [edx]CPed.pVehicle
+		retn
+	
+WeaponRangeMult_VehicleCheck_NotInCar:
+		xor		eax, eax
+		retn
+	}
+}
+
 
 static const float		fSteamSubtitleSizeX = 0.45f;
 static const float		fSteamSubtitleSizeY = 0.9f;
@@ -3106,6 +3122,11 @@ void Patch_SA_10()
 	Nop( 0x4065C2, 1 );
 	InjectHook( 0x4065C2+1, CdStreamThreadHighSize, PATCH_CALL );
 	Patch<const void*>( 0x406620+2, &pCdStreamSetFilePointer );
+
+
+	// AI accuracy issue
+	Nop(0x73B3AE, 1);
+	InjectHook( 0x73B3AE+1, WeaponRangeMult_VehicleCheck, PATCH_CALL );
 }
 
 void Patch_SA_11()
