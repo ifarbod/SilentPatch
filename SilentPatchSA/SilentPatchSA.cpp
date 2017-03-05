@@ -3908,7 +3908,7 @@ void Patch_SA_NewSteam_r2()
 	using namespace Memory::DynBase;
 
 	// (Hopefully) more precise frame limiter
-	ReadCall( DynBaseAddress(0x77D55F), RsEventHandler );
+	ReadCall( 0x77D55F, RsEventHandler );
 	InjectHook(0x77D55F, NewFrameRender);
 	InjectHook(0x77D4E8, GetTimeSinceLastFrame);
 
@@ -4010,16 +4010,16 @@ void Patch_SA_NewSteam_r2()
 	Patch<BYTE>(0x82A916, 0xEB);
 	Patch<WORD>(0x82AED3, 0xE990);
 
-	ReadCall( DynBaseAddress(0x590F8B), orgGetMaxMultiSamplingLevels );
+	ReadCall( 0x590F8B, orgGetMaxMultiSamplingLevels );
 	InjectHook(0x590F8B, GetMaxMultiSamplingLevels);
 	InjectHook(0x590F36, GetMaxMultiSamplingLevels);
 
-	ReadCall( DynBaseAddress(0x5881C0), orgChangeMultiSamplingLevels );
+	ReadCall( 0x5881C0, orgChangeMultiSamplingLevels );
 	InjectHook(0x5881C0, ChangeMultiSamplingLevels);
 	InjectHook(0x590FBB, ChangeMultiSamplingLevels);
 	InjectHook(0x591111, ChangeMultiSamplingLevels);
 
-	ReadCall( DynBaseAddress(0x77A40D), orgSetMultiSamplingLevels );
+	ReadCall( 0x77A40D, orgSetMultiSamplingLevels );
 	InjectHook(0x77A40D, SetMultiSamplingLevels);
 
 	Patch<WORD>(0x58DDEF, 0xBA90);
@@ -4032,10 +4032,10 @@ void Patch_SA_NewSteam_r2()
 
 	// Car explosion crash with multimonitor
 	// Unitialized collision data breaking stencil shadows
-	ReadCall( DynBaseAddress(0x41A661), orgMemMgrMalloc );
+	ReadCall( 0x41A661, orgMemMgrMalloc );
 	InjectHook(0x41A661, CollisionData_MallocAndInit);
 
-	ReadCall( DynBaseAddress(0x41A4CC), orgNewAlloc );
+	ReadCall( 0x41A4CC, orgNewAlloc );
 	InjectHook(0x41A4CC, CollisionData_NewAndInit);
 	InjectHook(0x41A5A9, CollisionData_NewAndInit);
 
@@ -4045,7 +4045,7 @@ void Patch_SA_NewSteam_r2()
 	// starting again in maximum resolution on secondary monitor.
 	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
 	// Not in 1.01
-	ReadCall( DynBaseAddress(0x779B71), orgGetNumVideoModes );
+	ReadCall( 0x779B71, orgGetNumVideoModes );
 	InjectHook(0x779B71, GetNumVideoModes_Store);
 	InjectHook(0x779AD1, GetNumVideoModes_Retrieve);
 
@@ -4095,7 +4095,7 @@ void Patch_SA_NewSteam_r2_lv()
 	using namespace Memory::DynBase;
 
 	// (Hopefully) more precise frame limiter
-	ReadCall( DynBaseAddress(0x77D44F), RsEventHandler );
+	ReadCall( 0x77D44F, RsEventHandler );
 	InjectHook(0x77D44F, NewFrameRender);
 	InjectHook(0x77D3D8, GetTimeSinceLastFrame);
 
@@ -4197,16 +4197,16 @@ void Patch_SA_NewSteam_r2_lv()
 	Patch<BYTE>(0x82A7E6, 0xEB);
 	Patch<WORD>(0x82ADA3, 0xE990);
 
-	ReadCall( DynBaseAddress(0x590ECB), orgGetMaxMultiSamplingLevels );
+	ReadCall( 0x590ECB, orgGetMaxMultiSamplingLevels );
 	InjectHook(0x590ECB, GetMaxMultiSamplingLevels);
 	InjectHook(0x590E76, GetMaxMultiSamplingLevels);
 
-	ReadCall( DynBaseAddress(0x588100), orgChangeMultiSamplingLevels );
+	ReadCall( 0x588100, orgChangeMultiSamplingLevels );
 	InjectHook(0x588100, ChangeMultiSamplingLevels);
 	InjectHook(0x590EFB, ChangeMultiSamplingLevels);
 	InjectHook(0x591051, ChangeMultiSamplingLevels);
 
-	ReadCall( DynBaseAddress(0x77A2FD), orgSetMultiSamplingLevels );
+	ReadCall( 0x77A2FD, orgSetMultiSamplingLevels );
 	InjectHook(0x77A2FD, SetMultiSamplingLevels);
 
 	Patch<WORD>(0x58DD2F, 0xBA90);
@@ -4219,10 +4219,10 @@ void Patch_SA_NewSteam_r2_lv()
 
 	// Car explosion crash with multimonitor
 	// Unitialized collision data breaking stencil shadows
-	ReadCall( DynBaseAddress(0x41A661), orgMemMgrMalloc );
+	ReadCall( 0x41A661, orgMemMgrMalloc );
 	InjectHook(0x41A661, CollisionData_MallocAndInit);
 
-	ReadCall( DynBaseAddress(0x41A4CC), orgNewAlloc );
+	ReadCall( 0x41A4CC, orgNewAlloc );
 	InjectHook(0x41A4CC, CollisionData_NewAndInit);
 	InjectHook(0x41A5A9, CollisionData_NewAndInit);
 
@@ -4232,7 +4232,7 @@ void Patch_SA_NewSteam_r2_lv()
 	// starting again in maximum resolution on secondary monitor.
 	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
 	// Not in 1.01
-	ReadCall( DynBaseAddress(0x779A61), orgGetNumVideoModes );
+	ReadCall( 0x779A61, orgGetNumVideoModes );
 	InjectHook(0x779A61, GetNumVideoModes_Store);
 	InjectHook(0x7799C1, GetNumVideoModes_Retrieve);
 
