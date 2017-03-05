@@ -4291,9 +4291,9 @@ void Patch_SA_NewSteam_Common()
 
 	// AI accuracy issue
 	{
-		auto patternie = pattern( "8B 82 8C 05 00 00 85 C0 74 09" ).count(1); // 0x76DEA7 in newsteam r1
-		Nop(patternie.get(0).get<int>(0), 1);
-		InjectHook( patternie.get(0).get<int>(1), WeaponRangeMult_VehicleCheck, PATCH_CALL );
+		auto match = pattern( "8B 82 8C 05 00 00 85 C0 74 09" ).get_one(); // 0x76DEA7 in newsteam r1
+		Nop(match.get<int>(0), 1);
+		InjectHook( match.get<int>(1), WeaponRangeMult_VehicleCheck, PATCH_CALL );
 	}
 }
 
