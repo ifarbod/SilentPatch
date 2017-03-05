@@ -17,6 +17,8 @@
 #include "WaveDecoderSA.h"
 #include "FLACDecoderSA.h"
 
+#include "Patterns.h"
+
 // RW wrappers
 static void* varAtomicDefaultRenderCallBack = AddressByVersion<void*>(0x7491C0, 0x749AD0, 0x783180);
 WRAPPER RpAtomic* AtomicDefaultRenderCallBack(RpAtomic* atomic) { WRAPARG(atomic); VARJMP(varAtomicDefaultRenderCallBack); }
@@ -3801,6 +3803,11 @@ void Patch_SA_Steam()
 	Patch<WORD>(0x43D24D, 0x016A);
 
 
+	// AI accuracy issue
+	Nop(0x7738F5, 1);
+	InjectHook( 0x7738F5+1, WeaponRangeMult_VehicleCheck, PATCH_CALL );
+
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -4277,6 +4284,19 @@ void Patch_SA_NewSteam_r2_lv()
 	Patch<const void*>(0x73417A, &f43);
 }
 
+void Patch_SA_NewSteam_Common()
+{
+	using namespace Memory;
+	using namespace hook;
+
+	// AI accuracy issue
+	{
+		auto patternie = pattern( "8B 82 8C 05 00 00 85 C0 74 09" ).count(1); // 0x76DEA7 in newsteam r1
+		Nop(patternie.get(0).get<int>(0), 1);
+		InjectHook( patternie.get(0).get<int>(1), WeaponRangeMult_VehicleCheck, PATCH_CALL );
+	}
+}
+
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
@@ -4293,12 +4313,13 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		if (*(DWORD*)DynBaseAddress(0x82457C) == 0x94BF || *(DWORD*)DynBaseAddress(0x8245BC) == 0x94BF) Patch_SA_10();
 		else if (*(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF || *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF) Patch_SA_11(), MessageBox( nullptr, "You're using a 1.01 executable which is no longer supported by SilentPatch!\n\nI have no idea if anyone was still using it, so if you do - shoot me an e-mail!", "SilentPatch", MB_OK | MB_ICONWARNING );
 		else if (*(DWORD*)DynBaseAddress(0x85EC4A) == 0x94BF) Patch_SA_Steam();
-
-		else if ( *(DWORD*)DynBaseAddress(0x858D21) == 0x3539F633) Patch_SA_NewSteam_r1();
-		else if ( *(DWORD*)DynBaseAddress(0x858D51) == 0x3539F633) Patch_SA_NewSteam_r2();
-		else if ( *(DWORD*)DynBaseAddress(0x858C61) == 0x3539F633) Patch_SA_NewSteam_r2_lv();
-		
-		else return FALSE;
+		else
+		{
+			if ( *(DWORD*)DynBaseAddress(0x858D21) == 0x3539F633) Patch_SA_NewSteam_r1();
+			else if ( *(DWORD*)DynBaseAddress(0x858D51) == 0x3539F633) Patch_SA_NewSteam_r2();
+			else if ( *(DWORD*)DynBaseAddress(0x858C61) == 0x3539F633) Patch_SA_NewSteam_r2_lv();
+			Patch_SA_NewSteam_Common();
+		}	
 	}
 	return TRUE;
 }
