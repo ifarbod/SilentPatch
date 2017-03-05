@@ -30,7 +30,6 @@ SA:
 - CarAI timers
 - space's bugged cargen command (014C)
 - space's bugged sniper bullet checks (047B, 047C, and 037E) (maybe)
-- https://kb.speeddemosarchive.com/Grand_Theft_Auto:_San_Andreas/Game_Mechanics_and_Glitches#Harder_AI_after_having_been_in_a_car (done for SA 1.0, todo - port)
 - check if Tram signs are fixable without Wesser flipping out
 
 More? since I lost the orig list
