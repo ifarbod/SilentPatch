@@ -11,6 +11,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\SilentPatch\Patterns.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\SilentPatch\Timer.cpp" />
     <ClCompile Include="SilentPatchIII.cpp" />
     <ClCompile Include="StdAfxIII.cpp">
@@ -21,6 +25,7 @@
   <ItemGroup>
     <ClInclude Include="..\SilentPatch\General.h" />
     <ClInclude Include="..\SilentPatch\MemoryMgr.h" />
+    <ClInclude Include="..\SilentPatch\Patterns.h" />
     <ClInclude Include="..\SilentPatch\StdAfx.h" />
     <ClInclude Include="..\SilentPatch\Timer.h" />
   </ItemGroup>
