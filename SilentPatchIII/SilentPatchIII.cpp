@@ -288,18 +288,18 @@ char* GetMyDocumentsPath()
 }
 
 static LARGE_INTEGER	FrameTime;
-DWORD GetTimeSinceLastFrame()
+int32_t GetTimeSinceLastFrame()
 {
 	LARGE_INTEGER	curTime;
 	QueryPerformanceCounter(&curTime);
-	return curTime.QuadPart - FrameTime.QuadPart;
+	return int32_t(curTime.QuadPart - FrameTime.QuadPart);
 }
 
-static void (*RsEventHandler)(int, void*);
-void NewFrameRender(int nEvent, void* pParam)
+static int (*RsEventHandler)(int, void*);
+int NewFrameRender(int nEvent, void* pParam)
 {
 	QueryPerformanceCounter(&FrameTime);
-	RsEventHandler(nEvent, pParam);
+	return RsEventHandler(nEvent, pParam);
 }
 
 static signed int& LastTimeFireTruckCreated = **(int**)0x41D2E5;
