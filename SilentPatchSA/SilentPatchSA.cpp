@@ -3000,6 +3000,24 @@ void Patch_SA_10()
 	// AI accuracy issue
 	Nop(0x73B3AE, 1);
 	InjectHook( 0x73B3AE + 1, WeaponRangeMult_VehicleCheck, PATCH_CALL );
+
+
+	// Don't catch WM_SYSKEYDOWN and WM_SYSKEYUP (fixes Alt+F4)
+	InjectHook( 0x748220, 0x748446, PATCH_JUMP );
+	Patch<uint8_t>( 0x7481E3, 0x5C ); // esi -> ebx
+	Patch<uint8_t>( 0x7481EA, 0x53 ); // esi -> ebx
+	Patch<uint8_t>( 0x74820D, 0xFB ); // esi -> ebx
+	Patch<int8_t>( 0x7481EF, 0x54-0x3C ); // use stack space for new lParam
+	Patch<int8_t>( 0x748200, 0x4C-0x3C ); // use stack space for new lParam
+	Patch<int8_t>( 0x748214, 0x4C-0x3C ); // use stack space for new lParam
+
+	InjectHook( 0x74826A, 0x748446, PATCH_JUMP );
+	Patch<uint8_t>( 0x74822D, 0x5C ); // esi -> ebx
+	Patch<uint8_t>( 0x748234, 0x53 ); // esi -> ebx
+	Patch<uint8_t>( 0x748257, 0xFB ); // esi -> ebx
+	Patch<int8_t>( 0x748239, 0x54-0x3C ); // use stack space for new lParam
+	Patch<int8_t>( 0x74824A, 0x4C-0x3C ); // use stack space for new lParam
+	Patch<int8_t>( 0x74825E, 0x4C-0x3C ); // use stack space for new lParam
 }
 
 void Patch_SA_11()
@@ -3667,6 +3685,24 @@ void Patch_SA_Steam()
 	InjectHook( 0x7738F5+1, WeaponRangeMult_VehicleCheck, PATCH_CALL );
 
 
+	// Don't catch WM_SYSKEYDOWN and WM_SYSKEYUP (fixes Alt+F4)
+	InjectHook( 0x7821E5, 0x7823FE, PATCH_JUMP );
+	Patch<uint8_t>( 0x7821A7 + 1, 0x5C ); // esi -> ebx
+	Patch<uint8_t>( 0x7821AF, 0x53 ); // esi -> ebx
+	Patch<uint8_t>( 0x7821D1 + 1, 0xFB ); // esi -> ebx
+	Patch<int8_t>( 0x7821B1 + 3, 0x54-0x2C ); // use stack space for new lParam
+	Patch<int8_t>( 0x7821C2 + 3, 0x4C-0x2C ); // use stack space for new lParam
+	Patch<int8_t>( 0x7821D6 + 3, 0x4C-0x2C ); // use stack space for new lParam
+
+	InjectHook( 0x78222F, 0x7823FE, PATCH_JUMP );
+	Patch<uint8_t>( 0x7821F1 + 1, 0x5C ); // esi -> ebx
+	Patch<uint8_t>( 0x7821F9, 0x53 ); // esi -> ebx
+	Patch<uint8_t>( 0x78221B + 1, 0xFB ); // esi -> ebx
+	Patch<int8_t>( 0x7821FB + 3, 0x54-0x2C ); // use stack space for new lParam
+	Patch<int8_t>( 0x78220C + 3, 0x4C-0x2C ); // use stack space for new lParam
+	Patch<int8_t>( 0x782220 + 3, 0x4C-0x2C ); // use stack space for new lParam
+
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -4153,6 +4189,24 @@ void Patch_SA_NewSteam_Common()
 		auto match = pattern( "8B 82 8C 05 00 00 85 C0 74 09" ).get_one(); // 0x76DEA7 in newsteam r1
 		Nop(match.get<int>(0), 1);
 		InjectHook( match.get<int>(1), WeaponRangeMult_VehicleCheck, PATCH_CALL );
+	}
+
+	// Don't catch WM_SYSKEYDOWN and WM_SYSKEYUP (fixes Alt+F4)
+	{
+		auto patternie = pattern( "8B 75 10 8B ? 14 56" ).count(2); // 0x77C588 and 0x77C5CC in newsteam r2
+		auto defproc = get_pattern( "8B 4D 14 8B 55 10 8B 45 08" );
+
+		for ( size_t i = 0; i < 2; ++i )
+		{
+			auto match = patternie.get(i);
+			InjectHook( match.get<int>(0x39), defproc, PATCH_JUMP );
+			Patch<uint8_t>( match.get<int>(1), 0x5D ); // esi -> ebx
+			Patch<uint8_t>( match.get<int>(6), 0x53 ); // esi -> ebx
+			Patch<uint8_t>( match.get<int>(0x26 + 1), 0xFB ); // esi -> ebx
+			Patch<int8_t>( match.get<int>(8 + 2), -8 ); // use stack space for new lParam
+			Patch<int8_t>( match.get<int>(0x18 + 2), -8 ); // use stack space for new lParam
+			Patch<int8_t>( match.get<int>(0x2B + 2), -8 ); // use stack space for new lParam
+		}
 	}
 }
 
