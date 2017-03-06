@@ -2999,7 +2999,7 @@ void Patch_SA_10()
 
 	// AI accuracy issue
 	Nop(0x73B3AE, 1);
-	InjectHook( 0x73B3AE+1, WeaponRangeMult_VehicleCheck, PATCH_CALL );
+	InjectHook( 0x73B3AE + 1, WeaponRangeMult_VehicleCheck, PATCH_CALL );
 }
 
 void Patch_SA_11()
