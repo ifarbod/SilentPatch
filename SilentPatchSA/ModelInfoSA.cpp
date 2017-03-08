@@ -70,6 +70,7 @@ RpMaterial* CVehicleModelInfo::GetEditableMaterialListCB(RpMaterial* pMaterial, 
 }
 
 // TODO: FIX IT
+typedef std::tuple<RpMaterial**, RpMaterial**, int, int> PlateDataTuple;
 static RpMaterial* PollPlateData(RpMaterial* pMaterial, void* pData)
 {
 	if ( RwTexture* pTexture = RpMaterialGetTexture(pMaterial) )
@@ -79,7 +80,7 @@ static RpMaterial* PollPlateData(RpMaterial* pMaterial, void* pData)
 		{
 			if ( !_strnicmp(pTexName, "carplate", 8) )
 			{
-				auto&		pCallbackData = *static_cast<std::tuple<RpMaterial**,RpMaterial**,unsigned char,unsigned char>*>(pData);
+				auto&		pCallbackData = *static_cast<PlateDataTuple*>(pData);
 
 				assert(std::get<2>(pCallbackData) < NUM_MAX_PLATES);
 				if ( std::get<2>(pCallbackData) < NUM_MAX_PLATES )
@@ -99,7 +100,7 @@ static RpMaterial* PollPlateData(RpMaterial* pMaterial, void* pData)
 			}
 			else if ( !_strnicmp(pTexName, "carpback", 8) )
 			{
-				auto&		pCallbackData = *static_cast<std::tuple<RpMaterial**,RpMaterial**,unsigned char,unsigned char>*>(pData);
+				auto&		pCallbackData = *static_cast<PlateDataTuple*>(pData);
 
 				assert(std::get<3>(pCallbackData) < NUM_MAX_PLATES);
 				if ( std::get<3>(pCallbackData) < NUM_MAX_PLATES )
@@ -164,7 +165,7 @@ static RpAtomic* SetPlateData(RpAtomic* pAtomic, void* pData)
 void CCustomCarPlateMgr::SetupClump(RpClump* pClump, RpMaterial** pMatsArray)
 {
 	// Split pMatsArray
-	std::tuple<RpMaterial**,RpMaterial**,unsigned char,unsigned char>	CallbackData = std::make_tuple(pMatsArray, pMatsArray+NUM_MAX_PLATES, 0, 0);
+	PlateDataTuple	CallbackData = std::make_tuple(pMatsArray, pMatsArray+NUM_MAX_PLATES, 0, 0);
 
 	RpClumpForAllAtomics(pClump, PollPlateData, &CallbackData);
 }
@@ -175,7 +176,7 @@ void CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade(RpClump* pClump, RpMateri
 	if ( pMatsArray )
 	{
 		// Split pMatsArray
-		std::tuple<RpMaterial**,RpMaterial**,unsigned char,unsigned char>	CallbackData = std::make_tuple(pMatsArray, pMatsArray+NUM_MAX_PLATES, 0, 0);
+		PlateDataTuple	CallbackData = std::make_tuple(pMatsArray, pMatsArray+NUM_MAX_PLATES, 0, 0);
 
 		RpClumpForAllAtomics(pClump, PollPlateData, &CallbackData);
 	}
