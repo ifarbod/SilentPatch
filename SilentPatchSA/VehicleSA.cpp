@@ -19,7 +19,7 @@ WRAPPER bool CVehicle::IsLawEnforcementVehicle() { VARJMP(varIsLawEnforcementVeh
 
 static int32_t random(int32_t from, int32_t to)
 {
-	return from + ( rand() % (to-from) );
+	return from + ( Int32Rand() % (to-from) );
 }
 
 static RwObject* GetCurrentAtomicObjectCB(RwObject* pObject, void* data)

@@ -30,6 +30,7 @@
 extern void	(*GTAdelete)(void* data);
 extern const char* (*GetFrameNodeName)(RwFrame*);
 extern RpHAnimHierarchy* (*GetAnimHierarchyFromSkinClump)(RpClump*);
+int32_t Int32Rand();
 
 extern unsigned char& nGameClockDays;
 extern unsigned char& nGameClockMonths;

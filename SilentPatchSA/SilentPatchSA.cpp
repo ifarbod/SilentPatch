@@ -786,10 +786,10 @@ int NewFrameRender(int nEvent, void* pParam)
 #include <ctime>
 #include <random>
 
-int Int32Rand()
+static std::ranlux48 generator (time(nullptr));
+int32_t Int32Rand()
 {
-	static std::ranlux48 generator (time(nullptr));
-	return generator() & 0x7FFFFFFF;
+	return generator() & INT32_MAX;
 }
 
 void (*FlushSpriteBuffer)() = AddressByVersion<void(*)()>(0x70CF20, 0x70D750, 0x7591E0, 0x753AE0, 0x753A00);
