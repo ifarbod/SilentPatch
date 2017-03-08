@@ -819,22 +819,26 @@ void CreateMirrorBuffers()
 		msaaValues[0] = msaaValues[1] = 0;
 
 		DWORD quality = *(DWORD*)((BYTE*)g_fx + 0x54);
+		RwInt32 width, height;
 
 		if ( quality >= 3 ) // Very High
 		{
-			pMirrorBuffer = RwRasterCreate( 2048, 1024, 0, rwRASTERTYPECAMERATEXTURE );
-			pMirrorZBuffer = RwRasterCreate( 2048, 1024, 0, rwRASTERTYPEZBUFFER );
+			width = 2048;
+			height = 1024;
 		}
 		else if ( quality >= 1 ) // Medium
 		{
-			pMirrorBuffer = RwRasterCreate( 1024, 512, 0, rwRASTERTYPECAMERATEXTURE );
-			pMirrorZBuffer = RwRasterCreate( 1024, 512, 0, rwRASTERTYPEZBUFFER );
+			width = 1024;
+			height = 512;
 		}
 		else
 		{
-			pMirrorBuffer = RwRasterCreate( 512, 256, 0, rwRASTERTYPECAMERATEXTURE );
-			pMirrorZBuffer = RwRasterCreate( 512, 256, 0, rwRASTERTYPEZBUFFER );
+			width = 512;
+			height = 256;
 		}
+
+		pMirrorBuffer = RwRasterCreate( width, height, 0, rwRASTERTYPECAMERATEXTURE );
+		pMirrorZBuffer = RwRasterCreate( width, height, 0, rwRASTERTYPEZBUFFER );
 
 		msaaValues[0] = oldMsaa[0];
 		msaaValues[1] = oldMsaa[1];
