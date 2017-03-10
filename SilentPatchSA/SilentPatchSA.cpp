@@ -971,6 +971,30 @@ void __stdcall CdStreamSetFilePointer( HANDLE hFile, uint32_t distanceToMove, vo
 static auto* pCdStreamSetFilePointer = CdStreamSetFilePointer;
 
 
+static signed int& LastTimeFireTruckCreated = **AddressByVersion<int**>(0x42131F + 2, 0, 0x42224D + 2);
+static signed int& LastTimeAmbulanceCreated = **AddressByVersion<int**>(0x421319 + 2, 0, 0x422247 + 2);
+static float& TimeNextMadDriverChaseCreated = **AddressByVersion<float**>(0x421369 + 2, 0, 0x42229D + 2);
+static void (*orgCarCtrlReInit)();
+void CarCtrlReInit_SilentPatch()
+{
+	orgCarCtrlReInit();
+	LastTimeFireTruckCreated = 0;
+	LastTimeAmbulanceCreated = 0;
+	TimeNextMadDriverChaseCreated = (static_cast<float>(Int32Rand()) / INT32_MAX) * 600.0f + 600.0f;
+}
+
+static signed int* LastTimeFireTruckCreated_Newsteam;
+static signed int* LastTimeAmbulanceCreated_Newsteam;
+static float* TimeNextMadDriverChaseCreated_Newsteam;
+void CarCtrlReInit_SilentPatch_Newsteam()
+{
+	orgCarCtrlReInit();
+	*LastTimeFireTruckCreated_Newsteam = 0;
+	*LastTimeAmbulanceCreated_Newsteam = 0;
+	*TimeNextMadDriverChaseCreated_Newsteam = (static_cast<float>(Int32Rand()) / INT32_MAX) * 600.0f + 600.0f;
+}
+
+
 #include <xnamath.h>
 
 static void*					pNVCShader = nullptr;
@@ -3022,6 +3046,11 @@ void Patch_SA_10()
 	Patch<int8_t>( 0x748239, 0x54-0x3C ); // use stack space for new lParam
 	Patch<int8_t>( 0x74824A, 0x4C-0x3C ); // use stack space for new lParam
 	Patch<int8_t>( 0x74825E, 0x4C-0x3C ); // use stack space for new lParam
+
+
+	 // Reinit CCarCtrl fields (firetruck and ambulance generation)
+	ReadCall( 0x53BD5B, orgCarCtrlReInit );
+	InjectHook(0x53BD5B, CarCtrlReInit_SilentPatch);
 }
 
 void Patch_SA_11()
@@ -3707,6 +3736,11 @@ void Patch_SA_Steam()
 	Patch<int8_t>( 0x782220 + 3, 0x4C-0x2C ); // use stack space for new lParam
 
 
+	// Reinit CCarCtrl fields (firetruck and ambulance generation)
+	ReadCall( 0x54DCCB, orgCarCtrlReInit );
+	InjectHook(0x54DCCB, CarCtrlReInit_SilentPatch);
+
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -4211,6 +4245,19 @@ void Patch_SA_NewSteam_Common()
 			Patch<int8_t>( match.get<int>(0x18 + 2), -8 ); // use stack space for new lParam
 			Patch<int8_t>( match.get<int>(0x2B + 2), -8 ); // use stack space for new lParam
 		}
+	}
+
+
+	// Reinit CCarCtrl fields (firetruck and ambulance generation)
+	{
+		void* reinit_addr = get_pattern( "53 E8 ? ? ? ? E8 ? ? ? ? D9 05 ? ? ? ? D9 1C 24", -15 );
+		auto timers_init = pattern( "89 45 FC DB 45 FC C6 05 ? ? ? ? 01" ).get_one();
+
+		LastTimeAmbulanceCreated_Newsteam = *timers_init.get<signed int*>(-17 + 2);
+		LastTimeFireTruckCreated_Newsteam = *timers_init.get<signed int*>(-11 + 2);
+		TimeNextMadDriverChaseCreated_Newsteam = *timers_init.get<float*>(0x41 + 2);
+		ReadCall( reinit_addr, orgCarCtrlReInit );
+		InjectHook(reinit_addr, CarCtrlReInit_SilentPatch_Newsteam);
 	}
 }
 
