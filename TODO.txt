@@ -22,7 +22,6 @@ VC:
 - check if extras can be fixed with bikes (so they move with the part they are attached to)
 
 SA:
-- NickJ's FuckCarCompletely
 - NickJ's remote bomb ownership bug (maybe)
 - Bicycle exploding?
 - NickJ's stats not resetting on new game
