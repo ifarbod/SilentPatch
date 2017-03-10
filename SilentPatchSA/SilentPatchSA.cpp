@@ -3051,6 +3051,10 @@ void Patch_SA_10()
 	 // Reinit CCarCtrl fields (firetruck and ambulance generation)
 	ReadCall( 0x53BD5B, orgCarCtrlReInit );
 	InjectHook(0x53BD5B, CarCtrlReInit_SilentPatch);
+
+
+	// FuckCarCompletely not fixing panels
+	Nop(0x6C268D, 3);
 }
 
 void Patch_SA_11()
@@ -3741,6 +3745,10 @@ void Patch_SA_Steam()
 	InjectHook(0x54DCCB, CarCtrlReInit_SilentPatch);
 
 
+	// FuckCarCompletely not fixing panels
+	Nop(0x6F5EC1, 3);
+
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -4258,6 +4266,12 @@ void Patch_SA_NewSteam_Common()
 		TimeNextMadDriverChaseCreated_Newsteam = *timers_init.get<float*>(0x41 + 2);
 		ReadCall( reinit_addr, orgCarCtrlReInit );
 		InjectHook(reinit_addr, CarCtrlReInit_SilentPatch_Newsteam);
+	}
+
+	// FuckCarCompletely not fixing panels
+	{
+		void* panel_addr = get_pattern( "C6 46 04 FA 5E 5B", -3 );
+		Nop(panel_addr, 3);
 	}
 }
 
