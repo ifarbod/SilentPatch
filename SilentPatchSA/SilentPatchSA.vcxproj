@@ -36,9 +36,11 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="versionmeta.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="versionmeta.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -160,6 +162,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClInclude Include="..\SilentPatch\FLAC\stream_decoder.h" />
     <ClInclude Include="..\SilentPatch\MemoryMgr.h" />
     <ClInclude Include="..\SilentPatch\Patterns.h" />
+    <ClInclude Include="..\SilentPatch\resource1.h" />
     <ClInclude Include="..\SilentPatch\Timer.h" />
     <ClInclude Include="AudioHardwareSA.h" />
     <ClInclude Include="FLACDecoderSA.h" />
@@ -178,6 +181,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Shaders.rc" />
+    <ResourceCompile Include="..\SilentPatch\SilentPatch.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

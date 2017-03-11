@@ -134,9 +134,15 @@
     <ClInclude Include="..\SilentPatch\Patterns.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\SilentPatch\resource1.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Shaders.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+    <ResourceCompile Include="..\SilentPatch\SilentPatch.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
