@@ -3070,6 +3070,11 @@ void Patch_SA_10()
 
 	// FuckCarCompletely not fixing panels
 	Nop(0x6C268D, 3);
+
+
+	// 014C cargen counter fix (by spaceeinstein)
+	Patch<uint8_t>( 0x06F3E2C + 1, 0xBF ); // movzx ecx, ax -> movsx ecx, ax
+	Patch<uint8_t>( 0x6F3E32, 0x74 ); // jge -> jz
 }
 
 void Patch_SA_11()
@@ -3764,6 +3769,12 @@ void Patch_SA_Steam()
 	Nop(0x6F5EC1, 3);
 
 
+	// 014C cargen counter fix (by spaceeinstein)
+	Patch<uint8_t>( 0x6F566D + 1, 0xBF ); // movzx eax, word ptr [ebp+1Ah] -> movsx eax, word ptr [ebp+1Ah]
+	Patch<uint8_t>( 0x6F567E + 1, 0xBF ); // movzx ecx, ax -> movsx ecx, ax
+	Patch<uint8_t>( 0x6F3E32, 0x74 ); // jge -> jz
+
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -4287,6 +4298,14 @@ void Patch_SA_NewSteam_Common()
 	{
 		void* panel_addr = get_pattern( "C6 46 04 FA 5E 5B", -3 );
 		Nop(panel_addr, 3);
+	}
+
+	// 014C cargen counter fix (by spaceeinstein)
+	{
+		auto do_processing = pattern( "B8 C3 2E 57 06 F7 EE C1 FA 06" ).get_one();
+
+		Patch<uint8_t>( do_processing.get<uint8_t*>(27 + 1), 0xBF ); // movzx eax, word ptr [edi+1Ah] -> movsx eax, word ptr [edi+1Ah]
+		Patch<uint8_t>( do_processing.get<uint8_t*>(41), 0x74 ); // jge -> jz
 	}
 }
 
