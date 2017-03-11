@@ -25,7 +25,6 @@ SA:
 - NickJ's remote bomb ownership bug (maybe)
 - Bicycle exploding?
 - NickJ's stats not resetting on new game
-- space's bugged cargen command (014C)
 - space's bugged sniper bullet checks (047B, 047C, and 037E) (maybe)
 - check if Tram signs are fixable without Wesser flipping out
 
