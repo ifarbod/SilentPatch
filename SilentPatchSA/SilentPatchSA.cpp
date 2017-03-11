@@ -626,11 +626,11 @@ void StartNewMission_SCMFixes()
 bool GetCurrentZoneLockedOrUnlocked(float fPosX, float fPosY)
 {
 	// Exploit RAII really bad
-	static const float		GridXOffset = **AddressByVersion<float**>(0x572135+2, 0, 0 /*TODO*/), GridYOffset = **AddressByVersion<float**>(0x57214A+2, 0, 0 /*TODO*/);
-	static const float		GridXSize = **AddressByVersion<float**>(0x57213B+2, 0, 0 /*TODO*/), GridYSize = **AddressByVersion<float**>(0x572153+2, 0, 0 /*TODO*/);
+	static const float		GridXOffset = **(float**)(0x572135+2), GridYOffset = **(float**)(0x57214A+2);
+	static const float		GridXSize = **(float**)(0x57213B+2), GridYSize = **(float**)(0x572153+2);
 	static const int		GridXNum = (2.0f*GridXOffset) * GridXSize, GridYNum = (2.0f*GridYOffset) * GridYSize;
 
-	static unsigned char* const	ZonesVisited = *AddressByVersion<unsigned char**>(0x57216A, 0, 0x5870E8) - (GridYNum-1);		// 1.01 fixed it!
+	static unsigned char* const	ZonesVisited = *(unsigned char**)(0x57216A) - (GridYNum-1);		// 1.01 fixed it!
 
 	int		Xindex = (fPosX+GridXOffset) * GridXSize;
 	int		Yindex = (fPosY+GridYOffset) * GridYSize;
@@ -639,6 +639,21 @@ bool GetCurrentZoneLockedOrUnlocked(float fPosX, float fPosY)
 	if ( (Xindex >= 0 && Xindex < GridXNum) && (Yindex >= 0 && Yindex < GridYNum) )
 		return ZonesVisited[GridXNum*Xindex - Yindex + (GridYNum-1)] != 0;
 	
+	// Outside of map bounds
+	return true;
+}
+
+bool GetCurrentZoneLockedOrUnlocked_Steam(float fPosX, float fPosY)
+{
+	static unsigned char* const	ZonesVisited = *(unsigned char**)(0x5870E8) - 9;
+
+	int		Xindex = (fPosX+3000.0f) / 600.0f;
+	int		Yindex = (fPosY+3000.0f) / 600.0f;
+
+	// "Territories fix"
+	if ( (Xindex >= 0 && Xindex < 10) && (Yindex >= 0 && Yindex < 10) )
+		return ZonesVisited[10*Xindex - Yindex + 9] != 0;
+
 	// Outside of map bounds
 	return true;
 }
@@ -3531,7 +3546,7 @@ void Patch_SA_Steam()
 	InjectHook(0x7006BA, &CPlane::Fix_SilentPatch, PATCH_JUMP);
 
 	// Zones fix
-	InjectHook(0x587080, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
+	InjectHook(0x587080, GetCurrentZoneLockedOrUnlocked_Steam, PATCH_JUMP);
 
 	// CGarages::RespraysAreFree resetting on new game
 	Patch<WORD>(0x44CB55, 0xC766);
