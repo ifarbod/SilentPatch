@@ -2968,7 +2968,7 @@ void Patch_SA_10()
 
 		int			pMemMgrMalloc = pHoodlumCompat + 0x63;
 		ReadCall( pMemMgrMalloc, orgMemMgrMalloc );
-		InjectHook(pMemMgrMalloc, CollisionData_MallocAndInit);
+		VP::InjectHook(pMemMgrMalloc, CollisionData_MallocAndInit);
 	}
 	{
 		int			pHoodlumCompat, pHoodlumCompat2;
@@ -2985,8 +2985,8 @@ void Patch_SA_10()
 
 		int			pNewAlloc = pHoodlumCompat + 0xC;
 		ReadCall( pNewAlloc, orgNewAlloc );
-		InjectHook(pHoodlumCompat + 0xC, CollisionData_NewAndInit);
-		InjectHook(pHoodlumCompat2 + 0xD, CollisionData_NewAndInit);
+		VP::InjectHook(pHoodlumCompat + 0xC, CollisionData_NewAndInit);
+		VP::InjectHook(pHoodlumCompat2 + 0xD, CollisionData_NewAndInit);
 	}
 
 
@@ -3169,8 +3169,8 @@ void Patch_SA_11()
 		// I better check if it's an address I want to patch, I don't want to break the game
 		if ( *(DWORD*)0x14E7387 == 0x00E48C0F )
 		{
-			Patch<DWORD>(0x14E7387, 0x90905D7D);
-			Nop(0x14E738B, 2);
+			VP::Patch<DWORD>(0x14E7387, 0x90905D7D);
+			VP::Nop(0x14E738B, 2);
 		}
 	}
 	else
@@ -3206,7 +3206,7 @@ void Patch_SA_11()
 		Patch<WORD>(0x5B6BCB, 0x26EB);
 
 		if ( *(DWORD*)0x14E4954 == 0x05C70A75 )
-			Patch<const void*>(0x14E4958, &UserTrackExtensions[1].Codec);
+			VP::Patch<const void*>(0x14E4958, &UserTrackExtensions[1].Codec);
 
 		// Deobfuscating an opcode
 		Patch<BYTE>(0x4EBD25, 0xBF);
