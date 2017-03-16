@@ -78,11 +78,24 @@ namespace hook
 
 		bool m_matched;
 
-		void* m_module;
+		union
+		{
+			void* m_module;
+			struct
+			{
+				uintptr_t m_rangeStart;
+				uintptr_t m_rangeEnd;
+			};
+		};
 
 	protected:
 		inline pattern(void* module)
-			: m_module(module), m_matched(false)
+			: m_module(module), m_rangeEnd(0), m_matched(false)
+		{
+		}
+
+		inline pattern(uintptr_t begin, uintptr_t end)
+			: m_rangeStart(begin), m_rangeEnd(end), m_matched(false)
 		{
 		}
 
@@ -116,6 +129,13 @@ namespace hook
 		inline pattern& count_hint(uint32_t expected)
 		{
 			EnsureMatches(expected);
+			return *this;
+		}
+
+		inline pattern& clear()
+		{
+			m_matches.clear();
+			m_matched = false;
 			return *this;
 		}
 
@@ -161,6 +181,18 @@ namespace hook
 		template<size_t Len>
 		module_pattern(void* module, const char(&pattern)[Len])
 			: pattern(module)
+		{
+			Initialize(pattern, Len);
+		}
+	};
+
+	class range_pattern
+		: public pattern
+	{
+	public:
+		template<size_t Len>
+		range_pattern(uintptr_t begin, uintptr_t end, const char(&pattern)[Len])
+			: pattern(begin, end)
 		{
 			Initialize(pattern, Len);
 		}

@@ -116,13 +116,18 @@ public:
 		return (TReturn*)(m_begin + rva);
 	}
 
-	executable_meta(void* module)
+	explicit executable_meta(void* module)
 		: m_begin((uintptr_t)module)
 	{
 		PIMAGE_DOS_HEADER dosHeader = getRVA<IMAGE_DOS_HEADER>(0);
 		PIMAGE_NT_HEADERS ntHeader = getRVA<IMAGE_NT_HEADERS>(dosHeader->e_lfanew);
 
 		m_end = m_begin + ntHeader->OptionalHeader.SizeOfCode;
+	}
+
+	executable_meta(uintptr_t begin, uintptr_t end)
+		: m_begin(begin), m_end(end)
+	{
 	}
 
 	inline uintptr_t begin() const { return m_begin; }
@@ -173,7 +178,7 @@ void pattern::EnsureMatches(uint32_t maxCount)
 	}
 
 	// scan the executable for code
-	executable_meta executable(m_module);
+	executable_meta executable = m_rangeStart != 0 && m_rangeEnd != 0 ? executable_meta(m_rangeStart, m_rangeEnd) : executable_meta(m_module);
 
 	auto matchSuccess = [&] (uintptr_t address)
 	{
