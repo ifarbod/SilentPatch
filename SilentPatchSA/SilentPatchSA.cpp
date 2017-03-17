@@ -595,10 +595,10 @@ static void MountainCloudBoysFix()
 	}
 }
 
-static void QuadrupleStuntBonus(unsigned char* scriptBuffer, size_t size)
+static void QuadrupleStuntBonus()
 {
 	// IF HEIGHT_FLOAT_HJ > 4.0 -> IF HEIGHT_INT_HJ > 4
-	auto pattern = hook::range_pattern( uintptr_t(scriptBuffer), uintptr_t(scriptBuffer+size), "20 00 02 60 14 06 00 00 80 40" ).count_hint(1);
+	auto pattern = hook::range_pattern( uintptr_t(ScriptSpace), uintptr_t(ScriptSpace+ScriptFileSize), "20 00 02 60 14 06 00 00 80 40" ).count_hint(1);
 	if ( pattern.size() == 1 )
 	{
 		const uint8_t newCode[10] = {
@@ -614,7 +614,7 @@ void TheScriptsLoad_BasketballFix()
 	InitializeScriptGlobals();
 
 	BasketballFix(ScriptSpace+8, *(int*)(ScriptSpace+3));
-	QuadrupleStuntBonus(ScriptSpace, ScriptFileSize);
+	QuadrupleStuntBonus();
 }
 
 void StartNewMission_SCMFixes()
@@ -626,7 +626,7 @@ void StartNewMission_SCMFixes()
 	if ( ScriptParams[0] == 0 )
 	{
 		BasketballFix(ScriptSpace+ScriptFileSize, ScriptMissionSize);
-		QuadrupleStuntBonus(ScriptSpace, ScriptFileSize);
+		QuadrupleStuntBonus();
 	}
 	// HOODS5 - Sweet's Girl fix
 	else if ( ScriptParams[0] == 18 )
