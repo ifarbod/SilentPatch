@@ -568,8 +568,6 @@ static void InitializeScriptGlobals()
 
 static void SweetsGirlFix()
 {
-	InitializeScriptGlobals();
-
 	// Changes @ == int to @ >= int in two places
 	if ( *(uint16_t*)(ScriptSpace+ScriptFileSize+2510) == 0x0039 )
 		*(uint16_t*)(ScriptSpace+ScriptFileSize+2510) = 0x0029;
@@ -580,21 +578,33 @@ static void SweetsGirlFix()
 
 static void MountainCloudBoysFix()
 {
-	static const BYTE bOldCode[22] = {
+	static const uint8_t bOldCode[22] = {
 		0xD6, 0x00, 0x04, 0x00, 0x39, 0x00, 0x03, 0xEF, 0x00, 0x04, 0x02, 0x4D,
 		0x00, 0x01, 0x90, 0xF2, 0xFF, 0xFF, 0xD6, 0x00, 0x04, 0x01
 		};
-	static const BYTE bNewCode[22] = {
-		0x00, 0x00, 0x00, 0x00, 0xD6, 0x00, 0x04, 0x03, 0x39, 0x00, 0x03, 0x2B,
-		0x00, 0x04, 0x0B, 0x39, 0x00, 0x03, 0xEF, 0x00, 0x04, 0x02
-		};
-
-	InitializeScriptGlobals();
 
 	// Faulty code lies under offset 3367 - replace it if it matches
 	if ( memcmp( ScriptSpace+ScriptFileSize+3367, bOldCode, sizeof(bOldCode) ) == 0 )
 	{
+		const uint8_t bNewCode[22] = {
+			0x00, 0x00, 0x00, 0x00, 0xD6, 0x00, 0x04, 0x03, 0x39, 0x00, 0x03, 0x2B,
+			0x00, 0x04, 0x0B, 0x39, 0x00, 0x03, 0xEF, 0x00, 0x04, 0x02
+		};
+
 		memcpy( ScriptSpace+ScriptFileSize+3367, bNewCode, sizeof(bNewCode) );
+	}
+}
+
+static void QuadrupleStuntBonus(unsigned char* scriptBuffer, size_t size)
+{
+	// IF HEIGHT_FLOAT_HJ > 4.0 -> IF HEIGHT_INT_HJ > 4
+	auto pattern = hook::range_pattern( uintptr_t(scriptBuffer), uintptr_t(scriptBuffer+size), "20 00 02 60 14 06 00 00 80 40" ).count_hint(1);
+	if ( pattern.size() == 1 )
+	{
+		const uint8_t newCode[10] = {
+			0x18, 0x00, 0x02, 0x30, 0x14, 0x01, 0x04, 0x00, 0x00, 0x00
+		};
+		memcpy( pattern.get(0).get<void>(), newCode, sizeof(newCode) );
 	}
 }
 
@@ -604,6 +614,7 @@ void TheScriptsLoad_BasketballFix()
 	InitializeScriptGlobals();
 
 	BasketballFix(ScriptSpace+8, *(int*)(ScriptSpace+3));
+	QuadrupleStuntBonus(ScriptSpace, ScriptFileSize);
 }
 
 void StartNewMission_SCMFixes()
@@ -611,9 +622,12 @@ void StartNewMission_SCMFixes()
 	WipeLocalVariableMemoryForMissionScript();
 	InitializeScriptGlobals();
 
-	// INITIAL - Basketball fix
+	// INITIAL - Basketball fix, Quadruple Stunt Bonus
 	if ( ScriptParams[0] == 0 )
+	{
 		BasketballFix(ScriptSpace+ScriptFileSize, ScriptMissionSize);
+		QuadrupleStuntBonus(ScriptSpace, ScriptFileSize);
+	}
 	// HOODS5 - Sweet's Girl fix
 	else if ( ScriptParams[0] == 18 )
 		SweetsGirlFix();
