@@ -3042,21 +3042,21 @@ void Patch_SA_10()
 
 
 	// Don't catch WM_SYSKEYDOWN and WM_SYSKEYUP (fixes Alt+F4)
-	InjectHook( 0x748220, 0x748446, PATCH_JUMP );
-	Patch<uint8_t>( 0x7481E3, 0x5C ); // esi -> ebx
-	Patch<uint8_t>( 0x7481EA, 0x53 ); // esi -> ebx
-	Patch<uint8_t>( 0x74820D, 0xFB ); // esi -> ebx
-	Patch<int8_t>( 0x7481EF, 0x54-0x3C ); // use stack space for new lParam
-	Patch<int8_t>( 0x748200, 0x4C-0x3C ); // use stack space for new lParam
-	Patch<int8_t>( 0x748214, 0x4C-0x3C ); // use stack space for new lParam
+	InjectHook( AddressByRegion_10<int>(0x748220), AddressByRegion_10<int>(0x748446), PATCH_JUMP );
+	Patch<uint8_t>( AddressByRegion_10<int>(0x7481E3), 0x5C ); // esi -> ebx
+	Patch<uint8_t>( AddressByRegion_10<int>(0x7481EA), 0x53 ); // esi -> ebx
+	Patch<uint8_t>( AddressByRegion_10<int>(0x74820D), 0xFB ); // esi -> ebx
+	Patch<int8_t>( AddressByRegion_10<int>(0x7481EF), 0x54-0x3C ); // use stack space for new lParam
+	Patch<int8_t>( AddressByRegion_10<int>(0x748200), 0x4C-0x3C ); // use stack space for new lParam
+	Patch<int8_t>( AddressByRegion_10<int>(0x748214), 0x4C-0x3C ); // use stack space for new lParam
 
-	InjectHook( 0x74826A, 0x748446, PATCH_JUMP );
-	Patch<uint8_t>( 0x74822D, 0x5C ); // esi -> ebx
-	Patch<uint8_t>( 0x748234, 0x53 ); // esi -> ebx
-	Patch<uint8_t>( 0x748257, 0xFB ); // esi -> ebx
-	Patch<int8_t>( 0x748239, 0x54-0x3C ); // use stack space for new lParam
-	Patch<int8_t>( 0x74824A, 0x4C-0x3C ); // use stack space for new lParam
-	Patch<int8_t>( 0x74825E, 0x4C-0x3C ); // use stack space for new lParam
+	InjectHook( AddressByRegion_10<int>(0x74826A), AddressByRegion_10<int>(0x748446), PATCH_JUMP );
+	Patch<uint8_t>( AddressByRegion_10<int>(0x74822D), 0x5C ); // esi -> ebx
+	Patch<uint8_t>( AddressByRegion_10<int>(0x748234), 0x53 ); // esi -> ebx
+	Patch<uint8_t>( AddressByRegion_10<int>(0x748257), 0xFB ); // esi -> ebx
+	Patch<int8_t>( AddressByRegion_10<int>(0x748239), 0x54-0x3C ); // use stack space for new lParam
+	Patch<int8_t>( AddressByRegion_10<int>(0x74824A), 0x4C-0x3C ); // use stack space for new lParam
+	Patch<int8_t>( AddressByRegion_10<int>(0x74825E), 0x4C-0x3C ); // use stack space for new lParam
 
 
 	 // Reinit CCarCtrl fields (firetruck and ambulance generation)
