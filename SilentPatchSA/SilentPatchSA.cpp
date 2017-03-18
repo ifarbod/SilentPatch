@@ -1985,14 +1985,8 @@ BOOL InjectDelayedPatches_10()
 
 		// Obtain a path to the ASI
 		wchar_t			wcModulePath[MAX_PATH];
-
-		GetModuleFileNameW(hDLLModule, wcModulePath, MAX_PATH);
-
-		// ASI -> INI
-		size_t		nLen = wcslen(wcModulePath);
-		wcModulePath[nLen-1] = L'i';
-		wcModulePath[nLen-2] = L'n';
-		wcModulePath[nLen-3] = L'i';
+		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
+		PathRenameExtensionW(wcModulePath, L".ini");
 
 		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
 		bool		bSAMP = GetModuleHandle("samp") != nullptr;
@@ -2213,14 +2207,8 @@ BOOL InjectDelayedPatches_11()
 
 		// Obtain a path to the ASI
 		wchar_t			wcModulePath[MAX_PATH];
-
-		GetModuleFileNameW(hDLLModule, wcModulePath, MAX_PATH);
-
-		// ASI -> INI
-		size_t		nLen = wcslen(wcModulePath);
-		wcModulePath[nLen-1] = L'i';
-		wcModulePath[nLen-2] = L'n';
-		wcModulePath[nLen-3] = L'i';
+		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
+		PathRenameExtensionW(wcModulePath, L".ini");
 
 		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
 		bool		bSAMP = GetModuleHandle("samp") != nullptr;
@@ -2438,14 +2426,8 @@ BOOL InjectDelayedPatches_Steam()
 
 		// Obtain a path to the ASI
 		wchar_t			wcModulePath[MAX_PATH];
-
-		GetModuleFileNameW(hDLLModule, wcModulePath, MAX_PATH);
-
-		// ASI -> INI
-		size_t		nLen = wcslen(wcModulePath);
-		wcModulePath[nLen-1] = L'i';
-		wcModulePath[nLen-2] = L'n';
-		wcModulePath[nLen-3] = L'i';
+		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
+		PathRenameExtensionW(wcModulePath, L".ini");
 
 		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
 		bool		bSAMP = GetModuleHandle("samp") != nullptr;
