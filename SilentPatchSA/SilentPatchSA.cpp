@@ -559,8 +559,8 @@ static void InitializeScriptGlobals()
 	{
 		ScriptSpace = *AddressByVersion<unsigned char**>(0x5D5380, 0x5D5B60, 0x450E34);
 		ScriptParams = *AddressByVersion<int**>(0x48995B, 0x46410A, 0x46979A);
-		ScriptFileSize = *AddressByVersion<size_t*>( 0x468E74+1, 0, 0 /*TODO*/);
-		ScriptMissionSize = *AddressByVersion<size_t*>( 0x489A5A+1, 0, 0 /*TODO*/);
+		ScriptFileSize = *AddressByVersion<size_t*>( 0x468E74+1, 0, 0x46E572+1);
+		ScriptMissionSize = *AddressByVersion<size_t*>( 0x489A5A+1, 0, 0x490798+1);
 
 		bInitScriptStuff = true;
 	}
