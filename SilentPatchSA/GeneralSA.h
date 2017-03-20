@@ -17,27 +17,27 @@ public:
 
 	inline CRGBA() {}
 
-	inline CRGBA(const CRGBA& in)
+	inline constexpr CRGBA(const CRGBA& in)
 		: r(in.r), g(in.g), b(in.b), a(in.a)
 	{}
 
-	inline CRGBA(const CRGBA& in, uint8_t alpha)
+	inline constexpr CRGBA(const CRGBA& in, uint8_t alpha)
 		: r(in.r), g(in.g), b(in.b), a(alpha)
 	{}
 
 
-	inline CRGBA(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255)
+	inline constexpr CRGBA(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255)
 		: r(red), g(green), b(blue), a(alpha)
 	{}
 
-	friend CRGBA Blend(const CRGBA& From, const CRGBA& To, double BlendVal)
+	friend constexpr CRGBA Blend(const CRGBA& From, const CRGBA& To, double BlendVal)
 		{	double InvBlendVal = 1.0 - BlendVal;
 			return CRGBA(	To.r * BlendVal + From.r * InvBlendVal,
 			To.g * BlendVal + From.g * InvBlendVal,
 			To.b * BlendVal + From.b * InvBlendVal,
 			To.a * BlendVal + From.a * InvBlendVal); }
 
-	friend CRGBA BlendSqr(const CRGBA& From, const CRGBA& To, double BlendVal)
+	friend constexpr CRGBA BlendSqr(const CRGBA& From, const CRGBA& To, double BlendVal)
 		{	double InvBlendVal = 1.0 - BlendVal;
 			return CRGBA(	sqrt((To.r * To.r) * BlendVal + (From.r * From.r) * InvBlendVal),
 			sqrt((To.g * To.g) * BlendVal + (From.g * From.g) * InvBlendVal),
@@ -55,7 +55,7 @@ public:
 	float x2, y2;
 
 	inline CRect() {}
-	inline CRect(float a, float b, float c, float d)
+	inline constexpr CRect(float a, float b, float c, float d)
 		: x1(a), y1(b), x2(c), y2(d)
 	{}
 };

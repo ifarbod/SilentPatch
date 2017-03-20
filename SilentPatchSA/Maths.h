@@ -12,11 +12,11 @@ public:
 	CVector()
 	{}
 
-	CVector(float fX, float fY, float fZ=0.0f)
+	constexpr CVector(float fX, float fY, float fZ=0.0f)
 		: x(fX), y(fY), z(fZ)
 	{}
 
-	CVector(const RwV3d& rwVec)
+	constexpr CVector(const RwV3d& rwVec)
 		: x(rwVec.x), y(rwVec.y), z(rwVec.z)
 	{}
 
@@ -33,9 +33,9 @@ public:
 			{ x -= vec.x; y -= vec.y; z -= vec.z;
 			return *this; }
 
-	inline float	Magnitude()
+	inline float	Magnitude() const
 		{ return sqrt(x * x + y * y + z * z); }
-	inline float	MagnitudeSqr()
+	inline constexpr float	MagnitudeSqr() const
 		{ return x * x + y * y + z * z; }
 	inline CVector&	Normalize()
 		{ float	fInvLen = 1.0f / Magnitude(); x *= fInvLen; y *= fInvLen; z *= fInvLen; return *this; }
@@ -69,7 +69,7 @@ public:
 	CVector2D()
 	{}
 
-	CVector2D(float fX, float fY)
+	constexpr CVector2D(float fX, float fY)
 		: x(fX), y(fY)
 	{}
 
@@ -80,9 +80,9 @@ public:
 			{ x -= vec.x; y -= vec.y;
 			return *this; }
 
-	inline float	Magnitude()
+	inline float	Magnitude() const
 		{ return sqrt(x * x + y * y); }
-	inline float	MagnitudeSqr()
+	inline constexpr float	MagnitudeSqr() const
 		{ return x * x + y * y; }
 	inline CVector2D&	Normalize()
 		{ float	fInvLen = 1.0f / Magnitude(); x *= fInvLen; y *= fInvLen; return *this; }
