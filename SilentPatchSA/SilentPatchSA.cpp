@@ -1023,6 +1023,13 @@ void CarCtrlReInit_SilentPatch_Newsteam()
 	*TimeNextMadDriverChaseCreated_Newsteam = (static_cast<float>(Int32Rand()) / INT32_MAX) * 600.0f + 600.0f;
 }
 
+static void (*orgDrawScriptSpritesAndRectangles)(uint8_t);
+void DrawScriptSpritesAndRectangles( uint8_t arg )
+{
+	RwRenderStateSet( rwRENDERSTATETEXTUREFILTER, (void*)rwFILTERLINEAR );
+	orgDrawScriptSpritesAndRectangles( arg );
+}
+
 
 #include <xnamath.h>
 
@@ -3137,6 +3144,12 @@ void Patch_SA_10()
 	// 014C cargen counter fix (by spaceeinstein)
 	Patch<uint8_t>( 0x06F3E2C + 1, 0xBF ); // movzx ecx, ax -> movsx ecx, ax
 	Patch<uint8_t>( 0x6F3E32, 0x74 ); // jge -> jz
+
+
+	// Linear filtering on script sprites
+	ReadCall( 0x58C092, orgDrawScriptSpritesAndRectangles );
+	InjectHook( 0x58C092, DrawScriptSpritesAndRectangles );
+
 }
 
 void Patch_SA_11()
@@ -3837,6 +3850,11 @@ void Patch_SA_Steam()
 	Patch<uint8_t>( 0x6F3E32, 0x74 ); // jge -> jz
 
 
+	// Linear filtering on script sprites
+	ReadCall( 0x59A3F2, orgDrawScriptSpritesAndRectangles );
+	InjectHook( 0x59A3F2, DrawScriptSpritesAndRectangles );
+
+
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
 	strcpy(pScannerNames + (8*113), "WESTP");
@@ -4368,6 +4386,13 @@ void Patch_SA_NewSteam_Common()
 
 		Patch<uint8_t>( do_processing.get<uint8_t*>(27 + 1), 0xBF ); // movzx eax, word ptr [edi+1Ah] -> movsx eax, word ptr [edi+1Ah]
 		Patch<uint8_t>( do_processing.get<uint8_t*>(41), 0x74 ); // jge -> jz
+	}
+
+	// Linear filtering on script sprites
+	{
+		auto drawScriptSprites = pattern( "81 EC 94 01 00 00 53 56 57 50" ).get_one();
+		ReadCall( drawScriptSprites.get<int>(10), orgDrawScriptSpritesAndRectangles );
+		InjectHook( drawScriptSprites.get<int>(10), DrawScriptSpritesAndRectangles );
 	}
 }
 
