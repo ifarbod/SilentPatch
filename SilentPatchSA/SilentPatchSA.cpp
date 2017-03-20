@@ -1852,6 +1852,66 @@ DarkVehiclesFix4_MakeItDark:
 }
 // 1.0 ONLY ENDS HERE
 
+static int _Timers_ftol_internal( double timer, double& remainder )
+{
+	if ( timer >= 1.0 ) return int(timer);
+
+	double integral;
+	remainder = modf( timer + remainder, &integral );
+	return int(integral);
+}
+
+int __stdcall Timers_ftol_PauseMode( double timer )
+{
+	static double TimersRemainder = 0.0;
+	return _Timers_ftol_internal( timer, TimersRemainder );
+}
+
+int __stdcall Timers_ftol_NonClipped( double timer )
+{
+	static double TimersRemainder = 0.0;
+	return _Timers_ftol_internal( timer, TimersRemainder );
+}
+
+int __stdcall Timers_ftol( double timer )
+{
+	static double TimersRemainder = 0.0;
+	return _Timers_ftol_internal( timer, TimersRemainder );
+}
+
+void __declspec(naked) asmTimers_ftol_PauseMode()
+{
+	_asm
+	{
+		sub		esp, 8
+		fstp	qword ptr [esp]
+		call	Timers_ftol_PauseMode
+		retn
+	}
+}
+
+void __declspec(naked) asmTimers_ftol_NonClipped()
+{
+	_asm
+	{
+		sub		esp, 8
+		fstp	qword ptr [esp]
+		call	Timers_ftol_NonClipped
+		retn
+	}
+}
+
+void __declspec(naked) asmTimers_ftol()
+{
+	_asm
+	{
+		sub		esp, 8
+		fstp	qword ptr [esp]
+		call	Timers_ftol
+		retn
+	}
+}
+
 void __declspec(naked) GetMaxExtraDirectionals()
 {
 	_asm
@@ -3039,6 +3099,12 @@ void Patch_SA_10()
 	// AI accuracy issue
 	Nop(0x73B3AE, 1);
 	InjectHook( 0x73B3AE + 1, WeaponRangeMult_VehicleCheck, PATCH_CALL );
+
+
+	// New timers fix
+	InjectHook( 0x561C32, asmTimers_ftol_PauseMode );
+	InjectHook( 0x561902, asmTimers_ftol_NonClipped );
+	InjectHook( 0x56191A, asmTimers_ftol );
 
 
 	// Don't catch WM_SYSKEYDOWN and WM_SYSKEYUP (fixes Alt+F4)
