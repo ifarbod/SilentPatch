@@ -4,6 +4,7 @@
 #include <vector>
 #include "VehicleSA.h"
 #include "TimerSA.h"
+#include "DelimStringReader.h"
 
 std::vector<unsigned int>		vecRotorExceptions;
 
@@ -56,27 +57,15 @@ static RpMaterial* SetCompAlphaCB(RpMaterial* pMaterial, void* data)
 void ReadRotorFixExceptions(const wchar_t* pPath)
 {
 	const size_t SCRATCH_PAD_SIZE = 32767;
-	wchar_t* buf = new wchar_t[ SCRATCH_PAD_SIZE ];
+	WideDelimStringReader reader( SCRATCH_PAD_SIZE );
 
-	GetPrivateProfileSectionW( L"RotorFixExceptions", buf, SCRATCH_PAD_SIZE, pPath );
-	for( wchar_t* raw = buf; *raw != '\0'; ++raw )
+	GetPrivateProfileSectionW( L"RotorFixExceptions", reader.GetBuffer(), reader.GetSize(), pPath );
+	while ( const wchar_t* str = reader.GetString() )
 	{
-		// Construct a std::wstring with the line
-		wchar_t fileID[128];
-		wchar_t* ptr = fileID;
-		do
-		{
-			*ptr++ = *raw++;
-		}
-		while ( *raw != '\0' && ptr < fileID + (_countof(fileID)-1) );
-		*ptr = '\0';
-
-		unsigned int toList = _wtoi( fileID );
+		unsigned int toList = _wtoi( str );
 		if ( toList != 0 )
 			vecRotorExceptions.push_back( toList );
 	}
-
-	delete[] buf;
 }
 
 void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha)

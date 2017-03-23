@@ -137,6 +137,9 @@
     <ClInclude Include="..\SilentPatch\resource1.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\SilentPatch\DelimStringReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Shaders.rc">
