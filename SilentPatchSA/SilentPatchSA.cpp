@@ -18,6 +18,7 @@
 #include "FLACDecoderSA.h"
 
 #include "Patterns.h"
+#include "DelimStringReader.h"
 
 // RW wrappers
 static void* varAtomicDefaultRenderCallBack = AddressByVersion<void*>(0x7491C0, 0x749AD0, 0x783180);
@@ -1028,6 +1029,55 @@ void DrawScriptSpritesAndRectangles( uint8_t arg )
 {
 	RwRenderStateSet( rwRENDERSTATETEXTUREFILTER, (void*)rwFILTERLINEAR );
 	orgDrawScriptSpritesAndRectangles( arg );
+}
+
+std::vector< std::pair<int32_t, bool> > doubleRearWheelsList;
+void ReadDoubleRearWheels(const wchar_t* pPath)
+{
+	const size_t SCRATCH_PAD_SIZE = 32767;
+	WideDelimStringReader reader( SCRATCH_PAD_SIZE );
+
+	GetPrivateProfileSectionW( L"DoubleRearWheels", reader.GetBuffer(), reader.GetSize(), pPath );
+	while ( const wchar_t* str = reader.GetString() )
+	{
+		wchar_t textLine[32];
+		wchar_t* context = nullptr;
+		wchar_t* token;
+
+		wcscpy_s( textLine, str );
+		token = wcstok_s( textLine, L"=", &context );
+			
+		int toList = _wtoi( token );
+		if ( toList != 0 )
+		{
+			bool value = _wtoi( wcstok_s( nullptr, L"=", &context ) ) != 0;
+			doubleRearWheelsList.emplace_back( toList, value );
+		}
+	}
+}
+
+bool __stdcall CheckDoubleRWheelsList( void* modelInfo, uint8_t* handlingData )
+{
+	static void* lastModelInfo = nullptr;
+	static bool lastResult = false;
+
+	if ( modelInfo == lastModelInfo ) return lastResult;
+	lastModelInfo = modelInfo;
+
+	ptrdiff_t modelID = std::distance( ms_modelInfoPtrs, std::find( ms_modelInfoPtrs, ms_modelInfoPtrs+m_numModelInfoPtrs, modelInfo ) );
+
+	auto it = std::find_if( doubleRearWheelsList.begin(), doubleRearWheelsList.end(), [modelID]( const auto& item ) {
+			return item.first == modelID;
+		} );
+	if ( it == doubleRearWheelsList.end() )
+	{
+		uint32_t flags = *(uint32_t*)(handlingData+0xCC);
+		lastResult = (flags & 0x20000000) != 0;
+		return lastResult;
+	}
+
+	lastResult = it->second;
+	return lastResult;
 }
 
 
@@ -2060,6 +2110,7 @@ BOOL InjectDelayedPatches_10()
 		bool		bSARender = GetModuleHandle("SARender.asi") != nullptr;
 
 		ReadRotorFixExceptions(wcModulePath);
+		ReadDoubleRearWheels(wcModulePath);
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", FALSE, wcModulePath) != FALSE )
 		{
@@ -3150,6 +3201,16 @@ void Patch_SA_10()
 	ReadCall( 0x58C092, orgDrawScriptSpritesAndRectangles );
 	InjectHook( 0x58C092, DrawScriptSpritesAndRectangles );
 
+
+	// Double rwheels whitelist
+	// push ecx
+	// push edi
+	// call CheckDoubleRWheelsWhitelist
+	// test al, al
+	Patch<uint16_t>( 0x4C9239, 0x5751 );
+	InjectHook( 0x4C9239+2, CheckDoubleRWheelsList, PATCH_CALL );
+	Patch<uint16_t>( 0x4C9239+7, 0xC084 );
+	Nop( 0x4C9239+9, 1 );
 }
 
 void Patch_SA_11()
