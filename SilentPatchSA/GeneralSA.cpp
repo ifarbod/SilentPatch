@@ -27,7 +27,7 @@ static void SetVehicleColour(unsigned char primaryColour, unsigned char secondar
 
 static void ResetEditableMaterials(std::pair<void*,int>* pData)
 {
-	for ( auto* i = pData; i->first; i++ )
+	for ( auto* i = pData; i->first != nullptr; i++ )
 		*static_cast<int*>(i->first) = i->second;
 }
 
@@ -38,13 +38,18 @@ RpAtomic* ShadowCameraRenderCB(RpAtomic* pAtomic, void* pData)
 	if ( RpAtomicGetFlags(pAtomic) & rpATOMICRENDER )
 	{
 		RpGeometry*	pGeometry = RpAtomicGetGeometry(pAtomic);
-		RwUInt32	geometryFlags = RpGeometryGetFlags(pGeometry);
 
-		RpGeometrySetFlags(pGeometry, geometryFlags & ~(rpGEOMETRYTEXTURED|rpGEOMETRYPRELIT|
-						/*rpGEOMETRYNORMALS|*/rpGEOMETRYLIGHT|rpGEOMETRYMODULATEMATERIALCOLOR|rpGEOMETRYTEXTURED2));
-
-		AtomicDefaultRenderCallBack(pAtomic);
-		RpGeometrySetFlags(pGeometry, geometryFlags);
+		if ( pGeometry->repEntry != nullptr ) // Only switch to optimized flags if already instanced so as not to break the instanced model
+		{
+			RwUInt32 geometryFlags = RpGeometryGetFlags(pGeometry);
+			pGeometry->flags &= ~(rpGEOMETRYTEXTURED|rpGEOMETRYPRELIT|rpGEOMETRYNORMALS|rpGEOMETRYLIGHT|rpGEOMETRYMODULATEMATERIALCOLOR|rpGEOMETRYTEXTURED2);
+			pAtomic = AtomicDefaultRenderCallBack(pAtomic);
+			RpGeometrySetFlags(pGeometry, geometryFlags);
+		}
+		else
+		{
+			pAtomic = AtomicDefaultRenderCallBack(pAtomic);
+		}
 	}
 	return pAtomic;
 }
