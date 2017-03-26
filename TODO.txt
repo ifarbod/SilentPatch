@@ -22,6 +22,7 @@ VC:
 - check if extras can be fixed with bikes (so they move with the part they are attached to)
 
 SA:
+- Check Phoenix hood scoop flaps and other misc items which are not moving (Stuntplane, Cropduster - maybe more?)
 - NickJ's remote bomb ownership bug (maybe)
 - Bicycle exploding?
 - NickJ's stats not resetting on new game
