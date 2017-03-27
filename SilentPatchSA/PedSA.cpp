@@ -14,16 +14,13 @@ WRAPPER CTaskSimpleJetPack* CPedIntelligence::GetTaskJetPack() const { VARJMP(va
 static void* varRenderJetPack = AddressByVersion<void*>(0x67F6A0, 0x67FEC0, 0x6AB110);
 WRAPPER void CTaskSimpleJetPack::RenderJetPack(CPed* pPed) { WRAPARG(pPed); VARJMP(varRenderJetPack); }
 
-static RwObject* GetFirstObjectCallback(RwObject* pObject, void* pData)
-{
-	*static_cast<RwObject**>(pData) = pObject;
-	return nullptr;
-}
-
 RwObject* GetFirstObject(RwFrame* pFrame)
 {
 	RwObject*	pObject = nullptr;
-	RwFrameForAllObjects(pFrame, GetFirstObjectCallback, &pObject);
+	RwFrameForAllObjects( pFrame, [&pObject]( RwObject* object ) -> RwObject* {
+		pObject = object;
+		return nullptr;
+	} );
 	return pObject;
 }
 
@@ -47,13 +44,14 @@ void CPed::RenderWeapon(bool bMuzzleFlash, bool bForShadow)
 
 		RwFrameUpdateObjects(pFrame);
 		if ( bForShadow )
-			RpClumpForAllAtomics(reinterpret_cast<RpClump*>(m_pWeaponObject), ShadowCameraRenderCB, nullptr);
+			RpClumpForAllAtomics(reinterpret_cast<RpClump*>(m_pWeaponObject), ShadowCameraRenderCB);
 		else if ( !bMuzzleFlash )
 			RpClumpRender(reinterpret_cast<RpClump*>(m_pWeaponObject));
 		else if ( m_pMuzzleFlashFrame )
 		{
 			SetGunFlashAlpha(false);
-			RpAtomicRender(reinterpret_cast<RpAtomic*>(GetFirstObject(m_pMuzzleFlashFrame)));
+			RpAtomic* atomic = reinterpret_cast<RpAtomic*>(GetFirstObject(m_pMuzzleFlashFrame));
+			RpAtomicRender( atomic );
 		}
 
 		// Dual weapons
@@ -68,13 +66,14 @@ void CPed::RenderWeapon(bool bMuzzleFlash, bool bForShadow)
 
 			RwFrameUpdateObjects(pFrame);
 			if ( bForShadow )
-				RpClumpForAllAtomics(reinterpret_cast<RpClump*>(m_pWeaponObject), ShadowCameraRenderCB, nullptr);
+				RpClumpForAllAtomics(reinterpret_cast<RpClump*>(m_pWeaponObject), ShadowCameraRenderCB);
 			else if ( !bMuzzleFlash )
 				RpClumpRender(reinterpret_cast<RpClump*>(m_pWeaponObject));
 			else if ( m_pMuzzleFlashFrame )
 			{
 				SetGunFlashAlpha(true);
-				RpAtomicRender(reinterpret_cast<RpAtomic*>(GetFirstObject(m_pMuzzleFlashFrame)));
+				RpAtomic* atomic = reinterpret_cast<RpAtomic*>(GetFirstObject(m_pMuzzleFlashFrame));
+				RpAtomicRender( atomic );
 			}
 		}
 		if ( bMuzzleFlash )
@@ -84,7 +83,7 @@ void CPed::RenderWeapon(bool bMuzzleFlash, bool bForShadow)
 
 void CPed::RenderForShadow()
 {
-	RpClumpForAllAtomics(reinterpret_cast<RpClump*>(m_pRwObject), ShadowCameraRenderCB, nullptr);
+	RpClumpForAllAtomics(reinterpret_cast<RpClump*>(m_pRwObject), ShadowCameraRenderCB);
 	RenderWeapon(false, true);
 
 	// Render jetpack

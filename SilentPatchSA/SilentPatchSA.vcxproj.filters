@@ -140,6 +140,9 @@
     <ClInclude Include="..\SilentPatch\DelimStringReader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="rwpred.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Shaders.rc">

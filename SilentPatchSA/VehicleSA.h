@@ -123,7 +123,7 @@ protected:
 	CEntity*		pDamagingEntity;
 	BYTE			__pad3[116];
 	char			padpad, padpad2, padpad3;
-	signed char		PlateDesign;
+	int8_t			PlateDesign;
 	RwTexture*		PlateTexture;
 	BYTE			__pad5[20];
 

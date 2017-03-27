@@ -1,5 +1,6 @@
 #include "StdAfxSA.h"
 
+#include <functional>
 #include <algorithm>
 #include <vector>
 #include "VehicleSA.h"
@@ -23,35 +24,50 @@ static int32_t random(int32_t from, int32_t to)
 	return from + ( Int32Rand() % (to-from) );
 }
 
-static RwObject* GetCurrentAtomicObjectCB(RwObject* pObject, void* data)
+static RwObject* GetCurrentAtomicObject( RwFrame* frame )
 {
-	if ( RpAtomicGetFlags(pObject) & rpATOMICRENDER )
-	{
-		*static_cast<RwObject**>(data) = pObject;
-		return nullptr;
-	}
-	return pObject;
+	RwObject* obj = nullptr;
+	RwFrameForAllObjects( frame, [&obj]( RwObject* object ) -> RwObject* {
+		if ( RpAtomicGetFlags(object) & rpATOMICRENDER )
+		{
+			obj = object;
+			return nullptr;
+		}
+		return object;
+	} );
+	return obj;
 }
 
-static RwFrame* GetFrameFromNameCB(RwFrame* pFrame, void* pData)
+static RwFrame* GetFrameFromName( RwFrame* topFrame, const char* name )
 {
-	// Is this a frame we want?
-	std::pair<const char*,RwFrame*>*	pFindData = static_cast<std::pair<const char*,RwFrame*>*>(pData);
-	if ( !strcmp(pFindData->first, GetFrameNodeName(pFrame)) )
+	class GetFramePredicate
 	{
-		pFindData->second = pFrame;
-		return nullptr;
-	}
+	public:
+		RwFrame* foundFrame = nullptr;
 
-	// Try children
-	RwFrameForAllChildren(pFrame, GetFrameFromNameCB, pData);
-	return !pFindData->second ? pFrame : nullptr;
-}
+		GetFramePredicate( const char* name )
+			: m_name( name )
+		{
+		}
 
-static RpMaterial* SetCompAlphaCB(RpMaterial* pMaterial, void* data)
-{
-	pMaterial->color.alpha = reinterpret_cast<RwUInt8>(data);
-	return pMaterial;
+		RwFrame* operator() ( RwFrame* frame )
+		{
+			if ( strcmp( m_name, GetFrameNodeName(frame) ) == 0 )
+			{
+				foundFrame = frame;
+				return nullptr;
+			}
+			RwFrameForAllChildren( frame, std::ref(*this) );
+			return foundFrame != nullptr ? nullptr : frame;
+		}
+	
+	private:
+		const char* const m_name;
+	};
+
+	GetFramePredicate p( name );
+	RwFrameForAllChildren( topFrame, std::ref(p) );
+	return p.foundFrame;
 }
 
 void ReadRotorFixExceptions(const wchar_t* pPath)
@@ -73,7 +89,10 @@ void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha)
 	RpGeometry*	pGeometry = RpAtomicGetGeometry(pAtomic);
 	pGeometry->flags |= rpGEOMETRYMODULATEMATERIALCOLOR;
 
-	RpGeometryForAllMaterials(pGeometry, SetCompAlphaCB, reinterpret_cast<void*>(nAlpha));
+	RpGeometryForAllMaterials( pGeometry, [nAlpha] (RpMaterial* material) {
+		material->color.alpha = RwUInt8(nAlpha);
+		return material;
+	} );
 }
 
 bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
@@ -93,7 +112,7 @@ bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 	else if ( IsLawEnforcementVehicle() )
 		PlateDesign = CCustomCarPlateMgr::GetMapRegionPlateDesign();
 	else
- 		PlateDesign = random(0, 20) == 0 ? random(0, 3) : CCustomCarPlateMgr::GetMapRegionPlateDesign();
+ 		PlateDesign = random(0, 20) == 0 ? int8_t(random(0, 3)) : CCustomCarPlateMgr::GetMapRegionPlateDesign();
 
 	assert(PlateDesign >= 0 && PlateDesign < 3);
 
@@ -103,53 +122,21 @@ bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 	return true;
 }
 
-//static RwTexture*		pPushedTextures[NUM_MAX_PLATES];
-
 void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo)
 {
-	//CCustomCarPlateMgr::SetupPlates(reinterpret_cast<RpClump*>(pModelInfo->pRwObject), PlateTexture, PlateDesign);
-	for ( ptrdiff_t i = 0; i < NUM_MAX_PLATES; i++ )
+	for ( ptrdiff_t i = 0; i < CCustomCarPlateMgr::NUM_MAX_PLATES; i++ )
 	{
-		if ( pModelInfo->m_apPlateMaterials[i] )
+		if ( pModelInfo->m_apPlateMaterials[i] != nullptr )
 		{
-			//RwTexture*	pPlateTex = RpMaterialGetTexture(pModelInfo->m_apPlateMaterials[i]);
-
-			//RwTextureAddRef(pPlateTex);
-			//pPushedTextures[i] = pPlateTex;
-
 			RpMaterialSetTexture(pModelInfo->m_apPlateMaterials[i], PlateTexture);
 		}
 
-		if ( pModelInfo->m_apPlateMaterials[NUM_MAX_PLATES+i] )
-			CCustomCarPlateMgr::SetupMaterialPlatebackTexture(pModelInfo->m_apPlateMaterials[NUM_MAX_PLATES+i], PlateDesign);
-			//RwTexture*	pPlatebackTex = RpMaterialGetTexture(pModelInfo->m_apPlateMaterials[4+i]);
-
-			//RwTextureAddRef(pPlatebackTex);
-			//pPushedTextures[4+i] = pPlateTex;
-
-			//RpMaterialSetTexture(pModelInfo->m_apPlateMaterials[i], PlateTexture);
-	}
-}
-
-// This is not needed
-/*void CVehicle::CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo)
-{
-	for ( int i = 0; i < NUM_MAX_PLATES; i++ )
-	{
-		if ( pModelInfo->m_apPlateMaterials[i] )
+		if ( pModelInfo->m_apPlateMaterials[CCustomCarPlateMgr::NUM_MAX_PLATES+i] != nullptr )
 		{
-			//RwTexture*	pPlateTex = RpMaterialGetTexture(pModelInfo->m_apPlateMaterials[i]);
-
-			//RwTextureAddRef(pPlateTex);
-			//pPushedTextures[i] = pPlateTex;
-
-			//RpMaterialSetTexture(pModelInfo->m_apPlateMaterials[i], pPushedTextures[i]);
-			//RwTextureDestroy(pPushedTextures[i]);
-			//pPushedTextures[i] = nullptr;
+			CCustomCarPlateMgr::SetupMaterialPlatebackTexture(pModelInfo->m_apPlateMaterials[CCustomCarPlateMgr::NUM_MAX_PLATES+i], PlateDesign);
 		}
 	}
-
-}*/
+}
 
 void CHeli::Render()
 {
@@ -172,35 +159,31 @@ void CHeli::Render()
 	int			nStaticRotorAlpha = static_cast<int>(std::min((1.5-dRotorsSpeed) * 255.0, 255.0));
 	int			nMovingRotorAlpha = static_cast<int>(std::min(dMovingRotorSpeed * 175.0, 175.0));
 
-	if ( m_pCarNode[12] )
+	if ( m_pCarNode[12] != nullptr )
 	{
-		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[12], GetCurrentAtomicObjectCB, &pOutAtomic);
-		if ( pOutAtomic )
+		RpAtomic*	pOutAtomic = (RpAtomic*)GetCurrentAtomicObject( m_pCarNode[12] );
+		if ( pOutAtomic != nullptr )
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingRotor ? nStaticRotorAlpha : 255);
 	}
 
-	if ( m_pCarNode[14] )
+	if ( m_pCarNode[14] != nullptr )
 	{
-		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[14], GetCurrentAtomicObjectCB, &pOutAtomic);
-		if ( pOutAtomic )
+		RpAtomic*	pOutAtomic = (RpAtomic*)GetCurrentAtomicObject( m_pCarNode[14] );
+		if ( pOutAtomic != nullptr )
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingRotor2 ? nStaticRotorAlpha : 255);
 	}
 
-	if ( m_pCarNode[13] )
+	if ( m_pCarNode[13] != nullptr )
 	{
-		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[13], GetCurrentAtomicObjectCB, &pOutAtomic);
-		if ( pOutAtomic )
+		RpAtomic*	pOutAtomic = (RpAtomic*)GetCurrentAtomicObject( m_pCarNode[13] );
+		if ( pOutAtomic != nullptr )
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingRotor ? nMovingRotorAlpha : 0);
 	}
 
-	if ( m_pCarNode[15] )
+	if ( m_pCarNode[15] != nullptr )
 	{
-		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[15], GetCurrentAtomicObjectCB, &pOutAtomic);
-		if ( pOutAtomic )
+		RpAtomic*	pOutAtomic = (RpAtomic*)GetCurrentAtomicObject( m_pCarNode[15] );
+		if ( pOutAtomic != nullptr )
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingRotor2 ? nMovingRotorAlpha : 0);
 	}
 
@@ -228,35 +211,31 @@ void CPlane::Render()
 	int			nStaticRotorAlpha = static_cast<int>(std::min((1.5-dRotorsSpeed) * 255.0, 255.0));
 	int			nMovingRotorAlpha = static_cast<int>(std::min(dMovingRotorSpeed * 175.0, 175.0));
 
-	if ( m_pCarNode[12] )
+	if ( m_pCarNode[12] != nullptr )
 	{
-		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[12], GetCurrentAtomicObjectCB, &pOutAtomic);
-		if ( pOutAtomic )
+		RpAtomic*	pOutAtomic = (RpAtomic*)GetCurrentAtomicObject( m_pCarNode[12] );
+		if ( pOutAtomic != nullptr )
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingProp ? nStaticRotorAlpha : 255);
 	}
 
-	if ( m_pCarNode[14] )
+	if ( m_pCarNode[14] != nullptr )
 	{
-		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[14], GetCurrentAtomicObjectCB, &pOutAtomic);
-		if ( pOutAtomic )
+		RpAtomic*	pOutAtomic = (RpAtomic*)GetCurrentAtomicObject( m_pCarNode[14] );
+		if ( pOutAtomic != nullptr )
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingProp2 ? nStaticRotorAlpha : 255);
 	}
 
-	if ( m_pCarNode[13] )
+	if ( m_pCarNode[13] != nullptr )
 	{
-		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[13], GetCurrentAtomicObjectCB, &pOutAtomic);
-		if ( pOutAtomic )
+		RpAtomic*	pOutAtomic = (RpAtomic*)GetCurrentAtomicObject( m_pCarNode[13] );
+		if ( pOutAtomic != nullptr )
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingProp ? nMovingRotorAlpha : 0);
 	}
 
-	if ( m_pCarNode[15] )
+	if ( m_pCarNode[15] != nullptr )
 	{
-		RpAtomic*	pOutAtomic = nullptr;
-		RwFrameForAllObjects(m_pCarNode[15], GetCurrentAtomicObjectCB, &pOutAtomic);
-		if ( pOutAtomic )
+		RpAtomic*	pOutAtomic = (RpAtomic*)GetCurrentAtomicObject( m_pCarNode[15] );
+		if ( pOutAtomic != nullptr )
 			SetComponentAtomicAlpha(pOutAtomic, bHasMovingProp2 ? nMovingRotorAlpha : 0);
 	}
 
@@ -288,22 +267,19 @@ void CAutomobile::Fix_SilentPatch()
 void CAutomobile::ResetFrames()
 {
 	RpClump*	pOrigClump = reinterpret_cast<RpClump*>(ms_modelInfoPtrs[m_nModelIndex]->pRwObject);
-	if ( pOrigClump )
+	if ( pOrigClump != nullptr )
 	{
 		// Instead of setting frame rotation to (0,0,0) like R* did, obtain the original frame matrix from CBaseNodelInfo clump
 		for ( ptrdiff_t i = 8; i < 25; i++ )
 		{
-			if ( m_pCarNode[i] )
+			if ( m_pCarNode[i] != nullptr )
 			{
 				// Find a frame in CBaseModelInfo object
-				std::pair<const char*,RwFrame*>		FindData = std::make_pair(GetFrameNodeName(m_pCarNode[i]), nullptr);
-
-				RwFrameForAllChildren(RpClumpGetFrame(pOrigClump), GetFrameFromNameCB, &FindData);
-
-				if ( FindData.second )
+				RwFrame* origFrame = GetFrameFromName( RpClumpGetFrame(pOrigClump), GetFrameNodeName(m_pCarNode[i]) );
+				if ( origFrame != nullptr )
 				{
 					// Found a frame, reset it
-					*RwFrameGetMatrix(m_pCarNode[i]) = *RwFrameGetMatrix(FindData.second);
+					*RwFrameGetMatrix(m_pCarNode[i]) = *RwFrameGetMatrix(origFrame);
 					RwMatrixUpdate(RwFrameGetMatrix(m_pCarNode[i]));
 				}
 			}

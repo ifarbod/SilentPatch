@@ -261,23 +261,28 @@ static struct
 
 
 // Regular functions
-static RpMaterial* AlphaTest(RpMaterial* pMaterial, void* pData)
+static bool AtomicAlphaTest( RpAtomic* atomic )
 {
-	if ( RpMaterialGetTexture(pMaterial) )
-	{
-		if ( __rwD3D9TextureHasAlpha(RpMaterialGetTexture(pMaterial)) )
+	bool hasAlpha = false;
+	RpGeometryForAllMaterials( RpAtomicGetGeometry(atomic), [&hasAlpha]( RpMaterial* material ) -> RpMaterial* {
+		if ( RpMaterialGetTexture(material) != nullptr )
 		{
-			*static_cast<BOOL*>(pData) = TRUE;
+			if ( __rwD3D9TextureHasAlpha(RpMaterialGetTexture(material)) )
+			{
+				hasAlpha = true;
+				return nullptr;
+			}
+		}
+		else if ( RpMaterialGetColor(material)->alpha < 255 )
+		{
+			hasAlpha = true;
 			return nullptr;
 		}
-	}
-	else if ( RpMaterialGetColor(pMaterial)->alpha < 255 )
-	{
-		*static_cast<BOOL*>(pData) = TRUE;
-		return nullptr;
-	}
 
-	return pMaterial;
+		return material;
+	} );
+
+	return hasAlpha;
 }
 
 static RpAtomic* RenderAtomic(RpAtomic* pAtomic, float fComp)
@@ -422,10 +427,7 @@ void RenderVehicleHiDetailAlphaCB_HunterDoor(RpAtomic* pAtomic)
 template <RpAtomic* renderer(RpAtomic*)>
 void SetRendererForAtomic(RpAtomic* pAtomic)
 {
-	BOOL	bHasAlpha = FALSE;
-
-	RpGeometryForAllMaterials(RpAtomicGetGeometry(pAtomic), AlphaTest, &bHasAlpha);
-	if ( bHasAlpha )
+	if ( AtomicAlphaTest( pAtomic ) )
 		RpAtomicSetRenderCallBack(pAtomic, renderer);
 }
 
@@ -487,10 +489,7 @@ void RenderWeaponPedsForPC()
 template <RpAtomic* renderer(RpAtomic*)>
 RpAtomic* RenderPedCB(RpAtomic* pAtomic)
 {
-	BOOL	bHasAlpha = FALSE;
-
-	RpGeometryForAllMaterials(RpAtomicGetGeometry(pAtomic), AlphaTest, &bHasAlpha);
-	if ( bHasAlpha )
+	if ( AtomicAlphaTest( pAtomic ) )
 		return renderer(pAtomic);
 	
 	return AtomicDefaultRenderCallBack(pAtomic);

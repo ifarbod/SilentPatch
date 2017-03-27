@@ -25,6 +25,7 @@
 
 #include "MemoryMgr.h"
 #include "Maths.h"
+#include "rwpred.hpp"
 
 // SA operator delete
 extern void	(*GTAdelete)(void* data);

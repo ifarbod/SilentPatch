@@ -32,17 +32,17 @@ public:
 
 	friend constexpr CRGBA Blend(const CRGBA& From, const CRGBA& To, double BlendVal)
 		{	double InvBlendVal = 1.0 - BlendVal;
-			return CRGBA(	To.r * BlendVal + From.r * InvBlendVal,
-			To.g * BlendVal + From.g * InvBlendVal,
-			To.b * BlendVal + From.b * InvBlendVal,
-			To.a * BlendVal + From.a * InvBlendVal); }
+			return CRGBA( uint8_t(To.r * BlendVal + From.r * InvBlendVal),
+			uint8_t(To.g * BlendVal + From.g * InvBlendVal),
+			uint8_t(To.b * BlendVal + From.b * InvBlendVal),
+			uint8_t(To.a * BlendVal + From.a * InvBlendVal)); }
 
 	friend constexpr CRGBA BlendSqr(const CRGBA& From, const CRGBA& To, double BlendVal)
 		{	double InvBlendVal = 1.0 - BlendVal;
-			return CRGBA(	sqrt((To.r * To.r) * BlendVal + (From.r * From.r) * InvBlendVal),
-			sqrt((To.g * To.g) * BlendVal + (From.g * From.g) * InvBlendVal),
-			sqrt((To.b * To.b) * BlendVal + (From.b * From.b) * InvBlendVal),
-			sqrt((To.a * To.a) * BlendVal + (From.a * From.a) * InvBlendVal)); }
+			return CRGBA( uint8_t(sqrt((To.r * To.r) * BlendVal + (From.r * From.r) * InvBlendVal)),
+			uint8_t(sqrt((To.g * To.g) * BlendVal + (From.g * From.g) * InvBlendVal)),
+			uint8_t(sqrt((To.b * To.b) * BlendVal + (From.b * From.b) * InvBlendVal)),
+			uint8_t(sqrt((To.a * To.a) * BlendVal + (From.a * From.a) * InvBlendVal))); }
 
 	// SilentPatch
 	CRGBA*			BlendGangColour(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
@@ -587,7 +587,7 @@ public:
 };
 
 
-RpAtomic* ShadowCameraRenderCB(RpAtomic* pAtomic, void* pData);
+RpAtomic* ShadowCameraRenderCB(RpAtomic* pAtomic);
 
 static_assert(sizeof(CEntity) == 0x38, "Wrong size: CEntity");
 static_assert(sizeof(CPhysical) == 0x138, "Wrong size: CPhysical");

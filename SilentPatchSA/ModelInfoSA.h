@@ -292,25 +292,17 @@ public:
 
 	void					FindEditableMaterialList();
 	void					SetCarCustomPlate();
-
-	static RpAtomic*		GetEditableMaterialListCB(RpAtomic* pAtomic, void* pData);
-	static RpMaterial*		GetEditableMaterialListCB(RpMaterial* pMaterial, void* pData);
 };
 
 extern CBaseModelInfo** const		ms_modelInfoPtrs;
 extern const uint32_t				m_numModelInfoPtrs;
 
-#define NUM_MAX_PLATES		12
-
 class CCustomCarPlateMgr
 {
 	// Pretty much rewritten for SilentPatch
-private:
-	//static RpMaterial**		m_pMaterialsWeWorkingWith;
-	//static unsigned char	m_nCurPlateMaterial, m_nCurPlateBackMaterial;
-	//static signed char		m_nCurPlateDesign;
-
 public:
+	static const size_t		NUM_MAX_PLATES = 12;
+
 	static RwTexture*		(*CreatePlateTexture)(const char* pText, signed char nDesign);
 	static bool				(*GeneratePlateText)(char* pBuf, int nLen);
 	static signed char		(*GetMapRegionPlateDesign)();
@@ -319,7 +311,8 @@ public:
 	static void				SetupClump(RpClump* pClump, RpMaterial** pMatsArray);
 	static void				SetupClumpAfterVehicleUpgrade(RpClump* pClump, RpMaterial** pMatsArray, signed char nDesign);
 
-	static void				SetupPlates(RpClump* pClump, RwTexture* pTexture, signed char nDesign);
+private:
+	static void				PollPlates( RpClump* clump, RpMaterial** materials );
 };
 
 static_assert(sizeof(CBaseModelInfo) == 0x20, "Wrong size: CBaseModelInfo");

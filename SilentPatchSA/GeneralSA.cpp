@@ -31,10 +31,8 @@ static void ResetEditableMaterials(std::pair<void*,int>* pData)
 		*static_cast<int*>(i->first) = i->second;
 }
 
-RpAtomic* ShadowCameraRenderCB(RpAtomic* pAtomic, void* pData)
+RpAtomic* ShadowCameraRenderCB(RpAtomic* pAtomic)
 {
-	UNREFERENCED_PARAMETER(pData);
-
 	if ( RpAtomicGetFlags(pAtomic) & rpATOMICRENDER )
 	{
 		RpGeometry*	pGeometry = RpAtomicGetGeometry(pAtomic);
@@ -106,7 +104,7 @@ RwCamera* CShadowCamera::Update(CEntity* pEntity)
 			if ( pEntity->nType == 3 )
 				static_cast<CPed*>(pEntity)->RenderForShadow();
 			else
-				RpClumpForAllAtomics(reinterpret_cast<RpClump*>(pEntity->m_pRwObject), ShadowCameraRenderCB, nullptr);
+				RpClumpForAllAtomics(reinterpret_cast<RpClump*>(pEntity->m_pRwObject), ShadowCameraRenderCB);
 		}
 
 		InvertRaster();
