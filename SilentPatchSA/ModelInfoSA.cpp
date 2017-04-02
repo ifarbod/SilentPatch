@@ -84,7 +84,7 @@ void CCustomCarPlateMgr::PollPlates( RpClump* clump, RpMaterial** materials )
 					if ( _strnicmp( texName, "carplate", 8 ) == 0 )
 					{
 						assert(numCarplates < NUM_MAX_PLATES);
-						if ( numCarplates < NUM_MAX_PLATES );
+						if ( numCarplates < NUM_MAX_PLATES )
 						{
 							carplates[numCarplates++] = material;
 						}
@@ -92,7 +92,7 @@ void CCustomCarPlateMgr::PollPlates( RpClump* clump, RpMaterial** materials )
 					else if ( _strnicmp( texName, "carpback", 8 ) == 0 )
 					{
 						assert(numCarpbacks < NUM_MAX_PLATES);
-						if ( numCarpbacks < NUM_MAX_PLATES );
+						if ( numCarpbacks < NUM_MAX_PLATES )
 						{
 							carpbacks[numCarpbacks++] = material;
 						}
