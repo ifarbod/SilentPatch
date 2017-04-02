@@ -43,17 +43,10 @@ static void* var_rwD3D9SetVertexShader = AddressByVersion<void*>(0x7F9FB0, 0x7FA
 WRAPPER void _rwD3D9SetVertexShader(void *shader) { VARJMP(var_rwD3D9SetVertexShader); }
 static void* varRwD3D9CreateVertexShader = AddressByVersion<void*>(0x7FAC60, 0x7FB560, 0x834C20);
 WRAPPER RwBool RwD3D9CreateVertexShader(const RwUInt32 *function, void **shader) { VARJMP(varRwD3D9CreateVertexShader); }
-static void* varRwD3D9DeleteVertexShader = AddressByVersion<void*>(0x7FAC90, 0x7FB590, 0x834C50);
-WRAPPER void RwD3D9DeleteVertexShader(void *shader) { VARJMP(varRwD3D9DeleteVertexShader); }
 static void* var_rwD3D9SetVertexShaderConstant = AddressByVersion<void*>(0x7FACA0, 0x7FB5A0, 0x834C60);
 WRAPPER void _rwD3D9SetVertexShaderConstant(RwUInt32 registerAddress,
                                const void *constantData,
 							   RwUInt32  constantCount) { VARJMP(var_rwD3D9SetVertexShaderConstant); }
-static void* var_rpD3D9VertexDeclarationInstColor = AddressByVersion<void*>(0x754AE0, 0x7553F0, 0x78EAA0);
-WRAPPER RwBool _rpD3D9VertexDeclarationInstColor(RwUInt8 *mem,
-                                  const RwRGBA *color,
-                                  RwInt32 numVerts,
-								  RwUInt32 stride) { VARJMP(var_rpD3D9VertexDeclarationInstColor); }
 
 static void* varRwD3D9GetTransform = AddressByVersion<void*>(0x7FA4F0, 0x7FADF0, 0x8344B0);
 WRAPPER void _RwD3D9GetTransform(RwUInt32 state, void* matrix) { VARJMP(varRwD3D9GetTransform); }
@@ -209,6 +202,24 @@ RwInt32 RpHAnimIDGetIndex(RpHAnimHierarchy* hierarchy, RwInt32 ID)
 RwMatrix* RpHAnimHierarchyGetMatrixArray(RpHAnimHierarchy* hierarchy)
 {
 	return hierarchy->pMatrixArray;
+}
+
+void RwD3D9DeleteVertexShader(void* shader)
+{
+	static_cast<IUnknown*>(shader)->Release();
+}
+
+RwBool _rpD3D9VertexDeclarationInstColor(RwUInt8* mem, const RwRGBA* color, RwInt32 numVerts, RwUInt32 stride)
+{
+	RwUInt8 alpha = 255;
+	for ( RwInt32 i = 0; i < numVerts; i++ )
+	{
+		*reinterpret_cast<RwUInt32*>(mem) = (color->alpha << 24) | (color->red << 16) | (color->green << 8) | color->blue;
+		alpha &= color->alpha;
+		color++;
+		mem += stride;
+	}
+	return alpha != 255;
 }
 
 struct AlphaObjectInfo
@@ -1130,8 +1141,11 @@ bool ShaderAttach()
 
 void ShaderDetach()
 {
-	if ( pNVCShader )
+	if ( pNVCShader != nullptr )
+	{
 		RwD3D9DeleteVertexShader(pNVCShader);
+		pNVCShader = nullptr;
+	}
 
 	// PluginDetach?
 	ShutdownRenderWare();
