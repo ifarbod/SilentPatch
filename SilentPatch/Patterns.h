@@ -10,6 +10,9 @@
 #include <cassert>
 #include <vector>
 
+#pragma warning(push)
+#pragma warning(disable:4201)
+
 #define PATTERNS_USE_HINTS 0
 
 namespace hook
@@ -205,3 +208,5 @@ namespace hook
 		return pattern(pattern_string).get_first<T>(offset);
 	}
 }
+
+#pragma warning(pop)

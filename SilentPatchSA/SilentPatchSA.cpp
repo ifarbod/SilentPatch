@@ -20,6 +20,8 @@
 #include "Patterns.h"
 #include "DelimStringReader.h"
 
+#pragma warning(disable:4733)
+
 // RW wrappers
 static void* varAtomicDefaultRenderCallBack = AddressByVersion<void*>(0x7491C0, 0x749AD0, 0x783180);
 WRAPPER RpAtomic* AtomicDefaultRenderCallBack(RpAtomic* atomic) { WRAPARG(atomic); VARJMP(varAtomicDefaultRenderCallBack); }
@@ -674,12 +676,12 @@ bool GetCurrentZoneLockedOrUnlocked(float fPosX, float fPosY)
 	// Exploit RAII really bad
 	static const float		GridXOffset = **(float**)(0x572135+2), GridYOffset = **(float**)(0x57214A+2);
 	static const float		GridXSize = **(float**)(0x57213B+2), GridYSize = **(float**)(0x572153+2);
-	static const int		GridXNum = (2.0f*GridXOffset) * GridXSize, GridYNum = (2.0f*GridYOffset) * GridYSize;
+	static const int		GridXNum = static_cast<int>((2.0f*GridXOffset) * GridXSize), GridYNum = static_cast<int>((2.0f*GridYOffset) * GridYSize);
 
 	static unsigned char* const	ZonesVisited = *(unsigned char**)(0x57216A) - (GridYNum-1);		// 1.01 fixed it!
 
-	int		Xindex = (fPosX+GridXOffset) * GridXSize;
-	int		Yindex = (fPosY+GridYOffset) * GridYSize;
+	int		Xindex = static_cast<int>((fPosX+GridXOffset) * GridXSize);
+	int		Yindex = static_cast<int>((fPosY+GridYOffset) * GridYSize);
 
 	// "Territories fix"
 	if ( (Xindex >= 0 && Xindex < GridXNum) && (Yindex >= 0 && Yindex < GridYNum) )
@@ -693,8 +695,8 @@ bool GetCurrentZoneLockedOrUnlocked_Steam(float fPosX, float fPosY)
 {
 	static unsigned char* const	ZonesVisited = *(unsigned char**)(0x5870E8) - 9;
 
-	int		Xindex = (fPosX+3000.0f) / 600.0f;
-	int		Yindex = (fPosY+3000.0f) / 600.0f;
+	int		Xindex = static_cast<int>((fPosX+3000.0f) / 600.0f);
+	int		Yindex = static_cast<int>((fPosY+3000.0f) / 600.0f);
 
 	// "Territories fix"
 	if ( (Xindex >= 0 && Xindex < 10) && (Yindex >= 0 && Yindex < 10) )
@@ -760,7 +762,7 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 	RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDONE);
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, 0);
 
-	RenderOneXLUSprite(screenPos[0], screenPos[1], fFarClipZ, sizeX * size, sizeY * size, moonColor, moonColor, moonColor * 0.85f, 255, a10, -1, 0, 0);
+	RenderOneXLUSprite(screenPos[0], screenPos[1], fFarClipZ, sizeX * size, sizeY * size, moonColor, moonColor, static_cast<int>(moonColor * 0.85f), 255, a10, -1, 0, 0);
 
 	RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDONE);
 	RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDONE);
@@ -1111,8 +1113,10 @@ bool __stdcall CheckDoubleRWheelsList( void* modelInfo, uint8_t* handlingData )
 	return lastResult;
 }
 
-
+#pragma warning(push)
+#pragma warning(disable:4838)
 #include <xnamath.h>
+#pragma warning(pop)
 
 static void*					pNVCShader = nullptr;
 static bool						bRenderNVC = false;
