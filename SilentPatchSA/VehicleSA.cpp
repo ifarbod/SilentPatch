@@ -57,7 +57,7 @@ static RwFrame* GetFrameFromName( RwFrame* topFrame, const char* name )
 				foundFrame = frame;
 				return nullptr;
 			}
-			RwFrameForAllChildren( frame, std::ref(*this) );
+			RwFrameForAllChildren( frame, *this );
 			return foundFrame != nullptr ? nullptr : frame;
 		}
 	
@@ -66,7 +66,7 @@ static RwFrame* GetFrameFromName( RwFrame* topFrame, const char* name )
 	};
 
 	GetFramePredicate p( name );
-	RwFrameForAllChildren( topFrame, std::ref(p) );
+	RwFrameForAllChildren( topFrame, p );
 	return p.foundFrame;
 }
 
