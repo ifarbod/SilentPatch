@@ -7,7 +7,7 @@ public:
 	BasicDelimStringReader( size_t size )
 		: m_buffer( new T[size] ), m_size( size )
 	{
-		m_cursor = m_buffer;
+		Reset();
 	}
 
 	~BasicDelimStringReader()
@@ -41,10 +41,15 @@ public:
 		return curString;
 	}
 
+	inline void Reset()
+	{
+		m_cursor = m_buffer;
+	}
+
 private:
-	T* m_buffer;
+	T* const m_buffer;
 	const T* m_cursor;
-	size_t m_size;
+	const size_t m_size;
 };
 
 typedef BasicDelimStringReader<char> DelimStringReader;
