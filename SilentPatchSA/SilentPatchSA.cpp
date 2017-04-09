@@ -1983,6 +1983,12 @@ int __stdcall Timers_ftol( double timer )
 	return _Timers_ftol_internal( timer, TimersRemainder );
 }
 
+int __stdcall Timers_ftol_SCMdelta( double timer )
+{
+	static double TimersRemainder = 0.0;
+	return _Timers_ftol_internal( timer, TimersRemainder );
+}
+
 void __declspec(naked) asmTimers_ftol_PauseMode()
 {
 	_asm
@@ -2012,6 +2018,17 @@ void __declspec(naked) asmTimers_ftol()
 		sub		esp, 8
 		fstp	qword ptr [esp]
 		call	Timers_ftol
+		retn
+	}
+}
+
+void __declspec(naked) asmTimers_SCMdelta()
+{
+	_asm
+	{
+		sub		esp, 8
+		fstp	qword ptr [esp]
+		call	Timers_ftol_SCMdelta
 		retn
 	}
 }
@@ -3210,6 +3227,7 @@ void Patch_SA_10()
 	InjectHook( 0x561C32, asmTimers_ftol_PauseMode );
 	InjectHook( 0x561902, asmTimers_ftol_NonClipped );
 	InjectHook( 0x56191A, asmTimers_ftol );
+	InjectHook( 0x46A036, asmTimers_SCMdelta );
 
 
 	// Don't catch WM_SYSKEYDOWN and WM_SYSKEYUP (fixes Alt+F4)
