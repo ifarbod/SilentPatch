@@ -1115,6 +1115,15 @@ bool __stdcall CheckDoubleRWheelsList( void* modelInfo, uint8_t* handlingData )
 	return lastResult;
 }
 
+CVehicleModelInfo* (__thiscall *orgVehicleModelInfoCtor)(CVehicleModelInfo*);
+CVehicleModelInfo* __fastcall VehicleModelInfoCtor(CVehicleModelInfo* me)
+{
+	orgVehicleModelInfoCtor(me);
+	me->m_apPlateMaterials = nullptr;
+	std::fill( std::begin(me->m_apDirtMaterials), std::end(me->m_apDirtMaterials), nullptr );
+	return me;
+}
+
 #pragma warning(push)
 #pragma warning(disable:4838)
 #include <xnamath.h>
@@ -3249,6 +3258,11 @@ void Patch_SA_10()
 	InjectHook( 0x4C9239+2, CheckDoubleRWheelsList, PATCH_CALL );
 	Patch<uint16_t>( 0x4C9239+7, 0xC084 );
 	Nop( 0x4C9239+9, 1 );
+
+
+	// Properly initialize all CVehicleModelInfo fields
+	ReadCall( 0x4C75E4, orgVehicleModelInfoCtor );
+	InjectHook( 0x4C75E4, VehicleModelInfoCtor );
 }
 
 void Patch_SA_11()

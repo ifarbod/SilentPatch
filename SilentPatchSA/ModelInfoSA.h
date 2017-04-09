@@ -225,8 +225,10 @@ public:
 class NOVMT CVehicleModelInfo : public CClumpModelInfo
 {
 public:
+	static const size_t		PLATE_TEXT_LEN = 8;
+
 	RpMaterial**			m_apPlateMaterials;		// Changed in SilentPatchh
-	char					m_plateText[8];
+	char					m_plateText[PLATE_TEXT_LEN];
 	char					field_30;
 	signed char				m_nPlateType;
 	char					m_nGameName[8];
@@ -261,7 +263,7 @@ public:
 		CVector				m_avDummyPosn[15];
 		UpgradePosnDesc		m_aUpgrades[18];
 		RpAtomic*			m_apExtras[6];
-		unsigned char		m_nNumExtras;
+		uint8_t				m_nNumExtras;
 		unsigned int		m_dwMaskComponentsDamagable;
 	}						*m_pVehicleStruct;
 

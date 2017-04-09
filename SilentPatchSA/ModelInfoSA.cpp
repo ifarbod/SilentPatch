@@ -22,7 +22,7 @@ void CVehicleModelInfo::Shutdown()
 
 void CVehicleModelInfo::FindEditableMaterialList()
 {
-	int materialCount = 0;
+	size_t materialCount = 0;
 
 	auto GetEditableMaterialListCB = [&]( RpAtomic* atomic ) -> RpAtomic* {
 		RpGeometryForAllMaterials( RpAtomicGetGeometry(atomic), [&]( RpMaterial* material ) -> RpMaterial* {
@@ -44,11 +44,8 @@ void CVehicleModelInfo::FindEditableMaterialList()
 
 	RpClumpForAllAtomics(reinterpret_cast<RpClump*>(pRwObject), GetEditableMaterialListCB);
 
-	if ( m_pVehicleStruct->m_nNumExtras > 0 )
-	{
-		for ( int i = 0; i < m_pVehicleStruct->m_nNumExtras; i++ )
-			GetEditableMaterialListCB(m_pVehicleStruct->m_apExtras[i]);
-	}
+	for ( uint32_t i = 0; i < m_pVehicleStruct->m_nNumExtras; i++ )
+		GetEditableMaterialListCB(m_pVehicleStruct->m_apExtras[i]);
 
 	m_nPrimaryColor = -1;
 	m_nSecondaryColor = -1;

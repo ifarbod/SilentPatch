@@ -97,16 +97,16 @@ void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha)
 
 bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 {
-	char		PlateText[10];
+	char		PlateText[CVehicleModelInfo::PLATE_TEXT_LEN+1];
 	const char*	pOverrideText = pModelInfo->GetCustomCarPlateText();
 
 	if ( pOverrideText )
-		strcpy_s(PlateText, pOverrideText);
+		strncpy_s(PlateText, pOverrideText, CVehicleModelInfo::PLATE_TEXT_LEN);
 	else
-		CCustomCarPlateMgr::GeneratePlateText(PlateText, 8);
+		CCustomCarPlateMgr::GeneratePlateText(PlateText, CVehicleModelInfo::PLATE_TEXT_LEN);
 
+	PlateText[CVehicleModelInfo::PLATE_TEXT_LEN] = '\0';
 	PlateTexture = CCustomCarPlateMgr::CreatePlateTexture(PlateText, pModelInfo->m_nPlateType);
-	//PlateDesign = pModelInfo->m_nPlateType != -1 ? pModelInfo->m_nPlateType : CCustomCarPlateMgr::GetMapRegionPlateDesign();
 	if ( pModelInfo->m_nPlateType != -1 )
 		PlateDesign = pModelInfo->m_nPlateType;
 	else if ( IsLawEnforcementVehicle() )
