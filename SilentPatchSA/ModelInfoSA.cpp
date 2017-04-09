@@ -30,7 +30,7 @@ void CVehicleModelInfo::FindEditableMaterialList()
 			{
 				if ( const char* texName = RwTextureGetName(texture) )
 				{
-					if ( _strnicmp(texName, "vehiclegrunge256", 16) == 0 )
+					if ( _stricmp(texName, "vehiclegrunge256") == 0 )
 					{
 						if ( materialCount < _countof(m_apDirtMaterials) )
 							m_apDirtMaterials[materialCount++] = material;
@@ -81,7 +81,7 @@ void CCustomCarPlateMgr::PollPlates( RpClump* clump, RpMaterial** materials )
 			{
 				if ( const char* texName = RwTextureGetName(texture) )
 				{
-					if ( _strnicmp( texName, "carplate", 8 ) == 0 )
+					if ( _stricmp( texName, "carplate" ) == 0 )
 					{
 						assert(numCarplates < NUM_MAX_PLATES);
 						if ( numCarplates < NUM_MAX_PLATES )
@@ -89,7 +89,7 @@ void CCustomCarPlateMgr::PollPlates( RpClump* clump, RpMaterial** materials )
 							carplates[numCarplates++] = material;
 						}
 					}
-					else if ( _strnicmp( texName, "carpback", 8 ) == 0 )
+					else if ( _stricmp( texName, "carpback" ) == 0 )
 					{
 						assert(numCarpbacks < NUM_MAX_PLATES);
 						if ( numCarpbacks < NUM_MAX_PLATES )

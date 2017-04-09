@@ -68,9 +68,6 @@
     <ClInclude Include="..\SilentPatch\MemoryMgr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\SilentPatch\Timer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\SilentPatch\FLAC\callback.h">
       <Filter>Header Files\FLAC</Filter>
     </ClInclude>

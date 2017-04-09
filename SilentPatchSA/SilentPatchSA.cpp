@@ -774,9 +774,7 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 CRGBA* CRGBA::BlendGangColour(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
 	double colourIntensity = static_cast<double>(pCurrZoneInfo->ZoneColour.a) / 255.0;
-	*this = BlendSqr(CRGBA(r, g, b), HudColour[3], colourIntensity);
-	this->a = a;
-
+	*this = CRGBA(BlendSqr( CRGBA(r, g, b), HudColour[3], colourIntensity ), a);
 	return this;
 }
 
@@ -809,7 +807,7 @@ void DrawRect_HalfPixel_Steam(CRect& rect, const CRGBA& rgba)
 char* GetMyDocumentsPath()
 {
 	static char	cUserFilesPath[MAX_PATH];
-	static char*  ppTempBufPtr = *GetVer() == 0 ? *AddressByRegion_10<char**>(0x744FE5) : cUserFilesPath;
+	static char* const ppTempBufPtr = *GetVer() == 0 ? *AddressByRegion_10<char**>(0x744FE5) : cUserFilesPath;
 
 	if (ppTempBufPtr[0] == '\0')
 	{	
@@ -932,7 +930,7 @@ void SetMultiSamplingLevels( RwUInt32 level )
 
 void MSAAText( char* buffer, const char*, DWORD level )
 {
-	sprintf( buffer, "%ux", 1 << level );
+	sprintf_s( buffer, 100, "%ux", 1 << level );
 }
 
 
@@ -3189,8 +3187,8 @@ void Patch_SA_10()
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E72D4;
-	strcpy(pScannerNames + (8*113), "WESTP");
-	strcpy(pScannerNames + (8*134), "????");
+	strcpy_s(pScannerNames + (8*113), 8, "WESTP");
+	strcpy_s(pScannerNames + (8*134), 8, "????");
 
 	// Handle IMGs bigger than 4GB
 	Nop( 0x4065BB, 3 );
@@ -3581,8 +3579,8 @@ void Patch_SA_11()
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4E7714;
-	strcpy(pScannerNames + (8*113), "WESTP");
-	strcpy(pScannerNames + (8*134), "????");
+	strcpy_s(pScannerNames + (8*113), 8, "WESTP");
+	strcpy_s(pScannerNames + (8*134), 8, "????");
 
 
 	// 1.01 ONLY
@@ -3963,8 +3961,8 @@ void Patch_SA_Steam()
 
 	// Fixed police scanner names
 	char*			pScannerNames = *(char**)0x4F2B83;
-	strcpy(pScannerNames + (8*113), "WESTP");
-	strcpy(pScannerNames + (8*134), "????");
+	strcpy_s(pScannerNames + (8*113), 8, "WESTP");
+	strcpy_s(pScannerNames + (8*134), 8, "????");
 
 	// STEAM ONLY
 	// Proper aspect ratios - why Rockstar, why?

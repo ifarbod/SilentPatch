@@ -3,8 +3,6 @@
 #pragma warning(disable:4100) // unreferenced formal parameter
 
 #define WIN32_LEAN_AND_MEAN
-#define _CRT_SECURE_NO_WARNINGS
-#define _USE_MATH_DEFINES
 
 #define NOMINMAX
 #define WINVER 0x0502

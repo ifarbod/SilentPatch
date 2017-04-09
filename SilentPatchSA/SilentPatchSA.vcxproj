@@ -164,7 +164,6 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClInclude Include="..\SilentPatch\MemoryMgr.h" />
     <ClInclude Include="..\SilentPatch\Patterns.h" />
     <ClInclude Include="..\SilentPatch\resource1.h" />
-    <ClInclude Include="..\SilentPatch\Timer.h" />
     <ClInclude Include="AudioHardwareSA.h" />
     <ClInclude Include="FLACDecoderSA.h" />
     <ClInclude Include="GeneralSA.h" />
