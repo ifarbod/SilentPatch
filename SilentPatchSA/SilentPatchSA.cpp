@@ -281,7 +281,6 @@ CLinkListSA<AlphaObjectInfo>&	m_alphaList = **AddressByVersion<CLinkListSA<Alpha
 
 // Custom variables
 static float		fSunFarClip;
-static RwTexture*	gpMoonMask = nullptr;
 static HMODULE		hDLLModule;
 static struct
 {
@@ -709,9 +708,11 @@ bool GetCurrentZoneLockedOrUnlocked_Steam(float fPosX, float fPosY)
 // By NTAuthority
 void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float sizeY)
 {
+	static RwTexture*	gpMoonMask = nullptr;
+
 	if ( gpMoonMask == nullptr )
 	{	
-		if ( GetFileAttributes("lunar.png") != INVALID_FILE_ATTRIBUTES )
+		if ( GetFileAttributesW(L"lunar.png") != INVALID_FILE_ATTRIBUTES )
 		{
 			// load from file
 			gpMoonMask = CPNGFile::ReadFromFile("lunar.png");
@@ -721,9 +722,9 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 			// Load from memory
 
 			HMODULE thisModule;
-			GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)DrawMoonWithPhases, &thisModule);
+			GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)DrawMoonWithPhases, &thisModule);
 
-			HRSRC		resource = FindResource(thisModule, MAKEINTRESOURCE(IDR_LUNAR64), RT_RCDATA);
+			HRSRC		resource = FindResourceW(thisModule, MAKEINTRESOURCE(IDR_LUNAR64), RT_RCDATA);
 			void*		pMoonMask = static_cast<void*>(LoadResource(thisModule, resource));
 
 			gpMoonMask = CPNGFile::ReadFromMemory(pMoonMask, SizeofResource(thisModule, resource));
@@ -816,17 +817,17 @@ char* GetMyDocumentsPath()
 
 		char		cTmpPath[MAX_PATH];
 
-		SHGetFolderPath(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, ppTempBufPtr);
-		PathAppend(ppTempBufPtr, *ppUserFilesDir);
-		CreateDirectory(ppTempBufPtr, nullptr);
+		SHGetFolderPathA(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, ppTempBufPtr);
+		PathAppendA(ppTempBufPtr, *ppUserFilesDir);
+		CreateDirectoryA(ppTempBufPtr, nullptr);
 
-		strcpy(cTmpPath, ppTempBufPtr);
-		PathAppend(cTmpPath, "Gallery");
-		CreateDirectory(cTmpPath, nullptr);
+		strcpy_s(cTmpPath, ppTempBufPtr);
+		PathAppendA(cTmpPath, "Gallery");
+		CreateDirectoryA(cTmpPath, nullptr);
 
-		strcpy(cTmpPath, ppTempBufPtr);
-		PathAppend(cTmpPath, "User Tracks");
-		CreateDirectory(cTmpPath, nullptr);
+		strcpy_s(cTmpPath, ppTempBufPtr);
+		PathAppendA(cTmpPath, "User Tracks");
+		CreateDirectoryA(cTmpPath, nullptr);
 	}
 	return ppTempBufPtr;
 }
@@ -1134,7 +1135,7 @@ bool ShaderAttach()
 	if ( InitialiseRenderWare() )
 	{
 		HMODULE thisModule;
-		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)ShaderAttach, &thisModule);
+		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)ShaderAttach, &thisModule);
 
 		HRSRC		resource = FindResource(thisModule, MAKEINTRESOURCE(IDR_NVCSHADER), RT_RCDATA);
 		RwUInt32*	shader = static_cast<RwUInt32*>(LoadResource(thisModule, resource));
@@ -2149,9 +2150,9 @@ BOOL InjectDelayedPatches_10()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
-		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
-		bool		bSAMP = GetModuleHandle("samp") != nullptr;
-		bool		bSARender = GetModuleHandle("SARender.asi") != nullptr;
+		bool		bHasImVehFt = GetModuleHandleW(L"ImVehFt.asi") != nullptr;
+		bool		bSAMP = GetModuleHandleW(L"samp") != nullptr;
+		bool		bSARender = GetModuleHandleW(L"SARender.asi") != nullptr;
 
 		ReadRotorFixExceptions(wcModulePath);
 		ReadDoubleRearWheels(wcModulePath);
@@ -2328,7 +2329,7 @@ BOOL InjectDelayedPatches_10()
 		}
 
 		// SSE conflicts
-		if ( GetModuleHandle("shadows.asi") == nullptr )
+		if ( GetModuleHandleW(L"shadows.asi") == nullptr )
 		{
 			Patch<DWORD>(0x70665C, 0x52909090);
 			InjectHook(0x706662, &CShadowCamera::Update);
@@ -2344,7 +2345,7 @@ BOOL InjectDelayedPatches_10()
 
 		// Adblocker
 #if DISABLE_FLA_DONATION_WINDOW
-		if (  GetModuleHandle("$fastman92limitAdjuster.asi") != nullptr )
+		if (  GetModuleHandleW(L"$fastman92limitAdjuster.asi") != nullptr )
 		{
 			if ( *(DWORD*)0x748736 != 0xE8186A53 )
 			{
@@ -2372,9 +2373,9 @@ BOOL InjectDelayedPatches_11()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
-		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
-		bool		bSAMP = GetModuleHandle("samp") != nullptr;
-		bool		bSARender = GetModuleHandle("SARender.asi") != nullptr;
+		bool		bHasImVehFt = GetModuleHandleW(L"ImVehFt.asi") != nullptr;
+		bool		bSAMP = GetModuleHandleW(L"samp") != nullptr;
+		bool		bSARender = GetModuleHandleW(L"SARender.asi") != nullptr;
 
 		ReadRotorFixExceptions(wcModulePath);
 
@@ -2559,7 +2560,7 @@ BOOL InjectDelayedPatches_11()
 		}
 
 		// SSE conflicts
-		if ( GetModuleHandle("shadows.asi") == nullptr )
+		if ( GetModuleHandleW(L"shadows.asi") == nullptr )
 		{
 			Patch<DWORD>(0x706E8C, 0x52909090);
 			InjectHook(0x706E92, &CShadowCamera::Update);
@@ -2591,9 +2592,9 @@ BOOL InjectDelayedPatches_Steam()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
-		bool		bHasImVehFt = GetModuleHandle("ImVehFt.asi") != nullptr;
-		bool		bSAMP = GetModuleHandle("samp") != nullptr;
-		bool		bSARender = GetModuleHandle("SARender.asi") != nullptr;
+		bool		bHasImVehFt = GetModuleHandleW(L"ImVehFt.asi") != nullptr;
+		bool		bSAMP = GetModuleHandleW(L"samp") != nullptr;
+		bool		bSARender = GetModuleHandleW(L"SARender.asi") != nullptr;
 
 		ReadRotorFixExceptions(wcModulePath);
 
@@ -2765,7 +2766,7 @@ BOOL InjectDelayedPatches_Steam()
 		}
 
 		// SSE conflicts
-		if ( GetModuleHandle("shadows.asi") == nullptr )
+		if ( GetModuleHandleW(L"shadows.asi") == nullptr )
 		{
 			Patch<DWORD>(0x74A864, 0x52909090);
 			InjectHook(0x74A86A, &CShadowCamera::Update);
@@ -4515,7 +4516,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		ScopedUnprotect::Section Protect2( hGameHandle, ".rdata" );
 
 		if (*(DWORD*)DynBaseAddress(0x82457C) == 0x94BF || *(DWORD*)DynBaseAddress(0x8245BC) == 0x94BF) Patch_SA_10();
-		else if (*(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF || *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF) Patch_SA_11(), MessageBox( nullptr, "You're using a 1.01 executable which is no longer supported by SilentPatch!\n\nI have no idea if anyone was still using it, so if you do - shoot me an e-mail!", "SilentPatch", MB_OK | MB_ICONWARNING );
+		else if (*(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF || *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF) Patch_SA_11(), MessageBoxW( nullptr, L"You're using a 1.01 executable which is no longer supported by SilentPatch!\n\nI have no idea if anyone was still using it, so if you do - shoot me an e-mail!", L"SilentPatch", MB_OK | MB_ICONWARNING );
 		else if (*(DWORD*)DynBaseAddress(0x85EC4A) == 0x94BF) Patch_SA_Steam();
 		else
 		{

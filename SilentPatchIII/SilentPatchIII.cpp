@@ -280,9 +280,9 @@ char* GetMyDocumentsPath()
 
 	if ( cUserFilesPath[0] == '\0' )
 	{	
-		SHGetFolderPath(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, cUserFilesPath);
-		PathAppend(cUserFilesPath, *ppUserFilesDir);
-		CreateDirectory(cUserFilesPath, nullptr);
+		SHGetFolderPathA(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, cUserFilesPath);
+		PathAppendA(cUserFilesPath, *ppUserFilesDir);
+		CreateDirectoryA(cUserFilesPath, nullptr);
 	}
 	return cUserFilesPath;
 }
@@ -821,7 +821,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		CTimer::Initialise();
 
 		HMODULE		hDummyHandle;
-		GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCSTR)&DllMain, &hDummyHandle);
+		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)&DllMain, &hDummyHandle);
 	}
 	return TRUE;
 }

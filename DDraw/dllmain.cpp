@@ -34,10 +34,10 @@ char* GetMyDocumentsPath()
 
 	if ( cUserFilesPath[0] == '\0' )
 	{	
-		SHGetFolderPath(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, cUserFilesPath);
-		PathAppend(cUserFilesPath, *ppUserFilesDir);
+		SHGetFolderPathA(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, cUserFilesPath);
+		PathAppendA(cUserFilesPath, *ppUserFilesDir);
 
-		CreateDirectory(cUserFilesPath, nullptr);
+		CreateDirectoryA(cUserFilesPath, nullptr);
 	}
 	return cUserFilesPath;
 }
