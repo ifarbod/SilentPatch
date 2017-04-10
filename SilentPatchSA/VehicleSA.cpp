@@ -124,17 +124,14 @@ bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 
 void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo)
 {
-	for ( ptrdiff_t i = 0; i < CCustomCarPlateMgr::NUM_MAX_PLATES; i++ )
+	for ( size_t i = 0; i < pModelInfo->m_apPlateMaterials->m_numPlates; i++ )
 	{
-		if ( pModelInfo->m_apPlateMaterials[i] != nullptr )
-		{
-			RpMaterialSetTexture(pModelInfo->m_apPlateMaterials[i], PlateTexture);
-		}
+		RpMaterialSetTexture(pModelInfo->m_apPlateMaterials->m_plates[i], PlateTexture);
+	}
 
-		if ( pModelInfo->m_apPlateMaterials[CCustomCarPlateMgr::NUM_MAX_PLATES+i] != nullptr )
-		{
-			CCustomCarPlateMgr::SetupMaterialPlatebackTexture(pModelInfo->m_apPlateMaterials[CCustomCarPlateMgr::NUM_MAX_PLATES+i], PlateDesign);
-		}
+	for ( size_t i = 0; i < pModelInfo->m_apPlateMaterials->m_numPlatebacks; i++ )
+	{
+		CCustomCarPlateMgr::SetupMaterialPlatebackTexture(pModelInfo->m_apPlateMaterials->m_platebacks[i], PlateDesign);
 	}
 }
 

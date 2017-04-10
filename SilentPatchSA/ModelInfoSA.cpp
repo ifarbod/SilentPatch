@@ -88,20 +88,17 @@ void CVehicleModelInfo::SetCarCustomPlate()
 	m_plateText[0] = '\0';
 	m_nPlateType = -1;
 
-	m_apPlateMaterials = new RpMaterial* [2*CCustomCarPlateMgr::NUM_MAX_PLATES];
-	std::fill_n( m_apPlateMaterials, 2*CCustomCarPlateMgr::NUM_MAX_PLATES, nullptr );
+	m_apPlateMaterials = new PlateMaterialsData;
 	
 	CCustomCarPlateMgr::SetupClump(reinterpret_cast<RpClump*>(pRwObject), m_apPlateMaterials);
 }
 
-void CCustomCarPlateMgr::PollPlates( RpClump* clump, RpMaterial** materials )
+void CCustomCarPlateMgr::PollPlates( RpClump* clump, PlateMaterialsData* materials )
 {
-	RpMaterial** carplates = materials;
-	RpMaterial** carpbacks = materials+NUM_MAX_PLATES;
+	std::vector<RpMaterial*> carplates;
+	std::vector<RpMaterial*> carpbacks;
 
-	int numCarplates = 0, numCarpbacks = 0;
-
-	RpClumpForAllAtomics( clump, [carplates, carpbacks, &numCarplates, &numCarpbacks] ( RpAtomic* atomic ) -> RpAtomic* {
+	RpClumpForAllAtomics( clump, [&] ( RpAtomic* atomic ) -> RpAtomic* {
 		RpGeometryForAllMaterials( RpAtomicGetGeometry(atomic), [&] ( RpMaterial* material ) -> RpMaterial* {
 			if ( RwTexture* texture = RpMaterialGetTexture(material) )
 			{
@@ -109,19 +106,11 @@ void CCustomCarPlateMgr::PollPlates( RpClump* clump, RpMaterial** materials )
 				{
 					if ( _stricmp( texName, "carplate" ) == 0 )
 					{
-						assert(numCarplates < NUM_MAX_PLATES);
-						if ( numCarplates < NUM_MAX_PLATES )
-						{
-							carplates[numCarplates++] = material;
-						}
+						carplates.push_back( material );
 					}
 					else if ( _stricmp( texName, "carpback" ) == 0 )
 					{
-						assert(numCarpbacks < NUM_MAX_PLATES);
-						if ( numCarpbacks < NUM_MAX_PLATES )
-						{
-							carpbacks[numCarpbacks++] = material;
-						}
+						carpbacks.push_back( material );
 					}
 				}
 			}
@@ -130,14 +119,29 @@ void CCustomCarPlateMgr::PollPlates( RpClump* clump, RpMaterial** materials )
 		} );
 		return atomic;
 	} );
+
+	materials->m_numPlates = carplates.size();
+	materials->m_numPlatebacks = carpbacks.size();
+
+	if ( materials->m_numPlates > 0 )
+	{
+		materials->m_plates = new RpMaterial* [materials->m_numPlates];
+		std::copy( carplates.begin(), carplates.end(), stdext::checked_array_iterator<RpMaterial**>(materials->m_plates, materials->m_numPlates) );
+	}
+
+	if ( materials->m_numPlatebacks > 0 )
+	{
+		materials->m_platebacks = new RpMaterial* [materials->m_numPlatebacks];
+		std::copy( carpbacks.begin(), carpbacks.end(), stdext::checked_array_iterator<RpMaterial**>(materials->m_platebacks, materials->m_numPlatebacks) );
+	}
 }
 
-void CCustomCarPlateMgr::SetupClump(RpClump* pClump, RpMaterial** pMatsArray)
+void CCustomCarPlateMgr::SetupClump(RpClump* pClump, PlateMaterialsData* pMatsArray)
 {
 	PollPlates( pClump, pMatsArray );
 }
 
-void CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade(RpClump* pClump, RpMaterial** pMatsArray, signed char nDesign)
+void CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade(RpClump* pClump, PlateMaterialsData* pMatsArray, signed char nDesign)
 {
 	UNREFERENCED_PARAMETER(nDesign);
 	if ( pMatsArray != nullptr )
