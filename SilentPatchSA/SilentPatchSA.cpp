@@ -1120,7 +1120,9 @@ CVehicleModelInfo* __fastcall VehicleModelInfoCtor(CVehicleModelInfo* me)
 {
 	orgVehicleModelInfoCtor(me);
 	me->m_apPlateMaterials = nullptr;
-	std::fill( std::begin(me->m_apDirtMaterials), std::end(me->m_apDirtMaterials), nullptr );
+	me->m_dirtMaterials = nullptr;
+	me->m_numDirtMaterials = 0;
+	std::fill( std::begin( me->m_staticDirtMaterials ), std::end( me->m_staticDirtMaterials ), nullptr );
 	return me;
 }
 
@@ -2438,9 +2440,9 @@ BOOL InjectDelayedPatches_10()
 
 			// Cars getting dirty
 			// Only 1.0 and Steam
+			InjectHook( 0x5D5DB0, RemapDirt, PATCH_JUMP );
 			InjectHook(0x4C9648, &CVehicleModelInfo::FindEditableMaterialList, PATCH_CALL);
 			Patch<DWORD>(0x4C964D, 0x0FEBCE8B);
-			Patch<DWORD>(0x5D5DC2, 32);		// 1.0 ONLY
 		}
 
 		if ( !bHasImVehFt && !bSAMP )

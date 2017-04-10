@@ -268,7 +268,16 @@ public:
 	}						*m_pVehicleStruct;
 
 	char					field_60[464];
-	RpMaterial*				m_apDirtMaterials[32];
+
+	static const size_t IN_PLACE_BUFFER_DIRT_SIZE = 30;
+	union{
+		struct{;
+			RpMaterial**	m_dirtMaterials;
+			size_t			m_numDirtMaterials;
+			RpMaterial*		m_staticDirtMaterials[IN_PLACE_BUFFER_DIRT_SIZE];
+		};
+		RpMaterial*			__oldDirtMaterials[32]; // Unused with SilentPatch
+	};
 	unsigned char			m_anPrimaryColors[8];
 	unsigned char			m_anSecondaryColors[8];
 	unsigned char			m_anTertiaryColors[8];
@@ -298,6 +307,8 @@ public:
 
 extern CBaseModelInfo** const		ms_modelInfoPtrs;
 extern const uint32_t				m_numModelInfoPtrs;
+
+void RemapDirt( CVehicleModelInfo* modelInfo, uint32_t dirtID );
 
 class CCustomCarPlateMgr
 {

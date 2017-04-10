@@ -1,6 +1,8 @@
 #include "StdAfxSA.h"
 #include "ModelInfoSA.h"
 
+#include <iterator>
+
 static void* BaseModelInfoShutdown = AddressByVersion<void*>(0x4C4D50, 0x4C4DD0, 0x4CF590);
 WRAPPER void CBaseModelInfo::Shutdown() { VARJMP(BaseModelInfoShutdown); }
 
@@ -12,9 +14,24 @@ void (*CCustomCarPlateMgr::SetupMaterialPlatebackTexture)(RpMaterial* pMaterial,
 CBaseModelInfo** const			ms_modelInfoPtrs = *AddressByVersion<CBaseModelInfo***>(0x509CB1, 0x4C0C96, 0x403DB7);
 const uint32_t					m_numModelInfoPtrs = *AddressByVersion<uint16_t*>(0x4C5956+2, 0, 0);
 
+
+static RwTexture** const		ms_aDirtTextures = *AddressByVersion<RwTexture***>( 0x5D5DCC + 3, 0, 0 /*TODO*/);
+void RemapDirt( CVehicleModelInfo* modelInfo, uint32_t dirtID )
+{
+	RpMaterial** materials = modelInfo->m_numDirtMaterials > CVehicleModelInfo::IN_PLACE_BUFFER_DIRT_SIZE ? modelInfo->m_dirtMaterials : modelInfo->m_staticDirtMaterials;
+
+	for ( size_t i = 0; i < modelInfo->m_numDirtMaterials; i++ )
+	{
+		RpMaterialSetTexture( materials[i], ms_aDirtTextures[dirtID] );
+	}
+}
+
 void CVehicleModelInfo::Shutdown()
 {
 	CBaseModelInfo::Shutdown();
+
+	delete m_dirtMaterials;
+	m_dirtMaterials = nullptr;
 
 	delete m_apPlateMaterials;
 	m_apPlateMaterials = nullptr;
@@ -22,7 +39,7 @@ void CVehicleModelInfo::Shutdown()
 
 void CVehicleModelInfo::FindEditableMaterialList()
 {
-	size_t materialCount = 0;
+	std::vector<RpMaterial*> editableMaterials;
 
 	auto GetEditableMaterialListCB = [&]( RpAtomic* atomic ) -> RpAtomic* {
 		RpGeometryForAllMaterials( RpAtomicGetGeometry(atomic), [&]( RpMaterial* material ) -> RpMaterial* {
@@ -32,8 +49,7 @@ void CVehicleModelInfo::FindEditableMaterialList()
 				{
 					if ( _stricmp(texName, "vehiclegrunge256") == 0 )
 					{
-						if ( materialCount < _countof(m_apDirtMaterials) )
-							m_apDirtMaterials[materialCount++] = material;
+						editableMaterials.push_back( material );
 					}
 				}
 			}
@@ -47,6 +63,20 @@ void CVehicleModelInfo::FindEditableMaterialList()
 	for ( uint32_t i = 0; i < m_pVehicleStruct->m_nNumExtras; i++ )
 		GetEditableMaterialListCB(m_pVehicleStruct->m_apExtras[i]);
 
+	m_numDirtMaterials = editableMaterials.size();
+	if ( m_numDirtMaterials > IN_PLACE_BUFFER_DIRT_SIZE )
+	{
+		m_dirtMaterials = new RpMaterial* [m_numDirtMaterials];
+		std::copy( editableMaterials.begin(), editableMaterials.end(), stdext::checked_array_iterator<RpMaterial**>(m_dirtMaterials, m_numDirtMaterials) );
+	}
+	else
+	{
+		m_dirtMaterials = nullptr;
+
+		// Use existing space instead of allocating new space
+		std::copy( editableMaterials.begin(), editableMaterials.end(), m_staticDirtMaterials );
+	}
+
 	m_nPrimaryColor = -1;
 	m_nSecondaryColor = -1;
 	m_nTertiaryColor = -1;
@@ -59,9 +89,8 @@ void CVehicleModelInfo::SetCarCustomPlate()
 	m_nPlateType = -1;
 
 	m_apPlateMaterials = new RpMaterial* [2*CCustomCarPlateMgr::NUM_MAX_PLATES];
+	std::fill_n( m_apPlateMaterials, 2*CCustomCarPlateMgr::NUM_MAX_PLATES, nullptr );
 	
-	for ( int i = 0; i < 2*CCustomCarPlateMgr::NUM_MAX_PLATES; i++ )
-		m_apPlateMaterials[i] = nullptr;
 	CCustomCarPlateMgr::SetupClump(reinterpret_cast<RpClump*>(pRwObject), m_apPlateMaterials);
 }
 
