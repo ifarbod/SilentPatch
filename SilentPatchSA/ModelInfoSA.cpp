@@ -15,7 +15,7 @@ CBaseModelInfo** const			ms_modelInfoPtrs = *AddressByVersion<CBaseModelInfo***>
 const uint32_t					m_numModelInfoPtrs = *AddressByVersion<uint16_t*>(0x4C5956+2, 0, 0);
 
 
-static RwTexture** const		ms_aDirtTextures = *AddressByVersion<RwTexture***>( 0x5D5DCC + 3, 0, 0 /*TODO*/);
+static RwTexture** const		ms_aDirtTextures = *AddressByVersion<RwTexture***>( 0x5D5DCC + 3, 0, 0x5F259C + 3 );
 void RemapDirt( CVehicleModelInfo* modelInfo, uint32_t dirtID )
 {
 	RpMaterial** materials = modelInfo->m_numDirtMaterials > CVehicleModelInfo::IN_PLACE_BUFFER_DIRT_SIZE ? modelInfo->m_dirtMaterials : modelInfo->m_staticDirtMaterials;

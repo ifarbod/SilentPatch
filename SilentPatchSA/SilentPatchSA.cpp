@@ -2878,6 +2878,7 @@ BOOL InjectDelayedPatches_Steam()
 
 			// Cars getting dirty
 			// Only 1.0 and Steam
+			InjectHook( 0x5F2580, RemapDirt, PATCH_JUMP );
 			InjectHook(0x4D3F4D, &CVehicleModelInfo::FindEditableMaterialList, PATCH_CALL);
 			Patch<DWORD>(0x4D3F52, 0x0FEBCE8B);
 		}
