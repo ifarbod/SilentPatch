@@ -1124,6 +1124,116 @@ CVehicleModelInfo* __fastcall VehicleModelInfoCtor(CVehicleModelInfo* me)
 	return me;
 }
 
+#if MEM_VALIDATORS
+
+#include <intrin.h>
+
+// Validator for static allocations
+void PutStaticValidator( uintptr_t begin, uintptr_t end )
+{
+	uint8_t* a = (uint8_t*)begin;
+	uint8_t* b = (uint8_t*)end;
+
+	std::fill( a, b, uint8_t(0xCC) );
+}
+
+void* malloc_validator(size_t size)
+{
+	return _malloc_dbg( size, _NORMAL_BLOCK, "EXE", (uintptr_t)_ReturnAddress() );
+}
+
+void* realloc_validator(void* ptr, size_t size)
+{
+	return _realloc_dbg( ptr, size, _NORMAL_BLOCK, "EXE", (uintptr_t)_ReturnAddress() );
+}
+
+void* calloc_validator(size_t count, size_t size)
+{
+	return _calloc_dbg( count, size, _NORMAL_BLOCK, "EXE", (uintptr_t)_ReturnAddress() );
+}
+
+void free_validator(void* ptr)
+{
+	_free_dbg(ptr, _NORMAL_BLOCK);
+}
+
+size_t _msize_validator(void* ptr)
+{
+	return _msize_dbg(ptr, _NORMAL_BLOCK);
+}
+
+void* _new(size_t size)
+{
+	return _malloc_dbg( size, _NORMAL_BLOCK, "EXE", (uintptr_t)_ReturnAddress() );
+}
+
+void _delete(void* ptr)
+{
+	_free_dbg(ptr, _NORMAL_BLOCK);
+}
+
+class CDebugMemoryMgr
+{
+public:
+	static void* Malloc(size_t size)
+	{
+		return _malloc_dbg( size, _NORMAL_BLOCK, "EXE", (uintptr_t)_ReturnAddress() );
+	}
+
+	static void Free(void* ptr)
+	{
+		_free_dbg(ptr, _NORMAL_BLOCK);
+	}
+
+	static void* Realloc(void* ptr, size_t size)
+	{
+		return _realloc_dbg( ptr, size, _NORMAL_BLOCK, "EXE", (uintptr_t)_ReturnAddress() );
+	}
+
+	static void* Calloc(size_t count, size_t size)
+	{
+		return _calloc_dbg( count, size, _NORMAL_BLOCK, "EXE", (uintptr_t)_ReturnAddress() );
+	}
+
+	static void* MallocAlign(size_t size, size_t align)
+	{
+		return _aligned_malloc_dbg( size, align, "EXE", (uintptr_t)_ReturnAddress() );
+	}
+
+	static void AlignedFree(void* ptr)
+	{
+		_aligned_free_dbg(ptr);
+	}
+};
+
+void InstallMemValidator()
+{
+	using namespace Memory;
+
+	// TEST: Validate memory
+	InjectHook( 0x824257, malloc_validator, PATCH_JUMP );
+	InjectHook( 0x824269, realloc_validator, PATCH_JUMP );
+	InjectHook( 0x824416, calloc_validator, PATCH_JUMP );
+	InjectHook( 0x82413F, free_validator, PATCH_JUMP );
+	InjectHook( 0x828C4A, _msize_validator, PATCH_JUMP );
+
+	InjectHook( 0x82119A, _new, PATCH_JUMP );
+	InjectHook( 0x8214BD, _delete, PATCH_JUMP );
+
+	InjectHook( 0x72F420, &CDebugMemoryMgr::Malloc, PATCH_JUMP );
+	InjectHook( 0x72F430, &CDebugMemoryMgr::Free, PATCH_JUMP );
+	InjectHook( 0x72F440, &CDebugMemoryMgr::Realloc, PATCH_JUMP );
+	InjectHook( 0x72F460, &CDebugMemoryMgr::Calloc, PATCH_JUMP );
+	InjectHook( 0x72F4C0, &CDebugMemoryMgr::MallocAlign, PATCH_JUMP );
+	InjectHook( 0x72F4F0, &CDebugMemoryMgr::AlignedFree, PATCH_JUMP );
+
+
+	PutStaticValidator( 0xAAE950, 0xB4C310 ); // CStore
+	PutStaticValidator( 0xA9AE00, 0xA9AE58 ); // fx_c
+}
+
+#endif
+
 #pragma warning(push)
 #pragma warning(disable:4838)
 #include <xnamath.h>
@@ -2810,6 +2920,10 @@ static char		aNoDesktopMode[64];
 void Patch_SA_10()
 {
 	using namespace Memory;
+
+#if MEM_VALIDATORS
+	InstallMemValidator();
+#endif
 
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
 	int			pIsAlreadyRunning = AddressByRegion_10<int>(0x74872D);
