@@ -720,13 +720,10 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 		else
 		{
 			// Load from memory
-			HMODULE thisModule;
-			GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)DrawMoonWithPhases, &thisModule);
+			HRSRC		resource = FindResourceW(hDLLModule, MAKEINTRESOURCE(IDR_LUNAR64), RT_RCDATA);
+			void*		pMoonMask = LockResource( LoadResource(hDLLModule, resource) );
 
-			HRSRC		resource = FindResourceW(thisModule, MAKEINTRESOURCE(IDR_LUNAR64), RT_RCDATA);
-			void*		pMoonMask = LockResource( LoadResource(thisModule, resource) );
-
-			gpMoonMask = CPNGFile::ReadFromMemory(pMoonMask, SizeofResource(thisModule, resource));
+			gpMoonMask = CPNGFile::ReadFromMemory(pMoonMask, SizeofResource(hDLLModule, resource));
 		}
 	}
 	//D3DPERF_BeginEvent(D3DCOLOR_ARGB(0,0,0,0), L"render moon");
@@ -1250,11 +1247,8 @@ bool ShaderAttach()
 	// CGame::InitialiseRenderWare
 	if ( InitialiseRenderWare() )
 	{
-		HMODULE thisModule;
-		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCWSTR)ShaderAttach, &thisModule);
-
-		HRSRC		resource = FindResourceW(thisModule, MAKEINTRESOURCE(IDR_NVCSHADER), RT_RCDATA);
-		RwUInt32*	shader = static_cast<RwUInt32*>(LockResource( LoadResource(thisModule, resource) ));
+		HRSRC		resource = FindResourceW(hDLLModule, MAKEINTRESOURCE(IDR_NVCSHADER), RT_RCDATA);
+		RwUInt32*	shader = static_cast<RwUInt32*>(LockResource( LoadResource(hDLLModule, resource) ));
 
 		RwD3D9CreateVertexShader(shader, reinterpret_cast<void**>(&pNVCShader));
 
