@@ -4655,9 +4655,9 @@ void Patch_SA_NewSteam_Common()
 
 	// Linear filtering on script sprites
 	{
-		auto drawScriptSprites = pattern( "81 EC 94 01 00 00 53 56 57 50" ).get_one();
-		ReadCall( drawScriptSprites.get<int>(10), orgDrawScriptSpritesAndRectangles );
-		InjectHook( drawScriptSprites.get<int>(10), DrawScriptSpritesAndRectangles );
+		void* drawScriptSprites = get_pattern( "81 EC 94 01 00 00 53 56 57 50", 10 );
+		ReadCall( drawScriptSprites, orgDrawScriptSpritesAndRectangles );
+		InjectHook( drawScriptSprites, DrawScriptSpritesAndRectangles );
 	}
 }
 
