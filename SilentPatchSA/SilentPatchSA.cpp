@@ -41,17 +41,36 @@ static void* varRwMatrixRotate = AddressByVersion<void*>(0x7F1FD0, 0x7F28D0, 0x8
 WRAPPER RwMatrix* RwMatrixRotate(RwMatrix* matrix, const RwV3d* axis, RwReal angle, RwOpCombineType combineOp) { WRAPARG(matrix); WRAPARG(axis); WRAPARG(angle); WRAPARG(combineOp); VARJMP(varRwMatrixRotate); }
 static void* varRwD3D9SetRenderState = AddressByVersion<void*>(0x7FC2D0, 0x7FCBD0, 0x836290);
 WRAPPER void RwD3D9SetRenderState(RwUInt32 state, RwUInt32 value) { WRAPARG(state); WRAPARG(value); VARJMP(varRwD3D9SetRenderState); }
-static void* var_rwD3D9SetVertexShader = AddressByVersion<void*>(0x7F9FB0, 0x7FA8B0, 0x833F70);
-WRAPPER void _rwD3D9SetVertexShader(void *shader) { VARJMP(var_rwD3D9SetVertexShader); }
-static void* varRwD3D9CreateVertexShader = AddressByVersion<void*>(0x7FAC60, 0x7FB560, 0x834C20);
-WRAPPER RwBool RwD3D9CreateVertexShader(const RwUInt32 *function, void **shader) { VARJMP(varRwD3D9CreateVertexShader); }
-static void* var_rwD3D9SetVertexShaderConstant = AddressByVersion<void*>(0x7FACA0, 0x7FB5A0, 0x834C60);
-WRAPPER void _rwD3D9SetVertexShaderConstant(RwUInt32 registerAddress,
-                               const void *constantData,
-							   RwUInt32  constantCount) { VARJMP(var_rwD3D9SetVertexShaderConstant); }
-
 static void* varRwD3D9GetTransform = AddressByVersion<void*>(0x7FA4F0, 0x7FADF0, 0x8344B0);
 WRAPPER void _RwD3D9GetTransform(RwUInt32 state, void* matrix) { VARJMP(varRwD3D9GetTransform); }
+
+static LPDIRECT3DDEVICE9& _RwD3DDevice = **AddressByVersion<LPDIRECT3DDEVICE9**>(0x7FAC64 + 1, 0x7FB564 + 1, 0x34C24 + 1);
+static void*& _rwD3D9LastVertexShaderUsed = **AddressByVersion<void***>(0x7FAC7C + 2, 0x7FB57C + 2, 0x834C3C + 2);
+
+void _rwD3D9SetVertexShaderConstant(RwUInt32 registerAddress, const void *constantData, RwUInt32 constantCount)
+{
+	_RwD3DDevice->SetVertexShaderConstantF( registerAddress, (const float*)constantData, constantCount );
+}
+
+RwBool RwD3D9CreateVertexShader(const RwUInt32 *function, void **shader)
+{
+	HRESULT result = _RwD3DDevice->CreateVertexShader( (const DWORD*)function, (LPDIRECT3DVERTEXSHADER9*)shader );
+	if ( SUCCEEDED(result) )
+	{
+		_rwD3D9LastVertexShaderUsed = (void*)-1;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+void _rwD3D9SetVertexShader(void *shader)
+{
+	if ( _rwD3D9LastVertexShaderUsed != shader )
+	{
+		HRESULT result = _RwD3DDevice->SetVertexShader( (LPDIRECT3DVERTEXSHADER9)shader );
+		_rwD3D9LastVertexShaderUsed = SUCCEEDED(result) ? shader : (void*)-1;
+	}
+}
 
 RwCamera* RwCameraBeginUpdate(RwCamera* camera)
 {
@@ -237,14 +256,14 @@ struct AlphaObjectInfo
 // Other wrappers
 void					(*GTAdelete)(void*) = AddressByVersion<void(*)(void*)>(0x82413F, 0x824EFF, 0x85E58C);
 const char*				(*GetFrameNodeName)(RwFrame*) = AddressByVersion<const char*(*)(RwFrame*)>(0x72FB30, 0x730360, 0x769C20);
-RpHAnimHierarchy*		(*GetAnimHierarchyFromSkinClump)(RpClump*) = AddressByVersion<RpHAnimHierarchy*(*)(RpClump*)>(0x734A40, 0x735270, 0x7671B0);
-auto					SetVolume = AddressByVersion<void(__thiscall*)(void*,float)>(0x4D7C60, 0x4D7E60, 0x4E2750);
+RpHAnimHierarchy*		(*GetAnimHierarchyFromSkinClump)(RpClump*) = AddressByVersion<RpHAnimHierarchy*(*)(RpClump*)>(0x734A40, 0x735270, 0x7671B0);	
 auto					InitializeUtrax = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0x4F3A10, 0x4FFA80);
 auto					CanSeeOutSideFromCurrArea = AddressByVersion<bool(*)()>(0x53C4A0, 0x53C940, 0x54E440);
 
 auto					__rwD3D9TextureHasAlpha = AddressByVersion<BOOL(*)(RwTexture*)>(0x4C9EA0, 0x4CA090, 0x4D47E0);
 auto					RenderOneXLUSprite = AddressByVersion<void(*)(float, float, float, float, float, int, int, int, int, float, char, char, char)>(0x70D000, 0x70D830, 0x7592C0);
 
+static void				(__thiscall* SetVolume)(void*,float);	
 static BOOL				(*IsAlreadyRunning)();
 static void				(*TheScriptsLoad)();
 static void				(*WipeLocalVariableMemoryForMissionScript)();
@@ -344,11 +363,9 @@ RpAtomic* TwoPassAlphaRender_aap(RpAtomic* atomic)
 		return AtomicDefaultRenderCallBack(atomic);
 
 	int		nPushedAlpha, nAlphaFunction;
-	int		nZWrite;
 	int		nAlphaBlending;
 
 	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
-	RwRenderStateGet(rwRENDERSTATEZWRITEENABLE, &nZWrite);
 	RwRenderStateGet(rwRENDERSTATEVERTEXALPHAENABLE, &nAlphaBlending);
 	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTION, &nAlphaFunction);
 
@@ -363,15 +380,19 @@ RpAtomic* TwoPassAlphaRender_aap(RpAtomic* atomic)
 	if ( atomic != nullptr )
 	{
 		// 2nd pass
+		int		nZWrite;
+		RwRenderStateGet(rwRENDERSTATEZWRITEENABLE, &nZWrite);
+
 		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
 		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
 
 		atomic = AtomicDefaultRenderCallBack(atomic);
+
+		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
 	}
 
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
-	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
 
 	return atomic;
@@ -3053,9 +3074,9 @@ void Patch_SA_10()
 	Nop(0x5C25D3, 5);
 
 	// User Tracks fix
+	ReadCall( 0x4D9B66, SetVolume );
 	InjectHook(0x4D9B66, UserTracksFix);
 	InjectHook(0x4D9BB5, 0x4F2FD0);
-	//Nop(0x4D9BB5, 5);
 
 	// FLAC support
 	InjectHook(0x4F373D, LoadFLAC, PATCH_JUMP);
@@ -3499,6 +3520,7 @@ void Patch_SA_11()
 	Patch<BYTE>(0x4A9D50, 0xC3);
 
 	// User Tracks fix
+	ReadCall( 0x4DA057, SetVolume );
 	InjectHook(0x4DA057, UserTracksFix);
 	InjectHook(0x4DA0A5, 0x4F3430);
 
@@ -3822,6 +3844,7 @@ void Patch_SA_Steam()
 	Nop(0x5D88AE, 5);
 
 	// User Tracks fix
+	SetVolume = reinterpret_cast<decltype(SetVolume)>(0x4E2750);
 	Patch<BYTE>(0x4E4A28, 0xBA);
 	Patch<const void*>(0x4E4A29, UserTracksFix_Steam);
 	InjectHook(0x4E4A8B, 0x4FF2B0);

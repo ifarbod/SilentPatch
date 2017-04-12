@@ -67,7 +67,7 @@ private:
 	BYTE					IsCustom;
 
 public:
-	std::pair<int,int>*		GetDay_GymGlitch();
+	std::pair<uint32_t,uint32_t>*		GetDay_GymGlitch();
 };
 
 static_assert(sizeof(CRunningScript) == 0xE0, "Wrong size: CRunningScript");

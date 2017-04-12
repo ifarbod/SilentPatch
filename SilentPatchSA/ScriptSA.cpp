@@ -3,9 +3,9 @@
 
 static int*		StatTypesInt = *AddressByVersion<int**>(0x55C0D8, 0x55C578, 0x574F24);
 
-std::pair<int,int>* CRunningScript::GetDay_GymGlitch()
+std::pair<uint32_t,uint32_t>* CRunningScript::GetDay_GymGlitch()
 {
-	static std::pair<int,int>	Out;
+	static std::pair<uint32_t,uint32_t>	Out;
 
 	if ( !strncmp(Name, "gymbike", 8) || !strncmp(Name, "gymbenc", 8) || !strncmp(Name, "gymtrea", 8) || !strncmp(Name, "gymdumb", 8) )
 	{
