@@ -632,20 +632,15 @@ static void SweetsGirlFix()
 
 static void MountainCloudBoysFix()
 {
-	static const uint8_t bOldCode[22] = {
-		0xD6, 0x00, 0x04, 0x00, 0x39, 0x00, 0x03, 0xEF, 0x00, 0x04, 0x02, 0x4D,
-		0x00, 0x01, 0x90, 0xF2, 0xFF, 0xFF, 0xD6, 0x00, 0x04, 0x01
-		};
-
-	// Faulty code lies under offset 3367 - replace it if it matches
-	if ( memcmp( ScriptSpace+ScriptFileSize+3367, bOldCode, sizeof(bOldCode) ) == 0 )
+	auto pattern = hook::range_pattern( uintptr_t(ScriptSpace+ScriptFileSize), uintptr_t(ScriptSpace+ScriptFileSize+ScriptMissionSize), 
+										"D6 00 04 00 39 00 03 EF 00 04 02 4D 00 01 90 F2 FF FF D6 00 04 01" ).count_hint(1);
+	if ( pattern.size() == 1 ) // Faulty code lies under offset 3367 - replace it if it matches
 	{
 		const uint8_t bNewCode[22] = {
 			0x00, 0x00, 0x00, 0x00, 0xD6, 0x00, 0x04, 0x03, 0x39, 0x00, 0x03, 0x2B,
 			0x00, 0x04, 0x0B, 0x39, 0x00, 0x03, 0xEF, 0x00, 0x04, 0x02
 		};
-
-		memcpy( ScriptSpace+ScriptFileSize+3367, bNewCode, sizeof(bNewCode) );
+		memcpy( pattern.get(0).get<void>(), bNewCode, sizeof(bNewCode) );
 	}
 }
 
