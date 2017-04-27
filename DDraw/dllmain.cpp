@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <Shlwapi.h>
 #include <ShlObj.h>
-#include <cstdint>
 #define _MEMORY_NO_CRT
 #include "MemoryMgr.h"
 
@@ -186,9 +185,9 @@ VOID WINAPI GetStartupInfoA_Hook(LPSTARTUPINFOA lpStartupInfo)
 	pOrgGetStartupInfoA(lpStartupInfo);
 }
 
-static HINSTANCE hInstance;
 void PatchIAT()
 {
+	HINSTANCE					hInstance = GetModuleHandle(nullptr);
 	IMAGE_NT_HEADERS*			ntHeader = (IMAGE_NT_HEADERS*)((DWORD)hInstance + ((IMAGE_DOS_HEADER*)hInstance)->e_lfanew);
 
 	// Give _rwcseg proper access rights
@@ -260,7 +259,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	{
 		DisableThreadLibraryCalls(hinstDLL);
 
-		hInstance = GetModuleHandle(nullptr);
 		PatchIAT();
 	}
 
