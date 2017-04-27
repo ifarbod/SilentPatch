@@ -2484,6 +2484,10 @@ BOOL InjectDelayedPatches_10()
 			Patch<DWORD>(0x5B8EB0, 15000);
 		}
 
+		// Read CCustomCarPlateMgr::GeneratePlateText from here
+		// to work fine with Deji's Custom Plate Format
+		ReadCall( 0x4C9484, CCustomCarPlateMgr::GeneratePlateText );
+
 		// Adblocker
 #if DISABLE_FLA_DONATION_WINDOW
 		if (  GetModuleHandleW(L"$fastman92limitAdjuster.asi") != nullptr )
@@ -2715,6 +2719,11 @@ BOOL InjectDelayedPatches_11()
 			Patch<DWORD>(0x5B9690, 15000);
 		}
 
+		// Read CCustomCarPlateMgr::GeneratePlateText from here
+		// to work fine with Deji's Custom Plate Format
+		// Albeit 1.01 obfuscates this function
+		CCustomCarPlateMgr::GeneratePlateText = (decltype(CCustomCarPlateMgr::GeneratePlateText))0x6FDDE0;
+
 		return FALSE;
 	}
 	return TRUE;
@@ -2921,6 +2930,10 @@ BOOL InjectDelayedPatches_Steam()
 			Patch<DWORD>(0x5D5720, 1250);
 			Patch<DWORD>(0x5D5780, 15000);
 		}
+
+		// Read CCustomCarPlateMgr::GeneratePlateText from here
+		// to work fine with Deji's Custom Plate Format
+		ReadCall( 0x4D3DA4, CCustomCarPlateMgr::GeneratePlateText );
 
 		return FALSE;
 	}
