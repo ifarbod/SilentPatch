@@ -117,7 +117,7 @@ namespace hook
 		pattern(const char (&pattern)[Len])
 			: pattern(getRVA<void>(0))
 		{
-			Initialize(pattern, Len);
+			Initialize(pattern, Len-1);
 		}
 
 		inline pattern& count(uint32_t expected) &
@@ -203,7 +203,7 @@ namespace hook
 		module_pattern(void* module, const char(&pattern)[Len])
 			: pattern(module)
 		{
-			Initialize(pattern, Len);
+			Initialize(pattern, Len-1);
 		}
 	};
 
@@ -215,7 +215,7 @@ namespace hook
 		range_pattern(uintptr_t begin, uintptr_t end, const char(&pattern)[Len])
 			: pattern(begin, end)
 		{
-			Initialize(pattern, Len);
+			Initialize(pattern, Len-1);
 		}
 	};
 
