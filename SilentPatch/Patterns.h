@@ -75,8 +75,6 @@ namespace hook
 		uint64_t m_hash;
 #endif
 
-		size_t m_size;
-
 		std::vector<pattern_match> m_matches;
 
 		bool m_matched;

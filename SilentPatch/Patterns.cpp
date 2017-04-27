@@ -144,8 +144,6 @@ void pattern::Initialize(const char* pattern, size_t length)
 	// transform the base pattern from IDA format to canonical format
 	TransformPattern(std::string_view(pattern, length), m_bytes, m_mask);
 
-	m_size = m_mask.size();
-
 #if PATTERNS_USE_HINTS
 	// if there's hints, try those first
 	if (m_module == GetModuleHandle(nullptr))
@@ -193,13 +191,14 @@ void pattern::EnsureMatches(uint32_t maxCount)
 
 	const uint8_t* pattern = reinterpret_cast<const uint8_t*>(m_bytes.c_str());
 	const char* mask = m_mask.c_str();
+	size_t maskSize = m_mask.size();
 	size_t lastWild = m_mask.find_last_of('?');
 
 	ptrdiff_t Last[256];
 
 	std::fill(std::begin(Last), std::end(Last), lastWild == std::string::npos ? -1 : static_cast<ptrdiff_t>(lastWild) );
 
-	for ( ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(m_size); ++i )
+	for ( ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(maskSize); ++i )
 	{
 		if ( Last[ pattern[i] ] < i )
 		{
@@ -207,10 +206,10 @@ void pattern::EnsureMatches(uint32_t maxCount)
 		}
 	}
 
-	for (uintptr_t i = executable.begin(), end = executable.end() - m_size; i <= end;)
+	for (uintptr_t i = executable.begin(), end = executable.end() - maskSize; i <= end;)
 	{
 		uint8_t* ptr = reinterpret_cast<uint8_t*>(i);
-		ptrdiff_t j = m_size - 1;
+		ptrdiff_t j = maskSize - 1;
 
 		while((j >= 0) && (mask[j] == '?' || pattern[j] == ptr[j])) j--;
 
@@ -237,7 +236,7 @@ bool pattern::ConsiderMatch(uintptr_t offset)
 
 	char* ptr = reinterpret_cast<char*>(offset);
 
-	for (size_t i = 0; i < m_size; i++)
+	for (size_t i = 0, j = m_mask.size(); i < j; i++)
 	{
 		if (mask[i] == '?')
 		{
