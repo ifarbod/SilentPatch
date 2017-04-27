@@ -200,6 +200,22 @@ void PatchIAT()
 		{
 			DWORD	dwProtect;
 			VirtualProtect((LPVOID)((ptrdiff_t)hInstance + pSection->VirtualAddress), pSection->Misc.VirtualSize, PAGE_EXECUTE_READ, &dwProtect);
+
+			if ( (pSection->Characteristics & IMAGE_SCN_CNT_CODE) == 0 )
+			{
+				pSection->Characteristics |= IMAGE_SCN_CNT_CODE;
+				ntHeader->OptionalHeader.SizeOfCode += pSection->Misc.VirtualSize;
+			}
+			if ( (pSection->Characteristics & IMAGE_SCN_CNT_INITIALIZED_DATA) != 0 )
+			{
+				pSection->Characteristics &= ~(IMAGE_SCN_CNT_INITIALIZED_DATA);
+				ntHeader->OptionalHeader.SizeOfInitializedData -= pSection->Misc.VirtualSize;
+			}
+			if ( (pSection->Characteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA) != 0 )
+			{
+				pSection->Characteristics &= ~(IMAGE_SCN_CNT_UNINITIALIZED_DATA);
+				ntHeader->OptionalHeader.SizeOfUninitializedData -= pSection->Misc.VirtualSize;
+			}
 			break;
 		}
 	}
