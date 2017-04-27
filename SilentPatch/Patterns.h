@@ -109,7 +109,7 @@ namespace hook
 
 		void EnsureMatches(uint32_t maxCount);
 
-		inline const pattern_match& _get_internal(size_t index)
+		inline pattern_match _get_internal(size_t index) const
 		{
 			return m_matches[index];
 		}
@@ -122,24 +122,44 @@ namespace hook
 			Initialize(pattern, Len);
 		}
 
-		inline pattern& count(uint32_t expected)
+		inline pattern& count(uint32_t expected) &
 		{
 			EnsureMatches(expected);
 			assert(m_matches.size() == expected);
 			return *this;
 		}
 
-		inline pattern& count_hint(uint32_t expected)
+		inline pattern& count_hint(uint32_t expected) &
 		{
 			EnsureMatches(expected);
 			return *this;
 		}
 
-		inline pattern& clear()
+		inline pattern& clear() &
 		{
 			m_matches.clear();
 			m_matched = false;
 			return *this;
+		}
+
+		inline pattern&& count(uint32_t expected) &&
+		{
+			EnsureMatches(expected);
+			assert(m_matches.size() == expected);
+			return std::move(*this);
+		}
+
+		inline pattern&& count_hint(uint32_t expected) &&
+		{
+			EnsureMatches(expected);
+			return std::move(*this);
+		}		
+
+		inline pattern&& clear() &&
+		{
+			m_matches.clear();
+			m_matched = false;
+			return std::move(*this);
 		}
 
 		inline size_t size()
@@ -153,15 +173,15 @@ namespace hook
 			return size() == 0;
 		}
 
-		inline const pattern_match& get(size_t index)
+		inline pattern_match get(size_t index)
 		{
 			EnsureMatches(UINT32_MAX);
 			return _get_internal(index);
 		}
 
-		inline const pattern_match& get_one()
+		inline pattern_match get_one()
 		{
-			return count(1)._get_internal(0);
+			return std::forward<pattern>(*this).count(1)._get_internal(0);
 		}
 
 		template<typename T = void>
