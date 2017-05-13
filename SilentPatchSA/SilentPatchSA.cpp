@@ -608,16 +608,14 @@ static size_t			ScriptFileSize, ScriptMissionSize;
 
 static void InitializeScriptGlobals()
 {
-	static bool		bInitScriptStuff = false;
-	if ( !bInitScriptStuff )
-	{
+	static bool		bInitScriptStuff = [] () {;
 		ScriptSpace = *AddressByVersion<unsigned char**>(0x5D5380, 0x5D5B60, 0x450E34);
 		ScriptParams = *AddressByVersion<int**>(0x48995B, 0x46410A, 0x46979A);
 		ScriptFileSize = *AddressByVersion<size_t*>( 0x468E74+1, 0, 0x46E572+1);
 		ScriptMissionSize = *AddressByVersion<size_t*>( 0x489A5A+1, 0, 0x490798+1);
 
-		bInitScriptStuff = true;
-	}
+		return true;
+	} ();
 }
 
 static void SweetsGirlFix()
@@ -724,24 +722,19 @@ bool GetCurrentZoneLockedOrUnlocked_Steam(float fPosX, float fPosY)
 // By NTAuthority
 void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float sizeY)
 {
-	static RwTexture*	gpMoonMask = nullptr;
-
-	if ( gpMoonMask == nullptr )
-	{	
+	static RwTexture*	gpMoonMask = [] () {
 		if ( GetFileAttributesW(L"lunar.png") != INVALID_FILE_ATTRIBUTES )
 		{
 			// load from file
-			gpMoonMask = CPNGFile::ReadFromFile("lunar.png");
+			return CPNGFile::ReadFromFile("lunar.png");
 		}
-		else
-		{
-			// Load from memory
-			HRSRC		resource = FindResourceW(hDLLModule, MAKEINTRESOURCE(IDR_LUNAR64), RT_RCDATA);
-			void*		pMoonMask = LockResource( LoadResource(hDLLModule, resource) );
 
-			gpMoonMask = CPNGFile::ReadFromMemory(pMoonMask, SizeofResource(hDLLModule, resource));
-		}
-	}
+		// Load from memory
+		HRSRC		resource = FindResourceW(hDLLModule, MAKEINTRESOURCE(IDR_LUNAR64), RT_RCDATA);
+		void*		pMoonMask = LockResource( LoadResource(hDLLModule, resource) );
+		
+		return CPNGFile::ReadFromMemory(pMoonMask, SizeofResource(hDLLModule, resource));
+	} ();
 	//D3DPERF_BeginEvent(D3DCOLOR_ARGB(0,0,0,0), L"render moon");
 
 	float currentDayFraction = nGameClockDays / 31.0f;
@@ -757,7 +750,7 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 
 	RenderOneXLUSprite(screenPos[0], screenPos[1], fFarClipZ, sizeX * size, sizeY * size, 0, 0, 0, 0, a10, -1, 0, 0);
 
-	RwRenderStateSet(rwRENDERSTATETEXTURERASTER, RwTextureGetRaster(gpMoonMask));
+	RwRenderStateSet(rwRENDERSTATETEXTURERASTER, gpMoonMask != nullptr ? RwTextureGetRaster(gpMoonMask) : nullptr );
 	RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDINVSRCCOLOR);
 	RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDINVSRCCOLOR);
 	
@@ -819,9 +812,8 @@ char* GetMyDocumentsPath()
 	static char	cUserFilesPath[MAX_PATH];
 	static char* const ppTempBufPtr = *GetVer() == 0 ? *AddressByRegion_10<char**>(0x744FE5) : cUserFilesPath;
 
-	if (ppTempBufPtr[0] == '\0')
-	{	
-		static char** const ppUserFilesDir = AddressByVersion<char**>(0x74503F, 0x74586F, 0x77EE50, 0x77902B, 0x778F1B);
+	static bool initPath = [&] () {	
+		char** const ppUserFilesDir = AddressByVersion<char**>(0x74503F, 0x74586F, 0x77EE50, 0x77902B, 0x778F1B);
 
 		char		cTmpPath[MAX_PATH];
 
@@ -836,7 +828,9 @@ char* GetMyDocumentsPath()
 		strcpy_s(cTmpPath, ppTempBufPtr);
 		PathAppendA(cTmpPath, "User Tracks");
 		CreateDirectoryA(cTmpPath, nullptr);
-	}
+
+		return true;
+	} ();
 	return ppTempBufPtr;
 }
 
@@ -999,14 +993,14 @@ void UpdateEscalators()
 static char** pStencilShadowsPad = *AddressByVersion<char***>(0x70FC4F, 0, 0x75E286, 0x758A47, 0x758937);
 void StencilShadowAlloc( )
 {
-	static char* pMemory = nullptr;
-	if ( pMemory == nullptr )
-	{
-		pMemory = static_cast<char*>( orgNewAlloc( 3 * 0x6000 ) );
-		pStencilShadowsPad[0] = pMemory;
-		pStencilShadowsPad[1] = pMemory+0x6000;
-		pStencilShadowsPad[2] = pMemory+(2*0x6000);
-	}
+	static char* pMemory = [] () {;
+		char* mem = static_cast<char*>( orgNewAlloc( 3 * 0x6000 ) );
+		pStencilShadowsPad[0] = mem;
+		pStencilShadowsPad[1] = mem+0x6000;
+		pStencilShadowsPad[2] = mem+(2*0x6000);
+
+		return mem;
+	} ();
 }
 
 RwBool GTARtAnimInterpolatorSetCurrentAnim(RtAnimInterpolator* animI, RtAnimAnimation* anim)
