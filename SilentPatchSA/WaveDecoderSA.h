@@ -7,8 +7,8 @@ class CAEWaveDecoder : public CAEStreamingDecoder
 private:
 	uint32_t	m_dataSize;
 	uint32_t	m_offsetToData;
-	size_t		m_maxBlockSize;
-	void*		m_buffer;
+	size_t		m_maxBlockSize = 0;
+	void*		m_buffer = nullptr;
 
 	struct FormatChunk
 	{
@@ -22,7 +22,7 @@ private:
 
 public:
 	CAEWaveDecoder(CAEDataStream* stream)
-		: CAEStreamingDecoder(stream), m_buffer(nullptr), m_maxBlockSize(0)
+		: CAEStreamingDecoder(stream)
 	{}
 
 	virtual ~CAEWaveDecoder() override

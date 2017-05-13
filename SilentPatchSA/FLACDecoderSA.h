@@ -5,11 +5,11 @@
 class CAEFLACDecoder : public CAEStreamingDecoder
 {
 private:
-	FLAC__StreamDecoder*		m_FLACdecoder;
-	FLAC__StreamMetadata*		m_streamMeta;
+	FLAC__StreamDecoder*		m_FLACdecoder = nullptr;
+	FLAC__StreamMetadata*		m_streamMeta = nullptr;
 	FLAC__uint64				m_currentSample;
-	FLAC__int32*				m_buffer;
-	size_t						m_curBlockSize, m_maxBlockSize;
+	FLAC__int32*				m_buffer = nullptr;
+	size_t						m_curBlockSize, m_maxBlockSize = 0;
 	size_t						m_bufferCursor;
 	bool						m_eof;
 
@@ -25,11 +25,10 @@ private:
 
 public:
 	CAEFLACDecoder(CAEDataStream* stream)
-		: CAEStreamingDecoder(stream), m_FLACdecoder(nullptr), m_streamMeta(nullptr)
-		, m_buffer(nullptr), m_curBlockSize(0), m_maxBlockSize(0), m_bufferCursor(0)
+		: CAEStreamingDecoder(stream)
 	{}
 
-	virtual					~CAEFLACDecoder();
+	virtual					~CAEFLACDecoder() override;
 	virtual bool			Initialise() override;
 	virtual uint32_t		FillBuffer(void* pBuf, uint32_t nLen) override;
 	virtual uint32_t		GetStreamLengthMs() override
