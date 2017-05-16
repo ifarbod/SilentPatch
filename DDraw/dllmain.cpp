@@ -200,21 +200,23 @@ void PatchIAT()
 			DWORD	dwProtect;
 			VirtualProtect((LPVOID)((ptrdiff_t)hInstance + pSection->VirtualAddress), pSection->Misc.VirtualSize, PAGE_EXECUTE_READ, &dwProtect);
 
-			if ( (pSection->Characteristics & IMAGE_SCN_CNT_CODE) == 0 )
+			DWORD Characteristics = pSection->Characteristics;
+			if ( (Characteristics & IMAGE_SCN_CNT_CODE) == 0 )
 			{
-				pSection->Characteristics |= IMAGE_SCN_CNT_CODE;
-				ntHeader->OptionalHeader.SizeOfCode += pSection->Misc.VirtualSize;
+				Characteristics |= IMAGE_SCN_CNT_CODE;
+				Memory::VP::Patch( &ntHeader->OptionalHeader.SizeOfCode, ntHeader->OptionalHeader.SizeOfCode + pSection->Misc.VirtualSize );
 			}
-			if ( (pSection->Characteristics & IMAGE_SCN_CNT_INITIALIZED_DATA) != 0 )
+			if ( (Characteristics & IMAGE_SCN_CNT_INITIALIZED_DATA) != 0 )
 			{
-				pSection->Characteristics &= ~(IMAGE_SCN_CNT_INITIALIZED_DATA);
-				ntHeader->OptionalHeader.SizeOfInitializedData -= pSection->Misc.VirtualSize;
+				Characteristics &= ~(IMAGE_SCN_CNT_INITIALIZED_DATA);
+				Memory::VP::Patch( &ntHeader->OptionalHeader.SizeOfInitializedData, ntHeader->OptionalHeader.SizeOfInitializedData - pSection->Misc.VirtualSize );
 			}
-			if ( (pSection->Characteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA) != 0 )
+			if ( (Characteristics & IMAGE_SCN_CNT_UNINITIALIZED_DATA) != 0 )
 			{
-				pSection->Characteristics &= ~(IMAGE_SCN_CNT_UNINITIALIZED_DATA);
-				ntHeader->OptionalHeader.SizeOfUninitializedData -= pSection->Misc.VirtualSize;
+				Characteristics &= ~(IMAGE_SCN_CNT_UNINITIALIZED_DATA);
+				Memory::VP::Patch( &ntHeader->OptionalHeader.SizeOfUninitializedData, ntHeader->OptionalHeader.SizeOfUninitializedData - pSection->Misc.VirtualSize );
 			}
+			Memory::VP::Patch( &pSection->Characteristics, Characteristics );
 			break;
 		}
 	}
