@@ -4615,9 +4615,7 @@ void Patch_SA_NewSteam_Common()
 		auto patternie = pattern( "8B 75 10 8B ? 14 56" ).count(2); // 0x77C588 and 0x77C5CC in newsteam r2
 		auto defproc = get_pattern( "8B 4D 14 8B 55 10 8B 45 08" );
 
-		for ( size_t i = 0; i < 2; ++i )
-		{
-			auto match = patternie.get(i);
+		patternie.for_each_result( [&]( pattern_match match ) {
 			InjectHook( match.get<int>(0x39), defproc, PATCH_JUMP );
 			Patch<uint8_t>( match.get<int>(1), 0x5D ); // esi -> ebx
 			Patch<uint8_t>( match.get<int>(6), 0x53 ); // esi -> ebx
@@ -4625,7 +4623,7 @@ void Patch_SA_NewSteam_Common()
 			Patch<int8_t>( match.get<int>(8 + 2), -8 ); // use stack space for new lParam
 			Patch<int8_t>( match.get<int>(0x18 + 2), -8 ); // use stack space for new lParam
 			Patch<int8_t>( match.get<int>(0x2B + 2), -8 ); // use stack space for new lParam
-		}
+		} );
 	}
 
 

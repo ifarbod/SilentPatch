@@ -188,6 +188,16 @@ namespace hook
 			return get_one().get<T>(offset);
 		}
 
+		template <typename Pred>
+		inline void for_each_result(Pred pred)
+		{
+			EnsureMatches(UINT32_MAX);
+			for ( auto it : m_matches )
+			{
+				pred(it);
+			}
+		}
+
 	public:
 #if PATTERNS_USE_HINTS
 		// define a hint
