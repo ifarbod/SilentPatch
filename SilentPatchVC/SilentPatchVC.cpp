@@ -654,7 +654,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			Patch_VC_JP();
 			return TRUE;
 		}
-		else return FALSE;
+		else return TRUE;
 
 		CTimer::Initialise();
 

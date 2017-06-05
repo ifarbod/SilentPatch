@@ -816,7 +816,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		if (*(DWORD*)0x5C1E75 == 0xB85548EC) Patch_III_10(desktop);
 		else if (*(DWORD*)0x5C2135 == 0xB85548EC) Patch_III_11(desktop);
 		else if (*(DWORD*)0x5C6FD5 == 0xB85548EC) Patch_III_Steam(desktop);
-		else return FALSE;
+		else return TRUE;
 
 		CTimer::Initialise();
 
