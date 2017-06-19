@@ -26,6 +26,8 @@
 #include "MemoryMgr.h"
 #include "Maths.h"
 
+#include "TheFLAUtils.h"
+
 // SA operator delete
 extern void	(*GTAdelete)(void* data);
 extern const char* (*GetFrameNodeName)(RwFrame*);

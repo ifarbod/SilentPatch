@@ -10,7 +10,7 @@ signed char (*CCustomCarPlateMgr::GetMapRegionPlateDesign)() = AddressByVersion<
 void (*CCustomCarPlateMgr::SetupMaterialPlatebackTexture)(RpMaterial* pMaterial, signed char nDesign) = AddressByVersion<void(*)(RpMaterial*,signed char)>(0x6FDE50, 0x6FE680, 0x736A80);
 
 CBaseModelInfo** const			ms_modelInfoPtrs = *AddressByVersion<CBaseModelInfo***>(0x509CB1, 0x4C0C96, 0x403DB7);
-const uint32_t					m_numModelInfoPtrs = *AddressByVersion<uint16_t*>(0x4C5956+2, 0, 0);
+const uint32_t					m_numModelInfoPtrs = *AddressByVersion<uint32_t*>(0x4C5956+2, 0, 0);
 
 void CVehicleModelInfo::Shutdown()
 {

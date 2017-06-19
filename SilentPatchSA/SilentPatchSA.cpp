@@ -2310,6 +2310,7 @@ BOOL InjectDelayedPatches_10()
 		}
 #endif
 
+		FLAUtils::Init();
 		return FALSE;
 	}
 	return TRUE;
@@ -2529,6 +2530,7 @@ BOOL InjectDelayedPatches_11()
 			Patch<DWORD>(0x5B9690, 15000);
 		}
 
+		FLAUtils::Init();
 		return FALSE;
 	}
 	return TRUE;
@@ -2735,6 +2737,7 @@ BOOL InjectDelayedPatches_Steam()
 			Patch<DWORD>(0x5D5780, 15000);
 		}
 
+		FLAUtils::Init();
 		return FALSE;
 	}
 	return TRUE;

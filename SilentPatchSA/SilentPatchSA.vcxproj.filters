@@ -63,6 +63,9 @@
     <ClCompile Include="..\SilentPatch\Patterns.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\SilentPatch\TheFLAUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\SilentPatch\MemoryMgr.h">
@@ -138,6 +141,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\SilentPatch\DelimStringReader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\TheFLAUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
