@@ -2854,8 +2854,7 @@ void Patch_SA_10()
 	//Patch<BYTE>(0x5B3ADD, 4);
 
 	// Lightbeam fix
-	Patch<WORD>(0x6A2E88, 0x0EEB);
-	Nop(0x6A2E9C, 3);
+	Nop(0x6A2E95, 3);
 	Patch<WORD>(0x6E0F63, 0x0AEB);
 	Patch<WORD>(0x6E0F7C, 0x0BEB);
 	Patch<WORD>(0x6E0F95, 0x0BEB);
@@ -3284,8 +3283,7 @@ void Patch_SA_11()
 	InjectHook(0x7142FB, HandleMoonStuffStub, PATCH_JUMP);
 
 	// Lightbeam fix
-	Patch<WORD>(0x6A36A8, 0x0EEB);
-	Nop(0x6A36BC, 3);
+	Nop(0x6A36B5, 3);
 	Patch<WORD>(0x6E1793, 0x0AEB);
 	Patch<WORD>(0x6E17AC, 0x0BEB);
 	Patch<WORD>(0x6E17C5, 0x0BEB);
