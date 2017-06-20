@@ -6,9 +6,9 @@
 #include "TimerSA.h"
 #include "DelimStringReader.h"
 
-std::vector<unsigned int>		vecRotorExceptions;
+std::vector<int32_t>		vecRotorExceptions;
 
-static bool ShouldIgnoreRotor( unsigned int id )
+static bool ShouldIgnoreRotor( int32_t id )
 {
 	return std::find( vecRotorExceptions.begin(), vecRotorExceptions.end(), id ) != vecRotorExceptions.end();
 }
@@ -62,8 +62,8 @@ void ReadRotorFixExceptions(const wchar_t* pPath)
 	GetPrivateProfileSectionW( L"RotorFixExceptions", reader.GetBuffer(), reader.GetSize(), pPath );
 	while ( const wchar_t* str = reader.GetString() )
 	{
-		unsigned int toList = _wtoi( str );
-		if ( toList != 0 )
+		int toList = _wtoi( str );
+		if ( toList > 0 )
 			vecRotorExceptions.push_back( toList );
 	}
 }

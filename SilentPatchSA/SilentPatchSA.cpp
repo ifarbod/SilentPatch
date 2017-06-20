@@ -1048,7 +1048,7 @@ void ReadDoubleRearWheels(const wchar_t* pPath)
 		token = wcstok_s( textLine, L"=", &context );
 			
 		int toList = _wtoi( token );
-		if ( toList != 0 )
+		if ( toList > 0 )
 		{
 			bool value = _wtoi( wcstok_s( nullptr, L"=", &context ) ) != 0;
 			doubleRearWheelsList.emplace_back( toList, value );
