@@ -2310,7 +2310,20 @@ BOOL InjectDelayedPatches_10()
 		}
 #endif
 
+		if ( *(DWORD*)0x4065BB == 0x3B0BE1C1 )
+		{
+			// Handle IMGs bigger than 4GB
+			Nop( 0x4065BB, 3 );
+			Nop( 0x4065C2, 1 );
+			InjectHook( 0x4065C2+1, CdStreamThreadHighSize, PATCH_CALL );
+			Patch<const void*>( 0x406620+2, &pCdStreamSetFilePointer );
+		}
+
 		FLAUtils::Init();
+
+		const uint8_t bytes[] = { 0x8B, 0x4C, 0x24, 0x64, 0x51 };
+		memcpy((void*)0x5B6FCC, bytes, sizeof(bytes));
+
 		return FALSE;
 	}
 	return TRUE;
@@ -3149,12 +3162,6 @@ void Patch_SA_10()
 	char*			pScannerNames = *(char**)0x4E72D4;
 	strcpy(pScannerNames + (8*113), "WESTP");
 	strcpy(pScannerNames + (8*134), "????");
-
-	// Handle IMGs bigger than 4GB
-	Nop( 0x4065BB, 3 );
-	Nop( 0x4065C2, 1 );
-	InjectHook( 0x4065C2+1, CdStreamThreadHighSize, PATCH_CALL );
-	Patch<const void*>( 0x406620+2, &pCdStreamSetFilePointer );
 
 
 	// AI accuracy issue
