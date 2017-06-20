@@ -60,7 +60,7 @@ void CObject::Render()
 	bool						bCallRestore;
 	std::pair<void*,int>		materialRestoreData[16];
 
-	if ( m_wCarPartModelIndex != -1 && m_nObjectType == 3 && bObjectFlag7 && RwObjectGetType(m_pRwObject) == rpATOMIC )
+	if ( FLAUtils::GetExtendedID( &m_wCarPartModelIndex ) != -1 && m_nObjectType == 3 && bObjectFlag7 && RwObjectGetType(m_pRwObject) == rpATOMIC )
 	{
 		auto* pData = materialRestoreData;
 

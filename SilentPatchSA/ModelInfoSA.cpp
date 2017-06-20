@@ -13,7 +13,7 @@ void (*CCustomCarPlateMgr::SetupMaterialPlatebackTexture)(RpMaterial* pMaterial,
 bool (*CCustomCarPlateMgr::GeneratePlateText)(char* pBuf, int nLen); // Read from InjectDelayedPatches
 
 CBaseModelInfo** const			ms_modelInfoPtrs = *AddressByVersion<CBaseModelInfo***>(0x509CB1, 0x4C0C96, 0x403DB7);
-const uint32_t					m_numModelInfoPtrs = *AddressByVersion<uint16_t*>(0x4C5956+2, 0, 0);
+const uint32_t					m_numModelInfoPtrs = *AddressByVersion<uint32_t*>(0x4C5956+2, 0, 0);
 
 
 static RwTexture** const		ms_aDirtTextures = *AddressByVersion<RwTexture***>( 0x5D5DCC + 3, 0, 0x5F259C + 3 );
