@@ -2494,6 +2494,17 @@ BOOL InjectDelayedPatches_10()
 		}
 #endif
 
+		if ( *(DWORD*)0x4065BB == 0x3B0BE1C1 )
+		{
+			// Handle IMGs bigger than 4GB
+			Nop( 0x4065BB, 3 );
+			Nop( 0x4065C2, 1 );
+			InjectHook( 0x4065C2+1, CdStreamThreadHighSize, PATCH_CALL );
+			Patch<const void*>( 0x406620+2, &pCdStreamSetFilePointer );
+		}
+
+		FLAUtils::Init();
+
 		return FALSE;
 	}
 	return TRUE;
@@ -2717,6 +2728,8 @@ BOOL InjectDelayedPatches_11()
 		// to work fine with Deji's Custom Plate Format
 		// Albeit 1.01 obfuscates this function
 		CCustomCarPlateMgr::GeneratePlateText = (decltype(CCustomCarPlateMgr::GeneratePlateText))0x6FDDE0;
+		
+		FLAUtils::Init();
 
 		return FALSE;
 	}
@@ -2928,6 +2941,8 @@ BOOL InjectDelayedPatches_Steam()
 		// Read CCustomCarPlateMgr::GeneratePlateText from here
 		// to work fine with Deji's Custom Plate Format
 		ReadCall( 0x4D3DA4, CCustomCarPlateMgr::GeneratePlateText );
+		
+		FLAUtils::Init();
 
 		return FALSE;
 	}
@@ -3036,8 +3051,7 @@ void Patch_SA_10()
 	//Patch<BYTE>(0x5B3ADD, 4);
 
 	// Lightbeam fix
-	Patch<WORD>(0x6A2E88, 0x0EEB);
-	Nop(0x6A2E9C, 3);
+	Nop(0x6A2E95, 3);
 	Patch<WORD>(0x6E0F63, 0x0AEB);
 	Patch<WORD>(0x6E0F7C, 0x0BEB);
 	Patch<WORD>(0x6E0F95, 0x0BEB);
@@ -3345,12 +3359,6 @@ void Patch_SA_10()
 	strcpy_s(pScannerNames + (8*113), 8, "WESTP");
 	strcpy_s(pScannerNames + (8*134), 8, "????");
 
-	// Handle IMGs bigger than 4GB
-	Nop( 0x4065BB, 3 );
-	Nop( 0x4065C2, 1 );
-	InjectHook( 0x4065C2+1, CdStreamThreadHighSize, PATCH_CALL );
-	Patch<const void*>( 0x406620+2, &pCdStreamSetFilePointer );
-
 
 	// AI accuracy issue
 	Nop(0x73B3AE, 1);
@@ -3478,8 +3486,7 @@ void Patch_SA_11()
 	InjectHook(0x7142FB, HandleMoonStuffStub, PATCH_JUMP);
 
 	// Lightbeam fix
-	Patch<WORD>(0x6A36A8, 0x0EEB);
-	Nop(0x6A36BC, 3);
+	Nop(0x6A36B5, 3);
 	Patch<WORD>(0x6E1793, 0x0AEB);
 	Patch<WORD>(0x6E17AC, 0x0BEB);
 	Patch<WORD>(0x6E17C5, 0x0BEB);
