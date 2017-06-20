@@ -1067,7 +1067,7 @@ void DrawScriptSpritesAndRectangles( uint8_t arg )
 	orgDrawScriptSpritesAndRectangles( arg );
 }
 
-std::vector< std::pair<uint32_t, bool> > doubleRearWheelsList;
+std::vector< std::pair<int32_t, bool> > doubleRearWheelsList;
 void ReadDoubleRearWheels(const wchar_t* pPath)
 {
 	const size_t SCRATCH_PAD_SIZE = 32767;
@@ -1083,8 +1083,8 @@ void ReadDoubleRearWheels(const wchar_t* pPath)
 		wcscpy_s( textLine, str );
 		token = wcstok_s( textLine, L"=", &context );
 
-		uint32_t toList = wcstoul( token, nullptr, 0 );
-		if ( toList == 0 ) continue;
+		int32_t toList = wcstol( token, nullptr, 0 );
+		if ( toList <= 0 ) continue;
 
 		wchar_t* begin = wcstok_s( nullptr, L"=", &context );	
 		if ( begin == nullptr ) continue;
@@ -1106,7 +1106,7 @@ bool __stdcall CheckDoubleRWheelsList( void* modelInfo, uint8_t* handlingData )
 	if ( modelInfo == lastModelInfo ) return lastResult;
 	lastModelInfo = modelInfo;
 
-	uint32_t modelID = std::distance( ms_modelInfoPtrs, std::find( ms_modelInfoPtrs, ms_modelInfoPtrs+m_numModelInfoPtrs, modelInfo ) );
+	int32_t modelID = std::distance( ms_modelInfoPtrs, std::find( ms_modelInfoPtrs, ms_modelInfoPtrs+m_numModelInfoPtrs, modelInfo ) );
 
 	auto it = std::find_if( doubleRearWheelsList.begin(), doubleRearWheelsList.end(), [modelID]( const auto& item ) {
 			return item.first == modelID;

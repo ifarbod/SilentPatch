@@ -7,9 +7,9 @@
 #include "TimerSA.h"
 #include "DelimStringReader.h"
 
-std::vector<uint32_t>		vecRotorExceptions;
+std::vector<int32_t>		vecRotorExceptions;
 
-static bool ShouldIgnoreRotor( uint32_t id )
+static bool ShouldIgnoreRotor( int32_t id )
 {
 	return std::find( vecRotorExceptions.begin(), vecRotorExceptions.end(), id ) != vecRotorExceptions.end();
 }
@@ -78,8 +78,8 @@ void ReadRotorFixExceptions(const wchar_t* pPath)
 	GetPrivateProfileSectionW( L"RotorFixExceptions", reader.GetBuffer(), reader.GetSize(), pPath );
 	while ( const wchar_t* str = reader.GetString() )
 	{
-		uint32_t toList = wcstoul( str, nullptr, 0 );
-		if ( toList != 0 )
+		int32_t toList = wcstol( str, nullptr, 0 );
+		if ( toList > 0 )
 			vecRotorExceptions.push_back( toList );
 	}
 }
@@ -138,7 +138,7 @@ void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo
 void CHeli::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
-	bool		bDisplayRotors = !ShouldIgnoreRotor( m_nModelIndex );
+	bool		bDisplayRotors = !ShouldIgnoreRotor( FLAUtils::GetExtendedID( &m_nModelIndex ) );
 	bool		bHasMovingRotor = m_pCarNode[13] != nullptr && bDisplayRotors;
 	bool		bHasMovingRotor2 = m_pCarNode[15] != nullptr && bDisplayRotors;
 
@@ -190,7 +190,7 @@ void CHeli::Render()
 void CPlane::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
-	bool		bDisplayRotors = !ShouldIgnoreRotor( m_nModelIndex );
+	bool		bDisplayRotors = !ShouldIgnoreRotor( FLAUtils::GetExtendedID( &m_nModelIndex ) );
 	bool		bHasMovingProp = m_pCarNode[13] != nullptr && bDisplayRotors;
 	bool		bHasMovingProp2 = m_pCarNode[15] != nullptr && bDisplayRotors;
 
@@ -243,7 +243,8 @@ void CPlane::Fix_SilentPatch()
 {
 	// Reset bouncing panels
 	// No reset on Vortex
-	for ( ptrdiff_t i = m_nModelIndex == 539 ? 1 : 0; i < 3; i++ )
+	const int32_t extID = FLAUtils::GetExtendedID( &m_nModelIndex );
+	for ( ptrdiff_t i = extID == 539 ? 1 : 0; i < 3; i++ )
 	{
 		m_aBouncingPanel[i].m_nNodeIndex = -1;
 	}
@@ -254,7 +255,8 @@ void CAutomobile::Fix_SilentPatch()
 	ResetFrames();
 
 	// Reset bouncing panels
-	for ( ptrdiff_t i = (m_nModelIndex == 525 && m_pCarNode[21]) || (m_nModelIndex == 531 && m_pCarNode[17]) ? 1 : 0; i < 3; i++ )
+	const int32_t extID = FLAUtils::GetExtendedID( &m_nModelIndex );
+	for ( ptrdiff_t i = (extID == 525 && m_pCarNode[21]) || (extID == 531 && m_pCarNode[17]) ? 1 : 0; i < 3; i++ )
 	{
 		// Towtruck/Tractor fix
 		m_aBouncingPanel[i].m_nNodeIndex = -1;
@@ -263,7 +265,7 @@ void CAutomobile::Fix_SilentPatch()
 
 void CAutomobile::ResetFrames()
 {
-	RpClump*	pOrigClump = reinterpret_cast<RpClump*>(ms_modelInfoPtrs[m_nModelIndex]->pRwObject);
+	RpClump*	pOrigClump = reinterpret_cast<RpClump*>(ms_modelInfoPtrs[ FLAUtils::GetExtendedID( &m_nModelIndex ) ]->pRwObject);
 	if ( pOrigClump != nullptr )
 	{
 		// Instead of setting frame rotation to (0,0,0) like R* did, obtain the original frame matrix from CBaseNodelInfo clump
