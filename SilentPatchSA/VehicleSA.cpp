@@ -18,6 +18,10 @@ static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0x6D1680, 0x70
 WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
 static void*	varIsLawEnforcementVehicle = AddressByVersion<void*>(0x6D2370, 0x6D2BA0, 0x70D8C0);
 WRAPPER bool CVehicle::IsLawEnforcementVehicle() { VARJMP(varIsLawEnforcementVehicle); }
+static void*	varSetComponentRotation = AddressByVersion<void*>(0x6DBA30, 0, 0);
+WRAPPER void CVehicle::SetComponentRotation( RwFrame* component, int axis, float angle, bool absolute ) { VARJMP(varSetComponentRotation); }
+
+void (CAutomobile::*CAutomobile::orgPreRender)();
 
 static int32_t random(int32_t from, int32_t to)
 {
@@ -250,6 +254,16 @@ void CPlane::Fix_SilentPatch()
 	}
 }
 
+void CAutomobile::PreRender()
+{
+	(this->*(orgPreRender))();
+
+	if ( FLAUtils::GetExtendedID( &m_nModelIndex ) == 603 )
+	{
+		ProcessPhoenixBlower();
+	}
+}
+
 void CAutomobile::Fix_SilentPatch()
 {
 	ResetFrames();
@@ -284,4 +298,31 @@ void CAutomobile::ResetFrames()
 			}
 		}
 	}
+}
+
+void CAutomobile::ProcessPhoenixBlower()
+{
+	if ( m_pCarNode[20] == nullptr ) return;
+
+	float finalAngle = 0.0f;
+	if ( m_fGasPedal > 0.0f )
+	{
+		if ( m_fSpecialComponentAngle < 1.3f )
+		{
+			finalAngle = m_fSpecialComponentAngle = std::min( m_fSpecialComponentAngle + 0.1f * CTimer::m_fTimeStep, 1.3f );
+		}
+		else
+		{
+			finalAngle = m_fSpecialComponentAngle + (std::sin( (CTimer::m_snTimeInMilliseconds % 10000) / 70.0f ) * 0.13f);
+		}
+	}
+	else
+	{
+		if ( m_fSpecialComponentAngle > 0.0f )
+		{
+			finalAngle = m_fSpecialComponentAngle = std::max( m_fSpecialComponentAngle - 0.05f * CTimer::m_fTimeStep, 0.0f );
+		}
+	}
+
+	SetComponentRotation( m_pCarNode[20], 0, finalAngle, true );
 }

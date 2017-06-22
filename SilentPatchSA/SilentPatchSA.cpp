@@ -3423,6 +3423,16 @@ void Patch_SA_10()
 	// Properly initialize all CVehicleModelInfo fields
 	ReadCall( 0x4C75E4, orgVehicleModelInfoCtor );
 	InjectHook( 0x4C75E4, VehicleModelInfoCtor );
+
+
+	// Animated Phoenix hood scoop
+	auto* automobilePreRender = &(*(decltype(CAutomobile::orgPreRender)**)(0x6B0AD2 + 2))[17];
+	CAutomobile::orgPreRender = *automobilePreRender;
+	Patch(automobilePreRender, &CAutomobile::PreRender_Stub);
+
+	InjectHook(0x6C7E7A, &CAutomobile::PreRender_Stub);
+	InjectHook(0x6CEAEC, &CAutomobile::PreRender_Stub);
+	InjectHook(0x6CFADC, &CAutomobile::PreRender_Stub);
 }
 
 void Patch_SA_11()

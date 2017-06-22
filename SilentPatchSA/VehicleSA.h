@@ -117,7 +117,10 @@ class NOVMT CVehicle	: public CPhysical
 protected:
 	BYTE			__pad1[752];
 	CVehicleFlags	m_nVehicleFlags;
-	BYTE			__pad2[160];
+	BYTE			__pad2[108];
+	float			m_fGasPedal;
+	float			m_fBrakePedal;
+	BYTE			__pad6[44];
 	signed int		m_nTimeTillWeNeedThisCar;
 	BYTE			__pad4[56];
 	CEntity*		pDamagingEntity;
@@ -134,12 +137,14 @@ public:
 						{ return pDamagingEntity; }
 
 	virtual void	Render() override;
+	virtual void	PreRender() override;
 
 	bool			CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo);
 	void			CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo);
 	//void			CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo);
 
 	bool			IsLawEnforcementVehicle();
+	void			SetComponentRotation( RwFrame* component, int axis, float angle, bool absolute );
 
 	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);
 };
@@ -152,12 +157,22 @@ public:
 	CBouncingPanel	m_aBouncingPanel[3];
 	BYTE			padding[320];
 	float			m_fRotorSpeed;
-	BYTE			__moarpad[312];
+	BYTE			__moarpad[264];
+	float			m_fSpecialComponentAngle;
+	BYTE			__pad3[44];	
 
 public:
+	inline void		PreRender_Stub()
+	{ CAutomobile::PreRender(); }
+
+	virtual void	PreRender() override;
+
 	void		Fix_SilentPatch();
 
 	void		ResetFrames();
+	void		ProcessPhoenixBlower();
+
+	static void (CAutomobile::*orgPreRender)();	
 };
 
 class NOVMT CHeli : public CAutomobile
