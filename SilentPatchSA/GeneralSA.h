@@ -86,7 +86,7 @@ public:
 	inline CSimpleTransform&		GetTransform()
 		{ return m_transform; }
 	inline float					GetHeading()
-		{ return m_pCoords ? atan2(-m_pCoords->GetUp()->x, m_pCoords->GetUp()->y) : m_transform.m_heading; }
+		{ return m_pCoords ? atan2(-m_pCoords->GetUp().x, m_pCoords->GetUp().y) : m_transform.m_heading; }
 
 	inline void						SetCoords(const CVector& pos)
 	{	if ( m_pCoords ) { m_pCoords->matrix.pos.x = pos.x; m_pCoords->matrix.pos.y = pos.y; m_pCoords->matrix.pos.z = pos.z; }

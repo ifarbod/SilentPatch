@@ -113,7 +113,7 @@ public:
 	{}
 
 	inline CMatrix(RwMatrix* pMatrix, bool bHasMatrix=false)
-		: pMatrix(nullptr)
+		: CMatrix()
 	{ Attach(pMatrix, bHasMatrix); }
 
 	inline CMatrix(const CMatrix& theMatrix)
@@ -121,6 +121,7 @@ public:
 	{}
 
 	inline CMatrix(const CVector& vecRight, const CVector& vecUp, const CVector& vecAt, const CVector& vecPos)
+		: CMatrix()
 	{
 		matrix.right.x = vecRight.x;
 		matrix.right.y = vecRight.y;
@@ -143,6 +144,29 @@ public:
 		{	if ( haveRwMatrix && pMatrix ) 
 				RwMatrixDestroy(pMatrix); }
 
+	inline CMatrix& operator*=(const CMatrix& right)
+	{
+		CVector vright(this->matrix.right.x * right.matrix.right.x + this->matrix.right.y * right.matrix.up.x + this->matrix.right.z * right.matrix.at.x + right.matrix.pos.x,
+			this->matrix.right.x * right.matrix.right.y + this->matrix.right.y * right.matrix.up.y + this->matrix.right.z * right.matrix.at.y + right.matrix.pos.y,
+			this->matrix.right.x * right.matrix.right.z + this->matrix.right.y * right.matrix.up.z + this->matrix.right.z * right.matrix.at.z + right.matrix.pos.z);
+		CVector vup(this->matrix.up.x * right.matrix.right.x + this->matrix.up.y * right.matrix.up.x + this->matrix.up.z * right.matrix.at.x + right.matrix.pos.x,
+			this->matrix.up.x * right.matrix.right.y + this->matrix.up.y * right.matrix.up.y + this->matrix.up.z * right.matrix.at.y + right.matrix.pos.y,
+			this->matrix.up.x * right.matrix.right.z + this->matrix.up.y * right.matrix.up.z + this->matrix.up.z * right.matrix.at.z + right.matrix.pos.z);
+		CVector vat(this->matrix.at.x * right.matrix.right.x + this->matrix.at.y * right.matrix.up.x + this->matrix.at.z * right.matrix.at.x + right.matrix.pos.x,
+			this->matrix.at.x * right.matrix.right.y + this->matrix.at.y * right.matrix.up.y + this->matrix.at.z * right.matrix.at.y + right.matrix.pos.y,
+			this->matrix.at.x * right.matrix.right.z + this->matrix.at.y * right.matrix.up.z + this->matrix.at.z * right.matrix.at.z + right.matrix.pos.z);
+		CVector vpos(this->matrix.pos.x * right.matrix.right.x + this->matrix.pos.y * right.matrix.up.x + this->matrix.pos.z * right.matrix.at.x + right.matrix.pos.x,
+			this->matrix.pos.x * right.matrix.right.y + this->matrix.pos.y * right.matrix.up.y + this->matrix.pos.z * right.matrix.at.y + right.matrix.pos.y,
+			this->matrix.pos.x * right.matrix.right.z + this->matrix.pos.y * right.matrix.up.z + this->matrix.pos.z * right.matrix.at.z + right.matrix.pos.z);
+
+		GetRight() = vright;
+		GetUp() = vup;
+		GetAt() = vat;
+		GetPos() = vpos;
+
+		return *this;
+	}
+
 	friend inline CMatrix operator*(const CMatrix& Rot1, const CMatrix& Rot2)
 		{ return CMatrix(	CVector(Rot1.matrix.right.x * Rot2.matrix.right.x + Rot1.matrix.right.y * Rot2.matrix.up.x + Rot1.matrix.right.z * Rot2.matrix.at.x + Rot2.matrix.pos.x,
 								Rot1.matrix.right.x * Rot2.matrix.right.y + Rot1.matrix.right.y * Rot2.matrix.up.y + Rot1.matrix.right.z * Rot2.matrix.at.y + Rot2.matrix.pos.y,
@@ -162,14 +186,23 @@ public:
 								matrix.matrix.up.y * vec.y + matrix.matrix.right.y * vec.x + matrix.matrix.at.y * vec.z + matrix.matrix.pos.y,
 								matrix.matrix.up.z * vec.y + matrix.matrix.right.z * vec.x + matrix.matrix.at.z * vec.z + matrix.matrix.pos.z); };
 
-	inline CVector*	GetRight()
-		{ return reinterpret_cast<CVector*>(&matrix.right); }
-	inline CVector*	GetUp()
-		{ return reinterpret_cast<CVector*>(&matrix.up); }
-	inline CVector*	GetAt()
-		{ return reinterpret_cast<CVector*>(&matrix.at); }
-	inline CVector* GetPos()
-		{ return reinterpret_cast<CVector*>(&matrix.pos); }
+	inline CVector&	GetRight()
+		{ return *reinterpret_cast<CVector*>(&matrix.right); }
+	inline CVector&	GetUp()
+		{ return *reinterpret_cast<CVector*>(&matrix.up); }
+	inline CVector&	GetAt()
+		{ return *reinterpret_cast<CVector*>(&matrix.at); }
+	inline CVector& GetPos()
+		{ return *reinterpret_cast<CVector*>(&matrix.pos); }
+
+	inline const CVector&	GetRight() const
+	{ return *reinterpret_cast<const CVector*>(&matrix.right); }
+	inline const CVector&	GetUp() const
+	{ return *reinterpret_cast<const CVector*>(&matrix.up); }
+	inline const CVector&	GetAt() const
+	{ return *reinterpret_cast<const CVector*>(&matrix.at); }
+	inline const CVector& GetPos() const
+	{ return *reinterpret_cast<const CVector*>(&matrix.pos); }
 
 	inline void		SetTranslateOnly(float fX, float fY, float fZ)
 		{ matrix.pos.x = fX; matrix.pos.y = fY; matrix.pos.z = fZ; }
@@ -208,28 +241,28 @@ public:
 	{
 		CMatrix		RotationMatrix;
 		RotationMatrix.SetRotateX(fAngle);
-		*this = *this * RotationMatrix;
+		*this *= RotationMatrix;
 	}
 
 	inline void		RotateY(float fAngle)
 	{
 		CMatrix		RotationMatrix;
 		RotationMatrix.SetRotateY(fAngle);
-		*this = *this * RotationMatrix;
+		*this *= RotationMatrix;
 	}
 
 	inline void		RotateZ(float fAngle)
 	{
 		CMatrix		RotationMatrix;
 		RotationMatrix.SetRotateZ(fAngle);
-		*this = *this * RotationMatrix;
+		*this *= RotationMatrix;
 	}
 
 	inline void		Rotate(float fAngleX, float fAngleY, float fAngleZ)
 	{
 		CMatrix		RotationMatrix;
 		RotationMatrix.SetRotate(fAngleX, fAngleY, fAngleZ);
-		*this = *this * RotationMatrix;
+		*this *= RotationMatrix;
 	}
 
 	inline void		SetRotateXOnly(float fAngle)
