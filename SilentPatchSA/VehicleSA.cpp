@@ -260,7 +260,12 @@ void CAutomobile::PreRender()
 
 	if ( FLAUtils::GetExtendedID( &m_nModelIndex ) == 603 )
 	{
-		ProcessPhoenixBlower();
+		ProcessPhoenixBlower( 603 );
+	}
+
+	if ( FLAUtils::GetExtendedID( &m_nModelIndex ) == 574 )
+	{
+		ProcessSweeper();
 	}
 }
 
@@ -300,9 +305,19 @@ void CAutomobile::ResetFrames()
 	}
 }
 
-void CAutomobile::ProcessPhoenixBlower()
+void CAutomobile::ProcessPhoenixBlower( int32_t modelID )
 {
 	if ( m_pCarNode[20] == nullptr ) return;
+
+	RpClump*	pOrigClump = reinterpret_cast<RpClump*>(ms_modelInfoPtrs[ modelID ]->pRwObject);
+	if ( pOrigClump != nullptr )
+	{
+		RwFrame* origFrame = GetFrameFromName( RpClumpGetFrame(pOrigClump), GetFrameNodeName(m_pCarNode[20]) );
+		if ( origFrame != nullptr )
+		{
+			*RwFrameGetMatrix(m_pCarNode[20]) = *RwFrameGetMatrix(origFrame);
+		}
+	}
 
 	float finalAngle = 0.0f;
 	if ( m_fGasPedal > 0.0f )
@@ -324,5 +339,29 @@ void CAutomobile::ProcessPhoenixBlower()
 		}
 	}
 
-	SetComponentRotation( m_pCarNode[20], 0, finalAngle, true );
+	SetComponentRotation( m_pCarNode[20], 0, finalAngle, false );
+}
+
+void CAutomobile::ProcessSweeper()
+{
+	if ( !m_nVehicleFlags.bEngineOn ) return;
+
+	if ( m_pCarNode[20] == nullptr )
+	{
+		m_pCarNode[20] = GetFrameFromName( RpClumpGetFrame(m_pRwObject), "misca" );
+	}
+	if ( m_pCarNode[21] == nullptr )
+	{
+		m_pCarNode[21] = GetFrameFromName( RpClumpGetFrame(m_pRwObject), "miscb" );
+	}
+
+	const float angle = CTimer::m_fTimeStep * 0.5f;
+	if ( m_pCarNode[20] != nullptr )
+	{
+		SetComponentRotation( m_pCarNode[20], 2, angle, false );
+	}
+	if ( m_pCarNode[21] != nullptr )
+	{
+		SetComponentRotation( m_pCarNode[21], 2, -angle, false );
+	}
 }

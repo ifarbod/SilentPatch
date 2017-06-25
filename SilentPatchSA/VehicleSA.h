@@ -170,7 +170,8 @@ public:
 	void		Fix_SilentPatch();
 
 	void		ResetFrames();
-	void		ProcessPhoenixBlower();
+	void		ProcessPhoenixBlower( int32_t modelID );
+	void		ProcessSweeper();
 
 	static void (CAutomobile::*orgPreRender)();	
 };
