@@ -102,26 +102,22 @@ public:
 
 class CMatrix
 {
-public:
+private:
 	RwMatrix	matrix;
-	RwMatrix*	pMatrix;
-	BOOL		haveRwMatrix;
+	RwMatrix*	pMatrix = nullptr;
+	BOOL		haveRwMatrix = FALSE;
 
 public:
-	inline CMatrix()
-		: pMatrix(nullptr), haveRwMatrix(FALSE)
-	{}
+	inline CMatrix() = default;
 
 	inline CMatrix(RwMatrix* pMatrix, bool bHasMatrix=false)
-		: CMatrix()
 	{ Attach(pMatrix, bHasMatrix); }
 
 	inline CMatrix(const CMatrix& theMatrix)
-		: pMatrix(nullptr), haveRwMatrix(FALSE), matrix(theMatrix.matrix)
+		: matrix(theMatrix.matrix)
 	{}
 
 	inline CMatrix(const CVector& vecRight, const CVector& vecUp, const CVector& vecAt, const CVector& vecPos)
-		: CMatrix()
 	{
 		matrix.right.x = vecRight.x;
 		matrix.right.y = vecRight.y;

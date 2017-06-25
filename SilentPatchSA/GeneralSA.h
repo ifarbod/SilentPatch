@@ -80,7 +80,7 @@ public:
 	}
 
 	inline CVector*					GetCoords()
-		{ return m_pCoords ? reinterpret_cast<CVector*>(&m_pCoords->matrix.pos) : &m_transform.m_translate; }
+		{ return m_pCoords ? &m_pCoords->GetPos() : &m_transform.m_translate; }
 	inline CMatrix*					GetMatrix()
 		{ return m_pCoords; }
 	inline CSimpleTransform&		GetTransform()
@@ -89,7 +89,7 @@ public:
 		{ return m_pCoords ? atan2(-m_pCoords->GetUp().x, m_pCoords->GetUp().y) : m_transform.m_heading; }
 
 	inline void						SetCoords(const CVector& pos)
-	{	if ( m_pCoords ) { m_pCoords->matrix.pos.x = pos.x; m_pCoords->matrix.pos.y = pos.y; m_pCoords->matrix.pos.z = pos.z; }
+	{	if ( m_pCoords ) { m_pCoords->GetPos() = pos; }
 		else m_transform.m_translate = pos; }
 	inline void						SetHeading(float fHeading)
 		{ if ( m_pCoords ) m_pCoords->SetRotateZOnly(fHeading); else m_transform.m_heading = fHeading; }
