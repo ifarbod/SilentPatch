@@ -3438,6 +3438,11 @@ void Patch_SA_10()
 	InjectHook(0x6C7E7A, &CAutomobile::PreRender_Stub);
 	InjectHook(0x6CEAEC, &CAutomobile::PreRender_Stub);
 	InjectHook(0x6CFADC, &CAutomobile::PreRender_Stub);
+
+
+	// Stop BF Injection/Bandito/Hotknife rotating engine components when engine is off
+	Patch<const void*>(0x6AC2BE + 2, &CAutomobile::ms_engineCompSpeed);
+	Patch<const void*>(0x6ACB91 + 2, &CAutomobile::ms_engineCompSpeed);
 }
 
 void Patch_SA_11()

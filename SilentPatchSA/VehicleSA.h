@@ -173,7 +173,8 @@ public:
 	void		ProcessPhoenixBlower( int32_t modelID );
 	void		ProcessSweeper();
 
-	static void (CAutomobile::*orgPreRender)();	
+	static void (CAutomobile::*orgPreRender)();
+	static float ms_engineCompSpeed;
 };
 
 class NOVMT CHeli : public CAutomobile

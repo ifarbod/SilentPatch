@@ -9,6 +9,8 @@
 
 std::vector<int32_t>		vecRotorExceptions;
 
+float CAutomobile::ms_engineCompSpeed;
+
 static bool ShouldIgnoreRotor( int32_t id )
 {
 	return std::find( vecRotorExceptions.begin(), vecRotorExceptions.end(), id ) != vecRotorExceptions.end();
@@ -278,6 +280,9 @@ void CPlane::Fix_SilentPatch()
 
 void CAutomobile::PreRender()
 {
+	// For rotating engine components
+	ms_engineCompSpeed = m_nVehicleFlags.bEngineOn ? CTimer::m_fTimeStep : 0.0f;
+
 	(this->*(orgPreRender))();
 
 	if ( FLAUtils::GetExtendedID( &m_nModelIndex ) == 603 )
