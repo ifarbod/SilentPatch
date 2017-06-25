@@ -18,9 +18,6 @@ static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0x6D1680, 0x70
 WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
 static void*	varIsLawEnforcementVehicle = AddressByVersion<void*>(0x6D2370, 0x6D2BA0, 0x70D8C0);
 WRAPPER bool CVehicle::IsLawEnforcementVehicle() { VARJMP(varIsLawEnforcementVehicle); }
-static void*	varSetComponentRotation = AddressByVersion<void*>(0x6DBA30, 0, 0);
-WRAPPER void CVehicle::SetComponentRotation( RwFrame* component, int axis, float angle, bool absolute ) { VARJMP(varSetComponentRotation); }
-
 void (CAutomobile::*CAutomobile::orgPreRender)();
 
 static int32_t random(int32_t from, int32_t to)
@@ -137,6 +134,31 @@ void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo
 	{
 		CCustomCarPlateMgr::SetupMaterialPlatebackTexture(pModelInfo->m_apPlateMaterials->m_platebacks[i], PlateDesign);
 	}
+}
+
+void CVehicle::SetComponentRotation( RwFrame* component, int axis, float angle, bool absolute )
+{
+	if ( component == nullptr ) return;
+
+	CMatrix matrix( RwFrameGetMatrix(component) );
+	if ( absolute )
+	{
+		if ( axis == 0 ) matrix.SetRotateXOnly(angle);
+		else if ( axis == 1 ) matrix.SetRotateYOnly(angle);
+		else if ( axis == 2 ) matrix.SetRotateZOnly(angle);
+	}
+	else
+	{
+		const CVector pos = matrix.GetPos();
+		matrix.SetTranslateOnly(0.0f, 0.0f, 0.0f);
+
+		if ( axis == 0 ) matrix.RotateX(angle);
+		else if ( axis == 1 ) matrix.RotateY(angle);
+		else if ( axis == 2 ) matrix.RotateZ(angle);
+
+		matrix.GetPos() += pos;
+	}
+	matrix.UpdateRW();
 }
 
 void CHeli::Render()

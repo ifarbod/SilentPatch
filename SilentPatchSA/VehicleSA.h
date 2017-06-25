@@ -144,8 +144,8 @@ public:
 	//void			CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo);
 
 	bool			IsLawEnforcementVehicle();
-	void			SetComponentRotation( RwFrame* component, int axis, float angle, bool absolute );
 
+	static void		SetComponentRotation( RwFrame* component, int axis, float angle, bool absolute );
 	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);
 };
 

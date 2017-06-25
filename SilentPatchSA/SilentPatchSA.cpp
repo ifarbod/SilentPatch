@@ -243,6 +243,9 @@ RwBool _rpD3D9VertexDeclarationInstColor(RwUInt8* mem, const RwRGBA* color, RwIn
 	return alpha != 255;
 }
 
+// Unreachable stub
+RwBool RwMatrixDestroy(RwMatrix* mpMat) { assert(!"Unreachable!"); return TRUE; }
+
 struct AlphaObjectInfo
 {
 	RpAtomic*	pAtomic;
