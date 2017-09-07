@@ -2,6 +2,7 @@
 #define __GENERAL
 
 #include <stdint.h>
+#include "TheFLAUtils.h"
 
 class CSimpleTransform
 {
@@ -163,7 +164,7 @@ public:
     /********** END CFLAGS **************/
 
     WORD			RandomSeed;					// 0x20
-    unsigned short	m_nModelIndex;				// 0x22
+    FLAUtils::int16	m_nModelIndex;				// 0x22
     void*			pReferences;				// 0x24
     void*			m_pLastRenderedLink;		// 0x28
     WORD			m_nScanCode;				// 0x2C
@@ -179,12 +180,6 @@ public:
     //********* END CEntityInfo ************//
 
 public:
-	explicit inline CEntity(int dummy)
-		: CPlaceable(dummy)
-	{
-		// Dummy ctor
-	}
-
 	void			UpdateRW();
 	void			RegisterReference(CEntity** pAddress);
 	void			CleanUpOldReference(CEntity** pAddress);
@@ -266,11 +261,6 @@ private:
     float			fLighting;							// 0x12C col lighting? CPhysical::GetLightingFromCol
     float			fLighting_2;							// 0x130 added to col lighting in CPhysical::GetTotalLighting
     BYTE			pad3a[4];								// 0x134
-
-public:
-	// Temp
-	CPhysical()
-	: CEntity(0) {}
 };
 
 class NOVMT CObject : public CPhysical
@@ -318,9 +308,9 @@ public:
 	__int8 field_147;
 	unsigned char		m_nLastWeaponDamage;
 	unsigned char		m_nColBrightness;
-	__int16             m_wCarPartModelIndex;
+	FLAUtils::int16     m_wCarPartModelIndex;
 	// this is used for detached car parts
-	unsigned __int8     m_nCarColor[4];
+	FLAUtils::int8      m_nCarColor[4];
 	// time when this object must be deleted
 	unsigned __int32    m_dwRemovalTime;
 	float               m_fHealth;

@@ -318,6 +318,8 @@ public:
 
 	void					FindEditableMaterialList();
 	void					SetCarCustomPlate();
+	void					SetVehicleColour( int32_t color1, int32_t color2, int32_t color3, int32_t color4 );
+
 };
 
 extern CBaseModelInfo** const		ms_modelInfoPtrs;

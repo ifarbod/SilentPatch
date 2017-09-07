@@ -6,6 +6,10 @@
 static void* BaseModelInfoShutdown = AddressByVersion<void*>(0x4C4D50, 0x4C4DD0, 0x4CF590);
 WRAPPER void CBaseModelInfo::Shutdown() { VARJMP(BaseModelInfoShutdown); }
 
+// static unsigned char*					ms_currentCol = *AddressByVersion<unsigned char**>(0x4C84C8, 0x4C86C8, 0x4D2DC8);
+static void* varSetVehicleColour = AddressByVersion<void*>( 0x4C84B0, 0, 0 ); // TODO: DO
+WRAPPER void CVehicleModelInfo::SetVehicleColour( int32_t color1, int32_t color2, int32_t color3, int32_t color4 ) { VARJMP(varSetVehicleColour); }
+
 RwTexture* (*CCustomCarPlateMgr::CreatePlateTexture)(const char* pText, signed char nDesign) = AddressByVersion<RwTexture*(*)(const char*,signed char)>(0x6FDEA0, 0x6FE6D0, 0x736AC0);
 signed char (*CCustomCarPlateMgr::GetMapRegionPlateDesign)() = AddressByVersion<signed char(*)()>(0x6FD7A0, 0x6FDFD0, 0x7363E0);
 void (*CCustomCarPlateMgr::SetupMaterialPlatebackTexture)(RpMaterial* pMaterial, signed char nDesign) = AddressByVersion<void(*)(RpMaterial*,signed char)>(0x6FDE50, 0x6FE680, 0x736A80);
