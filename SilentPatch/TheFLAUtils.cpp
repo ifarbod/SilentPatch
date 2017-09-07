@@ -8,7 +8,7 @@ int32_t (*FLAUtils::GetExtendedID16Func)(const void* ptr) = FLAUtils::GetExtende
 
 void FLAUtils::Init()
 {
-	HMODULE hFLA = GetModuleHandle("$fastman92limitAdjuster.asi");
+	HMODULE hFLA = GetModuleHandle(TEXT("$fastman92limitAdjuster.asi"));
 	if ( hFLA != nullptr )
 	{
 		auto function8 = reinterpret_cast<decltype(GetExtendedID8Func)>(GetProcAddress( hFLA, "GetExtendedIDfrom8bitBefore" ));
