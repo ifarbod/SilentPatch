@@ -112,6 +112,13 @@ public:
 	CVector	m_vecBounceVector;
 };
 
+enum eRotAxis
+{
+	ROT_AXIS_X = 0,
+	ROT_AXIS_Y = 1,
+	ROT_AXIS_Z = 2
+};
+
 class NOVMT CVehicle	: public CPhysical
 {
 protected:
@@ -145,7 +152,7 @@ public:
 
 	bool			IsLawEnforcementVehicle();
 
-	static void		SetComponentRotation( RwFrame* component, int axis, float angle, bool absolute );
+	static void		SetComponentRotation( RwFrame* component, eRotAxis axis, float angle, bool absolute );
 	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);
 };
 

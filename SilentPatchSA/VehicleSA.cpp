@@ -7,6 +7,10 @@
 #include "TimerSA.h"
 #include "DelimStringReader.h"
 
+static constexpr float PHOENIX_FLUTTER_PERIOD	= 70.0f;
+static constexpr float PHOENIX_FLUTTER_AMP		= 0.13f;
+static constexpr float SWEEPER_BRUSH_SPEED      = 0.3f; 
+
 std::vector<int32_t>		vecRotorExceptions;
 
 float CAutomobile::ms_engineCompSpeed;
@@ -138,25 +142,25 @@ void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo
 	}
 }
 
-void CVehicle::SetComponentRotation( RwFrame* component, int axis, float angle, bool absolute )
+void CVehicle::SetComponentRotation( RwFrame* component, eRotAxis axis, float angle, bool absolute )
 {
 	if ( component == nullptr ) return;
 
 	CMatrix matrix( RwFrameGetMatrix(component) );
 	if ( absolute )
 	{
-		if ( axis == 0 ) matrix.SetRotateXOnly(angle);
-		else if ( axis == 1 ) matrix.SetRotateYOnly(angle);
-		else if ( axis == 2 ) matrix.SetRotateZOnly(angle);
+		if ( axis == ROT_AXIS_X ) matrix.SetRotateXOnly(angle);
+		else if ( axis == ROT_AXIS_Y ) matrix.SetRotateYOnly(angle);
+		else if ( axis == ROT_AXIS_Z ) matrix.SetRotateZOnly(angle);
 	}
 	else
 	{
 		const CVector pos = matrix.GetPos();
 		matrix.SetTranslateOnly(0.0f, 0.0f, 0.0f);
 
-		if ( axis == 0 ) matrix.RotateX(angle);
-		else if ( axis == 1 ) matrix.RotateY(angle);
-		else if ( axis == 2 ) matrix.RotateZ(angle);
+		if ( axis == ROT_AXIS_X ) matrix.RotateX(angle);
+		else if ( axis == ROT_AXIS_Y ) matrix.RotateY(angle);
+		else if ( axis == ROT_AXIS_Z ) matrix.RotateZ(angle);
 
 		matrix.GetPos() += pos;
 	}
@@ -355,7 +359,7 @@ void CAutomobile::ProcessPhoenixBlower( int32_t modelID )
 		}
 		else
 		{
-			finalAngle = m_fSpecialComponentAngle + (std::sin( (CTimer::m_snTimeInMilliseconds % 10000) / 70.0f ) * 0.13f);
+			finalAngle = m_fSpecialComponentAngle + (std::sin( (CTimer::m_snTimeInMilliseconds % 10000) / PHOENIX_FLUTTER_PERIOD ) * PHOENIX_FLUTTER_AMP);
 		}
 	}
 	else
@@ -366,7 +370,7 @@ void CAutomobile::ProcessPhoenixBlower( int32_t modelID )
 		}
 	}
 
-	SetComponentRotation( m_pCarNode[20], 0, finalAngle, false );
+	SetComponentRotation( m_pCarNode[20], ROT_AXIS_X, finalAngle, false );
 }
 
 void CAutomobile::ProcessSweeper()
@@ -382,13 +386,8 @@ void CAutomobile::ProcessSweeper()
 		m_pCarNode[21] = GetFrameFromName( RpClumpGetFrame(m_pRwObject), "miscb" );
 	}
 
-	const float angle = CTimer::m_fTimeStep * 0.5f;
-	if ( m_pCarNode[20] != nullptr )
-	{
-		SetComponentRotation( m_pCarNode[20], 2, angle, false );
-	}
-	if ( m_pCarNode[21] != nullptr )
-	{
-		SetComponentRotation( m_pCarNode[21], 2, -angle, false );
-	}
+	const float angle = CTimer::m_fTimeStep * SWEEPER_BRUSH_SPEED;
+
+	SetComponentRotation( m_pCarNode[20], ROT_AXIS_Z, angle, false );
+	SetComponentRotation( m_pCarNode[21], ROT_AXIS_Z, -angle, false );
 }
