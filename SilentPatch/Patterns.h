@@ -77,7 +77,7 @@ namespace hook
 
 		std::vector<pattern_match> m_matches;
 
-		bool m_matched;
+		bool m_matched = false;
 
 		union
 		{
@@ -91,12 +91,12 @@ namespace hook
 
 	protected:
 		inline pattern(void* module)
-			: m_module(module), m_rangeEnd(0), m_matched(false)
+			: m_module(module), m_rangeEnd(0)
 		{
 		}
 
 		inline pattern(uintptr_t begin, uintptr_t end)
-			: m_rangeStart(begin), m_rangeEnd(end), m_matched(false)
+			: m_rangeStart(begin), m_rangeEnd(end)
 		{
 		}
 
@@ -120,44 +120,24 @@ namespace hook
 			Initialize(pattern, Len-1);
 		}
 
-		inline pattern& count(uint32_t expected) &
+		inline pattern&& count(uint32_t expected)
 		{
 			EnsureMatches(expected);
 			assert(m_matches.size() == expected);
-			return *this;
+			return std::forward<pattern>(*this);
 		}
 
-		inline pattern& count_hint(uint32_t expected) &
+		inline pattern&& count_hint(uint32_t expected)
 		{
 			EnsureMatches(expected);
-			return *this;
+			return std::forward<pattern>(*this);
 		}
 
-		inline pattern& clear() &
+		inline pattern&& clear()
 		{
 			m_matches.clear();
 			m_matched = false;
-			return *this;
-		}
-
-		inline pattern&& count(uint32_t expected) &&
-		{
-			EnsureMatches(expected);
-			assert(m_matches.size() == expected);
-			return std::move(*this);
-		}
-
-		inline pattern&& count_hint(uint32_t expected) &&
-		{
-			EnsureMatches(expected);
-			return std::move(*this);
-		}		
-
-		inline pattern&& clear() &&
-		{
-			m_matches.clear();
-			m_matched = false;
-			return std::move(*this);
+			return std::forward<pattern>(*this);
 		}
 
 		inline size_t size()
@@ -189,12 +169,12 @@ namespace hook
 		}
 
 		template <typename Pred>
-		inline void for_each_result(Pred pred)
+		inline void for_each_result(Pred&& pred)
 		{
 			EnsureMatches(UINT32_MAX);
 			for ( auto it : m_matches )
 			{
-				pred(it);
+				std::forward<Pred>(pred)(it);
 			}
 		}
 
