@@ -26,7 +26,10 @@ static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0x6D1680, 0x70
 WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
 static void*	varIsLawEnforcementVehicle = AddressByVersion<void*>(0x6D2370, 0x6D2BA0, 0x70D8C0);
 WRAPPER bool CVehicle::IsLawEnforcementVehicle() { VARJMP(varIsLawEnforcementVehicle); }
-void (CAutomobile::*CAutomobile::orgPreRender)();
+
+void (CVehicle::*CVehicle::orgVehiclePreRender)();
+void (CAutomobile::*CAutomobile::orgAutomobilePreRender)();
+void (CPlane::*CPlane::orgPlanePreRender)();
 
 static int32_t random(int32_t from, int32_t to)
 {
@@ -283,12 +286,54 @@ void CPlane::Fix_SilentPatch()
 	}
 }
 
+void CPlane::PreRender()
+{
+	(this->*(orgPlanePreRender))();
+
+	const int32_t extID = m_nModelIndex.Get();
+	if ( extID == 513 )
+	{
+		ProcessStuntPlane();
+	}
+}
+
+void CPlane::ProcessStuntPlane()
+{
+	auto copyRotation = [&]( size_t src, size_t dest ) {
+		if ( m_pCarNode[src] != nullptr && m_pCarNode[dest] != nullptr )
+		{
+			RwMatrix* lhs = RwFrameGetMatrix( m_pCarNode[dest] );
+			const RwMatrix* rhs = RwFrameGetMatrix( m_pCarNode[src] );
+
+			lhs->at = rhs->at;
+			lhs->up = rhs->up;
+			lhs->right = rhs->right;
+			RwMatrixUpdate( lhs );
+		}
+	};
+
+	copyRotation( 19, 23 );
+	copyRotation( 20, 24 );
+}
+
+void CBoat::PreRender_SilentPatch()
+{
+	(this->*(orgVehiclePreRender))();
+
+	// Fixed moving prop for Predator/Tropic/Reefer
+	const int32_t extID = m_nModelIndex.Get();
+	if ( (extID == 430 || extID == 453 || extID == 454) && m_pBoatNode[1] == nullptr )
+	{
+		m_pBoatNode[1] = GetFrameFromName( RpClumpGetFrame(m_pRwObject), "boat_moving" );
+	}
+}
+
 void CAutomobile::PreRender()
 {
 	// For rotating engine components
 	ms_engineCompSpeed = m_nVehicleFlags.bEngineOn ? CTimer::m_fTimeStep : 0.0f;
 
-	(this->*(orgPreRender))();
+	(this->*(orgAutomobilePreRender))();
 
 	const int32_t extID = m_nModelIndex.Get();
 	if ( extID == 603 )

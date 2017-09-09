@@ -3431,13 +3431,26 @@ void Patch_SA_10()
 
 
 	// Animated Phoenix hood scoop
-	auto* automobilePreRender = &(*(decltype(CAutomobile::orgPreRender)**)(0x6B0AD2 + 2))[17];
-	CAutomobile::orgPreRender = *automobilePreRender;
+	auto* automobilePreRender = &(*(decltype(CAutomobile::orgAutomobilePreRender)**)(0x6B0AD2 + 2))[17];
+	CAutomobile::orgAutomobilePreRender = *automobilePreRender;
 	Patch(automobilePreRender, &CAutomobile::PreRender_Stub);
 
 	InjectHook(0x6C7E7A, &CAutomobile::PreRender_Stub);
 	InjectHook(0x6CEAEC, &CAutomobile::PreRender_Stub);
 	InjectHook(0x6CFADC, &CAutomobile::PreRender_Stub);
+
+
+	// Extra animations for planes
+	auto* planePreRender = &(*(decltype(CPlane::orgPlanePreRender)**)(0x6C8E5A + 2))[17];
+	CPlane::orgPlanePreRender = *planePreRender;
+	Patch(planePreRender, &CPlane::PreRender_Stub);
+
+
+	// Fixed animations for boats
+	void* vehiclePreRender;
+	ReadCall( 0x6F119E, vehiclePreRender );
+	CVehicle::orgVehiclePreRender = *(decltype(CVehicle::orgVehiclePreRender)*)(&vehiclePreRender);
+	InjectHook( 0x6F119E, &CBoat::PreRender_SilentPatch );
 
 
 	// Stop BF Injection/Bandito/Hotknife rotating engine components when engine is off

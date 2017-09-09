@@ -154,6 +154,8 @@ public:
 
 	static void		SetComponentRotation( RwFrame* component, eRotAxis axis, float angle, bool absolute = true );
 	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);
+
+	static void (CVehicle::*orgVehiclePreRender)();
 };
 
 class NOVMT CAutomobile : public CVehicle
@@ -179,13 +181,14 @@ public:
 
 	void		Fix_SilentPatch();
 
+	static void (CAutomobile::*orgAutomobilePreRender)();
+	static float ms_engineCompSpeed;
+
+private:
 	void		ResetFrames();
 	void		ProcessPhoenixBlower( int32_t modelID );
 	void		ProcessSweeper();
 	void		ProcessNewsvan();
-
-	static void (CAutomobile::*orgPreRender)();
-	static float ms_engineCompSpeed;
 };
 
 class NOVMT CHeli : public CAutomobile
@@ -206,10 +209,27 @@ public:
 public:
 	inline void			Render_Stub()
 	{ CPlane::Render(); }
+	inline void			PreRender_Stub()
+	{ CPlane::PreRender(); }
 
 	virtual void		Render() override;
+	virtual void		PreRender() override;
 
 	void				Fix_SilentPatch();
+
+	static void (CPlane::*orgPlanePreRender)();
+
+private:
+	void		ProcessStuntPlane();
+};
+
+class NOVMT CBoat : public CVehicle
+{
+	uint8_t			__pad[16];
+	RwFrame*		m_pBoatNode[12];
+
+public:
+	void			PreRender_SilentPatch();
 };
 
 void ReadRotorFixExceptions(const wchar_t* pPath);
