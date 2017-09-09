@@ -172,7 +172,7 @@ void CVehicle::SetComponentRotation( RwFrame* component, eRotAxis axis, float an
 void CHeli::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
-	bool		bDisplayRotors = !ShouldIgnoreRotor( FLAUtils::GetExtendedID( &m_nModelIndex ) );
+	bool		bDisplayRotors = !ShouldIgnoreRotor( m_nModelIndex.Get() );
 	bool		bHasMovingRotor = m_pCarNode[13] != nullptr && bDisplayRotors;
 	bool		bHasMovingRotor2 = m_pCarNode[15] != nullptr && bDisplayRotors;
 
@@ -224,7 +224,7 @@ void CHeli::Render()
 void CPlane::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
-	bool		bDisplayRotors = !ShouldIgnoreRotor( FLAUtils::GetExtendedID( &m_nModelIndex ) );
+	bool		bDisplayRotors = !ShouldIgnoreRotor( m_nModelIndex.Get() );
 	bool		bHasMovingProp = m_pCarNode[13] != nullptr && bDisplayRotors;
 	bool		bHasMovingProp2 = m_pCarNode[15] != nullptr && bDisplayRotors;
 
@@ -277,8 +277,7 @@ void CPlane::Fix_SilentPatch()
 {
 	// Reset bouncing panels
 	// No reset on Vortex
-	const int32_t extID = FLAUtils::GetExtendedID( &m_nModelIndex );
-	for ( ptrdiff_t i = extID == 539 ? 1 : 0; i < 3; i++ )
+	for ( ptrdiff_t i = m_nModelIndex.Get() == 539 ? 1 : 0; i < 3; i++ )
 	{
 		m_aBouncingPanel[i].m_nNodeIndex = -1;
 	}
@@ -291,17 +290,18 @@ void CAutomobile::PreRender()
 
 	(this->*(orgPreRender))();
 
-	if ( FLAUtils::GetExtendedID( &m_nModelIndex ) == 603 )
+	const int32_t extID = m_nModelIndex.Get();
+	if ( extID == 603 )
 	{
-		ProcessPhoenixBlower( 603 );
+		ProcessPhoenixBlower( extID );
 	}
 
-	if ( FLAUtils::GetExtendedID( &m_nModelIndex ) == 574 )
+	if ( extID == 574 )
 	{
 		ProcessSweeper();
 	}
 
-	if ( FLAUtils::GetExtendedID( &m_nModelIndex ) == 582 )
+	if ( extID == 582 )
 	{
 		ProcessNewsvan();
 	}
@@ -312,7 +312,7 @@ void CAutomobile::Fix_SilentPatch()
 	ResetFrames();
 
 	// Reset bouncing panels
-	const int32_t extID = FLAUtils::GetExtendedID( &m_nModelIndex );
+	const int32_t extID = m_nModelIndex.Get();
 	for ( ptrdiff_t i = (extID == 525 && m_pCarNode[21]) || (extID == 531 && m_pCarNode[17]) ? 1 : 0; i < 3; i++ )
 	{
 		// Towtruck/Tractor fix
@@ -322,7 +322,7 @@ void CAutomobile::Fix_SilentPatch()
 
 void CAutomobile::ResetFrames()
 {
-	RpClump*	pOrigClump = reinterpret_cast<RpClump*>(ms_modelInfoPtrs[ FLAUtils::GetExtendedID( &m_nModelIndex ) ]->pRwObject);
+	RpClump*	pOrigClump = reinterpret_cast<RpClump*>(ms_modelInfoPtrs[ m_nModelIndex.Get() ]->pRwObject);
 	if ( pOrigClump != nullptr )
 	{
 		// Instead of setting frame rotation to (0,0,0) like R* did, obtain the original frame matrix from CBaseNodelInfo clump

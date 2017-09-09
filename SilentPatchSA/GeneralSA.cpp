@@ -56,15 +56,15 @@ void CObject::Render()
 	bool						bCallRestore;
 	std::pair<void*,int>		materialRestoreData[16];
 
-	const int32_t carPartModelIndex = FLAUtils::GetExtendedID( &m_wCarPartModelIndex );
+	const int32_t carPartModelIndex = m_wCarPartModelIndex.Get();
 	if ( carPartModelIndex != -1 && m_objectCreatedBy == TEMP_OBJECT && bObjectFlag7 && RwObjectGetType(m_pRwObject) == rpATOMIC )
 	{
 		auto* pData = materialRestoreData;
 
 		ms_pRemapTexture = m_pPaintjobTex;
 
-		static_cast<CVehicleModelInfo*>(ms_modelInfoPtrs[ carPartModelIndex ])->SetVehicleColour( FLAUtils::GetExtendedID( &m_nCarColor[0] ), 
-						FLAUtils::GetExtendedID( &m_nCarColor[1] ), FLAUtils::GetExtendedID( &m_nCarColor[2] ), FLAUtils::GetExtendedID( &m_nCarColor[3] ) );
+		static_cast<CVehicleModelInfo*>(ms_modelInfoPtrs[ carPartModelIndex ])->SetVehicleColour( m_nCarColor[0].Get(), 
+						m_nCarColor[1].Get(), m_nCarColor[2].Get(), m_nCarColor[3].Get() );
 
 		SetEditableMaterialsCB(reinterpret_cast<RpAtomic*>(m_pRwObject), &pData);
 		pData->first = nullptr;
