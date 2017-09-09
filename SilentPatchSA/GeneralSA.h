@@ -96,6 +96,22 @@ public:
 		{ if ( m_pCoords ) m_pCoords->SetRotateZOnly(fHeading); else m_transform.m_heading = fHeading; }
 };
 
+enum // nStatus
+{
+	STATUS_PLAYER = 0,
+	STATUS_PLAYER_PLAYBACKFROMBUFFER = 1,
+	STATUS_SIMPLE = 2,
+	STATUS_PHYSICS = 3,
+	STATUS_ABANDONED = 4,
+	STATUS_WRECKED = 5,
+
+	STATUS_PLAYER_REMOTE = 8,
+	STATUS_PLAYER_DISABLED = 9,
+	STATUS_TRAILER = 10,
+	STATUS_SIMPLE_TRAILER = 11,
+	STATUS_GHOST = 12,
+};
+
 // TODO: May not be the best place to put it?
 class NOVMT CEntity	: public CPlaceable
 {
@@ -175,11 +191,13 @@ public:
     char			numLodChildrenRendered;		// 0x35
 
     //********* BEGIN CEntityInfo **********//
-    BYTE			nType : 3;							// what type is the entity	// 0x36 (2 == Vehicle)
-    BYTE			nStatus : 5;						// control status			// 0x36
+    uint8_t			nType : 3;							// what type is the entity	// 0x36 (2 == Vehicle)
+	uint8_t			nStatus : 5;						// control status			// 0x36
     //********* END CEntityInfo ************//
 
 public:
+	uint8_t	GetStatus() const { return nStatus; }
+
 	bool IsVisible();
 };
 

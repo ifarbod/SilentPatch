@@ -152,7 +152,7 @@ public:
 
 	bool			IsLawEnforcementVehicle();
 
-	static void		SetComponentRotation( RwFrame* component, eRotAxis axis, float angle, bool absolute );
+	static void		SetComponentRotation( RwFrame* component, eRotAxis axis, float angle, bool absolute = true );
 	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);
 };
 

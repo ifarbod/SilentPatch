@@ -377,17 +377,20 @@ void CAutomobile::ProcessSweeper()
 {
 	if ( !m_nVehicleFlags.bEngineOn ) return;
 
-	if ( m_pCarNode[20] == nullptr )
+	if ( GetStatus() == STATUS_PLAYER || GetStatus() == STATUS_PHYSICS || GetStatus() == STATUS_SIMPLE )
 	{
-		m_pCarNode[20] = GetFrameFromName( RpClumpGetFrame(m_pRwObject), "misca" );
-	}
-	if ( m_pCarNode[21] == nullptr )
-	{
-		m_pCarNode[21] = GetFrameFromName( RpClumpGetFrame(m_pRwObject), "miscb" );
-	}
+		if ( m_pCarNode[20] == nullptr )
+		{
+			m_pCarNode[20] = GetFrameFromName( RpClumpGetFrame(m_pRwObject), "misca" );
+		}
+		if ( m_pCarNode[21] == nullptr )
+		{
+			m_pCarNode[21] = GetFrameFromName( RpClumpGetFrame(m_pRwObject), "miscb" );
+		}
 
-	const float angle = CTimer::m_fTimeStep * SWEEPER_BRUSH_SPEED;
+		const float angle = CTimer::m_fTimeStep * SWEEPER_BRUSH_SPEED;
 
-	SetComponentRotation( m_pCarNode[20], ROT_AXIS_Z, angle, false );
-	SetComponentRotation( m_pCarNode[21], ROT_AXIS_Z, -angle, false );
+		SetComponentRotation( m_pCarNode[20], ROT_AXIS_Z, angle, false );
+		SetComponentRotation( m_pCarNode[21], ROT_AXIS_Z, -angle, false );
+	}
 }
