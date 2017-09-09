@@ -9,7 +9,9 @@
 
 static constexpr float PHOENIX_FLUTTER_PERIOD	= 70.0f;
 static constexpr float PHOENIX_FLUTTER_AMP		= 0.13f;
-static constexpr float SWEEPER_BRUSH_SPEED      = 0.3f; 
+static constexpr float SWEEPER_BRUSH_SPEED      = 0.3f;
+
+static constexpr float PI = 3.14159265358979323846f;
 
 std::vector<int32_t>		vecRotorExceptions;
 
@@ -298,6 +300,11 @@ void CAutomobile::PreRender()
 	{
 		ProcessSweeper();
 	}
+
+	if ( FLAUtils::GetExtendedID( &m_nModelIndex ) == 582 )
+	{
+		ProcessNewsvan();
+	}
 }
 
 void CAutomobile::Fix_SilentPatch()
@@ -392,5 +399,16 @@ void CAutomobile::ProcessSweeper()
 
 		SetComponentRotation( m_pCarNode[20], ROT_AXIS_Z, angle, false );
 		SetComponentRotation( m_pCarNode[21], ROT_AXIS_Z, -angle, false );
+	}
+}
+
+void CAutomobile::ProcessNewsvan()
+{
+	if ( GetStatus() == STATUS_PLAYER )
+	{
+		// TODO: Point at something? Like nearest collectable or safehouse
+		m_fGunOrientation += CTimer::m_fTimeStep * 0.05f;
+		if ( m_fGunOrientation > 2.0f * PI ) m_fGunOrientation -= 2.0f * PI;
+		SetComponentRotation( m_pCarNode[20], ROT_AXIS_Z, m_fGunOrientation );
 	}
 }

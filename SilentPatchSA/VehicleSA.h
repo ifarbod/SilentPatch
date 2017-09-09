@@ -164,7 +164,10 @@ public:
 	CBouncingPanel	m_aBouncingPanel[3];
 	BYTE			padding[320];
 	float			m_fRotorSpeed;
-	BYTE			__moarpad[264];
+	BYTE			__moarpad[252];
+	float			m_fGunOrientation;
+	float			m_fGunElevation;
+	float			m_fUnknown;
 	float			m_fSpecialComponentAngle;
 	BYTE			__pad3[44];	
 
@@ -179,6 +182,7 @@ public:
 	void		ResetFrames();
 	void		ProcessPhoenixBlower( int32_t modelID );
 	void		ProcessSweeper();
+	void		ProcessNewsvan();
 
 	static void (CAutomobile::*orgPreRender)();
 	static float ms_engineCompSpeed;
