@@ -3443,6 +3443,10 @@ void Patch_SA_10()
 	// Stop BF Injection/Bandito/Hotknife rotating engine components when engine is off
 	Patch<const void*>(0x6AC2BE + 2, &CAutomobile::ms_engineCompSpeed);
 	Patch<const void*>(0x6ACB91 + 2, &CAutomobile::ms_engineCompSpeed);
+
+
+	// Make freeing temp objects more aggressive to fix vending crash
+	InjectHook( 0x5A1840, CObject::TryToFreeUpTempObjects_SilentPatch, PATCH_JUMP );
 }
 
 void Patch_SA_11()

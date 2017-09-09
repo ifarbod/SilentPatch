@@ -138,6 +138,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClCompile Include="ModelInfoSA.cpp" />
     <ClCompile Include="PedSA.cpp" />
     <ClCompile Include="PNGFile.cpp" />
+    <ClCompile Include="PoolsSA.cpp" />
     <ClCompile Include="ScriptSA.cpp" />
     <ClCompile Include="SilentPatchSA.cpp" />
     <ClCompile Include="StdAfxSA.cpp">
@@ -185,6 +186,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClInclude Include="ModelInfoSA.h" />
     <ClInclude Include="PedSA.h" />
     <ClInclude Include="PNGFile.h" />
+    <ClInclude Include="PoolsSA.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="rwpred.hpp" />
     <ClInclude Include="ScriptSA.h" />

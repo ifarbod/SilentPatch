@@ -180,9 +180,7 @@ public:
     //********* END CEntityInfo ************//
 
 public:
-	void			UpdateRW();
-	void			RegisterReference(CEntity** pAddress);
-	void			CleanUpOldReference(CEntity** pAddress);
+	bool IsVisible();
 };
 
 class NOVMT CPhysical : public CEntity
@@ -263,11 +261,19 @@ private:
     BYTE			pad3a[4];								// 0x134
 };
 
+enum // m_objectCreatedBy
+{
+	GAME_OBJECT = 1,
+	MISSION_OBJECT = 2,
+	TEMP_OBJECT = 3,
+	MISSION_BRAIN_OBJECT = 6,
+};
+
 class NOVMT CObject : public CPhysical
 {
 public:
 	void*				m_pObjectList;
-	unsigned char		m_nObjectType;
+	uint8_t				m_objectCreatedBy;
 	__int8				field_13D;
 	__int16				field_13E;
 	bool				bObjectFlag0 : 1;
@@ -334,6 +340,9 @@ public:
 	{ CObject::Render(); }
 
 	virtual void		Render() override;
+
+	static void					TryToFreeUpTempObjects_SilentPatch( int numObjects );
+	static std::tuple<int,int>	TryOrFreeUpTempObjects( int numObjects, bool force );
 };
 
 class CZoneInfo

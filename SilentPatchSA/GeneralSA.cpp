@@ -3,10 +3,14 @@
 
 #include "PedSA.h"
 #include "ModelInfoSA.h"
+#include "PoolsSA.h"
 
 // Wrappers
 static void* EntityRender = AddressByVersion<void*>(0x534310, 0x5347B0, 0x545B30);
 WRAPPER void CEntity::Render() { VARJMP(EntityRender); }
+
+static void* varEntityIsVisible = AddressByVersion<void*>( 0x536BC0, 0, 0 ); // TODO
+WRAPPER bool CEntity::IsVisible() { VARJMP(varEntityIsVisible); }
 
 static void* varInvertRaster = AddressByVersion<void*>(0x705660, 0x705E90, 0x7497A0);
 WRAPPER void CShadowCamera::InvertRaster() { VARJMP(varInvertRaster); }
@@ -53,7 +57,7 @@ void CObject::Render()
 	std::pair<void*,int>		materialRestoreData[16];
 
 	const int32_t carPartModelIndex = FLAUtils::GetExtendedID( &m_wCarPartModelIndex );
-	if ( carPartModelIndex != -1 && m_nObjectType == 3 && bObjectFlag7 && RwObjectGetType(m_pRwObject) == rpATOMIC )
+	if ( carPartModelIndex != -1 && m_objectCreatedBy == TEMP_OBJECT && bObjectFlag7 && RwObjectGetType(m_pRwObject) == rpATOMIC )
 	{
 		auto* pData = materialRestoreData;
 
@@ -85,6 +89,45 @@ void CObject::Render()
 		ResetEditableMaterials(materialRestoreData);
 		RwRenderStateSet(rwRENDERSTATECULLMODE, reinterpret_cast<void*>(rwCULLMODECULLBACK));
 	}
+}
+
+extern void (*WorldRemove)(CEntity*);
+void CObject::TryToFreeUpTempObjects_SilentPatch( int numObjects )
+{
+	int numProcessed, numFreed;
+	std::tie( numProcessed, numFreed ) = TryOrFreeUpTempObjects( numObjects, false );
+	if ( numProcessed >= numObjects && numObjects > numFreed )
+	{
+		TryOrFreeUpTempObjects( numObjects - numFreed, true );
+	}
+}
+
+std::tuple<int,int> CObject::TryOrFreeUpTempObjects( int numObjects, bool force )
+{
+	int numProcessed = 0, numFreed = 0;
+
+	auto& pool = CPools::GetObjectPool();
+	for ( auto& obj : pool )
+	{
+		if ( numFreed >= numObjects ) break;
+
+		CObject* const objPtr = &obj;
+		if ( pool.IsValidPtr( objPtr ) )
+		{
+			if ( objPtr->m_objectCreatedBy == TEMP_OBJECT )
+			{
+				numProcessed++;
+				if ( force || !objPtr->IsVisible() )
+				{
+					numFreed++;
+					WorldRemove( objPtr );
+					delete objPtr;
+				}
+			}
+		}
+	}
+
+	return std::make_tuple( numProcessed, numFreed );
 }
 
 RwCamera* CShadowCamera::Update(CEntity* pEntity)
