@@ -218,9 +218,6 @@ public:
 	void				Fix_SilentPatch();
 
 	static void (CPlane::*orgPlanePreRender)();
-
-private:
-	void		ProcessStuntPlane();
 };
 
 class NOVMT CBoat : public CVehicle

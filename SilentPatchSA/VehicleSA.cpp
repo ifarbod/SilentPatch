@@ -291,14 +291,7 @@ void CPlane::PreRender()
 	(this->*(orgPlanePreRender))();
 
 	const int32_t extID = m_nModelIndex.Get();
-	if ( extID == 513 )
-	{
-		ProcessStuntPlane();
-	}
-}
 
-void CPlane::ProcessStuntPlane()
-{
 	auto copyRotation = [&]( size_t src, size_t dest ) {
 		if ( m_pCarNode[src] != nullptr && m_pCarNode[dest] != nullptr )
 		{
@@ -312,8 +305,16 @@ void CPlane::ProcessStuntPlane()
 		}
 	};
 
-	copyRotation( 19, 23 );
-	copyRotation( 20, 24 );
+	if ( extID == 511 )
+	{
+		copyRotation( 18, 21 );
+	}
+
+	if ( extID == 513 )
+	{
+		copyRotation( 19, 23 );
+		copyRotation( 20, 24 );
+	}
 }
 
 void CBoat::PreRender_SilentPatch()
