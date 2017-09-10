@@ -314,6 +314,28 @@ void CarCtrlReInit_SilentPatch()
 
 static char		aNoDesktopMode[64];
 
+unsigned int __cdecl AutoPilotTimerCalculation_III(unsigned int nTimer, int nScaleFactor, float fScaleCoef)
+{
+	return nTimer - static_cast<unsigned int>(nScaleFactor * fScaleCoef);
+}
+
+void __declspec(naked) AutoPilotTimerFix_III()
+{
+	_asm {
+		push    dword ptr[esp + 0x4]
+		push    dword ptr[ebx + 0x10]
+		push    eax
+		call    AutoPilotTimerCalculation_III
+		add     esp, 0xC
+		mov     [ebx + 0xC], eax
+		add     esp, 0x28
+		pop     ebp
+		pop     esi
+		pop     ebx
+		retn    4
+	}
+}
+
 void Patch_III_10(const RECT& desktop)
 {
 	using namespace Memory;
@@ -483,6 +505,9 @@ void Patch_III_10(const RECT& desktop)
 	Nop(0x581C52, 6);
 	Patch<const char*>(0x566A3D, "");
 
+	// Fixed crash related to autopilot timing calculations
+	InjectHook(0x4139B2, AutoPilotTimerFix_III, PATCH_JUMP);
+
 
 	// Adblocker
 #if DISABLE_FLA_DONATION_WINDOW
@@ -651,6 +676,9 @@ void Patch_III_11(const RECT& desktop)
 	Nop(0x581F84, 2);
 	Nop(0x581F92, 6);
 	Patch<const char*>(0x566B7D, "");
+
+	// Fixed crash related to autopilot timing calculations
+	InjectHook(0x4139B2, AutoPilotTimerFix_III, PATCH_JUMP);
 }
 
 void Patch_III_Steam(const RECT& desktop)
@@ -798,6 +826,9 @@ void Patch_III_Steam(const RECT& desktop)
 	// Radar blips bounds check
 	InjectHook(0x4A5632, RadarBoundsCheckCoordBlip, PATCH_JUMP);
 	InjectHook(0x4A56D8, RadarBoundsCheckEntityBlip, PATCH_JUMP);
+
+	// Fixed crash related to autopilot timing calculations
+	InjectHook(0x4139B2, AutoPilotTimerFix_III, PATCH_JUMP);
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)

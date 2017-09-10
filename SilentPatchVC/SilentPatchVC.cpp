@@ -192,6 +192,27 @@ void GaragesInit_SilentPatch()
 
 static char		aNoDesktopMode[64];
 
+unsigned int __cdecl AutoPilotTimerCalculation_VC(unsigned int nTimer, int nScaleFactor, float fScaleCoef)
+{
+	return nTimer - static_cast<unsigned int>(nScaleFactor * fScaleCoef);
+}
+
+void __declspec(naked) AutoPilotTimerFix_VC()
+{
+	_asm {
+		push	dword ptr[esp + 0xC]
+		push	dword ptr[ebx + 0x10]
+		push	eax
+		call	AutoPilotTimerCalculation_VC
+		add 	esp, 0xC
+		mov 	[ebx + 0xC], eax
+		add     esp, 0x30
+		pop     ebp
+		pop     ebx
+		retn    4
+	}
+}
+
 void Patch_VC_10(const RECT& desktop)
 {
 	using namespace Memory;
@@ -328,6 +349,9 @@ void Patch_VC_10(const RECT& desktop)
 	// Fixed ammo for melee weapons in cheats
 	Patch<BYTE>(0x4AED14+1, 1); // katana
 	Patch<BYTE>(0x4AEB74+1, 1); // chainsaw
+
+	// Fixed crash related to autopilot timing calculations
+	InjectHook(0x418FAE, AutoPilotTimerFix_VC, PATCH_JUMP);
 
 
 	// Adblocker
@@ -477,6 +501,9 @@ void Patch_VC_11(const RECT& desktop)
 	// Fixed ammo for melee weapons in cheats
 	Patch<BYTE>(0x4AED34+1, 1); // katana
 	Patch<BYTE>(0x4AEB94+1, 1); // chainsaw
+
+	// Fixed crash related to autopilot timing calculations
+	InjectHook(0x418FAE, AutoPilotTimerFix_VC, PATCH_JUMP);
 }
 
 void Patch_VC_Steam(const RECT& desktop)
@@ -615,6 +642,9 @@ void Patch_VC_Steam(const RECT& desktop)
 	// Fixed ammo for melee weapons in cheats
 	Patch<BYTE>(0x4AEA44+1, 1); // katana
 	Patch<BYTE>(0x4AEBE4+1, 1); // chainsaw
+
+	// Fixed crash related to autopilot timing calculations
+	InjectHook(0x418FAE, AutoPilotTimerFix_VC, PATCH_JUMP);
 }
 
 void Patch_VC_JP()
