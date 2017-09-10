@@ -2079,8 +2079,6 @@ DarkVehiclesFix4_MakeItDark:
 
 static int _Timers_ftol_internal( double timer, double& remainder )
 {
-	if ( timer >= 1.0 ) return int(timer);
-
 	double integral;
 	remainder = modf( timer + remainder, &integral );
 	return int(integral);
