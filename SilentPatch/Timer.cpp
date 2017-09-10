@@ -1,6 +1,8 @@
 #include "StdAfx.h"
 #include "Timer.h"
 
+#include "Patterns.h"
+
 float*			CTimer::ms_fTimeScale;
 float*			CTimer::ms_fTimeStep;
 float*			CTimer::ms_fTimeStepNotClipped;
@@ -12,146 +14,44 @@ int*			CTimer::m_snTimeInMillisecondsNonClipped;
 int*			CTimer::m_snTimeInMillisecondsPauseMode;
 unsigned int*	CTimer::m_FrameCounter;
 
-static gtaTimer			timerFunction;
 static unsigned int		suspendDepth;
 static long long		timerFreq;
 static long long		oldTime, suspendTime;
 
 static long long		cyclesTime, cyclesTimeNonClipped, cyclesTimePauseMode, cyclesPreviousTime;
 
-static long long QPC()
-{
-	LARGE_INTEGER		Counter;
-	QueryPerformanceCounter(&Counter);
-	return Counter.QuadPart;
-}
+static uint32_t& timerFrequency = **hook::get_pattern<uint32_t*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", -7 );
+static LARGE_INTEGER& prevTimer = **hook::get_pattern<LARGE_INTEGER*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 64 );
 
-static long long OldTimer()
-{
-	TIMECAPS	caps;
-	long long	nTime;
-
-	timeGetDevCaps(&caps, sizeof(TIMECAPS));
-	timeBeginPeriod(caps.wPeriodMin);
-	nTime = timeGetTime();
-	timeEndPeriod(caps.wPeriodMin);
-	return nTime;
-}
-
-static inline void InitTimerFunc()
-{
-	if ( timerFunction )
-		return;
-
-	LARGE_INTEGER	Frequency;
-	if ( QueryPerformanceFrequency(&Frequency) )
-	{
-		timerFreq = Frequency.QuadPart / 1000;
-		timerFunction = QPC;
-	}
-	else
-	{
-		timerFreq = 1;
-		timerFunction = OldTimer;
-	}
-}
 
 extern void (__stdcall *AudioResetTimers)(unsigned int);
 extern bool* bSnapShotActive;
 
-void CTimer::Initialise()
+void CTimer::Update_SilentPatch()
 {
-	suspendDepth = 0;
-	*ms_fTimeScale = *ms_fTimeStep = 1.0f;
-	*m_UserPause = false;
-	*m_CodePause = false;
-	*m_snTimeInMilliseconds = 0;
-	*m_snPreviousTimeInMilliseconds = 0;
-	*m_snTimeInMillisecondsNonClipped = 0;
-	*m_FrameCounter = 0;
+	LARGE_INTEGER perfCount;
+	QueryPerformanceCounter( &perfCount );
 
-	InitTimerFunc();
+	double diff = double(perfCount.QuadPart - prevTimer.QuadPart);
+	if ( !*m_UserPause && !*m_CodePause ) diff *= *ms_fTimeScale;
 
-	oldTime = timerFunction();
-	AudioResetTimers(0);
-}
+	prevTimer = perfCount;
 
-void CTimer::Suspend()
-{
-	if ( suspendDepth++ == 0 )
-		suspendTime = timerFunction();
-}
+	static double DeltaRemainder = 0.0;
+	const double delta = diff / timerFrequency;
+	double deltaIntegral;
+	DeltaRemainder = modf( delta + DeltaRemainder, &deltaIntegral );
 
-void CTimer::Resume()
-{
-	if ( --suspendDepth == 0 )
-		oldTime += timerFunction() - suspendTime;
-}
-
-unsigned int CTimer::GetCyclesPerFrame()
-{
-	return static_cast<unsigned int>(timerFunction() - oldTime);
-}
-
-unsigned int CTimer::GetCyclesPerMillisecond()
-{
-	return static_cast<unsigned int>(timerFreq);
-}
-
-void CTimer::Update()
-{
-	*m_snPreviousTimeInMilliseconds = *m_snTimeInMilliseconds;
-	cyclesPreviousTime = cyclesTime;
-
-	long long	nCurTime;
-	float		nDelta;
-
-	nCurTime = timerFunction();
-	nDelta = (nCurTime - oldTime) * *ms_fTimeScale;
-	oldTime = nCurTime;
-
-	//*m_snTimeInMillisecondsPauseMode += nDelta;
-	cyclesTimePauseMode += static_cast<long long>(nDelta);
-
-	if ( *m_UserPause || *m_CodePause )
-		*ms_fTimeStep = 0.0f;
+	const int deltaInteger = int(deltaIntegral);
+	*m_snTimeInMillisecondsPauseMode += deltaInteger;
+	if ( !*m_UserPause && !*m_CodePause )
+	{
+		*m_snTimeInMillisecondsNonClipped += deltaInteger;
+		*m_snTimeInMilliseconds += deltaInteger;
+		*ms_fTimeStep = float(delta * 0.05);
+	}
 	else
 	{
-		*ms_fTimeStep = (nDelta/timerFreq) * 0.05f;
-		cyclesTime += static_cast<long long>(nDelta);
-		cyclesTimeNonClipped += static_cast<long long>(nDelta);
-		//*m_snTimeInMilliseconds += nDelta;
-		//*m_snTimeInMillisecondsNonClipped += nDelta;
+		*ms_fTimeStep = 0.0f;
 	}
-
-#ifdef _GTA_III
-	if ( *ms_fTimeStep < 0.01f && !*m_UserPause && !*m_CodePause )
-#else
-	if ( *ms_fTimeStep < 0.01f && !*m_UserPause && !*m_CodePause && !*bSnapShotActive )
-#endif
-		*ms_fTimeStep = 0.01f;
-
-	*ms_fTimeStepNotClipped = *ms_fTimeStep;
-
-	if ( *ms_fTimeStep > 3.0f )
-		*ms_fTimeStep = 3.0f;
-
-	/*if ( *m_snTimeInMilliseconds - *m_snPreviousTimeInMilliseconds > 60 )
-		*m_snTimeInMilliseconds = *m_snPreviousTimeInMilliseconds + 60;*/
-	if ( cyclesTime - cyclesPreviousTime > 60 * timerFreq )
-		cyclesTime = cyclesPreviousTime + (60 * timerFreq);
-
-	*m_snTimeInMillisecondsPauseMode = static_cast<int>(cyclesTimePauseMode / timerFreq);
-	*m_snTimeInMilliseconds = static_cast<int>(cyclesTime / timerFreq);
-	*m_snTimeInMillisecondsNonClipped = static_cast<int>(cyclesTimeNonClipped / timerFreq);
-
-	++(*m_FrameCounter);
-}
-
-void CTimer::RecoverFromSave()
-{
-	cyclesTime = *m_snTimeInMilliseconds * timerFreq;
-	cyclesPreviousTime = *m_snPreviousTimeInMilliseconds * timerFreq;
-	cyclesTimePauseMode = *m_snTimeInMillisecondsPauseMode * timerFreq;
-	cyclesTimeNonClipped = *m_snTimeInMillisecondsNonClipped * timerFreq;
 }

@@ -1,8 +1,6 @@
 #ifndef __TIMER
 #define __TIMER
 
-typedef long long(*gtaTimer)();
-
 class CTimer
 {
 public:
@@ -18,13 +16,7 @@ public:
 	static unsigned int*	m_FrameCounter;
 
 public:
-	static void				Initialise();
-	static void				Suspend();
-	static void				Resume();
-	static unsigned int		GetCyclesPerFrame();
-	static unsigned int		GetCyclesPerMillisecond();
-	static void				Update();
-	static void				RecoverFromSave();
+	static void				Update_SilentPatch();
 };
 
 #endif

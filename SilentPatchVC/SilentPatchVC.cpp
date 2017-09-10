@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 
 #include "Timer.h"
+#include "Patterns.h"
 
 struct RsGlobalType
 {
@@ -244,14 +245,6 @@ void Patch_VC_10(const RECT& desktop)
 	Patch<BYTE>(0x48EB27, 16);
 	Patch<BYTE>(0x541E7E, 16);
 
-	InjectHook(0x4D1300, CTimer::Initialise, PATCH_JUMP);
-	InjectHook(0x4D0ED0, CTimer::Suspend, PATCH_JUMP);
-	InjectHook(0x4D0E50, CTimer::Resume, PATCH_JUMP);
-	InjectHook(0x4D0DF0, CTimer::GetCyclesPerFrame, PATCH_JUMP);
-	InjectHook(0x4D0E30, CTimer::GetCyclesPerMillisecond, PATCH_JUMP);
-	InjectHook(0x4D0F30, CTimer::Update, PATCH_JUMP);
-	InjectHook(0x61AA7D, CTimer::RecoverFromSave);
-
 	InjectHook(0x5433BD, FixedRefValue);
 
 	InjectHook(0x42BFF7, RosiesAudioFix, PATCH_JUMP);
@@ -395,14 +388,6 @@ void Patch_VC_11(const RECT& desktop)
 	Patch<BYTE>(0x48EB37, 16);
 	Patch<BYTE>(0x541E9E, 16);
 
-	InjectHook(0x4D1320, CTimer::Initialise, PATCH_JUMP);
-	InjectHook(0x4D0EF0, CTimer::Suspend, PATCH_JUMP);
-	InjectHook(0x4D0E70, CTimer::Resume, PATCH_JUMP);
-	InjectHook(0x4D0E10, CTimer::GetCyclesPerFrame, PATCH_JUMP);
-	InjectHook(0x4D0E50, CTimer::GetCyclesPerMillisecond, PATCH_JUMP);
-	InjectHook(0x4D0F50, CTimer::Update, PATCH_JUMP);
-	InjectHook(0x61AA5D, CTimer::RecoverFromSave);
-
 	InjectHook(0x5433DD, FixedRefValue);
 
 	InjectHook(0x42BFF7, RosiesAudioFix, PATCH_JUMP);
@@ -537,14 +522,6 @@ void Patch_VC_Steam(const RECT& desktop)
 	Patch<BYTE>(0x48EA37, 16);
 	Patch<BYTE>(0x541D6E, 16);
 
-	InjectHook(0x4D11C0, CTimer::Initialise, PATCH_JUMP);
-	InjectHook(0x4D0D90, CTimer::Suspend, PATCH_JUMP);
-	InjectHook(0x4D0D10, CTimer::Resume, PATCH_JUMP);
-	InjectHook(0x4D0CB0, CTimer::GetCyclesPerFrame, PATCH_JUMP);
-	InjectHook(0x4D0CF0, CTimer::GetCyclesPerMillisecond, PATCH_JUMP);
-	InjectHook(0x4D0DF0, CTimer::Update, PATCH_JUMP);
-	InjectHook(0x61A6A6, CTimer::RecoverFromSave);
-
 	InjectHook(0x5432AD, FixedRefValue);
 
 	InjectHook(0x42BFC7, RosiesAudioFix, PATCH_JUMP);
@@ -650,7 +627,6 @@ void Patch_VC_Steam(const RECT& desktop)
 void Patch_VC_JP()
 {
 	using namespace Memory;
-	ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
 
 	// Y axis sensitivity fix
 	// By ThirteenAG
@@ -659,6 +635,21 @@ void Patch_VC_JP()
 	Patch<DWORD>(0x47B1FE + 0x1CC + 0x2, 0x94ABD8);
 	Patch<DWORD>(0x47C266 + 0x22E + 0x2, 0x94ABD8);
 	Patch<DWORD>(0x481E8A + 0x4FE + 0x2, 0x94ABD8);
+}
+
+void Patch_VC_Common()
+{
+	using namespace Memory;
+	using namespace hook;
+
+	// New timers fix
+	{
+		auto hookPoint = pattern( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08" ).get_one();
+		auto jmpPoint = get_pattern( "DD D8 E9 31 FF FF FF" );
+
+		InjectHook( hookPoint.get<int>( 0x21 ), CTimer::Update_SilentPatch, PATCH_CALL );
+		InjectHook( hookPoint.get<int>( 0x21 + 5 ), jmpPoint, PATCH_JUMP );
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
@@ -672,21 +663,17 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		GetWindowRect(GetDesktopWindow(), &desktop);
 		sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
-		ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
+		ScopedUnprotect::Section Protect( GetModuleHandle( nullptr ), ".text" );
 
 		if(*(DWORD*)0x667BF5 == 0xB85548EC) Patch_VC_10(desktop);
 		else if(*(DWORD*)0x667C45 == 0xB85548EC) Patch_VC_11(desktop);
 		else if (*(DWORD*)0x666BA5 == 0xB85548EC) Patch_VC_Steam(desktop);
 
 		// Y axis sensitivity only
-		else if (*(DWORD*)0x601048 == 0x5E5F5D60)
-		{
-			Patch_VC_JP();
-			return TRUE;
-		}
+		else if (*(DWORD*)0x601048 == 0x5E5F5D60) Patch_VC_JP();
 		else return TRUE;
 
-		CTimer::Initialise();
+		Patch_VC_Common();
 
 		HMODULE		hDummyHandle;
 		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)&DllMain, &hDummyHandle);
