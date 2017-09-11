@@ -23,11 +23,8 @@ struct RwV2d
     float y;   /**< Y value */
 };
 
-bool*					bSnapShotActive;
 static const void*		RosieAudioFix_JumpBack;
 
-
-void (__stdcall *AudioResetTimers)(unsigned int);
 static void (*PrintString)(float,float,const wchar_t*);
 
 static RsGlobalType*	RsGlobal;
@@ -218,24 +215,11 @@ void Patch_VC_10(const RECT& desktop)
 {
 	using namespace Memory;
 
-	AudioResetTimers = (void(__stdcall*)(unsigned int))0x5F98D0;
 	PrintString = (void(*)(float,float,const wchar_t*))0x551040;
 
-	bSnapShotActive = *(bool**)0x4D1239;
 	RsGlobal = *(RsGlobalType**)0x602D32;
 	RosieAudioFix_JumpBack = (void*)0x42BFFE;
 	SubtitlesShadowFix_JumpBack = (void*)0x551701;
-
-	CTimer::ms_fTimeScale = *(float**)0x453D38;
-	CTimer::ms_fTimeStep = *(float**)0x41A318;
-	CTimer::ms_fTimeStepNotClipped = *(float**)0x40605B;
-	CTimer::m_UserPause = *(bool**)0x4D0F91;
-	CTimer::m_CodePause = *(bool**)0x4D0FAE;
-	CTimer::m_snTimeInMilliseconds = *(int**)0x418CFC;
-	CTimer::m_snPreviousTimeInMilliseconds = *(int**)0x41BB3A;
-	CTimer::m_snTimeInMillisecondsNonClipped = *(int**)0x4D1081;
-	CTimer::m_snTimeInMillisecondsPauseMode = *(int**)0x4D0FE2;
-	CTimer::m_FrameCounter = *(unsigned int**)0x4D12CF;
 
 	Patch<BYTE>(0x43E983, 16);
 	Patch<BYTE>(0x43EC03, 16);
@@ -361,24 +345,11 @@ void Patch_VC_11(const RECT& desktop)
 {
 	using namespace Memory;
 
-	AudioResetTimers = (void(__stdcall*)(unsigned int))0x5F98F0;
 	PrintString = (void(*)(float,float,const wchar_t*))0x551060;
 
-	bSnapShotActive = *(bool**)0x4D1259;
 	RsGlobal = *(RsGlobalType**)0x602D12;
 	RosieAudioFix_JumpBack = (void*)0x42BFFE;
 	SubtitlesShadowFix_JumpBack = (void*)0x551721;
-
-	CTimer::ms_fTimeScale = *(float**)0x453D38;
-	CTimer::ms_fTimeStep = *(float**)0x41A318;
-	CTimer::ms_fTimeStepNotClipped = *(float**)0x40605B;
-	CTimer::m_UserPause = *(bool**)0x4D0FB1;
-	CTimer::m_CodePause = *(bool**)0x4D0FCE;
-	CTimer::m_snTimeInMilliseconds = *(int**)0x418CFC;
-	CTimer::m_snPreviousTimeInMilliseconds = *(int**)0x41BB3A;
-	CTimer::m_snTimeInMillisecondsNonClipped = *(int**)0x4D10A1;
-	CTimer::m_snTimeInMillisecondsPauseMode = *(int**)0x4D1002;
-	CTimer::m_FrameCounter = *(unsigned int**)0x4D12EF;
 
 	Patch<BYTE>(0x43E983, 16);
 	Patch<BYTE>(0x43EC03, 16);
@@ -495,24 +466,11 @@ void Patch_VC_Steam(const RECT& desktop)
 {
 	using namespace Memory;
 
-	AudioResetTimers = (void(__stdcall*)(unsigned int))0x5F9530;
 	PrintString = (void(*)(float,float,const wchar_t*))0x550F30;
 
-	bSnapShotActive = *(bool**)0x4D10F9;
 	RsGlobal = *(RsGlobalType**)0x602952;
 	RosieAudioFix_JumpBack = (void*)0x42BFCE;
 	SubtitlesShadowFix_JumpBack = (void*)0x5515F1;
-
-	CTimer::ms_fTimeScale = *(float**)0x453C18;
-	CTimer::ms_fTimeStep = *(float**)0x41A318;
-	CTimer::ms_fTimeStepNotClipped = *(float**)0x40605B;
-	CTimer::m_UserPause = *(bool**)0x4D0E51;
-	CTimer::m_CodePause = *(bool**)0x4D0E6E;
-	CTimer::m_snTimeInMilliseconds = *(int**)0x418CFC;
-	CTimer::m_snPreviousTimeInMilliseconds = *(int**)0x41BB3A;
-	CTimer::m_snTimeInMillisecondsNonClipped = *(int**)0x4D0F41;
-	CTimer::m_snTimeInMillisecondsPauseMode = *(int**)0x4D0EA2;
-	CTimer::m_FrameCounter = *(unsigned int**)0x4D118F;
 
 	Patch<BYTE>(0x43E8F3, 16);
 	Patch<BYTE>(0x43EB73, 16);
