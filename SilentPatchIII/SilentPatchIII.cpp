@@ -2,6 +2,7 @@
 
 #include "General.h"
 #include "Timer.h"
+#include "Patterns.h"
 
 struct PsGlobalType
 {
@@ -353,17 +354,6 @@ void Patch_III_10(const RECT& desktop)
 	HeadlightsFix_JumpBack = (void*)0x5382F2;
 	SubtitlesShadowFix_JumpBack = (void*)0x500D32;
 
-	CTimer::ms_fTimeScale = *(float**)0x43F73F;
-	CTimer::ms_fTimeStep = *(float**)0x41428E;
-	CTimer::ms_fTimeStepNotClipped = *(float**)0x404F9B;
-	CTimer::m_UserPause = *(bool**)0x4076E9;
-	CTimer::m_CodePause = *(bool**)0x4076F2;
-	CTimer::m_snTimeInMilliseconds = *(int**)0x40B3B8;
-	CTimer::m_snPreviousTimeInMilliseconds = *(int**)0x41543D;
-	CTimer::m_snTimeInMillisecondsNonClipped = *(int**)0x4ACEA2;
-	CTimer::m_snTimeInMillisecondsPauseMode = *(int**)0x47A780;
-	CTimer::m_FrameCounter = *(unsigned int**)0x4AD2F3;
-
 	Patch<BYTE>(0x490F83, 1);
 
 	Patch<BYTE>(0x43177D, 16);
@@ -379,14 +369,6 @@ void Patch_III_10(const RECT& desktop)
 	InjectHook(0x5382EC, HeadlightsFix, PATCH_JUMP);
 
 	InjectHook(0x4C4004, PurpleNinesGlitchFix, PATCH_JUMP);
-
-	InjectHook(0x4ACE60, CTimer::Initialise, PATCH_JUMP);
-	InjectHook(0x4AD310, CTimer::Suspend, PATCH_JUMP);
-	InjectHook(0x4AD370, CTimer::Resume, PATCH_JUMP);
-	InjectHook(0x4AD410, CTimer::GetCyclesPerFrame, PATCH_JUMP);
-	InjectHook(0x4AD3F0, CTimer::GetCyclesPerMillisecond, PATCH_JUMP);
-	InjectHook(0x4ACF70, CTimer::Update, PATCH_JUMP);
-	InjectHook(0x590D9F, CTimer::RecoverFromSave);
 
 	InjectHook(0x4A5870, ShowRadarTrace, PATCH_JUMP);
 	InjectHook(0x4209A7, SetScaleProperly);
@@ -536,17 +518,6 @@ void Patch_III_11(const RECT& desktop)
 	HeadlightsFix_JumpBack = (void*)0x538532;
 	SubtitlesShadowFix_JumpBack = (void*)0x500E12;
 
-	CTimer::ms_fTimeScale = *(float**)0x43F73F;
-	CTimer::ms_fTimeStep = *(float**)0x41428E;
-	CTimer::ms_fTimeStepNotClipped = *(float**)0x404F9B;
-	CTimer::m_UserPause = *(bool**)0x4076E9;
-	CTimer::m_CodePause = *(bool**)0x4076F2;
-	CTimer::m_snTimeInMilliseconds = *(int**)0x40B3B8;
-	CTimer::m_snPreviousTimeInMilliseconds = *(int**)0x41543D;
-	CTimer::m_snTimeInMillisecondsNonClipped = *(int**)0x4ACF92;
-	CTimer::m_snTimeInMillisecondsPauseMode = *(int**)0x47A770;
-	CTimer::m_FrameCounter = *(unsigned int**)0x4AD3E3;
-
 	Patch<BYTE>(0x491043, 1);
 
 	Patch<BYTE>(0x43177D, 16);
@@ -562,14 +533,6 @@ void Patch_III_11(const RECT& desktop)
 	InjectHook(0x53852C, HeadlightsFix, PATCH_JUMP);
 
 	InjectHook(0x4C40A4, PurpleNinesGlitchFix, PATCH_JUMP);
-
-	InjectHook(0x4ACF50, CTimer::Initialise, PATCH_JUMP);
-	InjectHook(0x4AD400, CTimer::Suspend, PATCH_JUMP);
-	InjectHook(0x4AD460, CTimer::Resume, PATCH_JUMP);
-	InjectHook(0x4AD500, CTimer::GetCyclesPerFrame, PATCH_JUMP);
-	InjectHook(0x4AD4E0, CTimer::GetCyclesPerMillisecond, PATCH_JUMP);
-	InjectHook(0x4AD060, CTimer::Update, PATCH_JUMP);
-	InjectHook(0x59105F, CTimer::RecoverFromSave);
 
 	InjectHook(0x4A5960, ShowRadarTrace, PATCH_JUMP);
 	InjectHook(0x4209A7, SetScaleProperly);
@@ -697,17 +660,6 @@ void Patch_III_Steam(const RECT& desktop)
 	RsGlobal = *(RsGlobalType**)0x584E72;
 	SubtitlesShadowFix_JumpBack = (void*)0x500DA2;
 
-	CTimer::ms_fTimeScale = *(float**)0x43F73F;
-	CTimer::ms_fTimeStep = *(float**)0x41428E;
-	CTimer::ms_fTimeStepNotClipped = *(float**)0x404F9B;
-	CTimer::m_UserPause = *(bool**)0x4076E9;
-	CTimer::m_CodePause = *(bool**)0x4076F2;
-	CTimer::m_snTimeInMilliseconds = *(int**)0x40B3B8;
-	CTimer::m_snPreviousTimeInMilliseconds = *(int**)0x41543D;
-	CTimer::m_snTimeInMillisecondsNonClipped = *(int**)0x4ACF22;
-	CTimer::m_snTimeInMillisecondsPauseMode = *(int**)0x47A770;
-	CTimer::m_FrameCounter = *(unsigned int**)0x4AD373;
-
 	Patch<BYTE>(0x490FD3, 1);
 
 	Patch<BYTE>(0x43177D, 16);
@@ -720,14 +672,6 @@ void Patch_III_Steam(const RECT& desktop)
 	Patch<BYTE>(0x544C94, 127);
 
 	InjectHook(0x4C4034, PurpleNinesGlitchFix, PATCH_JUMP);
-
-	InjectHook(0x4ACEE0, CTimer::Initialise, PATCH_JUMP);
-	InjectHook(0x4AD390, CTimer::Suspend, PATCH_JUMP);
-	InjectHook(0x4AD3F0, CTimer::Resume, PATCH_JUMP);
-	InjectHook(0x4AD490, CTimer::GetCyclesPerFrame, PATCH_JUMP);
-	InjectHook(0x4AD470, CTimer::GetCyclesPerMillisecond, PATCH_JUMP);
-	InjectHook(0x4ACFF0, CTimer::Update, PATCH_JUMP);
-	InjectHook(0x590F4F, CTimer::RecoverFromSave);
 
 	InjectHook(0x4A58F0, ShowRadarTrace, PATCH_JUMP);
 	InjectHook(0x4209A7, SetScaleProperly);
@@ -831,6 +775,21 @@ void Patch_III_Steam(const RECT& desktop)
 	InjectHook(0x4139B2, AutoPilotTimerFix_III, PATCH_JUMP);
 }
 
+void Patch_III_Common()
+{
+	using namespace Memory;
+	using namespace hook;
+
+	// New timers fix
+	{
+		auto hookPoint = pattern( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08" ).get_one();
+		auto jmpPoint = get_pattern( "DD D8 E9 37 FF FF FF DD D8" );
+
+		InjectHook( hookPoint.get<int>( 0x21 ), CTimer::Update_SilentPatch, PATCH_CALL );
+		InjectHook( hookPoint.get<int>( 0x21 + 5 ), jmpPoint, PATCH_JUMP );
+	}
+}
+
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	UNREFERENCED_PARAMETER(hinstDLL);
@@ -842,14 +801,14 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		GetWindowRect(GetDesktopWindow(), &desktop);
 		sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
-		ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
+		ScopedUnprotect::Section Protect( GetModuleHandle( nullptr ), ".text" );
 
 		if (*(DWORD*)0x5C1E75 == 0xB85548EC) Patch_III_10(desktop);
 		else if (*(DWORD*)0x5C2135 == 0xB85548EC) Patch_III_11(desktop);
 		else if (*(DWORD*)0x5C6FD5 == 0xB85548EC) Patch_III_Steam(desktop);
 		else return TRUE;
 
-		CTimer::Initialise();
+		Patch_III_Common();
 
 		HMODULE		hDummyHandle;
 		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)&DllMain, &hDummyHandle);

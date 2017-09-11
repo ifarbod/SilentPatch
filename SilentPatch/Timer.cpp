@@ -3,16 +3,30 @@
 
 #include "Patterns.h"
 
+int&			CTimer::m_snTimeInMilliseconds = **hook::get_pattern<int*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", -20 + 1 );
+
+#if _GTA_III
+
+float&			CTimer::ms_fTimeScale = **hook::get_pattern<float*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x66 + 2 );
+float&			CTimer::ms_fTimeStep = **hook::get_pattern<float*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0xE1 + 2 );
+bool&			CTimer::m_UserPause = **hook::get_pattern<bool*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0xBE + 2 );
+bool&			CTimer::m_CodePause = **hook::get_pattern<bool*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0xD8 + 2 );
+int&			CTimer::m_snTimeInMillisecondsNonClipped = **hook::get_pattern<int*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x129 + 1 );
+int&			CTimer::m_snTimeInMillisecondsPauseMode = **hook::get_pattern<int*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x8E + 1 );
+
+#elif _GTA_VC
+
 float&			CTimer::ms_fTimeScale = **hook::get_pattern<float*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x70 + 2 );
 float&			CTimer::ms_fTimeStep = **hook::get_pattern<float*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0xF3 + 2 );
 bool&			CTimer::m_UserPause = **hook::get_pattern<bool*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x4A + 2 );
 bool&			CTimer::m_CodePause = **hook::get_pattern<bool*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x67 + 2 );
-int&			CTimer::m_snTimeInMilliseconds = **hook::get_pattern<int*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x102 + 1 );
 int&			CTimer::m_snTimeInMillisecondsNonClipped = **hook::get_pattern<int*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x13B + 1 );
 int&			CTimer::m_snTimeInMillisecondsPauseMode = **hook::get_pattern<int*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 0x9C + 1 );
 
-static uint32_t& timerFrequency = **hook::get_pattern<uint32_t*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", -7 );
-static LARGE_INTEGER& prevTimer = **hook::get_pattern<LARGE_INTEGER*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 64 );
+#endif
+
+static uint32_t& timerFrequency = **hook::get_pattern<uint32_t*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", -8 + 1 );
+static LARGE_INTEGER& prevTimer = **hook::get_pattern<LARGE_INTEGER*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", 62 + 2 );
 
 
 void CTimer::Update_SilentPatch()
@@ -21,7 +35,12 @@ void CTimer::Update_SilentPatch()
 	QueryPerformanceCounter( &perfCount );
 
 	double diff = double(perfCount.QuadPart - prevTimer.QuadPart);
-	if ( !m_UserPause && !m_CodePause ) diff *= ms_fTimeScale;
+#if _GTA_VC
+	if ( !m_UserPause && !m_CodePause )
+#endif
+	{
+		diff *= ms_fTimeScale;
+	}
 
 	prevTimer = perfCount;
 
