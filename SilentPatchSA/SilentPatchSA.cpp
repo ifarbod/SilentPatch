@@ -1074,9 +1074,11 @@ void DrawScriptSpritesAndRectangles( uint8_t arg )
 }
 
 std::vector< std::pair<int32_t, bool> > doubleRearWheelsList;
-void ReadDoubleRearWheels(const wchar_t* pPath)
+bool ReadDoubleRearWheels(const wchar_t* pPath)
 {
-	const size_t SCRATCH_PAD_SIZE = 32767;
+	bool listedAny = false;
+
+	constexpr size_t SCRATCH_PAD_SIZE = 32767;
 	WideDelimStringReader reader( SCRATCH_PAD_SIZE );
 
 	GetPrivateProfileSectionW( L"DoubleRearWheels", reader.GetBuffer(), reader.GetSize(), pPath );
@@ -1100,8 +1102,10 @@ void ReadDoubleRearWheels(const wchar_t* pPath)
 		if ( begin != end )
 		{
 			doubleRearWheelsList.emplace_back( toList, value );
+			listedAny = true;
 		}
 	}
+	return listedAny;
 }
 
 bool __stdcall CheckDoubleRWheelsList( void* modelInfo, uint8_t* handlingData )
@@ -2294,7 +2298,7 @@ BOOL InjectDelayedPatches_10()
 		bool		bSARender = GetASIModuleHandleW(L"SARender") != nullptr;
 
 		ReadRotorFixExceptions(wcModulePath);
-		ReadDoubleRearWheels(wcModulePath);
+		bool bHookDoubleRwheels = ReadDoubleRearWheels(wcModulePath);
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == TRUE )
 		{
@@ -2491,6 +2495,20 @@ BOOL InjectDelayedPatches_10()
 		// Read CCustomCarPlateMgr::GeneratePlateText from here
 		// to work fine with Deji's Custom Plate Format
 		ReadCall( 0x4C9484, CCustomCarPlateMgr::GeneratePlateText );
+
+
+		if ( bHookDoubleRwheels )
+		{
+			// Double rwheels whitelist
+			// push ecx
+			// push edi
+			// call CheckDoubleRWheelsWhitelist
+			// test al, al
+			Patch<uint16_t>( 0x4C9239, 0x5751 );
+			InjectHook( 0x4C9239+2, CheckDoubleRWheelsList, PATCH_CALL );
+			Patch<uint16_t>( 0x4C9239+7, 0xC084 );
+			Nop( 0x4C9239+9, 1 );
+		}
 
 		// Adblocker
 #if DISABLE_FLA_DONATION_WINDOW
@@ -3429,17 +3447,6 @@ void Patch_SA_10()
 	// Linear filtering on script sprites
 	ReadCall( 0x58C092, orgDrawScriptSpritesAndRectangles );
 	InjectHook( 0x58C092, DrawScriptSpritesAndRectangles );
-
-
-	// Double rwheels whitelist
-	// push ecx
-	// push edi
-	// call CheckDoubleRWheelsWhitelist
-	// test al, al
-	Patch<uint16_t>( 0x4C9239, 0x5751 );
-	InjectHook( 0x4C9239+2, CheckDoubleRWheelsList, PATCH_CALL );
-	Patch<uint16_t>( 0x4C9239+7, 0xC084 );
-	Nop( 0x4C9239+9, 1 );
 
 
 	// Properly initialize all CVehicleModelInfo fields

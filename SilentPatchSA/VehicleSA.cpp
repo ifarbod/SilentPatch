@@ -84,7 +84,7 @@ static RwFrame* GetFrameFromName( RwFrame* topFrame, const char* name )
 
 void ReadRotorFixExceptions(const wchar_t* pPath)
 {
-	const size_t SCRATCH_PAD_SIZE = 32767;
+	constexpr size_t SCRATCH_PAD_SIZE = 32767;
 	WideDelimStringReader reader( SCRATCH_PAD_SIZE );
 
 	GetPrivateProfileSectionW( L"RotorFixExceptions", reader.GetBuffer(), reader.GetSize(), pPath );
