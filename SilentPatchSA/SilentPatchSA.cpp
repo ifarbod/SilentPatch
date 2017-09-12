@@ -3458,6 +3458,10 @@ void Patch_SA_10()
 
 	// Make freeing temp objects more aggressive to fix vending crash
 	InjectHook( 0x5A1840, CObject::TryToFreeUpTempObjects_SilentPatch, PATCH_JUMP );
+
+
+	// Remove FILE_FLAG_NO_BUFFERING from CdStreams
+	Patch<uint8_t>( 0x406BC6, 0xEB );
 }
 
 void Patch_SA_11()

@@ -608,6 +608,12 @@ void Patch_VC_Common()
 		InjectHook( hookPoint.get<int>( 0x21 ), CTimer::Update_SilentPatch, PATCH_CALL );
 		InjectHook( hookPoint.get<int>( 0x21 + 5 ), jmpPoint, PATCH_JUMP );
 	}
+
+	// Remove FILE_FLAG_NO_BUFFERING from CdStreams
+	{
+		auto addr = get_pattern( "81 7C 24 04 00 08 00 00", 0x12 );
+		Patch<uint8_t>( addr, 0xEB );
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
