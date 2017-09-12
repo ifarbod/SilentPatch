@@ -13,8 +13,6 @@
 #pragma warning(push)
 #pragma warning(disable:4201)
 
-#define PATTERNS_USE_HINTS 0
-
 namespace hook
 {
 	extern ptrdiff_t baseAddressDifference;
@@ -103,7 +101,7 @@ namespace hook
 		void Initialize(const char* pattern, size_t length);
 
 	private:
-		bool ConsiderMatch(uintptr_t offset);
+		bool ConsiderHint(uintptr_t offset);
 
 		void EnsureMatches(uint32_t maxCount);
 
@@ -179,7 +177,7 @@ namespace hook
 		}
 
 	public:
-#if PATTERNS_USE_HINTS
+#if PATTERNS_USE_HINTS && PATTERNS_CAN_SERIALIZE_HINTS
 		// define a hint
 		static void hint(uint64_t hash, uintptr_t address);
 #endif

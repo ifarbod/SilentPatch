@@ -37,8 +37,8 @@ struct basic_fnv_1
 	}
 };
 
-const std::uint64_t fnv_prime = 1099511628211u;
-const std::uint64_t fnv_offset_basis = 14695981039346656037u;
+static constexpr std::uint64_t fnv_prime = 1099511628211u;
+static constexpr std::uint64_t fnv_offset_basis = 14695981039346656037u;
 
 typedef basic_fnv_1<fnv_prime, fnv_offset_basis> fnv_1;
 
@@ -56,7 +56,11 @@ namespace hook
 
 
 #if PATTERNS_USE_HINTS
-static std::multimap<uint64_t, uintptr_t> g_hints;
+static auto& getHints()
+{
+	static std::multimap<uint64_t, uintptr_t> hints;
+	return hints;
+}
 #endif
 
 static void TransformPattern(std::string_view pattern, std::string& data, std::string& mask)
@@ -148,13 +152,13 @@ void pattern::Initialize(const char* pattern, size_t length)
 	// if there's hints, try those first
 	if (m_module == GetModuleHandle(nullptr))
 	{
-		auto range = g_hints.equal_range(m_hash);
+		auto range = getHints().equal_range(m_hash);
 
 		if (range.first != range.second)
 		{
 			std::for_each(range.first, range.second, [&] (const std::pair<uint64_t, uintptr_t>& hint)
 			{
-				ConsiderMatch(hint.second);
+				ConsiderHint(hint.second);
 			});
 
 			// if the hints succeeded, we don't need to do anything more
@@ -181,7 +185,7 @@ void pattern::EnsureMatches(uint32_t maxCount)
 	auto matchSuccess = [&] (uintptr_t address)
 	{
 #if PATTERNS_USE_HINTS
-		g_hints.emplace(m_hash, address);
+		getHints().emplace(m_hash, address);
 #else
 		(void)address;
 #endif
@@ -229,12 +233,13 @@ void pattern::EnsureMatches(uint32_t maxCount)
 	m_matched = true;
 }
 
-bool pattern::ConsiderMatch(uintptr_t offset)
+bool pattern::ConsiderHint(uintptr_t offset)
 {
+	char* ptr = reinterpret_cast<char*>(offset);
+
+#if PATTERNS_CAN_SERIALIZE_HINTS
 	const char* pattern = m_bytes.c_str();
 	const char* mask = m_mask.c_str();
-
-	char* ptr = reinterpret_cast<char*>(offset);
 
 	for (size_t i = 0, j = m_mask.size(); i < j; i++)
 	{
@@ -248,18 +253,21 @@ bool pattern::ConsiderMatch(uintptr_t offset)
 			return false;
 		}
 	}
+#endif
 
 	m_matches.emplace_back(ptr);
 
 	return true;
 }
 
-#if PATTERNS_USE_HINTS
+#if PATTERNS_USE_HINTS && PATTERNS_CAN_SERIALIZE_HINTS
 void pattern::hint(uint64_t hash, uintptr_t address)
 {
-	auto range = g_hints.equal_range(hash);
+	auto& hints = getHints();
 
-	for (auto it = range.first; it != range.second; it++)
+	auto range = hints.equal_range(hash);
+
+	for (auto it = range.first; it != range.second; ++it)
 	{
 		if (it->second == address)
 		{
@@ -267,7 +275,7 @@ void pattern::hint(uint64_t hash, uintptr_t address)
 		}
 	}
 
-	g_hints.emplace(hash, address);
+	hints.emplace(hash, address);
 }
 #endif
 }
