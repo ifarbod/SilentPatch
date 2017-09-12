@@ -804,6 +804,15 @@ void Patch_III_Common()
 			InjectHook( match.get<void>( 2 ), dest, PATCH_JUMP );
 		});
 	}
+
+	// Proper panels damage
+	{
+		auto addr = pattern( "C6 43 09 03 C6 43 0A 03 C6 43 0B 03" ).get_one();
+
+		Patch<uint8_t>( addr.get<void>( 0x1A + 1 ), 5 );
+		Patch<uint8_t>( addr.get<void>( 0x23 + 1 ), 6 );
+		Nop( addr.get<void>( 0x3F ), 7 );
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
