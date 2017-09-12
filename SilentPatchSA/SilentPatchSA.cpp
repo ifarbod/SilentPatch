@@ -2302,7 +2302,7 @@ BOOL InjectDelayedPatches_10()
 		ReadRotorFixExceptions(wcModulePath);
 		bool bHookDoubleRwheels = ReadDoubleRearWheels(wcModulePath);
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == TRUE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == 1 )
 		{
 			// PS2 sun - more
 			static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
@@ -2355,7 +2355,7 @@ BOOL InjectDelayedPatches_10()
 			}
 
 
-			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", -1, wcModulePath) == TRUE )
+			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", -1, wcModulePath) == 1 )
 			{
 				// Shaders!
 				// plugin-sdk compatibility
@@ -2393,7 +2393,7 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x732F30, RenderWeaponPedsForPC, PATCH_JUMP);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == TRUE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == 1 )
 		{
 			// Gym glitch fix
 			Patch<WORD>(0x470B03, 0xCD8B);
@@ -2411,13 +2411,13 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x4899F0, StartNewMission_SCMFixes);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", -1, wcModulePath) == TRUE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", -1, wcModulePath) == 1 )
 		{
 			// Skip the damn intro splash
 			Patch<WORD>(AddressByRegion_10<DWORD>(0x748AA8), 0x3DEB);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == TRUE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == 1 )
 		{
 			// We're on 1.0 - make texts smaller
 			Patch<const void*>(0x58C387, &fSteamSubtitleSizeY);
@@ -2435,7 +2435,7 @@ BOOL InjectDelayedPatches_10()
 
 		{
 			int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath);
-			if ( INIoption == TRUE )
+			if ( INIoption == 1 )
 			{
 				// Coloured zone names
 				Patch<WORD>(0x58ADBE, 0x0E75);
@@ -2443,7 +2443,7 @@ BOOL InjectDelayedPatches_10()
 
 				InjectHook(0x58ADE4, &CRGBA::BlendGangColour);
 			}
-			else if ( INIoption == FALSE )
+			else if ( INIoption == 0 )
 			{
 				Patch<BYTE>(0x58ADAE, 0xEB);
 			}
@@ -2559,7 +2559,7 @@ BOOL InjectDelayedPatches_11()
 
 		ReadRotorFixExceptions(wcModulePath);
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == TRUE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == 1 )
 		{
 			// PS2 sun - more
 			static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
@@ -2613,7 +2613,7 @@ BOOL InjectDelayedPatches_11()
 				}
 			}
 
-			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", -1, wcModulePath) == TRUE )
+			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", -1, wcModulePath) == 1 )
 			{
 				// Shaders!
 				// plugin-sdk compatibility
@@ -2666,7 +2666,7 @@ BOOL InjectDelayedPatches_11()
 			InjectHook(0x733760, RenderWeaponPedsForPC, PATCH_JUMP);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == TRUE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == 1 )
 		{
 			// Gym glitch fix
 			Patch<WORD>(0x470B83, 0xCD8B);
@@ -2684,13 +2684,13 @@ BOOL InjectDelayedPatches_11()
 			InjectHook(0x489AF0, StartNewMission_SCMFixes);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", -1, wcModulePath) == TRUE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", -1, wcModulePath) == 1 )
 		{
 			// Skip the damn intro splash
 			Patch<WORD>(AddressByRegion_11<DWORD>(0x749388), 0x62EB);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == TRUE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == 1 )
 		{
 			// We're on 1.01 - make texts smaller
 			Patch<const void*>(0x58CB57, &fSteamSubtitleSizeY);
@@ -2708,7 +2708,7 @@ BOOL InjectDelayedPatches_11()
 
 		{
 			int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath);
-			if ( INIoption == TRUE )
+			if ( INIoption == 1 )
 			{
 				// Coloured zone names
 				Patch<WORD>(0x58B58E, 0x0E75);
@@ -2716,7 +2716,7 @@ BOOL InjectDelayedPatches_11()
 
 				InjectHook(0x58B5B4, &CRGBA::BlendGangColour);
 			}
-			else if ( INIoption == FALSE )
+			else if ( INIoption == 0 )
 			{
 				Patch<BYTE>(0x58B57E, 0xEB);
 			}
@@ -2791,7 +2791,7 @@ BOOL InjectDelayedPatches_Steam()
 
 		ReadRotorFixExceptions(wcModulePath);
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == TRUE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == 1 )
 		{
 			// PS2 sun - more
 			static const double		dSunMult = (1050.0 * 0.95) / 1500.0;
@@ -2845,7 +2845,7 @@ BOOL InjectDelayedPatches_Steam()
 				}
 			}
 
-			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", -1, wcModulePath) == TRUE )
+			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", -1, wcModulePath) == 1 )
 			{
 				// Shaders!
 				// plugin-sdk compatibility
@@ -2885,7 +2885,7 @@ BOOL InjectDelayedPatches_Steam()
 			InjectHook(0x76D170, RenderWeaponPedsForPC, PATCH_JUMP);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == TRUE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == 1 )
 		{
 			// Gym glitch fix
 			Patch<WORD>(0x476C2A, 0xCD8B);
@@ -2903,7 +2903,7 @@ BOOL InjectDelayedPatches_Steam()
 			InjectHook(0x49072E, StartNewMission_SCMFixes);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == 0 )
 		{
 			// We're on Steam - make texts bigger
 			Patch<const void*>(0x59A719, &dRetailSubtitleSizeY);
@@ -2921,7 +2921,7 @@ BOOL InjectDelayedPatches_Steam()
 
 		{
 			int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath);
-			if ( INIoption == TRUE )
+			if ( INIoption == 1 )
 			{
 				// Coloured zone names
 				Patch<WORD>(0x598F65, 0x0C75);
@@ -2929,7 +2929,7 @@ BOOL InjectDelayedPatches_Steam()
 
 				InjectHook(0x598F87, &CRGBA::BlendGangColour);
 			}
-			else if ( INIoption == FALSE )
+			else if ( INIoption == 0 )
 			{
 				Patch<BYTE>(0x598F56, 0xEB);
 			}
