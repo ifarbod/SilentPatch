@@ -797,16 +797,16 @@ void SunAndMoonFarClip()
 template<bool bX1, bool bY1, bool bX2, bool bY2>
 void DrawRect_HalfPixel_Steam(CRect& rect, const CRGBA& rgba)
 {
-	if ( bX1 )
+	if constexpr ( bX1 )
 		rect.x1 -= 0.5f;
 
-	if ( bY1 )
+	if constexpr ( bY1 )
 		rect.y1 -= 0.5f;
 
-	if ( bX2 )
+	if constexpr ( bX2 )
 		rect.x2 -= 0.5f;
 
-	if ( bY2 )
+	if constexpr ( bY2 )
 		rect.y2 -= 0.5f;
 
 	// Steam CSprite2d::DrawRect
@@ -1040,7 +1040,7 @@ void __stdcall CdStreamSetFilePointer( HANDLE hFile, uint32_t distanceToMove, vo
 	li.QuadPart = int64_t(distanceToMove) << 11;
 	SetFilePointerEx( hFile, li, nullptr, dwMoveMethod );
 }
-static auto* pCdStreamSetFilePointer = CdStreamSetFilePointer;
+static auto* const pCdStreamSetFilePointer = CdStreamSetFilePointer;
 
 
 static signed int& LastTimeFireTruckCreated = **AddressByVersion<int**>(0x42131F + 2, 0, 0x42224D + 2);
@@ -2296,7 +2296,7 @@ BOOL InjectDelayedPatches_10()
 		ReadRotorFixExceptions(wcModulePath);
 		ReadDoubleRearWheels(wcModulePath);
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", FALSE, wcModulePath) != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == TRUE )
 		{
 			// PS2 sun - more
 			static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
@@ -2313,40 +2313,43 @@ BOOL InjectDelayedPatches_10()
 		if ( !bSARender )
 		{
 			// Twopass rendering (experimental)
-			unsigned int	dwTwoPassMethod = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", 0, wcModulePath);
-			Patch<BYTE>(0x4C441E, 0x57);
-			Patch<DWORD>(0x4C4424, 0x5F04C483);
-			Patch<DWORD>(0x4C4428, 0x0004C25E);
-			if ( dwTwoPassMethod == 1 )
+			int	dwTwoPassMethod = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", -1, wcModulePath);
+			if ( dwTwoPassMethod != -1 )
 			{
-				// Silent's twopass
-				InjectHook(0x4C441F, SetRendererForAtomic<TwoPassAlphaRender_Silent>, PATCH_CALL);
-				Patch<const void*>(0x7341D9, TwoPassAlphaRender_Silent);
-				Patch<const void*>(0x734127, TwoPassAlphaRender_Silent);
-				Patch(0x73445E, RenderBigVehicleActomic<TwoPassAlphaRender_Silent>);
-				// Twopass for peds
-				InjectHook(0x733614, RenderPedCB<TwoPassAlphaRender_Silent>);
-			}
-			else if ( dwTwoPassMethod == 2 )
-			{
-				// aap's twopass
-				InjectHook(0x4C441F, SetRendererForAtomic_NoTest<TwoPassAlphaRender_aap>, PATCH_CALL);
-				Patch<const void*>(0x7341D9, TwoPassAlphaRender_aap);
-				Patch<const void*>(0x734127, TwoPassAlphaRender_aap);
-				Patch(0x73445E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
-				// Twopass for peds
-				InjectHook(0x733614, RenderPedCB<TwoPassAlphaRender_aap>);
-			}
-			else
-			{
-				Patch<const void*>(0x7341D9, TwoPassAlphaRender_aap);
-				Patch<const void*>(0x734127, TwoPassAlphaRender_aap);
-				Patch(0x73445E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
-				InjectHook(0x4C441F, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+				Patch<BYTE>(0x4C441E, 0x57);
+				Patch<DWORD>(0x4C4424, 0x5F04C483);
+				Patch<DWORD>(0x4C4428, 0x0004C25E);
+				if ( dwTwoPassMethod == 1 )
+				{
+					// Silent's twopass
+					InjectHook(0x4C441F, SetRendererForAtomic<TwoPassAlphaRender_Silent>, PATCH_CALL);
+					Patch<const void*>(0x7341D9, TwoPassAlphaRender_Silent);
+					Patch<const void*>(0x734127, TwoPassAlphaRender_Silent);
+					Patch(0x73445E, RenderBigVehicleActomic<TwoPassAlphaRender_Silent>);
+					// Twopass for peds
+					InjectHook(0x733614, RenderPedCB<TwoPassAlphaRender_Silent>);
+				}
+				else if ( dwTwoPassMethod == 2 )
+				{
+					// aap's twopass
+					InjectHook(0x4C441F, SetRendererForAtomic_NoTest<TwoPassAlphaRender_aap>, PATCH_CALL);
+					Patch<const void*>(0x7341D9, TwoPassAlphaRender_aap);
+					Patch<const void*>(0x734127, TwoPassAlphaRender_aap);
+					Patch(0x73445E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
+					// Twopass for peds
+					InjectHook(0x733614, RenderPedCB<TwoPassAlphaRender_aap>);
+				}
+				else
+				{
+					Patch<const void*>(0x7341D9, TwoPassAlphaRender_aap);
+					Patch<const void*>(0x734127, TwoPassAlphaRender_aap);
+					Patch(0x73445E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
+					InjectHook(0x4C441F, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+				}
 			}
 
 
-			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", TRUE, wcModulePath) != FALSE )
+			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", -1, wcModulePath) == TRUE )
 			{
 				// Shaders!
 				// plugin-sdk compatibility
@@ -2384,7 +2387,7 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x732F30, RenderWeaponPedsForPC, PATCH_JUMP);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", TRUE, wcModulePath) != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == TRUE )
 		{
 			// Gym glitch fix
 			Patch<WORD>(0x470B03, 0xCD8B);
@@ -2402,13 +2405,13 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x4899F0, StartNewMission_SCMFixes);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", TRUE, wcModulePath) != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", -1, wcModulePath) == TRUE )
 		{
 			// Skip the damn intro splash
 			Patch<WORD>(AddressByRegion_10<DWORD>(0x748AA8), 0x3DEB);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", TRUE, wcModulePath) != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == TRUE )
 		{
 			// We're on 1.0 - make texts smaller
 			Patch<const void*>(0x58C387, &fSteamSubtitleSizeY);
@@ -2424,17 +2427,20 @@ BOOL InjectDelayedPatches_10()
 			Patch<const void*>(0x4E9F38, &fSteamRadioNameSizeX);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", FALSE, wcModulePath) != FALSE )
 		{
-			// Coloured zone names
-			Patch<WORD>(0x58ADBE, 0x0E75);
-			Patch<WORD>(0x58ADC5, 0x0775);
+			int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath);
+			if ( INIoption == TRUE )
+			{
+				// Coloured zone names
+				Patch<WORD>(0x58ADBE, 0x0E75);
+				Patch<WORD>(0x58ADC5, 0x0775);
 
-			InjectHook(0x58ADE4, &CRGBA::BlendGangColour);
-		}
-		else
-		{
-			Patch<BYTE>(0x58ADAE, 0xEB);
+				InjectHook(0x58ADE4, &CRGBA::BlendGangColour);
+			}
+			else if ( INIoption == FALSE )
+			{
+				Patch<BYTE>(0x58ADAE, 0xEB);
+			}
 		}
 
 		// ImVehFt conflicts
@@ -2533,7 +2539,7 @@ BOOL InjectDelayedPatches_11()
 
 		ReadRotorFixExceptions(wcModulePath);
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", FALSE, wcModulePath) != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == TRUE )
 		{
 			// PS2 sun - more
 			static const float		fSunMult = (1050.0f * 0.95f) / 1500.0f;
@@ -2551,40 +2557,43 @@ BOOL InjectDelayedPatches_11()
 		if ( !bSARender )
 		{
 			// Twopass rendering (experimental)
-			unsigned int	dwTwoPassMethod = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", 0, wcModulePath);
-			Patch<BYTE>(0x4C449E, 0x57);
-			Patch<DWORD>(0x4C44A4, 0x5F04C483);
-			Patch<DWORD>(0x4C44A8, 0x0004C25E);
+			int	dwTwoPassMethod = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", -1, wcModulePath);
+			if ( dwTwoPassMethod != -1 )
+			{
+				Patch<BYTE>(0x4C449E, 0x57);
+				Patch<DWORD>(0x4C44A4, 0x5F04C483);
+				Patch<DWORD>(0x4C44A8, 0x0004C25E);
 
-			if ( dwTwoPassMethod == 1 )
-			{
-				// Silent's twopass
-				InjectHook(0x4C449F, SetRendererForAtomic<TwoPassAlphaRender_Silent>, PATCH_CALL);
-				Patch<const void*>(0x734A09, TwoPassAlphaRender_Silent);
-				Patch<const void*>(0x734957, TwoPassAlphaRender_Silent);
-				Patch(0x734C8E, RenderBigVehicleActomic<TwoPassAlphaRender_Silent>);
-				// Twopass for peds
-				InjectHook(0x733E44, RenderPedCB<TwoPassAlphaRender_Silent>);
-			}
-			else if ( dwTwoPassMethod == 2 )
-			{
-				// aap's twopass
-				InjectHook(0x4C449F, SetRendererForAtomic_NoTest<TwoPassAlphaRender_aap>, PATCH_CALL);
-				Patch<const void*>(0x734A09, TwoPassAlphaRender_aap);
-				Patch<const void*>(0x734957, TwoPassAlphaRender_aap);
-				Patch(0x734C8E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
-				// Twopass for peds
-				InjectHook(0x733E44, RenderPedCB<TwoPassAlphaRender_aap>);
-			}
-			else
-			{
-				InjectHook(0x4C449F, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
-				Patch<const void*>(0x734A09, TwoPassAlphaRender_aap);
-				Patch<const void*>(0x734957, TwoPassAlphaRender_aap);
-				Patch(0x734C8E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
+				if ( dwTwoPassMethod == 1 )
+				{
+					// Silent's twopass
+					InjectHook(0x4C449F, SetRendererForAtomic<TwoPassAlphaRender_Silent>, PATCH_CALL);
+					Patch<const void*>(0x734A09, TwoPassAlphaRender_Silent);
+					Patch<const void*>(0x734957, TwoPassAlphaRender_Silent);
+					Patch(0x734C8E, RenderBigVehicleActomic<TwoPassAlphaRender_Silent>);
+					// Twopass for peds
+					InjectHook(0x733E44, RenderPedCB<TwoPassAlphaRender_Silent>);
+				}
+				else if ( dwTwoPassMethod == 2 )
+				{
+					// aap's twopass
+					InjectHook(0x4C449F, SetRendererForAtomic_NoTest<TwoPassAlphaRender_aap>, PATCH_CALL);
+					Patch<const void*>(0x734A09, TwoPassAlphaRender_aap);
+					Patch<const void*>(0x734957, TwoPassAlphaRender_aap);
+					Patch(0x734C8E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
+					// Twopass for peds
+					InjectHook(0x733E44, RenderPedCB<TwoPassAlphaRender_aap>);
+				}
+				else
+				{
+					InjectHook(0x4C449F, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+					Patch<const void*>(0x734A09, TwoPassAlphaRender_aap);
+					Patch<const void*>(0x734957, TwoPassAlphaRender_aap);
+					Patch(0x734C8E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
+				}
 			}
 
-			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", TRUE, wcModulePath) != FALSE )
+			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", -1, wcModulePath) == TRUE )
 			{
 				// Shaders!
 				// plugin-sdk compatibility
@@ -2637,7 +2646,7 @@ BOOL InjectDelayedPatches_11()
 			InjectHook(0x733760, RenderWeaponPedsForPC, PATCH_JUMP);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", TRUE, wcModulePath) != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == TRUE )
 		{
 			// Gym glitch fix
 			Patch<WORD>(0x470B83, 0xCD8B);
@@ -2655,13 +2664,13 @@ BOOL InjectDelayedPatches_11()
 			InjectHook(0x489AF0, StartNewMission_SCMFixes);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", TRUE, wcModulePath) != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", -1, wcModulePath) == TRUE )
 		{
 			// Skip the damn intro splash
 			Patch<WORD>(AddressByRegion_11<DWORD>(0x749388), 0x62EB);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", TRUE, wcModulePath) != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == TRUE )
 		{
 			// We're on 1.01 - make texts smaller
 			Patch<const void*>(0x58CB57, &fSteamSubtitleSizeY);
@@ -2677,17 +2686,20 @@ BOOL InjectDelayedPatches_11()
 			Patch<const void*>(0x4EA388, &fSteamRadioNameSizeX);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", FALSE, wcModulePath) != FALSE )
 		{
-			// Coloured zone names
-			Patch<WORD>(0x58B58E, 0x0E75);
-			Patch<WORD>(0x58B595, 0x0775);
+			int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath);
+			if ( INIoption == TRUE )
+			{
+				// Coloured zone names
+				Patch<WORD>(0x58B58E, 0x0E75);
+				Patch<WORD>(0x58B595, 0x0775);
 
-			InjectHook(0x58B5B4, &CRGBA::BlendGangColour);
-		}
-		else
-		{
-			Patch<BYTE>(0x58B57E, 0xEB);
+				InjectHook(0x58B5B4, &CRGBA::BlendGangColour);
+			}
+			else if ( INIoption == FALSE )
+			{
+				Patch<BYTE>(0x58B57E, 0xEB);
+			}
 		}
 
 		// ImVehFt conflicts
@@ -2759,7 +2771,7 @@ BOOL InjectDelayedPatches_Steam()
 
 		ReadRotorFixExceptions(wcModulePath);
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", FALSE, wcModulePath) != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == TRUE )
 		{
 			// PS2 sun - more
 			static const double		dSunMult = (1050.0 * 0.95) / 1500.0;
@@ -2777,40 +2789,43 @@ BOOL InjectDelayedPatches_Steam()
 		if ( !bSARender )
 		{
 			// Twopass rendering (experimental)
-			unsigned int	dwTwoPassMethod = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", 0, wcModulePath);
-			Patch<BYTE>(0x4CEBF3, 0x57);
-			Patch<DWORD>(0x4CEBF9, 0xC25E5F5F);
-			Patch<WORD>(0x4CEBFD, 0x0004);
+			int	dwTwoPassMethod = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", -1, wcModulePath);
+			if ( dwTwoPassMethod != -1 )
+			{
+				Patch<BYTE>(0x4CEBF3, 0x57);
+				Patch<DWORD>(0x4CEBF9, 0xC25E5F5F);
+				Patch<WORD>(0x4CEBFD, 0x0004);
 
-			if ( dwTwoPassMethod == 1 )
-			{
-				// Silent's twopass
-				InjectHook(0x4CEBF4, SetRendererForAtomic<TwoPassAlphaRender_Silent>, PATCH_CALL);
-				Patch<const void*>(0x76E230, TwoPassAlphaRender_Silent);
-				Patch<const void*>(0x76E160, TwoPassAlphaRender_Silent);
-				Patch(0x76E4F0, RenderBigVehicleActomic<TwoPassAlphaRender_Silent>);
-				// Twopass for peds
-				InjectHook(0x76D88E, RenderPedCB<TwoPassAlphaRender_Silent>);
-			}
-			else if ( dwTwoPassMethod == 2 )
-			{
-				// aap's twopass
-				InjectHook(0x4CEBF4, SetRendererForAtomic_NoTest<TwoPassAlphaRender_aap>, PATCH_CALL);
-				Patch<const void*>(0x76E230, TwoPassAlphaRender_aap);
-				Patch<const void*>(0x76E160, TwoPassAlphaRender_aap);
-				Patch(0x76E4F0, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
-				// Twopass for peds
-				InjectHook(0x76D88E, RenderPedCB<TwoPassAlphaRender_aap>);
-			}
-			else
-			{
-				InjectHook(0x4CEBF4, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
-				Patch<const void*>(0x76E230, TwoPassAlphaRender_aap);
-				Patch<const void*>(0x76E160, TwoPassAlphaRender_aap);
-				Patch(0x76E4F0, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
+				if ( dwTwoPassMethod == 1 )
+				{
+					// Silent's twopass
+					InjectHook(0x4CEBF4, SetRendererForAtomic<TwoPassAlphaRender_Silent>, PATCH_CALL);
+					Patch<const void*>(0x76E230, TwoPassAlphaRender_Silent);
+					Patch<const void*>(0x76E160, TwoPassAlphaRender_Silent);
+					Patch(0x76E4F0, RenderBigVehicleActomic<TwoPassAlphaRender_Silent>);
+					// Twopass for peds
+					InjectHook(0x76D88E, RenderPedCB<TwoPassAlphaRender_Silent>);
+				}
+				else if ( dwTwoPassMethod == 2 )
+				{
+					// aap's twopass
+					InjectHook(0x4CEBF4, SetRendererForAtomic_NoTest<TwoPassAlphaRender_aap>, PATCH_CALL);
+					Patch<const void*>(0x76E230, TwoPassAlphaRender_aap);
+					Patch<const void*>(0x76E160, TwoPassAlphaRender_aap);
+					Patch(0x76E4F0, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
+					// Twopass for peds
+					InjectHook(0x76D88E, RenderPedCB<TwoPassAlphaRender_aap>);
+				}
+				else
+				{
+					InjectHook(0x4CEBF4, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
+					Patch<const void*>(0x76E230, TwoPassAlphaRender_aap);
+					Patch<const void*>(0x76E160, TwoPassAlphaRender_aap);
+					Patch(0x76E4F0, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
+				}
 			}
 
-			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", TRUE, wcModulePath) != FALSE )
+			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", -1, wcModulePath) == TRUE )
 			{
 				// Shaders!
 				// plugin-sdk compatibility
@@ -2850,7 +2865,7 @@ BOOL InjectDelayedPatches_Steam()
 			InjectHook(0x76D170, RenderWeaponPedsForPC, PATCH_JUMP);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", TRUE, wcModulePath) != FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == TRUE )
 		{
 			// Gym glitch fix
 			Patch<WORD>(0x476C2A, 0xCD8B);
@@ -2868,7 +2883,7 @@ BOOL InjectDelayedPatches_Steam()
 			InjectHook(0x49072E, StartNewMission_SCMFixes);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", TRUE, wcModulePath) == FALSE )
+		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == FALSE )
 		{
 			// We're on Steam - make texts bigger
 			Patch<const void*>(0x59A719, &dRetailSubtitleSizeY);
@@ -2884,17 +2899,20 @@ BOOL InjectDelayedPatches_Steam()
 			Patch<const void*>(0x4F59BF, &dRetailRadioNameSizeX);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", FALSE, wcModulePath) != FALSE )
 		{
-			// Coloured zone names
-			Patch<WORD>(0x598F65, 0x0C75);
-			Patch<WORD>(0x598F6B, 0x0675);
+			int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath);
+			if ( INIoption == TRUE )
+			{
+				// Coloured zone names
+				Patch<WORD>(0x598F65, 0x0C75);
+				Patch<WORD>(0x598F6B, 0x0675);
 
-			InjectHook(0x598F87, &CRGBA::BlendGangColour);
-		}
-		else
-		{
-			Patch<BYTE>(0x598F56, 0xEB);
+				InjectHook(0x598F87, &CRGBA::BlendGangColour);
+			}
+			else if ( INIoption == FALSE )
+			{
+				Patch<BYTE>(0x598F56, 0xEB);
+			}
 		}
 
 		// ImVehFt conflicts
