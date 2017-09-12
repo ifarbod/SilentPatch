@@ -21,6 +21,11 @@
 
 #include <cstdint>
 
+#ifndef _MEMORY_NO_CRT
+#include <initializer_list>
+#include <iterator>
+#endif
+
 enum
 {
 	PATCH_CALL,
@@ -422,6 +427,15 @@ namespace Memory
 	inline void		Patch(AT address, T value)
 	{*(T*)address = value; }
 
+#ifndef _MEMORY_NO_CRT
+	template<typename AT>
+	inline void		Patch(AT address, std::initializer_list<uint8_t> list )
+	{
+		uint8_t* const addr = (uint8_t*)address;
+		std::copy( list.begin(), list.end(), stdext::checked_array_iterator<uint8_t*>(addr, list.size()) );
+	}
+#endif
+
 	template<typename AT>
 	inline void		Nop(AT address, size_t count)
 #ifndef _MEMORY_NO_CRT
@@ -474,6 +488,14 @@ namespace Memory
 			Memory::Patch(DynBaseAddress(address), value);
 		}
 
+#ifndef _MEMORY_NO_CRT
+		template<typename AT>
+		inline void		Patch(AT address, std::initializer_list<uint8_t> list )
+		{
+			Memory::Patch(DynBaseAddress(address), std::move(list));
+		}
+#endif
+
 		template<typename AT>
 		inline void		Nop(AT address, size_t count)
 		{
@@ -509,6 +531,17 @@ namespace Memory
 			Memory::Patch( address, value );
 			VirtualProtect((void*)address, sizeof(T), dwProtect[0], &dwProtect[1]);
 		}
+
+#ifndef _MEMORY_NO_CRT
+		template<typename AT>
+		inline void		Patch(AT address, std::initializer_list<uint8_t> list )
+		{
+			DWORD		dwProtect[2];
+			VirtualProtect((void*)address, list.size(), PAGE_EXECUTE_READWRITE, &dwProtect[0]);
+			Memory::Patch(address, std::move(list));
+			VirtualProtect((void*)address, list.size(), dwProtect[0], &dwProtect[1]);
+		}
+#endif
 
 		template<typename AT>
 		inline void		Nop(AT address, size_t count)
@@ -552,6 +585,14 @@ namespace Memory
 			{
 				VP::Patch(DynBaseAddress(address), value);
 			}
+
+#ifndef _MEMORY_NO_CRT
+			template<typename AT>
+			inline void		Patch(AT address, std::initializer_list<uint8_t> list )
+			{
+				VP::Patch(DynBaseAddress(address), std::move(list));
+			}
+#endif
 
 			template<typename AT>
 			inline void		Nop(AT address, size_t count)
