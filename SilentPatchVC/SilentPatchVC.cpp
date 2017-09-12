@@ -605,14 +605,24 @@ void Patch_VC_Common()
 		auto hookPoint = pattern( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08" ).get_one();
 		auto jmpPoint = get_pattern( "DD D8 E9 31 FF FF FF" );
 
-		InjectHook( hookPoint.get<int>( 0x21 ), CTimer::Update_SilentPatch, PATCH_CALL );
-		InjectHook( hookPoint.get<int>( 0x21 + 5 ), jmpPoint, PATCH_JUMP );
+		InjectHook( hookPoint.get<void>( 0x21 ), CTimer::Update_SilentPatch, PATCH_CALL );
+		InjectHook( hookPoint.get<void>( 0x21 + 5 ), jmpPoint, PATCH_JUMP );
 	}
 
 	// Remove FILE_FLAG_NO_BUFFERING from CdStreams
 	{
 		auto addr = get_pattern( "81 7C 24 04 00 08 00 00", 0x12 );
 		Patch<uint8_t>( addr, 0xEB );
+	}
+
+	// Alt+F4
+	{
+		auto addr = pattern( "59 59 31 C0 83 C4 70 5D 5F 5E 5B C2 10 00" ).count(2);
+		auto dest = get_pattern( "53 55 56 FF B4 24 90 00 00 00 FF 15" );
+
+		addr.for_each_result( [&]( pattern_match match ) {
+			InjectHook( match.get<void>( 2 ), dest, PATCH_JUMP );
+		});
 	}
 }
 
