@@ -44,7 +44,6 @@ struct RwV2d
 static void (*DrawRect)(const CRect&,const CRGBA&);
 static void (*SetScale)(float,float);
 static int*				InstantHitsFiredByPlayer;
-static signed char*		pGangModelOverrides;
 static const void*		HeadlightsFix_JumpBack;
 
 
@@ -94,10 +93,21 @@ void SetScaleProperly(float fX, float fY)
 	SetScale(fX * GetWidthMult() * RsGlobal->MaximumWidth, fY * GetHeightMult() * RsGlobal->MaximumHeight);
 }
 
+class CGang
+{
+public:
+	int32_t m_vehicleModel;
+	int8_t m_gangModelOverride;
+	int32_t m_gangWeapons[2];
+};
+
+static_assert(sizeof(CGang) == 0x10, "Wrong size: CGang");
+
+static CGang* const Gangs = *hook::get_pattern<CGang*>( "0F BF 4C 24 04 8B 44 24 08 C1 E1 04 89 81", -0x60 + 2 );
 void PurpleNinesGlitchFix()
 {
-	for ( int i = 0; i < 9; ++i )
-		pGangModelOverrides[i * 16] = -1;
+	for ( size_t i = 0; i < 9; ++i )
+		Gangs[i].m_gangModelOverride = -1;
 }
 
 static bool bGameInFocus = true;
@@ -347,7 +357,6 @@ void Patch_III_10(const RECT& desktop)
 	PrintString = (void(*)(float,float,const wchar_t*))0x500F50;
 
 	InstantHitsFiredByPlayer = *(int**)0x482C8F;
-	pGangModelOverrides = *(signed char**)0x4C405E;
 	bWantsToDrawHud = *(bool**)0x4A5877;
 	bCamCheck = *(bool**)0x4A588C;
 	RsGlobal = *(RsGlobalType**)0x584C42;
@@ -367,8 +376,6 @@ void Patch_III_10(const RECT& desktop)
 
 	Patch<WORD>(0x5382BF, 0x0EEB);
 	InjectHook(0x5382EC, HeadlightsFix, PATCH_JUMP);
-
-	InjectHook(0x4C4004, PurpleNinesGlitchFix, PATCH_JUMP);
 
 	InjectHook(0x4A5870, ShowRadarTrace, PATCH_JUMP);
 	InjectHook(0x4209A7, SetScaleProperly);
@@ -511,7 +518,6 @@ void Patch_III_11(const RECT& desktop)
 	PrintString = (void(*)(float,float,const wchar_t*))0x501030;
 
 	InstantHitsFiredByPlayer = *(int**)0x482D5F;
-	pGangModelOverrides = *(signed char**)0x4C40FE;
 	bWantsToDrawHud = *(bool**)0x4A5967;
 	bCamCheck = *(bool**)0x4A597C;
 	RsGlobal = *(RsGlobalType**)0x584F82;
@@ -531,8 +537,6 @@ void Patch_III_11(const RECT& desktop)
 
 	Patch<WORD>(0x5384FF, 0x0EEB);
 	InjectHook(0x53852C, HeadlightsFix, PATCH_JUMP);
-
-	InjectHook(0x4C40A4, PurpleNinesGlitchFix, PATCH_JUMP);
 
 	InjectHook(0x4A5960, ShowRadarTrace, PATCH_JUMP);
 	InjectHook(0x4209A7, SetScaleProperly);
@@ -654,7 +658,6 @@ void Patch_III_Steam(const RECT& desktop)
 	PrintString = (void(*)(float,float,const wchar_t*))0x500FC0;
 
 	InstantHitsFiredByPlayer = *(int**)0x482D5F;
-	pGangModelOverrides = *(signed char**)0x4C408E;
 	bWantsToDrawHud = *(bool**)0x4A58F7;
 	bCamCheck = *(bool**)0x4A590C;
 	RsGlobal = *(RsGlobalType**)0x584E72;
@@ -670,8 +673,6 @@ void Patch_III_Steam(const RECT& desktop)
 	Patch<BYTE>(0x4FADA5, 16);
 
 	Patch<BYTE>(0x544C94, 127);
-
-	InjectHook(0x4C4034, PurpleNinesGlitchFix, PATCH_JUMP);
 
 	InjectHook(0x4A58F0, ShowRadarTrace, PATCH_JUMP);
 	InjectHook(0x4209A7, SetScaleProperly);
@@ -779,6 +780,12 @@ void Patch_III_Common()
 {
 	using namespace Memory;
 	using namespace hook;
+
+	// Purple Nines Glitch fix
+	{
+		auto addr = get_pattern( "0F BF 4C 24 04 8B 44 24 08 C1 E1 04 89 81", -0xC );
+		InjectHook( addr, PurpleNinesGlitchFix, PATCH_JUMP );
+	}
 
 	// New timers fix
 	{
