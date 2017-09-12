@@ -36,8 +36,8 @@ extern unsigned char& nGameClockMonths;
 
 #define DISABLE_FLA_DONATION_WINDOW		0
 
-#ifdef NDEBUG
-#define MEM_VALIDATORS 0
-#else
+#ifdef _DEBUG
 #define MEM_VALIDATORS 1
+#else
+#define MEM_VALIDATORS 0
 #endif
