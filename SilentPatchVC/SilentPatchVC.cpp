@@ -70,7 +70,7 @@ LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
 	return (*OldWndProc)(hwnd, uMsg, wParam, lParam);
 }
-static auto* pCustomWndProc = CustomWndProc;
+static auto* const pCustomWndProc = CustomWndProc;
 
 static void (* const ConstructRenderList)() = AddressByVersion<void(*)()>(0x4CA260, 0x4CA280, 0x4CA120);
 static void (* const RsMouseSetPos)(RwV2d*) = AddressByVersion<void(*)(RwV2d*)>(0x6030C0, 0x6030A0, 0x602CE0);
