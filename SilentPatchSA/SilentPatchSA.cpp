@@ -1034,11 +1034,13 @@ RwBool GTARtAnimInterpolatorSetCurrentAnim(RtAnimInterpolator* animI, RtAnimAnim
 	return TRUE;
 }
 
-void __stdcall CdStreamSetFilePointer( HANDLE hFile, uint32_t distanceToMove, void*, DWORD dwMoveMethod )
+DWORD WINAPI CdStreamSetFilePointer( HANDLE hFile, uint32_t distanceToMove, PLONG lpDistanceToMoveHigh, DWORD dwMoveMethod )
 {
+	assert( lpDistanceToMoveHigh == nullptr );
+
 	LARGE_INTEGER li;
 	li.QuadPart = int64_t(distanceToMove) << 11;
-	SetFilePointerEx( hFile, li, nullptr, dwMoveMethod );
+	return SetFilePointer( hFile, li.LowPart, &li.HighPart, dwMoveMethod );
 }
 static auto* const pCdStreamSetFilePointer = CdStreamSetFilePointer;
 
