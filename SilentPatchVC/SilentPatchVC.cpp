@@ -635,7 +635,18 @@ void Patch_VC_Common()
 		Nop( addr.get<void>( 0x18 + 7 ), 13 );
 
 		Nop( addr.get<void>( 0x33 ), 7 );
+	}
 
+	// Proper metric-imperial conversion constants
+	{
+		static const float METERS_TO_MILES = 0.0006213711922f;
+		auto addr = pattern( "75 ? D9 05 ? ? ? ? D8 0D ? ? ? ? 6A 00 6A 00 D9 9C 24" ).count(6);
+		addr.for_each_result( [&]( pattern_match match ) {
+			Patch<const void*>( match.get<void>( 0x8 + 2 ), &METERS_TO_MILES );
+		});
+
+		auto sum = get_pattern( "D9 9C 24 A8 00 00 00 8D 84 24 A8 00 00 00 50", -6 + 2 );
+		Patch<const void*>( sum, &METERS_TO_MILES );
 	}
 }
 

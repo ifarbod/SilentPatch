@@ -3490,6 +3490,12 @@ void Patch_SA_10()
 
 	// Remove FILE_FLAG_NO_BUFFERING from CdStreams
 	Patch<uint8_t>( 0x406BC6, 0xEB );
+
+
+	// Proper metric-imperial conversion constants
+	static const float METERS_TO_FEET = 3.280839895f;
+	Patch<const void*>( 0x55942F + 2, &METERS_TO_FEET );
+	Patch<const void*>( 0x55AA96 + 2, &METERS_TO_FEET );
 }
 
 void Patch_SA_11()

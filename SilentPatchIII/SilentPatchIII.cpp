@@ -813,6 +813,19 @@ void Patch_III_Common()
 		Patch<uint8_t>( addr.get<void>( 0x23 + 1 ), 6 );
 		Nop( addr.get<void>( 0x3F ), 7 );
 	}
+
+	// Proper metric-imperial conversion constants
+	{
+		static const float METERS_TO_MILES = 0.0006213711922f;
+		static const float METERS_TO_FEET = 3.280839895f;
+		auto addr = pattern( "D8 0D ? ? ? ? 6A 00 6A 01 D9 9C 24" ).count(4);
+		
+		Patch<const void*>( addr.get(0).get<void>( 2 ), &METERS_TO_MILES );
+		Patch<const void*>( addr.get(1).get<void>( 2 ), &METERS_TO_MILES );
+
+		Patch<const void*>( addr.get(2).get<void>( 2 ), &METERS_TO_FEET );
+		Patch<const void*>( addr.get(3).get<void>( 2 ), &METERS_TO_FEET );
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
