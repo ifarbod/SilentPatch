@@ -235,6 +235,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\SilentPatch\ASIModuleHandle.h" />
     <ClInclude Include="..\SilentPatch\DelimStringReader.h" />
     <ClInclude Include="..\SilentPatch\FLAC\callback.h" />
     <ClInclude Include="..\SilentPatch\FLAC\export.h" />

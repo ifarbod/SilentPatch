@@ -19,6 +19,7 @@
 
 #include "Patterns.h"
 #include "DelimStringReader.h"
+#include "ASIModuleHandle.h"
 
 #pragma warning(disable:4733)
 
@@ -2288,9 +2289,9 @@ BOOL InjectDelayedPatches_10()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
-		bool		bHasImVehFt = GetModuleHandleW(L"ImVehFt.asi") != nullptr;
+		bool		bHasImVehFt = GetASIModuleHandleW(L"ImVehFt") != nullptr;
 		bool		bSAMP = GetModuleHandleW(L"samp") != nullptr;
-		bool		bSARender = GetModuleHandleW(L"SARender.asi") != nullptr;
+		bool		bSARender = GetASIModuleHandleW(L"SARender") != nullptr;
 
 		ReadRotorFixExceptions(wcModulePath);
 		ReadDoubleRearWheels(wcModulePath);
@@ -2467,7 +2468,7 @@ BOOL InjectDelayedPatches_10()
 		}
 
 		// SSE conflicts
-		if ( GetModuleHandleW(L"shadows.asi") == nullptr )
+		if ( GetASIModuleHandleW(L"shadows") == nullptr )
 		{
 			Patch<DWORD>(0x70665C, 0x52909090);
 			InjectHook(0x706662, &CShadowCamera::Update);
@@ -2487,7 +2488,7 @@ BOOL InjectDelayedPatches_10()
 
 		// Adblocker
 #if DISABLE_FLA_DONATION_WINDOW
-		if (  GetModuleHandleW(L"$fastman92limitAdjuster.asi") != nullptr )
+		if (  GetASIModuleHandleW(L"$fastman92limitAdjuster") != nullptr )
 		{
 			if ( *(DWORD*)0x748736 != 0xE8186A53 )
 			{
@@ -2526,9 +2527,9 @@ BOOL InjectDelayedPatches_11()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
-		bool		bHasImVehFt = GetModuleHandleW(L"ImVehFt.asi") != nullptr;
+		bool		bHasImVehFt = GetASIModuleHandleW(L"ImVehFt") != nullptr;
 		bool		bSAMP = GetModuleHandleW(L"samp") != nullptr;
-		bool		bSARender = GetModuleHandleW(L"SARender.asi") != nullptr;
+		bool		bSARender = GetASIModuleHandleW(L"SARender") != nullptr;
 
 		ReadRotorFixExceptions(wcModulePath);
 
@@ -2713,7 +2714,7 @@ BOOL InjectDelayedPatches_11()
 		}
 
 		// SSE conflicts
-		if ( GetModuleHandleW(L"shadows.asi") == nullptr )
+		if ( GetASIModuleHandleW(L"shadows") == nullptr )
 		{
 			Patch<DWORD>(0x706E8C, 0x52909090);
 			InjectHook(0x706E92, &CShadowCamera::Update);
@@ -2752,9 +2753,9 @@ BOOL InjectDelayedPatches_Steam()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
-		bool		bHasImVehFt = GetModuleHandleW(L"ImVehFt.asi") != nullptr;
+		bool		bHasImVehFt = GetASIModuleHandleW(L"ImVehFt") != nullptr;
 		bool		bSAMP = GetModuleHandleW(L"samp") != nullptr;
-		bool		bSARender = GetModuleHandleW(L"SARender.asi") != nullptr;
+		bool		bSARender = GetASIModuleHandleW(L"SARender") != nullptr;
 
 		ReadRotorFixExceptions(wcModulePath);
 
@@ -2927,7 +2928,7 @@ BOOL InjectDelayedPatches_Steam()
 		}
 
 		// SSE conflicts
-		if ( GetModuleHandleW(L"shadows.asi") == nullptr )
+		if ( GetASIModuleHandleW(L"shadows") == nullptr )
 		{
 			Patch<DWORD>(0x74A864, 0x52909090);
 			InjectHook(0x74A86A, &CShadowCamera::Update);
