@@ -188,6 +188,16 @@ void GaragesInit_SilentPatch()
 	RespraysAreFree = false;
 }
 
+static void (*orgPickNextNodeToChaseCar)(void*, float, float, void*);
+static float PickNextNodeToChaseCarZ = 0.0f;
+static void PickNextNodeToChaseCarXYZ( void* vehicle, const CVector& vec, void* chaseTarget )
+{
+	PickNextNodeToChaseCarZ = vec.z;
+	orgPickNextNodeToChaseCar( vehicle, vec.x, vec.y, chaseTarget );
+	PickNextNodeToChaseCarZ = 0.0f;
+}
+
+
 static char		aNoDesktopMode[64];
 
 unsigned int __cdecl AutoPilotTimerCalculation_VC(unsigned int nTimer, int nScaleFactor, float fScaleCoef)
@@ -648,6 +658,41 @@ void Patch_VC_Common()
 		auto sum = get_pattern( "D9 9C 24 A8 00 00 00 8D 84 24 A8 00 00 00 50", -6 + 2 );
 		Patch<const void*>( sum, &METERS_TO_MILES );
 	}
+
+	// Improved pathfinding in PickNextNodeAccordingStrategy - PickNextNodeToChaseCar with XYZ coords
+	{
+		auto addr = pattern( "E8 ? ? ? ? 50 8D 44 24 10 50 E8" ).get_one();
+		ReadCall( addr.get<void>( 0x25 ), orgPickNextNodeToChaseCar );
+
+		const uintptr_t funcAddr = (uintptr_t)get_pattern( "8B 9C 24 BC 00 00 00 66 8B B3 A6 01 00 00 66 85 F6", -0xA );
+		InjectHook( funcAddr - 5, PickNextNodeToChaseCarXYZ, PATCH_JUMP ); // For plugin-sdk
+
+		// push PickNextNodeToChaseCarZ instead of 0.0f
+		// mov ecx, [PickNextNodeToChaseCarZ]
+		// mov [esp+0B8h+var_2C], ecx
+		Patch( funcAddr + 0x5D, { 0x8B, 0x0D } );
+		Patch<const void*>( funcAddr + 0x5D + 2, &PickNextNodeToChaseCarZ );
+		Patch( funcAddr + 0x5D + 6, { 0x89, 0x8C, 0x24, 0x8C, 0x00, 0x00, 0x00 } );
+
+		// lea eax, [ecx+edx*4] -> lea eax, [edx+edx*4]
+		Patch<uint8_t>( funcAddr + 0x6E + 2, 0x92 );
+
+
+		// lea eax, [esp+20h+var_10]
+		// push eax
+		// nop...
+		Patch( addr.get<void>( 0x10 ), { 0x83, 0xC4, 0x04, 0x8D, 0x44, 0x24, 0x10, 0x50, 0xEB, 0x0A } );
+		InjectHook( addr.get<void>( 0x25 ), PickNextNodeToChaseCarXYZ );
+		Patch<uint8_t>( addr.get<void>( 0x2A + 2 ), 0xC );
+
+		// push edx
+		// nop...
+		Patch<uint8_t>( addr.get<void>( 0x3E ), 0x52 );
+		Nop( addr.get<void>( 0x3E + 1 ), 6 );
+		InjectHook( addr.get<void>( 0x46 ), PickNextNodeToChaseCarXYZ );
+		Patch<uint8_t>( addr.get<void>( 0x4B + 2 ), 0xC );
+	}
+
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
