@@ -323,6 +323,16 @@ void CarCtrlReInit_SilentPatch()
 	LastTimeAmbulanceCreated = 0;
 }
 
+static void (*orgPickNextNodeToChaseCar)(void*, float, float, void*);
+static float PickNextNodeToChaseCarZ = 0.0f;
+static void PickNextNodeToChaseCarXYZ( void* vehicle, const CVector& vec, void* chaseTarget )
+{
+	PickNextNodeToChaseCarZ = vec.z;
+	orgPickNextNodeToChaseCar( vehicle, vec.x, vec.y, chaseTarget );
+	PickNextNodeToChaseCarZ = 0.0f;
+}
+
+
 static char		aNoDesktopMode[64];
 
 unsigned int __cdecl AutoPilotTimerCalculation_III(unsigned int nTimer, int nScaleFactor, float fScaleCoef)
@@ -832,6 +842,40 @@ void Patch_III_Common()
 
 		Patch<const void*>( addr.get(2).get<void>( 2 ), &METERS_TO_FEET );
 		Patch<const void*>( addr.get(3).get<void>( 2 ), &METERS_TO_FEET );
+	}
+
+	// Improved pathfinding in PickNextNodeAccordingStrategy - PickNextNodeToChaseCar with XYZ coords
+	{
+		auto addr = pattern( "E8 ? ? ? ? 50 8D 44 24 10 50 E8" ).get_one();
+		ReadCall( addr.get<void>( 0x25 ), orgPickNextNodeToChaseCar );
+
+		const uintptr_t funcAddr = (uintptr_t)get_pattern( "8B AC 24 94 00 00 00 8B 85 2C 01 00 00", -0x7 );
+
+		// push PickNextNodeToChaseCarZ instead of 0.0f
+		Patch( funcAddr + 0x14F, { 0xFF, 0x35 } );
+		Patch<const void*>( funcAddr + 0x14F + 2, &PickNextNodeToChaseCarZ );
+		Nop( funcAddr + 0x14F + 6, 2 );
+		Nop( funcAddr + 0x15F, 4 );
+
+
+		// lea eax, [esp+1Ch+var_C]
+		// push eax
+		// nop...
+		Patch( addr.get<void>( 0x10 ), { 0x83, 0xC4, 0x04, 0x8D, 0x44, 0x24, 0x10, 0x50, 0xEB, 0x0A } );
+		InjectHook( addr.get<void>( 0x25 ), PickNextNodeToChaseCarXYZ );
+		Patch<uint8_t>( addr.get<void>( 0x2A + 2 ), 0xC );
+
+		// push ecx
+		// nop...
+		Patch<uint8_t>( addr.get<void>( 0x3E ), 0x59 );
+		Nop( addr.get<void>( 0x3E + 1 ), 6 );
+		InjectHook( addr.get<void>( 0x46 ), PickNextNodeToChaseCarXYZ );
+		Patch<uint8_t>( addr.get<void>( 0x4B + 2 ), 0xC );
+
+
+		// For NICK007J
+		// Uncomment this to get rid of "treadable hack" in CCarCtrl::PickNextNodeToChaseCar (to mirror VC behaviour)
+		//InjectHook( funcAddr + 0x2A, funcAddr + 0x182, PATCH_JUMP );
 	}
 }
 
