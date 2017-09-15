@@ -852,11 +852,9 @@ void Patch_III_Common()
 		const uintptr_t funcAddr = (uintptr_t)get_pattern( "8B AC 24 94 00 00 00 8B 85 2C 01 00 00", -0x7 );
 
 		// push PickNextNodeToChaseCarZ instead of 0.0f
-		Patch( funcAddr + 0x14F, { 0xFF, 0x35 } );
-		Patch<const void*>( funcAddr + 0x14F + 2, &PickNextNodeToChaseCarZ );
-		Nop( funcAddr + 0x14F + 6, 2 );
-		Nop( funcAddr + 0x15F, 4 );
-
+		Patch( funcAddr + 0x1C9, { 0xFF, 0x35 } );
+		Patch<const void*>( funcAddr + 0x1C9 + 2, &PickNextNodeToChaseCarZ );
+		Nop( funcAddr + 0x1C9 + 6, 1 );
 
 		// lea eax, [esp+1Ch+var_C]
 		// push eax
