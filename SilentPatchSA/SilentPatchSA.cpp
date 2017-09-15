@@ -1145,6 +1145,14 @@ CVehicleModelInfo* __fastcall VehicleModelInfoCtor(CVehicleModelInfo* me)
 	return me;
 }
 
+static void (*RemoveFromInterestingVehicleList)(CVehicle*) = AddressByVersion<void(*)(CVehicle*)>( 0x423ED0, 0, 0 ); // TODO: DO
+static void (*orgRecordVehicleDeleted)(CVehicle*);
+static void RecordVehicleDeleted_AndRemoveFromVehicleList( CVehicle* vehicle )
+{
+	orgRecordVehicleDeleted( vehicle );
+	RemoveFromInterestingVehicleList( vehicle );
+}
+
 #if MEM_VALIDATORS
 
 #include <intrin.h>
@@ -3149,9 +3157,9 @@ void Patch_SA_10()
 	Patch<BYTE>(0x4F322D, sizeof(UserTrackExtensions));
 
 	// Impound garages working correctly
-	InjectHook(0x425179, 0x448990);
-	InjectHook(0x425369, 0x448990);
-	InjectHook(0x425411, 0x448990);
+	InjectHook(0x425179, 0x448990); // CGarages::IsPointWithinAnyGarage
+	InjectHook(0x425369, 0x448990); // CGarages::IsPointWithinAnyGarage
+	InjectHook(0x425411, 0x448990); // CGarages::IsPointWithinAnyGarage
 
 	// Impounding after busted works
 	Nop(0x443292, 5);
@@ -3496,6 +3504,11 @@ void Patch_SA_10()
 	static const float METERS_TO_FEET = 3.280839895f;
 	Patch<const void*>( 0x55942F + 2, &METERS_TO_FEET );
 	Patch<const void*>( 0x55AA96 + 2, &METERS_TO_FEET );
+
+
+	// Fixed impounding of random vehicles (because CVehicle::~CVehicle doesn't remove cars from apCarsToKeep)
+	ReadCall( 0x6E2B6E, orgRecordVehicleDeleted );
+	InjectHook( 0x6E2B6E, RecordVehicleDeleted_AndRemoveFromVehicleList );
 }
 
 void Patch_SA_11()
