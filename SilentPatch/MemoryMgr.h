@@ -626,56 +626,84 @@ namespace Memory
 #include <forward_list>
 #include <tuple>
 
-class ScopedUnprotect
+namespace ScopedUnprotect
 {
-public:
-	class Section
+	class unprotect
 	{
-	public:
-		Section( HINSTANCE hInstance, const char* name )
+	protected:
+		void UnprotectRange( DWORD_PTR BaseAddress, SIZE_T Size )
 		{
-			IMAGE_NT_HEADERS*		ntHeader = (IMAGE_NT_HEADERS*)((BYTE*)hInstance + ((IMAGE_DOS_HEADER*)hInstance)->e_lfanew);
-			IMAGE_SECTION_HEADER*	pSection = IMAGE_FIRST_SECTION(ntHeader);
-
-			DWORD VirtualAddress = MAXDWORD;
-			SIZE_T VirtualSize = MAXDWORD;
-			for ( SIZE_T i = 0, j = ntHeader->FileHeader.NumberOfSections; i < j; ++i, ++pSection )
-			{
-				if ( strncmp( (const char*)pSection->Name, name, IMAGE_SIZEOF_SHORT_NAME ) == 0 )
-				{
-					VirtualAddress = (DWORD)hInstance + pSection->VirtualAddress;
-					VirtualSize = pSection->Misc.VirtualSize;
-					break;
-				}
-			}
-
-			if ( VirtualAddress == MAXDWORD )
-				return;
-
 			SIZE_T QueriedSize = 0;
-			while ( QueriedSize < VirtualSize )
+			while ( QueriedSize < Size )
 			{
 				MEMORY_BASIC_INFORMATION MemoryInf;
 				DWORD dwOldProtect;
 
-				VirtualQuery( (LPCVOID)(VirtualAddress + QueriedSize), &MemoryInf, sizeof(MemoryInf) );
-				VirtualProtect( MemoryInf.BaseAddress, MemoryInf.RegionSize, PAGE_EXECUTE_READWRITE, &dwOldProtect );
-				m_queriedProtects.emplace_front( MemoryInf.BaseAddress, MemoryInf.RegionSize, MemoryInf.Protect );
+				VirtualQuery( (LPCVOID)(BaseAddress + QueriedSize), &MemoryInf, sizeof(MemoryInf) );
+				if ( MemoryInf.State == MEM_COMMIT && (MemoryInf.Type & MEM_IMAGE) != 0 && 
+					(MemoryInf.Protect & (PAGE_EXECUTE_READWRITE|PAGE_EXECUTE_WRITECOPY|PAGE_READWRITE|PAGE_WRITECOPY)) == 0 )
+				{
+					VirtualProtect( MemoryInf.BaseAddress, MemoryInf.RegionSize, PAGE_EXECUTE_READWRITE, &dwOldProtect );
+					m_queriedProtects.emplace_front( MemoryInf.BaseAddress, MemoryInf.RegionSize, MemoryInf.Protect );
+				}
 				QueriedSize += MemoryInf.RegionSize;
 			}
-		};
+		}
 
-		~Section()
+		~unprotect()
 		{
 			for ( auto& it : m_queriedProtects )
 			{
 				DWORD dwOldProtect;
 				VirtualProtect( std::get<0>(it), std::get<1>(it), std::get<2>(it), &dwOldProtect );
-			}
+			}		
 		}
 
 	private:
 		std::forward_list< std::tuple< LPVOID, SIZE_T, DWORD > >	m_queriedProtects;
+	};
+
+	class Section : protected unprotect
+	{
+	public:
+		Section( HINSTANCE hInstance, const char* name )
+		{
+			PIMAGE_NT_HEADERS		ntHeader = (PIMAGE_NT_HEADERS)((DWORD_PTR)hInstance + ((PIMAGE_DOS_HEADER)hInstance)->e_lfanew);
+			PIMAGE_SECTION_HEADER	pSection = IMAGE_FIRST_SECTION(ntHeader);
+
+			DWORD_PTR VirtualAddress = DWORD_PTR(-1);
+			SIZE_T VirtualSize = SIZE_T(-1);
+			for ( SIZE_T i = 0, j = ntHeader->FileHeader.NumberOfSections; i < j; ++i, ++pSection )
+			{
+				if ( strncmp( (const char*)pSection->Name, name, IMAGE_SIZEOF_SHORT_NAME ) == 0 )
+				{
+					VirtualAddress = (DWORD_PTR)hInstance + pSection->VirtualAddress;
+					VirtualSize = pSection->Misc.VirtualSize;
+					m_locatedSection = true;
+					break;
+				}
+			}
+
+			if ( VirtualAddress == DWORD_PTR(-1) )
+				return;
+
+			UnprotectRange( VirtualAddress, VirtualSize );
+		};
+
+		bool	SectionLocated() const { return m_locatedSection; }
+
+	private:
+		bool	m_locatedSection = false;
+	};
+
+	class FullModule : protected unprotect
+	{
+	public:
+		FullModule( HINSTANCE hInstance )
+		{
+			PIMAGE_NT_HEADERS		ntHeader = (PIMAGE_NT_HEADERS)((DWORD_PTR)hInstance + ((PIMAGE_DOS_HEADER)hInstance)->e_lfanew);
+			UnprotectRange( (DWORD_PTR)hInstance, ntHeader->OptionalHeader.SizeOfImage );
+		}
 	};
 };
 

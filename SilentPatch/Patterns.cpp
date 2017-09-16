@@ -126,7 +126,7 @@ public:
 		PIMAGE_DOS_HEADER dosHeader = getRVA<IMAGE_DOS_HEADER>(0);
 		PIMAGE_NT_HEADERS ntHeader = getRVA<IMAGE_NT_HEADERS>(dosHeader->e_lfanew);
 
-		m_end = m_begin + ntHeader->OptionalHeader.SizeOfCode;
+		m_end = m_begin + ntHeader->OptionalHeader.SizeOfImage;
 	}
 
 	executable_meta(uintptr_t begin, uintptr_t end)
@@ -156,7 +156,7 @@ void pattern::Initialize(const char* pattern, size_t length)
 
 		if (range.first != range.second)
 		{
-			std::for_each(range.first, range.second, [&] (const std::pair<uint64_t, uintptr_t>& hint)
+			std::for_each(range.first, range.second, [&] (const auto& hint)
 			{
 				ConsiderHint(hint.second);
 			});
