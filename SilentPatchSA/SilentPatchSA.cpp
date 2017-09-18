@@ -1153,6 +1153,28 @@ static void RecordVehicleDeleted_AndRemoveFromVehicleList( CVehicle* vehicle )
 	RemoveFromInterestingVehicleList( vehicle );
 }
 
+static int currDisplayedSplash_ForLastSplash = 0;
+static void DoPCScreenChange_Mod()
+{
+	static int& currDisplayedSplash = **AddressByVersion<int**>( 0x590B22 + 1, 0, 0 ); // TODO: DO
+
+	static const int numSplashes = [] () -> int {
+		RwTexture** begin = *AddressByVersion<RwTexture***>( 0x590CB4 + 1, 0, 0 ); // TODO: DO
+		RwTexture** end = *AddressByVersion<RwTexture***>( 0x590CCE + 2, 0, 0 ); // TODO: DO
+		return std::distance( begin, end );
+	} () - 1;
+
+	if ( currDisplayedSplash >= numSplashes )
+	{
+		currDisplayedSplash = 1;
+		currDisplayedSplash_ForLastSplash = numSplashes + 1;
+	}
+	else
+	{
+		currDisplayedSplash_ForLastSplash = ++currDisplayedSplash;
+	}
+}
+
 #if MEM_VALIDATORS
 
 #include <intrin.h>
@@ -3513,6 +3535,12 @@ void Patch_SA_10()
 	// Fixed impounding of random vehicles (because CVehicle::~CVehicle doesn't remove cars from apCarsToKeep)
 	ReadCall( 0x6E2B6E, orgRecordVehicleDeleted );
 	InjectHook( 0x6E2B6E, RecordVehicleDeleted_AndRemoveFromVehicleList );
+
+
+	// Modulo over CLoadingScreen::m_currDisplayedSplash
+	Nop( 0x590ADE, 1 );
+	InjectHook( 0x590ADE + 1, DoPCScreenChange_Mod, PATCH_CALL );
+	Patch<const void*>( 0x590042 + 2, &currDisplayedSplash_ForLastSplash );
 }
 
 void Patch_SA_11()
