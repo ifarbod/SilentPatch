@@ -6,8 +6,9 @@
 #include <stdio.h>
 #include <Shlwapi.h>
 #include <ShlObj.h>
-#define _MEMORY_NO_CRT
 #include "MemoryMgr.h"
+
+#pragma comment(lib, "shlwapi.lib")
 
 extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, REFIID iid, IUnknown FAR *pUnkOuter)
 {
