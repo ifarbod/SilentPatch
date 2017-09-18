@@ -7,6 +7,7 @@
 #include <Shlwapi.h>
 #include <ShlObj.h>
 #include "MemoryMgr.h"
+#include "Patterns.h"
 
 #pragma comment(lib, "shlwapi.lib")
 
@@ -173,8 +174,10 @@ void InjectHooks()
 }
 
 
-static VOID (WINAPI* pOrgGetStartupInfoA)(LPSTARTUPINFOA);
-VOID WINAPI GetStartupInfoA_Hook(LPSTARTUPINFOA lpStartupInfo)
+static bool FixRwcseg_Patterns();
+static bool rwcsegUnprotected = false;
+
+static void ProcHook()
 {
 	static bool		bPatched = false;
 	if ( !bPatched )
@@ -182,24 +185,44 @@ VOID WINAPI GetStartupInfoA_Hook(LPSTARTUPINFOA lpStartupInfo)
 		bPatched = true;
 
 		InjectHooks();
+
+		if ( !rwcsegUnprotected )
+		{
+			rwcsegUnprotected = FixRwcseg_Patterns();
+		}
 	}
+}
+
+static VOID (WINAPI* pOrgGetStartupInfoA)(LPSTARTUPINFOA);
+VOID WINAPI GetStartupInfoA_Hook(LPSTARTUPINFOA lpStartupInfo)
+{
+	ProcHook();
 	pOrgGetStartupInfoA(lpStartupInfo);
 }
 
-void PatchIAT()
+static uint8_t orgCode[5];
+static decltype(SystemParametersInfoA)* pOrgSystemParametersInfoA;
+BOOL WINAPI SystemParametersInfoA_OverwritingHook( UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni )
+{
+	ProcHook();
+	Memory::VP::Patch( pOrgSystemParametersInfoA, { orgCode[0], orgCode[1], orgCode[2], orgCode[3], orgCode[4] } );
+	return pOrgSystemParametersInfoA( uiAction, uiParam, pvParam, fWinIni );
+}
+
+static bool FixRwcseg_Header()
 {
 	HINSTANCE					hInstance = GetModuleHandle(nullptr);
-	IMAGE_NT_HEADERS*			ntHeader = (IMAGE_NT_HEADERS*)((DWORD)hInstance + ((IMAGE_DOS_HEADER*)hInstance)->e_lfanew);
+	PIMAGE_NT_HEADERS			ntHeader = (PIMAGE_NT_HEADERS)((DWORD_PTR)hInstance + ((PIMAGE_DOS_HEADER)hInstance)->e_lfanew);
 
 	// Give _rwcseg proper access rights
-	IMAGE_SECTION_HEADER*	pSection = IMAGE_FIRST_SECTION(ntHeader);
+	PIMAGE_SECTION_HEADER	pSection = IMAGE_FIRST_SECTION(ntHeader);
 
 	for ( SIZE_T i = 0, j = ntHeader->FileHeader.NumberOfSections; i < j; i++, pSection++ )
 	{
 		if ( *(uint64_t*)(pSection->Name) == 0x006765736377725F )	// _rwcseg
 		{
 			DWORD	dwProtect;
-			VirtualProtect((LPVOID)((ptrdiff_t)hInstance + pSection->VirtualAddress), pSection->Misc.VirtualSize, PAGE_EXECUTE_READ, &dwProtect);
+			VirtualProtect((LPVOID)((DWORD_PTR)hInstance + pSection->VirtualAddress), pSection->Misc.VirtualSize, PAGE_EXECUTE_READ, &dwProtect);
 
 			DWORD Characteristics = pSection->Characteristics;
 			if ( (Characteristics & IMAGE_SCN_CNT_CODE) == 0 )
@@ -218,38 +241,87 @@ void PatchIAT()
 				Memory::VP::Patch( &ntHeader->OptionalHeader.SizeOfUninitializedData, ntHeader->OptionalHeader.SizeOfUninitializedData - pSection->Misc.VirtualSize );
 			}
 			Memory::VP::Patch( &pSection->Characteristics, Characteristics );
-			break;
+			return true;
 		}
 	}
+	return false;
+}
+
+static bool FixRwcseg_Patterns()
+{
+	using namespace hook;
+
+	auto begin = pattern( "55 8B EC 50 53 51 52 8B 5D 14 8B 4D 10 8B 45 0C 8B 55 08" ).count_hint(1000);
+	auto end = pattern( "9B D9 3D ? ? ? ? 81 25 ? ? ? ? FF FC FF FF 83 0D ? ? ? ? 3F" ).count_hint(1000);
+
+	if ( begin.count_hint(1).size() == 1 && end.count_hint(1).size() == 1 )
+	{
+		const ptrdiff_t size = (intptr_t)end.get_first( 24 ) - (intptr_t)begin.get_first();
+		if ( size > 0 )
+		{
+			DWORD dwProtect;
+			VirtualProtect( begin.get_first(), size, PAGE_EXECUTE_READ, &dwProtect );
+			return true;
+		}
+	}
+	return false;
+}
+
+static bool PatchIAT()
+{
+	HINSTANCE					hInstance = GetModuleHandle(nullptr);
+	PIMAGE_NT_HEADERS			ntHeader = (PIMAGE_NT_HEADERS)((DWORD_PTR)hInstance + ((PIMAGE_DOS_HEADER)hInstance)->e_lfanew);
 
 	// Find IAT	
-	IMAGE_IMPORT_DESCRIPTOR*	pImports = (IMAGE_IMPORT_DESCRIPTOR*)((DWORD)hInstance + ntHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
+	PIMAGE_IMPORT_DESCRIPTOR	pImports = (PIMAGE_IMPORT_DESCRIPTOR)((DWORD_PTR)hInstance + ntHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress);
 
 	// Find kernel32.dll
 	for ( ; pImports->Name != 0; pImports++ )
 	{
-		if ( !_stricmp((const char*)((DWORD)hInstance + pImports->Name), "KERNEL32.DLL") )
+		if ( !_stricmp((const char*)((DWORD_PTR)hInstance + pImports->Name), "KERNEL32.DLL") )
 		{
-			IMAGE_IMPORT_BY_NAME**		pFunctions = (IMAGE_IMPORT_BY_NAME**)((DWORD)hInstance + pImports->OriginalFirstThunk);
+			if ( pImports->OriginalFirstThunk == 0 ) return false;
+
+			PIMAGE_IMPORT_BY_NAME*		pFunctions = (PIMAGE_IMPORT_BY_NAME*)((DWORD_PTR)hInstance + pImports->OriginalFirstThunk);
 
 			// kernel32.dll found, find GetStartupInfoA
 			for ( ptrdiff_t j = 0; pFunctions[j] != nullptr; j++ )
 			{
-				if ( !strcmp((const char*)((DWORD)hInstance + pFunctions[j]->Name), "GetStartupInfoA") )
+				if ( !strcmp((const char*)((DWORD_PTR)hInstance + pFunctions[j]->Name), "GetStartupInfoA") )
 				{
 					// Overwrite the address with the address to a custom GetStartupInfoA
 					DWORD			dwProtect[2];
-					DWORD_PTR*		pAddress = &((DWORD_PTR*)((DWORD)hInstance + pImports->FirstThunk))[j];
+					DWORD_PTR*		pAddress = &((DWORD_PTR*)((DWORD_PTR)hInstance + pImports->FirstThunk))[j];
 
-					VirtualProtect(pAddress, sizeof(DWORD), PAGE_EXECUTE_READWRITE, &dwProtect[0]);
+					VirtualProtect(pAddress, sizeof(DWORD_PTR), PAGE_EXECUTE_READWRITE, &dwProtect[0]);
 					pOrgGetStartupInfoA = **(VOID(WINAPI**)(LPSTARTUPINFOA))pAddress;
-					*pAddress = (DWORD)GetStartupInfoA_Hook;
-					VirtualProtect(pAddress, sizeof(DWORD), dwProtect[0], &dwProtect[1]);
+					*pAddress = (DWORD_PTR)GetStartupInfoA_Hook;
+					VirtualProtect(pAddress, sizeof(DWORD_PTR), dwProtect[0], &dwProtect[1]);
 
-					return;
+					return true;
 				}
 			}
 		}
+	}
+	return false;
+}
+
+static bool PatchIAT_ByPointers()
+{
+	pOrgSystemParametersInfoA = SystemParametersInfoA;
+	memcpy( orgCode, pOrgSystemParametersInfoA, sizeof(orgCode) );
+	Memory::VP::InjectHook( pOrgSystemParametersInfoA, SystemParametersInfoA_OverwritingHook, PATCH_JUMP );
+	return true;
+}
+
+static void ApplyDDrawHooks()
+{
+	rwcsegUnprotected = FixRwcseg_Header();
+
+	bool getStartupInfoHooked = PatchIAT();
+	if ( !getStartupInfoHooked )
+	{
+		PatchIAT_ByPointers();
 	}
 }
 
@@ -260,9 +332,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 	if ( fdwReason == DLL_PROCESS_ATTACH )
 	{
-		DisableThreadLibraryCalls(hinstDLL);
-
-		PatchIAT();
+		ApplyDDrawHooks();
 	}
 
 	return TRUE;
