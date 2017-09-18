@@ -2295,8 +2295,10 @@ BOOL InjectDelayedPatches_10()
 	if ( !IsAlreadyRunning() )
 	{
 		using namespace Memory;
-		ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
-		ScopedUnprotect::Section Protect2( (HINSTANCE)0x400000, ".rdata" );
+
+		const HINSTANCE hInstance = GetModuleHandle( nullptr );
+		std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( hInstance, ".text" );
+		ScopedUnprotect::Section Protect2( hInstance, ".rdata" );
 
 		// Obtain a path to the ASI
 		wchar_t			wcModulePath[MAX_PATH];
@@ -2553,8 +2555,9 @@ BOOL InjectDelayedPatches_11()
 	if ( !IsAlreadyRunning() )
 	{
 		using namespace Memory;
-		ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
-		ScopedUnprotect::Section Protect2( (HINSTANCE)0x400000, ".rdata" );
+		const HINSTANCE hInstance = GetModuleHandle( nullptr );
+		std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( hInstance, ".text" );
+		ScopedUnprotect::Section Protect2( hInstance, ".rdata" );
 
 		// Obtain a path to the ASI
 		wchar_t			wcModulePath[MAX_PATH];
@@ -2785,8 +2788,9 @@ BOOL InjectDelayedPatches_Steam()
 	if ( !IsAlreadyRunning() )
 	{
 		using namespace Memory;
-		ScopedUnprotect::Section Protect( (HINSTANCE)0x400000, ".text" );
-		ScopedUnprotect::Section Protect2( (HINSTANCE)0x400000, ".rdata" );
+		const HINSTANCE hInstance = GetModuleHandle( nullptr );
+		std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( hInstance, ".text" );
+		ScopedUnprotect::Section Protect2( hInstance, ".rdata" );
 
 		// Obtain a path to the ASI
 		wchar_t			wcModulePath[MAX_PATH];
@@ -4763,9 +4767,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	{
 		hDLLModule = hinstDLL;
 
-		HINSTANCE hGameHandle = GetModuleHandle( nullptr );
-		ScopedUnprotect::Section Protect( hGameHandle, ".text" );
-		ScopedUnprotect::Section Protect2( hGameHandle, ".rdata" );
+		const HINSTANCE hInstance = GetModuleHandle( nullptr );
+		std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( hInstance, ".text" );
+		ScopedUnprotect::Section Protect2( hInstance, ".rdata" );
 
 		if (*(DWORD*)DynBaseAddress(0x82457C) == 0x94BF || *(DWORD*)DynBaseAddress(0x8245BC) == 0x94BF) Patch_SA_10();
 		else if (*(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF || *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF) Patch_SA_11(), MessageBoxW( nullptr, L"You're using a 1.01 executable which is no longer supported by SilentPatch!\n\nI have no idea if anyone was still using it, so if you do - shoot me an e-mail!", L"SilentPatch", MB_OK | MB_ICONWARNING );

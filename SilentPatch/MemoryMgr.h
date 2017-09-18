@@ -625,12 +625,25 @@ namespace Memory
 
 #include <forward_list>
 #include <tuple>
+#include <memory>
 
 namespace ScopedUnprotect
 {
-	class unprotect
+	class Unprotect
 	{
+	public:
+		~Unprotect()
+		{
+			for ( auto& it : m_queriedProtects )
+			{
+				DWORD dwOldProtect;
+				VirtualProtect( std::get<0>(it), std::get<1>(it), std::get<2>(it), &dwOldProtect );
+			}		
+		}
+
 	protected:
+		Unprotect() = default;
+
 		void UnprotectRange( DWORD_PTR BaseAddress, SIZE_T Size )
 		{
 			SIZE_T QueriedSize = 0;
@@ -650,20 +663,11 @@ namespace ScopedUnprotect
 			}
 		}
 
-		~unprotect()
-		{
-			for ( auto& it : m_queriedProtects )
-			{
-				DWORD dwOldProtect;
-				VirtualProtect( std::get<0>(it), std::get<1>(it), std::get<2>(it), &dwOldProtect );
-			}		
-		}
-
 	private:
 		std::forward_list< std::tuple< LPVOID, SIZE_T, DWORD > >	m_queriedProtects;
 	};
 
-	class Section : protected unprotect
+	class Section : public Unprotect
 	{
 	public:
 		Section( HINSTANCE hInstance, const char* name )
@@ -696,7 +700,7 @@ namespace ScopedUnprotect
 		bool	m_locatedSection = false;
 	};
 
-	class FullModule : protected unprotect
+	class FullModule : public Unprotect
 	{
 	public:
 		FullModule( HINSTANCE hInstance )
@@ -705,6 +709,16 @@ namespace ScopedUnprotect
 			UnprotectRange( (DWORD_PTR)hInstance, ntHeader->OptionalHeader.SizeOfImage );
 		}
 	};
+
+	inline std::unique_ptr<Unprotect> UnprotectSectionOrFullModule( HINSTANCE hInstance, const char* name )
+	{
+		std::unique_ptr<Section> section = std::make_unique<Section>( hInstance, name );
+		if ( !section->SectionLocated() )
+		{
+			return std::make_unique<FullModule>( hInstance );
+		}
+		return section;
+	}
 };
 
 #endif

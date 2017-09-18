@@ -708,15 +708,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		GetWindowRect(GetDesktopWindow(), &desktop);
 		sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
-		const HINSTANCE hModule = GetModuleHandle( nullptr );
-		std::unique_ptr<ScopedUnprotect::Section> SectionProtect = std::make_unique<ScopedUnprotect::Section>( hModule, ".text" );
-		std::unique_ptr<ScopedUnprotect::FullModule> ModuleProtect = nullptr;
-		if ( !SectionProtect->SectionLocated() )
-		{
-			SectionProtect = nullptr;
-			ModuleProtect = std::make_unique<ScopedUnprotect::FullModule>( hModule );
-		}
-
+		std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( GetModuleHandle( nullptr ), ".text" );
 
 		if(*(DWORD*)0x667BF5 == 0xB85548EC) Patch_VC_10(desktop);
 		else if(*(DWORD*)0x667C45 == 0xB85548EC) Patch_VC_11(desktop);
