@@ -813,7 +813,7 @@ void DrawRect_HalfPixel_Steam(CRect& rect, const CRGBA& rgba)
 	((void(*)(const CRect&, const CRGBA&))0x75CDA0)(rect, rgba);
 }
 
-char* GetMyDocumentsPath()
+char* GetMyDocumentsPathSA()
 {
 	static char	cUserFilesPath[MAX_PATH];
 	static char* const ppTempBufPtr = *GetVer() == 0 ? *AddressByRegion_10<char**>(0x744FE5) : cUserFilesPath;
@@ -3258,7 +3258,7 @@ void Patch_SA_10()
 	Patch<DWORD>(AddressByRegion_10<DWORD>(0x74754B), 0x900);
 
 	// SHGetFolderPath on User Files
-	InjectHook(0x744FB0, GetMyDocumentsPath, PATCH_JUMP);
+	InjectHook(0x744FB0, GetMyDocumentsPathSA, PATCH_JUMP);
 
 	// Fixed muzzleflash not showing from last bullet
 	Nop(0x61ECE4, 2);
@@ -3748,7 +3748,7 @@ void Patch_SA_11()
 	Patch<DWORD>(AddressByRegion_11<DWORD>(0x747E1B), 0x900);
 
 	// SHGetFolderPath on User Files
-	InjectHook(0x7457E0, GetMyDocumentsPath, PATCH_JUMP);
+	InjectHook(0x7457E0, GetMyDocumentsPathSA, PATCH_JUMP);
 
 	// Fixed muzzleflash not showing from last bullet
 	Nop(0x61F504, 2);
@@ -4054,7 +4054,7 @@ void Patch_SA_Steam()
 	Patch<DWORD>(0x781457, 0x900);
 
 	// SHGetFolderPath on User Files
-	InjectHook(0x77EDC0, GetMyDocumentsPath, PATCH_JUMP);
+	InjectHook(0x77EDC0, GetMyDocumentsPathSA, PATCH_JUMP);
 
 	// Fixed muzzleflash not showing from last bullet
 	Nop(0x61F504, 2);
@@ -4374,7 +4374,7 @@ void Patch_SA_NewSteam_r2()
 	Patch<DWORD>(0x77B46F, 0x900);
 
 	// SHGetFolderPath on User Files
-	InjectHook(0x778FA0, GetMyDocumentsPath, PATCH_JUMP);
+	InjectHook(0x778FA0, GetMyDocumentsPathSA, PATCH_JUMP);
 
 	// Fixed muzzleflash not showing from last bullet
 	Nop(0x63E8A9, 2);
@@ -4561,7 +4561,7 @@ void Patch_SA_NewSteam_r2_lv()
 	Patch<DWORD>(0x77B35F, 0x900);
 
 	// SHGetFolderPath on User Files
-	InjectHook(0x778E90, GetMyDocumentsPath, PATCH_JUMP);
+	InjectHook(0x778E90, GetMyDocumentsPathSA, PATCH_JUMP);
 
 	// Fixed muzzleflash not showing from last bullet
 	Nop(0x63E789, 2);

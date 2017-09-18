@@ -5,11 +5,8 @@
 #define NOMINMAX
 
 #include <windows.h>
-#include <mmsystem.h>
 #include <cassert>
 #include <cstdio>
-#include <ShlObj.h>
-#include <Shlwapi.h>
 
 #include "MemoryMgr.h"
 

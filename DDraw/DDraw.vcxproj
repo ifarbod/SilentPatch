@@ -150,6 +150,7 @@ copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\dd
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\SilentPatch\Common.cpp" />
     <ClCompile Include="..\SilentPatch\Patterns.cpp" />
     <ClCompile Include="dllmain.cpp" />
   </ItemGroup>
@@ -157,6 +158,7 @@ copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\dd
     <ResourceCompile Include="..\SilentPatch\SilentPatch.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\SilentPatch\Common.h" />
     <ClInclude Include="..\SilentPatch\MemoryMgr.h" />
     <ClInclude Include="..\SilentPatch\Patterns.h" />
   </ItemGroup>

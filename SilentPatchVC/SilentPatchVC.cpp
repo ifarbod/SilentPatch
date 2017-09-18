@@ -2,6 +2,7 @@
 
 #include "Timer.h"
 #include "Patterns.h"
+#include "Common.h"
 
 #include <memory>
 
@@ -143,20 +144,7 @@ void __declspec(naked) SubtitlesShadowFix()
 	}
 }
 
-char** const ppUserFilesDir = AddressByVersion<char**>(0x6022AA, 0x60228A, 0x601ECA);
-
-char* GetMyDocumentsPath()
-{
-	static char	cUserFilesPath[MAX_PATH];
-
-	if ( cUserFilesPath[0] == '\0' )
-	{	
-		SHGetFolderPathA(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, cUserFilesPath);
-		PathAppendA(cUserFilesPath, *ppUserFilesDir);
-		CreateDirectoryA(cUserFilesPath, nullptr);
-	}
-	return cUserFilesPath;
-}
+extern char** ppUserFilesDir = AddressByVersion<char**>(0x6022AA, 0x60228A, 0x601ECA);
 
 static LARGE_INTEGER	FrameTime;
 int32_t GetTimeSinceLastFrame()
@@ -267,24 +255,6 @@ void Patch_VC_10(const RECT& desktop)
 	InjectHook(0x6004A2, NewFrameRender);
 	InjectHook(0x600449, GetTimeSinceLastFrame);
 
-	// Default to desktop res
-	Patch<DWORD>(0x600E7E, desktop.right);
-	Patch<DWORD>(0x600E88, desktop.bottom);
-	Patch<BYTE>(0x600E92, 32);
-	Patch<const char*>(0x600EC8, aNoDesktopMode);
-
-	// No 12mb vram check
-	Patch<BYTE>(0x601E26, 0xEB);
-
-	// No DirectPlay dependency
-	Patch<BYTE>(0x601CA0, 0xB8);
-	Patch<DWORD>(0x601CA1, 0x900);
-
-	// SHGetFolderPath on User Files
-	InjectHook(0x602240, GetMyDocumentsPath, PATCH_JUMP);
-
-	InjectHook(0x601A40, GetMyDocumentsPath, PATCH_CALL);
-	InjectHook(0x601A45, 0x601B2F, PATCH_JUMP);
 
 	// RsMouseSetPos call (SA style fix)
 	InjectHook(0x4A5E45, ResetMousePos);
@@ -351,6 +321,8 @@ void Patch_VC_10(const RECT& desktop)
 		Patch<WORD>(0x5FFAED, 0x006A);
 	}
 #endif
+
+	Common::Patches::DDraw_VC_10( desktop, aNoDesktopMode );
 }
 
 void Patch_VC_11(const RECT& desktop)
@@ -396,25 +368,6 @@ void Patch_VC_11(const RECT& desktop)
 	ReadCall( 0x6004C2, RsEventHandler );
 	InjectHook(0x6004C2, NewFrameRender);
 	InjectHook(0x600469, GetTimeSinceLastFrame);
-
-	// Default to desktop res
-	Patch<DWORD>(0x600E9E, desktop.right);
-	Patch<DWORD>(0x600EA8, desktop.bottom);
-	Patch<BYTE>(0x600EB2, 32);
-	Patch<const char*>(0x600EE8, aNoDesktopMode);
-
-	// No 12mb vram check
-	Patch<BYTE>(0x601E56, 0xEB);
-
-	// No DirectPlay dependency
-	Patch<BYTE>(0x601CD0, 0xB8);
-	Patch<DWORD>(0x601CD1, 0x900);
-
-	// SHGetFolderPath on User Files
-	InjectHook(0x602220, GetMyDocumentsPath, PATCH_JUMP);
-
-	InjectHook(0x601A70, GetMyDocumentsPath, PATCH_CALL);
-	InjectHook(0x601A75, 0x601B5F, PATCH_JUMP);
 
 	// RsMouseSetPos call (SA style fix)
 	InjectHook(0x4A5E65, ResetMousePos);
@@ -472,6 +425,8 @@ void Patch_VC_11(const RECT& desktop)
 
 	// Fixed crash related to autopilot timing calculations
 	InjectHook(0x418FAE, AutoPilotTimerFix_VC, PATCH_JUMP);
+
+	Common::Patches::DDraw_VC_11( desktop, aNoDesktopMode );
 }
 
 void Patch_VC_Steam(const RECT& desktop)
@@ -517,25 +472,6 @@ void Patch_VC_Steam(const RECT& desktop)
 	ReadCall( 0x600102, RsEventHandler );
 	InjectHook(0x600102, NewFrameRender);
 	InjectHook(0x6000A9, GetTimeSinceLastFrame);
-
-	// Default to desktop res
-	Patch<DWORD>(0x600ADE, desktop.right);
-	Patch<DWORD>(0x600AE8, desktop.bottom);
-	Patch<BYTE>(0x600AF2, 32);
-	Patch<const char*>(0x600B28, aNoDesktopMode);
-
-	// No 12mb vram check
-	Patch<BYTE>(0x601A96, 0xEB);
-
-	// No DirectPlay dependency
-	Patch<BYTE>(0x601910, 0xB8);
-	Patch<DWORD>(0x601911, 0x900);
-
-	// SHGetFolderPath on User Files
-	InjectHook(0x601E60, GetMyDocumentsPath, PATCH_JUMP);
-
-	InjectHook(0x6016B0, GetMyDocumentsPath, PATCH_CALL);
-	InjectHook(0x6016B5, 0x60179F, PATCH_JUMP);
 
 	// RsMouseSetPos call (SA style fix)
 	InjectHook(0x4A5D15, ResetMousePos);
@@ -592,6 +528,8 @@ void Patch_VC_Steam(const RECT& desktop)
 
 	// Fixed crash related to autopilot timing calculations
 	InjectHook(0x418FAE, AutoPilotTimerFix_VC, PATCH_JUMP);
+
+	Common::Patches::DDraw_VC_Steam( desktop, aNoDesktopMode );
 }
 
 void Patch_VC_JP()
@@ -708,17 +646,22 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		GetWindowRect(GetDesktopWindow(), &desktop);
 		sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
-		std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( GetModuleHandle( nullptr ), ".text" );
+		// This scope is mandatory so Protect goes out of scope before rwcseg gets fixed
+		{
+			std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( GetModuleHandle( nullptr ), ".text" );
 
-		if(*(DWORD*)0x667BF5 == 0xB85548EC) Patch_VC_10(desktop);
-		else if(*(DWORD*)0x667C45 == 0xB85548EC) Patch_VC_11(desktop);
-		else if (*(DWORD*)0x666BA5 == 0xB85548EC) Patch_VC_Steam(desktop);
+			if(*(DWORD*)0x667BF5 == 0xB85548EC) Patch_VC_10(desktop);
+			else if(*(DWORD*)0x667C45 == 0xB85548EC) Patch_VC_11(desktop);
+			else if (*(DWORD*)0x666BA5 == 0xB85548EC) Patch_VC_Steam(desktop);
 
-		// Y axis sensitivity only
-		else if (*(DWORD*)0x601048 == 0x5E5F5D60) Patch_VC_JP();
-		else return TRUE;
+			// Y axis sensitivity only
+			else if (*(DWORD*)0x601048 == 0x5E5F5D60) Patch_VC_JP();
+			else return TRUE;
 
-		Patch_VC_Common();
+			Patch_VC_Common();
+		}
+
+		Common::Patches::FixRwcseg_Patterns();
 
 		HMODULE		hDummyHandle;
 		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)&DllMain, &hDummyHandle);

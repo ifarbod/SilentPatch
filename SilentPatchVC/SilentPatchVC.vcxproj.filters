@@ -44,6 +44,9 @@
     <ClCompile Include="..\SilentPatch\Patterns.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\SilentPatch\Common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\SilentPatch\SilentPatch.rc">
