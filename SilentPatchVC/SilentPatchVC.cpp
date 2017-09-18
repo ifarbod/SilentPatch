@@ -559,12 +559,6 @@ void Patch_VC_Common()
 		InjectHook( hookPoint.get<void>( 0x21 + 5 ), jmpPoint, PATCH_JUMP );
 	}
 
-	// Remove FILE_FLAG_NO_BUFFERING from CdStreams
-	{
-		auto addr = get_pattern( "81 7C 24 04 00 08 00 00", 0x12 );
-		Patch<uint8_t>( addr, 0xEB );
-	}
-
 	// Alt+F4
 	{
 		auto addr = pattern( "59 59 31 C0 83 C4 70 5D 5F 5E 5B C2 10 00" ).count(2);
@@ -656,9 +650,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 			// Y axis sensitivity only
 			else if (*(DWORD*)0x601048 == 0x5E5F5D60) Patch_VC_JP();
-			else return TRUE;
 
 			Patch_VC_Common();
+			Common::Patches::DDraw_Common();
 		}
 
 		Common::Patches::FixRwcseg_Patterns();

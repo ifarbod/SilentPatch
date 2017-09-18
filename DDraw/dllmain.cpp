@@ -47,13 +47,13 @@ char* GetMyDocumentsPath()
 
 void InjectHooks()
 {
-	using namespace Memory::VP;
-
 	static char		aNoDesktopMode[64];
 
 	RECT			desktop;
 	GetWindowRect(GetDesktopWindow(), &desktop);
 	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+
+	std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( GetModuleHandle( nullptr ), ".text" );
 
 	if (*(DWORD*)0x5C1E75 == 0xB85548EC)
 	{
@@ -92,6 +92,8 @@ void InjectHooks()
 		ppUserFilesDir = (char**)0x601ECA;
 		Common::Patches::DDraw_VC_Steam( desktop, aNoDesktopMode );
 	}
+
+	Common::Patches::DDraw_Common();
 }
 
 static bool rwcsegUnprotected = false;

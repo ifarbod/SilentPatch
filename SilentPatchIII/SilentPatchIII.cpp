@@ -752,12 +752,6 @@ void Patch_III_Common()
 		InjectHook( hookPoint.get<void>( 0x21 + 5 ), jmpPoint, PATCH_JUMP );
 	}
 
-	// Remove FILE_FLAG_NO_BUFFERING from CdStreams
-	{
-		auto addr = get_pattern( "81 7C 24 04 00 08 00 00", 0x12 );
-		Patch<uint8_t>( addr, 0xEB );
-	}
-
 	// Alt+F4
 	{
 		auto addr = pattern( "59 59 31 C0 83 C4 48 5D 5F 5E 5B C2 10 00" ).count(2);
@@ -841,9 +835,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			if (*(DWORD*)0x5C1E75 == 0xB85548EC) Patch_III_10(desktop);
 			else if (*(DWORD*)0x5C2135 == 0xB85548EC) Patch_III_11(desktop);
 			else if (*(DWORD*)0x5C6FD5 == 0xB85548EC) Patch_III_Steam(desktop);
-			else return TRUE;
 
 			Patch_III_Common();
+			Common::Patches::DDraw_Common();
 		}
 
 		Common::Patches::FixRwcseg_Patterns();

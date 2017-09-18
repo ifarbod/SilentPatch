@@ -21,5 +21,7 @@ namespace Common
 		void DDraw_VC_10( const RECT& desktop, const char* desktopText );
 		void DDraw_VC_11( const RECT& desktop, const char* desktopText );
 		void DDraw_VC_Steam( const RECT& desktop, const char* desktopText );
+
+		void DDraw_Common();
 	}
 };

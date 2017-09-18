@@ -104,7 +104,6 @@ namespace Common {
 		}
 
 		// ================= VC =================
-
 		void DDraw_VC_10( const RECT& desktop, const char* desktopText )
 		{
 			using namespace Memory;
@@ -170,6 +169,22 @@ namespace Common {
 			// No DirectPlay dependency
 			Patch<BYTE>(0x601910, 0xB8);
 			Patch<DWORD>(0x601911, 0x900);
+		}
+
+		// ================= COMMON =================
+		void DDraw_Common()
+		{
+			using namespace Memory;
+			using namespace hook;
+
+			// Remove FILE_FLAG_NO_BUFFERING from CdStreams
+			{
+				auto mem = pattern( "81 7C 24 04 00 08 00 00" ).count_hint(1);
+				if ( mem.size() == 1 )
+				{
+					Patch<uint8_t>( mem.get_first( 0x12 ), 0xEB );
+				}
+			}		
 		}
 	}
 }
