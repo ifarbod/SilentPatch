@@ -155,6 +155,9 @@
     <ClInclude Include="..\SilentPatch\ASIModuleHandle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\SilentPatch\debugmenu_public.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Shaders.rc">

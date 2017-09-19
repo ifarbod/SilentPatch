@@ -21,6 +21,8 @@
 #include "DelimStringReader.h"
 #include "ASIModuleHandle.h"
 
+#include "debugmenu_public.h"
+
 #pragma warning(disable:4733)
 
 // RW wrappers
@@ -300,6 +302,10 @@ RpLight*&				pAmbient = **AddressByVersion<RpLight***>(0x5BA53A, 0x735D11, 0x5D9
 
 CLinkListSA<CPed*>&			ms_weaponPedsForPC = **AddressByVersion<CLinkListSA<CPed*>**>(0x53EACA, 0x53EF6A, 0x551101);
 CLinkListSA<AlphaObjectInfo>&	m_alphaList = **AddressByVersion<CLinkListSA<AlphaObjectInfo>**>(0x733A4D, 0x73427D, 0x76DCA3);
+
+#ifndef NDEBUG
+DebugMenuAPI gDebugMenuAPI;
+#endif
 
 
 // Custom variables
@@ -1175,6 +1181,10 @@ static void DoPCScreenChange_Mod()
 	}
 }
 
+#ifndef NDEBUG
+static bool bUseAaronSun = true;
+static bool bFixedPCVehLight = true;
+#endif
 static CVector curVecToSun;
 static void (*orgSetLightsWithTimeOfDayColour)( RpWorld* );
 static void SetLightsWithTimeOfDayColour_SilentPatch( RpWorld* world )
@@ -1182,7 +1192,13 @@ static void SetLightsWithTimeOfDayColour_SilentPatch( RpWorld* world )
 	static CVector* const VectorToSun = *AddressByVersion<CVector**>( 0x6FC5B7 + 3, 0, 0 ); // TODO: DO
 	static int& CurrentStoredValue = **AddressByVersion<int**>( 0x6FC632 + 1, 0, 0 ); // TODO: DO
 
+#ifndef NDEBUG
+	static CVector& vecDirnLightToSun = *(CVector*)0xB7CB14;
+	curVecToSun = bUseAaronSun ? VectorToSun[CurrentStoredValue] : vecDirnLightToSun;
+#else
 	curVecToSun = VectorToSun[CurrentStoredValue];
+#endif
+
 	orgSetLightsWithTimeOfDayColour( world );
 }
 
@@ -2345,6 +2361,12 @@ BOOL InjectDelayedPatches_10()
 		ReadRotorFixExceptions(wcModulePath);
 		bool bHookDoubleRwheels = ReadDoubleRearWheels(wcModulePath);
 
+#ifndef NDEBUG
+		const bool bHasDebugMenu = DebugMenuLoad();
+#else
+		constexpr bool bHasDebugMenu = false;
+#endif
+
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == 1 )
 		{
 			// PS2 sun - more
@@ -2583,6 +2605,39 @@ BOOL InjectDelayedPatches_10()
 		Patch<const void*>( 0x735618 + 2, &curVecToSun.x );
 		Patch<const void*>( 0x73561E + 2, &curVecToSun.y );
 		Patch<const void*>( 0x735624 + 1, &curVecToSun.z );
+#ifndef NDEBUG
+		if ( bHasDebugMenu )
+		{
+			DebugMenuAddVar( "SilentPatch", "Directional from sun", &bUseAaronSun, nullptr );
+
+			// Switch for fixed PC vehicle lighting
+			DebugMenuAddVar( "SilentPatch", "Fixed PC vehicle light", &bFixedPCVehLight, []() {
+				if ( bFixedPCVehLight )
+				{
+					Memory::VP::Patch<float>(0x5D88D1 + 6, 0);
+					Memory::VP::Patch<float>(0x5D88DB + 6, 0);
+					Memory::VP::Patch<float>(0x5D88E5 + 6, 0);
+
+					Memory::VP::Patch<float>(0x5D88F9 + 6, 0);
+					Memory::VP::Patch<float>(0x5D8903 + 6, 0);
+					Memory::VP::Patch<float>(0x5D890D + 6, 0);
+				}
+				else
+				{
+					Memory::VP::Patch<float>(0x5D88D1 + 6, 0.25f);
+					Memory::VP::Patch<float>(0x5D88DB + 6, 0.25f);
+					Memory::VP::Patch<float>(0x5D88E5 + 6, 0.25f);
+
+					Memory::VP::Patch<float>(0x5D88F9 + 6, 0.75f);
+					Memory::VP::Patch<float>(0x5D8903 + 6, 0.75f);
+					Memory::VP::Patch<float>(0x5D890D + 6, 0.75f);
+				}
+			} );
+			
+		}
+#endif
+
+		
 
 		FLAUtils::Init();
 
@@ -3560,6 +3615,17 @@ void Patch_SA_10()
 	Nop( 0x590ADE, 1 );
 	InjectHook( 0x590ADE + 1, DoPCScreenChange_Mod, PATCH_CALL );
 	Patch<const void*>( 0x590042 + 2, &currDisplayedSplash_ForLastSplash );
+
+
+	// Don't include an extra D3DLIGHT on vehicles since we fixed directional already
+	// By aap
+	Patch<float>(0x5D88D1 + 6, 0);
+	Patch<float>(0x5D88DB + 6, 0);
+	Patch<float>(0x5D88E5 + 6, 0);
+
+	Patch<float>(0x5D88F9 + 6, 0);
+	Patch<float>(0x5D8903 + 6, 0);
+	Patch<float>(0x5D890D + 6, 0);
 }
 
 void Patch_SA_11()
