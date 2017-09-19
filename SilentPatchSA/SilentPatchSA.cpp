@@ -1175,6 +1175,17 @@ static void DoPCScreenChange_Mod()
 	}
 }
 
+static CVector curVecToSun;
+static void (*orgSetLightsWithTimeOfDayColour)( RpWorld* );
+static void SetLightsWithTimeOfDayColour_SilentPatch( RpWorld* world )
+{
+	static CVector* const VectorToSun = *AddressByVersion<CVector**>( 0x6FC5B7 + 3, 0, 0 ); // TODO: DO
+	static int& CurrentStoredValue = **AddressByVersion<int**>( 0x6FC632 + 1, 0, 0 ); // TODO: DO
+
+	curVecToSun = VectorToSun[CurrentStoredValue];
+	orgSetLightsWithTimeOfDayColour( world );
+}
+
 #if MEM_VALIDATORS
 
 #include <intrin.h>
@@ -2564,6 +2575,14 @@ BOOL InjectDelayedPatches_10()
 			InjectHook( 0x4065C2+1, CdStreamThreadHighSize, PATCH_CALL );
 			Patch<const void*>( 0x406620+2, &pCdStreamSetFilePointer );
 		}
+
+
+		// Fix directional light position
+		ReadCall( 0x53E997, orgSetLightsWithTimeOfDayColour );
+		InjectHook( 0x53E997, SetLightsWithTimeOfDayColour_SilentPatch );
+		Patch<const void*>( 0x735618 + 2, &curVecToSun.x );
+		Patch<const void*>( 0x73561E + 2, &curVecToSun.y );
+		Patch<const void*>( 0x735624 + 1, &curVecToSun.z );
 
 		FLAUtils::Init();
 
