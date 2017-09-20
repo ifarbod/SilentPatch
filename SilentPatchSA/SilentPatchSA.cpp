@@ -3793,6 +3793,7 @@ void Patch_SA_10()
 
 	Patch( 0x40647D, { 0x56, 0xFF, 0x15 } );
 	Patch( 0x40647D + 3, &CdStreamSync::CdStreamSyncOnObject );
+	Patch( 0x40647D + 3 + 4, { 0x5E, 0xC3 } );
 	
 	Patch( 0x406669, { 0x56, 0xFF, 0x15 } );
 	Patch( 0x406669 + 3, &CdStreamSync::CdStreamThreadOnObject );
