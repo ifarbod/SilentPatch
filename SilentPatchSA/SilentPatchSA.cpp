@@ -1284,10 +1284,30 @@ namespace Sema
 
 namespace CV
 {
+	namespace Funcs
+	{
+		static decltype(InitializeConditionVariable)* pInitializeConditionVariable = nullptr;
+		static decltype(SleepConditionVariableCS)* pSleepConditionVariableCS = nullptr;
+		static decltype(WakeConditionVariable)* pWakeConditionVariable = nullptr;
+
+		static bool TryInit()
+		{
+			const HMODULE kernelDLL = GetModuleHandle( TEXT("kernel32") );
+			assert( kernelDLL != nullptr );
+			pInitializeConditionVariable = (decltype(pInitializeConditionVariable))GetProcAddress( kernelDLL, "InitializeConditionVariable" );
+			pSleepConditionVariableCS = (decltype(pSleepConditionVariableCS))GetProcAddress( kernelDLL, "SleepConditionVariableCS" );
+			pWakeConditionVariable = (decltype(pWakeConditionVariable))GetProcAddress( kernelDLL, "WakeConditionVariable" );
+
+			return pInitializeConditionVariable != nullptr && pSleepConditionVariableCS != nullptr && pWakeConditionVariable != nullptr;
+		}
+
+
+	}
+
 	CdStream::Sync __stdcall InitializeSyncObject()
 	{
 		CdStream::Sync object;
-		InitializeConditionVariable( &object.cv );
+		Funcs::pInitializeConditionVariable( &object.cv );
 		return object;
 	}
 
@@ -1300,7 +1320,7 @@ namespace CV
 		EnterCriticalSection( &CdStreamCritSec );
 		while ( stream->nSectorsToRead != 0 )
 		{
-			SleepConditionVariableCS( &stream->sync.cv, &CdStreamCritSec, INFINITE );
+			Funcs::pSleepConditionVariableCS( &stream->sync.cv, &CdStreamCritSec, INFINITE );
 		}
 		stream->bInUse = 0;
 		LeaveCriticalSection( &CdStreamCritSec );
@@ -1311,7 +1331,7 @@ namespace CV
 	{
 		EnterCriticalSection( &CdStreamCritSec );
 		stream->nSectorsToRead = 0;
-		WakeConditionVariable( &stream->sync.cv );
+		Funcs::pWakeConditionVariable( &stream->sync.cv );
 		stream->bInUse = 0;
 		LeaveCriticalSection( &CdStreamCritSec );
 	}
@@ -1320,20 +1340,19 @@ namespace CV
 static void (*orgCdStreamInitThread)();
 static void CdStreamInitThread()
 {
-	// TODO: Branch for XP
-	if ( GetASIModuleHandle( L"modloader" ) != nullptr )
-	{
-		CdStreamInitializeSyncObject = Sema::InitializeSyncObject;
-		CdStreamShutdownSyncObject = Sema::ShutdownSyncObject;
-		CdStreamSyncOnObject = Sema::CdStreamSync;
-		CdStreamThreadOnObject = Sema::CdStreamThread;
-	}
-	else
+	if ( GetASIModuleHandle( L"modloader" ) == nullptr && CV::Funcs::TryInit() )
 	{
 		CdStreamInitializeSyncObject = CV::InitializeSyncObject;
 		CdStreamShutdownSyncObject = CV::ShutdownSyncObject;
 		CdStreamSyncOnObject = CV::CdStreamSync;
 		CdStreamThreadOnObject = CV::CdStreamThread;
+	}
+	else
+	{
+		CdStreamInitializeSyncObject = Sema::InitializeSyncObject;
+		CdStreamShutdownSyncObject = Sema::ShutdownSyncObject;
+		CdStreamSyncOnObject = Sema::CdStreamSync;
+		CdStreamThreadOnObject = Sema::CdStreamThread;		
 	}
 
 	InitializeCriticalSectionAndSpinCount( &CdStreamCritSec, 10 );
