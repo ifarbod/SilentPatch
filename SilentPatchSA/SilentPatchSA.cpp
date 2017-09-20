@@ -3791,9 +3791,26 @@ void Patch_SA_10()
 	ReadCall( 0x406C78, CdStreamSync::orgCdStreamInitThread );
 	InjectHook( 0x406C78, CdStreamSync::CdStreamInitThread );
 
-	Patch( 0x40647D, { 0x56, 0xFF, 0x15 } );
-	Patch( 0x40647D + 3, &CdStreamSync::CdStreamSyncOnObject );
-	Patch( 0x40647D + 3 + 4, { 0x5E, 0xC3 } );
+	{
+		uintptr_t address;
+		if ( *(uint8_t*)0x406460 == 0xE9 )
+		{
+			ReadCall( 0x406460, address );
+			address += 0x1D;
+		}
+		else
+		{
+			address = 0x406460 + 0x1D;
+		}
+
+		const uint8_t orgCode[] = { 0x8B, 0x46, 0x04, 0x85, 0xC0, 0x74, 0x10, 0xC6, 0x46, 0x0D, 0x01 };
+		if ( memcmp( orgCode, (void*)address, sizeof(orgCode) ) == 0 )
+		{
+			Patch( address, { 0x56, 0xFF, 0x15 } );
+			Patch( address + 3, &CdStreamSync::CdStreamSyncOnObject );
+			Patch( address + 3 + 4, { 0x5E, 0xC3 } );
+		}
+	}
 	
 	Patch( 0x406669, { 0x56, 0xFF, 0x15 } );
 	Patch( 0x406669 + 3, &CdStreamSync::CdStreamThreadOnObject );
