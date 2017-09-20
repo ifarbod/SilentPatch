@@ -1336,8 +1336,9 @@ static void CdStreamInitThread()
 		CdStreamThreadOnObject = CV::CdStreamThread;
 	}
 
-	orgCdStreamInitThread();
 	InitializeCriticalSectionAndSpinCount( &CdStreamCritSec, 10 );
+
+	orgCdStreamInitThread();
 }
 
 }
