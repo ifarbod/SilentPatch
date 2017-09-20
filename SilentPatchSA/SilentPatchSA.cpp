@@ -1214,71 +1214,132 @@ struct CdStream
 	BYTE bInUse;
 	BYTE field_F;
 	DWORD status;
-	HANDLE semaphore;
+	union Sync {
+		HANDLE semaphore;
+		CONDITION_VARIABLE cv;
+	} sync;
 	HANDLE hFile;
 	OVERLAPPED overlapped;
 };
 
 static_assert(sizeof(CdStream) == 0x30, "Incorrect struct size: CdStream");
 
+namespace CdStreamSync {
+
 static CRITICAL_SECTION CdStreamCritSec;
 
-static void (*orgCdStreamInitThread)();
-static void CdStreamInitThread_SilentPatch()
+// Function pointers for game to use
+static CdStream::Sync (__stdcall *CdStreamInitializeSyncObject)();
+static DWORD (__stdcall *CdStreamSyncOnObject)( CdStream* stream );
+static void (__stdcall *CdStreamThreadOnObject)( CdStream* stream );
+static void (__stdcall *CdStreamCloseObject)( CdStream::Sync* sync );
+static void (__stdcall *CdStreamShutdownSyncObject)( CdStream* stream );
+
+static void __stdcall CdStreamShutdownSyncObject_Stub( CdStream* stream, size_t idx )
 {
+	CdStreamShutdownSyncObject( &stream[idx] );
+}
+
+namespace Sema
+{
+	CdStream::Sync __stdcall InitializeSyncObject()
+	{
+		CdStream::Sync object;
+		object.semaphore = CreateSemaphore( nullptr, 0, 2, nullptr );
+		return object;
+	}
+
+	void __stdcall ShutdownSyncObject( CdStream* stream )
+	{
+		CloseHandle( stream->sync.semaphore );
+	}
+
+	DWORD __stdcall CdStreamSync( CdStream* stream )
+	{
+		EnterCriticalSection( &CdStreamCritSec );
+		if ( stream->nSectorsToRead != 0 )
+		{
+			stream->bLocked = 1;
+			LeaveCriticalSection( &CdStreamCritSec );
+			WaitForSingleObject( stream->sync.semaphore, INFINITE );
+			EnterCriticalSection( &CdStreamCritSec );
+		}
+		stream->bInUse = 0;
+		LeaveCriticalSection( &CdStreamCritSec );
+		return stream->status;
+	}
+
+	void __stdcall CdStreamThread( CdStream* stream )
+	{
+		EnterCriticalSection( &CdStreamCritSec );
+		stream->nSectorsToRead = 0;
+		if ( stream->bLocked != 0 )
+		{
+			ReleaseSemaphore( stream->sync.semaphore, 1, nullptr );
+		}
+		stream->bInUse = 0;
+		LeaveCriticalSection( &CdStreamCritSec );
+	}
+}
+
+namespace CV
+{
+	CdStream::Sync __stdcall InitializeSyncObject()
+	{
+		CdStream::Sync object;
+		InitializeConditionVariable( &object.cv );
+		return object;
+	}
+
+	void __stdcall ShutdownSyncObject( CdStream* stream )
+	{
+	}
+
+	DWORD __stdcall CdStreamSync( CdStream* stream )
+	{
+		EnterCriticalSection( &CdStreamCritSec );
+		while ( stream->nSectorsToRead != 0 )
+		{
+			SleepConditionVariableCS( &stream->sync.cv, &CdStreamCritSec, INFINITE );
+		}
+		stream->bInUse = 0;
+		LeaveCriticalSection( &CdStreamCritSec );
+		return stream->status;
+	}
+
+	void __stdcall CdStreamThread( CdStream* stream )
+	{
+		EnterCriticalSection( &CdStreamCritSec );
+		stream->nSectorsToRead = 0;
+		WakeConditionVariable( &stream->sync.cv );
+		stream->bInUse = 0;
+		LeaveCriticalSection( &CdStreamCritSec );
+	}
+}
+
+static void (*orgCdStreamInitThread)();
+static void CdStreamInitThread()
+{
+	// TODO: Branch for XP
+	if ( GetASIModuleHandle( L"modloader" ) != nullptr )
+	{
+		CdStreamInitializeSyncObject = Sema::InitializeSyncObject;
+		CdStreamShutdownSyncObject = Sema::ShutdownSyncObject;
+		CdStreamSyncOnObject = Sema::CdStreamSync;
+		CdStreamThreadOnObject = Sema::CdStreamThread;
+	}
+	else
+	{
+		CdStreamInitializeSyncObject = CV::InitializeSyncObject;
+		CdStreamShutdownSyncObject = CV::ShutdownSyncObject;
+		CdStreamSyncOnObject = CV::CdStreamSync;
+		CdStreamThreadOnObject = CV::CdStreamThread;
+	}
+
 	orgCdStreamInitThread();
 	InitializeCriticalSectionAndSpinCount( &CdStreamCritSec, 10 );
 }
 
-DWORD CdStreamSync_SilentPatch( CdStream* stream )
-{
-	EnterCriticalSection( &CdStreamCritSec );
-	if ( stream->nSectorsToRead != 0 )
-	{
-		stream->bLocked = 1;
-		LeaveCriticalSection( &CdStreamCritSec );
-		WaitForSingleObject( stream->semaphore, INFINITE );
-		EnterCriticalSection( &CdStreamCritSec );
-	}
-	stream->bInUse = 0;
-	LeaveCriticalSection( &CdStreamCritSec );
-	return stream->status;
-}
-
-void CdStreamThread_SilentPatch( CdStream* stream )
-{
-	EnterCriticalSection( &CdStreamCritSec );
-	stream->nSectorsToRead = 0;
-	if ( stream->bLocked != 0 )
-	{
-		ReleaseSemaphore( stream->semaphore, 1, nullptr );
-	}
-	stream->bInUse = 0;
-	LeaveCriticalSection( &CdStreamCritSec );
-}
-
-void __declspec(naked) asmCdStreamSync_SilentPatch()
-{
-	_asm
-	{
-		push	esi
-		call	CdStreamSync_SilentPatch
-		add		esp, 4
-		pop		esi
-		retn
-	}
-}
-
-static void* asmCdStreamThread_JumpBack;
-void __declspec(naked) asmCdStreamThread_SilentPatch()
-{
-	_asm
-	{
-		push	esi
-		call	CdStreamThread_SilentPatch
-		add		esp, 4
-		jmp		asmCdStreamThread_JumpBack
-	}
 }
 
 #if MEM_VALIDATORS
@@ -3706,14 +3767,25 @@ void Patch_SA_10()
 	Patch<float>(0x5D8903 + 6, 0);
 	Patch<float>(0x5D890D + 6, 0);
 
-
 	// Race condition in CdStream fixed
-	ReadCall( 0x406C78, orgCdStreamInitThread );
-	InjectHook( 0x406C78, CdStreamInitThread_SilentPatch );
-	InjectHook( 0x40647D, asmCdStreamSync_SilentPatch, PATCH_JUMP );
+	ReadCall( 0x406C78, CdStreamSync::orgCdStreamInitThread );
+	InjectHook( 0x406C78, CdStreamSync::CdStreamInitThread );
+
+	Patch( 0x40647D, { 0x56, 0xFF, 0x15 } );
+	Patch( 0x40647D + 3, &CdStreamSync::CdStreamSyncOnObject );
 	
-	asmCdStreamThread_JumpBack = (void*)0x406681;
-	InjectHook( 0x406669, asmCdStreamThread_SilentPatch, PATCH_JUMP );
+	Patch( 0x406669, { 0x56, 0xFF, 0x15 } );
+	Patch( 0x406669 + 3, &CdStreamSync::CdStreamThreadOnObject );
+	Patch( 0x406669 + 3 + 4, { 0xEB, 0x0F } );
+
+	Patch( 0x406910, { 0xFF, 0x15 } );
+	Patch( 0x406910 + 2, &CdStreamSync::CdStreamInitializeSyncObject );
+	Nop( 0x406910 + 6, 4 );
+
+	Nop( 0x406926, 2 );
+
+	Patch( 0x4063B5, { 0x56, 0x50 } );
+	InjectHook( 0x4063B5 + 2, CdStreamSync::CdStreamShutdownSyncObject_Stub, PATCH_CALL );
 }
 
 void Patch_SA_11()
