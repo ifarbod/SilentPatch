@@ -1202,6 +1202,85 @@ static void SetLightsWithTimeOfDayColour_SilentPatch( RpWorld* world )
 	orgSetLightsWithTimeOfDayColour( world );
 }
 
+// ============= CdStream data racing issue =============
+
+struct CdStream
+{
+	DWORD nSectorOffset;
+	DWORD nSectorsToRead;
+	LPVOID lpBuffer;
+	BYTE field_C;
+	BYTE bLocked;
+	BYTE bInUse;
+	BYTE field_F;
+	DWORD status;
+	HANDLE semaphore;
+	HANDLE hFile;
+	OVERLAPPED overlapped;
+};
+
+static_assert(sizeof(CdStream) == 0x30, "Incorrect struct size: CdStream");
+
+static CRITICAL_SECTION CdStreamCritSec;
+
+static void (*orgCdStreamInitThread)();
+static void CdStreamInitThread_SilentPatch()
+{
+	orgCdStreamInitThread();
+	InitializeCriticalSectionAndSpinCount( &CdStreamCritSec, 10 );
+}
+
+DWORD CdStreamSync_SilentPatch( CdStream* stream )
+{
+	EnterCriticalSection( &CdStreamCritSec );
+	if ( stream->nSectorsToRead != 0 )
+	{
+		stream->bLocked = 1;
+		LeaveCriticalSection( &CdStreamCritSec );
+		WaitForSingleObject( stream->semaphore, INFINITE );
+		EnterCriticalSection( &CdStreamCritSec );
+	}
+	stream->bInUse = 0;
+	LeaveCriticalSection( &CdStreamCritSec );
+	return stream->status;
+}
+
+void CdStreamThread_SilentPatch( CdStream* stream )
+{
+	EnterCriticalSection( &CdStreamCritSec );
+	stream->nSectorsToRead = 0;
+	if ( stream->bLocked != 0 )
+	{
+		ReleaseSemaphore( stream->semaphore, 1, nullptr );
+	}
+	stream->bInUse = 0;
+	LeaveCriticalSection( &CdStreamCritSec );
+}
+
+void __declspec(naked) asmCdStreamSync_SilentPatch()
+{
+	_asm
+	{
+		push	esi
+		call	CdStreamSync_SilentPatch
+		add		esp, 4
+		pop		esi
+		retn
+	}
+}
+
+static void* asmCdStreamThread_JumpBack;
+void __declspec(naked) asmCdStreamThread_SilentPatch()
+{
+	_asm
+	{
+		push	esi
+		call	CdStreamThread_SilentPatch
+		add		esp, 4
+		jmp		asmCdStreamThread_JumpBack
+	}
+}
+
 #if MEM_VALIDATORS
 
 #include <intrin.h>
@@ -2301,10 +2380,10 @@ void __declspec(naked) CdStreamThreadHighSize()
 		xor		edx, edx
 		shld	edx, ecx, 11
 		shl		ecx, 11
-		mov		[esi+1Ch+8], ecx // OVERLAPPED.Offset
-		mov		[esi+1Ch+0Ch], edx // OVERLAPPED.OffsetHigh
+		mov		[esi]CdStream.overlapped.Offset, ecx // OVERLAPPED.Offset
+		mov		[esi]CdStream.overlapped.OffsetHigh, edx // OVERLAPPED.OffsetHigh
 
-		mov		edx, [esi+4]
+		mov		edx, [esi]CdStream.nSectorsToRead
 		retn
 	}
 }
@@ -3626,6 +3705,15 @@ void Patch_SA_10()
 	Patch<float>(0x5D88F9 + 6, 0);
 	Patch<float>(0x5D8903 + 6, 0);
 	Patch<float>(0x5D890D + 6, 0);
+
+
+	// Race condition in CdStream fixed
+	ReadCall( 0x406C78, orgCdStreamInitThread );
+	InjectHook( 0x406C78, CdStreamInitThread_SilentPatch );
+	InjectHook( 0x40647D, asmCdStreamSync_SilentPatch, PATCH_JUMP );
+	
+	asmCdStreamThread_JumpBack = (void*)0x406681;
+	InjectHook( 0x406669, asmCdStreamThread_SilentPatch, PATCH_JUMP );
 }
 
 void Patch_SA_11()
