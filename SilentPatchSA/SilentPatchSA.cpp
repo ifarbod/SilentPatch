@@ -3271,19 +3271,23 @@ void Patch_SA_10()
 #endif
 
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
-	int			pIsAlreadyRunning = AddressByRegion_10<int>(0x74872D);
-	ReadCall( pIsAlreadyRunning, IsAlreadyRunning );
-	InjectHook(pIsAlreadyRunning, InjectDelayedPatches_10);
+	{
+		const uintptr_t pIsAlreadyRunning = AddressByRegion_10<uintptr_t>(0x74872D);
+		ReadCall( pIsAlreadyRunning, IsAlreadyRunning );
+		InjectHook(pIsAlreadyRunning, InjectDelayedPatches_10);
+	}
 
 	// Newsteam crash fix
 	pDirect = *(RpLight***)0x5BA573;
 	DarkVehiclesFix1_JumpBack = AddressByRegion_10<void*>(0x756D90);
 
 	// (Hopefully) more precise frame limiter
-	int			pAddress = AddressByRegion_10<int>(0x748D9B);
-	ReadCall( pAddress, RsEventHandler );
-	InjectHook(pAddress, NewFrameRender);
-	InjectHook(AddressByRegion_10<int>(0x748D1F), GetTimeSinceLastFrame);
+	{
+		uintptr_t pAddress = AddressByRegion_10<uintptr_t>(0x748D9B);
+		ReadCall( pAddress, RsEventHandler );
+		InjectHook(pAddress, NewFrameRender);
+		InjectHook(AddressByRegion_10<uintptr_t>(0x748D1F), GetTimeSinceLastFrame);
+	}
 
 	// Set CAEDataStream to use an old structure
 	CAEDataStream::SetStructType(false);
@@ -3596,22 +3600,22 @@ void Patch_SA_10()
 	// Car explosion crash with multimonitor
 	// Unitialized collision data breaking stencil shadows
 	{
-		int			pHoodlumCompat;
-		if ( *(BYTE*)0x40F870 == 0xE9 )
-			pHoodlumCompat = 0x40F875 +  *(int*)0x40F871;
+		uintptr_t pHoodlumCompat;
+		if ( *(uint8_t*)0x40F870 == 0xE9 )
+			ReadCall( 0x40F870, pHoodlumCompat );
 		else
 			pHoodlumCompat = 0x40F870;
 
-		int			pMemMgrMalloc = pHoodlumCompat + 0x63;
+		const uintptr_t pMemMgrMalloc = pHoodlumCompat + 0x63;
 		ReadCall( pMemMgrMalloc, orgMemMgrMalloc );
 		VP::InjectHook(pMemMgrMalloc, CollisionData_MallocAndInit);
 	}
 	{
-		int			pHoodlumCompat, pHoodlumCompat2;
-		if ( *(BYTE*)0x40F740 == 0xE9 )
+		uintptr_t pHoodlumCompat, pHoodlumCompat2;
+		if ( *(uint8_t*)0x40F740 == 0xE9 )
 		{
-			pHoodlumCompat = 0x40F745 +  *(int*)0x40F741;
-			pHoodlumCompat2 = 0x40F815 + *(int*)0x40F811;
+			ReadCall( 0x40F740, pHoodlumCompat );
+			ReadCall( 0x40F810, pHoodlumCompat2 );
 		}
 		else
 		{
@@ -3619,7 +3623,7 @@ void Patch_SA_10()
 			pHoodlumCompat2 = 0x40F810;
 		}
 
-		int			pNewAlloc = pHoodlumCompat + 0xC;
+		const uintptr_t pNewAlloc = pHoodlumCompat + 0xC;
 		ReadCall( pNewAlloc, orgNewAlloc );
 		VP::InjectHook(pHoodlumCompat + 0xC, CollisionData_NewAndInit);
 		VP::InjectHook(pHoodlumCompat2 + 0xD, CollisionData_NewAndInit);
