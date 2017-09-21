@@ -3842,9 +3842,9 @@ void Patch_SA_10()
 		const uint8_t orgCode[] = { 0x8B, 0x46, 0x04, 0x85, 0xC0, 0x74, 0x10, 0xC6, 0x46, 0x0D, 0x01 };
 		if ( memcmp( orgCode, (void*)address, sizeof(orgCode) ) == 0 )
 		{
-			Patch( address, { 0x56, 0xFF, 0x15 } );
-			Patch( address + 3, &CdStreamSync::CdStreamSyncOnObject );
-			Patch( address + 3 + 4, { 0x5E, 0xC3 } );
+			VP::Patch( address, { 0x56, 0xFF, 0x15 } );
+			VP::Patch( address + 3, &CdStreamSync::CdStreamSyncOnObject );
+			VP::Patch( address + 3 + 4, { 0x5E, 0xC3 } );
 		}
 	}
 	
