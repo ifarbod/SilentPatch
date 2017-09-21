@@ -1362,6 +1362,32 @@ static void CdStreamInitThread()
 
 }
 
+// ============= Mod compatibility stuff =============
+
+namespace ModCompat
+{
+	bool SkygfxPatchesMoonphases( HMODULE module )
+	{
+		if ( module == nullptr ) return false; // SkyGfx not installed
+
+		struct Config
+		{
+			uint32_t version;
+			// The rest isn't relevant at the moment
+		};
+
+		auto func = (Config*(*)())GetProcAddress( module, "GetConfig" );
+		if ( func == nullptr ) return false; // Old version?
+
+		const Config* config = func();
+		if ( config == nullptr ) return false; // Old version/error?
+
+		constexpr uint32_t SKYGFX_VERSION_WITH_MOONPHASES = 0x360;
+		return config->version >= SKYGFX_VERSION_WITH_MOONPHASES;
+	}
+
+}
+
 #if MEM_VALIDATORS
 
 #include <intrin.h>
@@ -2514,12 +2540,14 @@ BOOL InjectDelayedPatches_10()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
-		bool		bHasImVehFt = GetASIModuleHandleW(L"ImVehFt") != nullptr;
-		bool		bSAMP = GetModuleHandleW(L"samp") != nullptr;
-		bool		bSARender = GetASIModuleHandleW(L"SARender") != nullptr;
+		const bool		bHasImVehFt = GetASIModuleHandleW(L"ImVehFt") != nullptr;
+		const bool		bSAMP = GetModuleHandleW(L"samp") != nullptr;
+		const bool		bSARender = GetASIModuleHandleW(L"SARender") != nullptr;
+
+		const HMODULE skygfxModule = GetASIModuleHandle( TEXT("skygfx") );
 
 		ReadRotorFixExceptions(wcModulePath);
-		bool bHookDoubleRwheels = ReadDoubleRearWheels(wcModulePath);
+		const bool bHookDoubleRwheels = ReadDoubleRearWheels(wcModulePath);
 
 #ifndef NDEBUG
 		const bool bHasDebugMenu = DebugMenuLoad();
@@ -2797,6 +2825,12 @@ BOOL InjectDelayedPatches_10()
 		}
 #endif
 
+		// Moonphases
+		// Not taking effect with new skygfx since aap has it too now
+		if ( !ModCompat::SkygfxPatchesMoonphases( skygfxModule ) )
+		{
+			InjectHook(0x713ACB, HandleMoonStuffStub, PATCH_JUMP);
+		}
 		
 
 		FLAUtils::Init();
@@ -3356,8 +3390,6 @@ void Patch_SA_10()
 	// Only 1.0 and Steam
 	Nop(0x57DC55, 2);
 
-	// Moonphases
-	InjectHook(0x713ACB, HandleMoonStuffStub, PATCH_JUMP);
 
 	// TEMP
 	//Patch<DWORD>(0x733B05, 40);
