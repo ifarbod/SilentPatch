@@ -1417,6 +1417,56 @@ static void CdStreamInitThread()
 
 }
 
+// Dancing timers fix
+static long UtilsVariablesInit = 0;
+static LARGE_INTEGER UtilsStartTime;
+static LARGE_INTEGER* pUtilsFrequency;
+static BOOL WINAPI AudioUtilsFrequency( PLARGE_INTEGER lpFrequency )
+{
+	pUtilsFrequency = lpFrequency;
+	::QueryPerformanceFrequency( lpFrequency );
+	lpFrequency->QuadPart /= 1000;
+	return TRUE;
+}
+static auto* const pAudioUtilsFrequency = &AudioUtilsFrequency;
+
+static int64_t AudioUtilsGetStartTime()
+{
+	QueryPerformanceCounter( &UtilsStartTime );
+
+	_InterlockedExchange( &UtilsVariablesInit, 1 );
+	return UtilsStartTime.QuadPart;
+}
+
+static int64_t AudioUtilsGetCurrentTimeInMs()
+{
+	if ( _InterlockedCompareExchange( &UtilsVariablesInit, 0, 0 ) == 0 )
+	{
+		return 0;
+	}
+
+	LARGE_INTEGER currentTime;
+	QueryPerformanceCounter( &currentTime );
+	return (currentTime.QuadPart - UtilsStartTime.QuadPart) / pUtilsFrequency->QuadPart;
+}
+
+
+#ifndef NDEBUG
+
+// ============= QPC spoof for verifying high timer issues =============
+namespace FakeQPC
+{
+	static int64_t AddedTime;
+	static BOOL WINAPI FakeQueryPerformanceCounter(PLARGE_INTEGER lpPerformanceCount)
+	{
+		const BOOL result = ::QueryPerformanceCounter( lpPerformanceCount );
+		lpPerformanceCount->QuadPart += AddedTime;
+		return result;
+	}
+}
+
+#endif
+
 #if MEM_VALIDATORS
 
 #include <intrin.h>
@@ -2914,6 +2964,22 @@ BOOL InjectDelayedPatches_10()
 			Patch( 0x4063B5, { 0x56, 0x50 } );
 			InjectHook( 0x4063B5 + 2, CdStreamSync::CdStreamShutdownSyncObject_Stub, PATCH_CALL );
 		}
+
+#ifndef NDEBUG
+		{
+			const int QPCDays = GetPrivateProfileIntW(L"Debug", L"AddDaysToQPC", 0, wcModulePath);
+			if ( QPCDays != 0 )
+			{
+				using namespace FakeQPC;
+
+				LARGE_INTEGER Freq;
+				QueryPerformanceFrequency( &Freq );
+				AddedTime = Freq.QuadPart * QPCDays * 60 * 24;
+
+				Patch( 0x8580C8, &FakeQueryPerformanceCounter );
+			}
+		}
+#endif
 		
 
 		FLAUtils::Init();
@@ -3905,6 +3971,13 @@ void Patch_SA_10()
 	Patch<float>(0x5D88F9 + 6, 0);
 	Patch<float>(0x5D8903 + 6, 0);
 	Patch<float>(0x5D890D + 6, 0);
+
+
+	// Fixed CAEAudioUtility timers - not typecasting to float so we're not losing precision after X days of PC uptime
+	// Also fixed integer division by zero
+	Patch( 0x5B9868 + 2, &pAudioUtilsFrequency );
+	InjectHook( 0x5B9886, AudioUtilsGetStartTime );
+	InjectHook( 0x4D9E80, AudioUtilsGetCurrentTimeInMs, PATCH_JUMP );
 }
 
 void Patch_SA_11()
