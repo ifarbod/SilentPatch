@@ -199,6 +199,8 @@ public:
 	uint8_t	GetStatus() const { return nStatus; }
 
 	bool IsVisible();
+
+	void SetPositionAndAreaCode( CVector position );
 };
 
 class NOVMT CPhysical : public CEntity

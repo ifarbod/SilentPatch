@@ -3978,6 +3978,10 @@ void Patch_SA_10()
 	Patch( 0x5B9868 + 2, &pAudioUtilsFrequency );
 	InjectHook( 0x5B9886, AudioUtilsGetStartTime );
 	InjectHook( 0x4D9E80, AudioUtilsGetCurrentTimeInMs, PATCH_JUMP );
+
+
+	// Car generators placed in interiors visible everywhere
+	InjectHook( 0x6F3B30, &CEntity::SetPositionAndAreaCode );
 }
 
 void Patch_SA_11()

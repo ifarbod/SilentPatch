@@ -48,6 +48,15 @@ RpAtomic* ShadowCameraRenderCB(RpAtomic* pAtomic)
 	return pAtomic;
 }
 
+void CEntity::SetPositionAndAreaCode( CVector position )
+{
+	SetCoords( position );
+	if ( position.z >= 950.0f )
+	{
+		m_areaCode = 13;
+	}
+}
+
 void CObject::Render()
 {
 	if ( m_bDoNotRender || !m_pRwObject )
