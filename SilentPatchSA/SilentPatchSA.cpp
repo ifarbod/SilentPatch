@@ -23,6 +23,53 @@
 
 #include "debugmenu_public.h"
 
+// ============= Mod compatibility stuff =============
+
+namespace ModCompat
+{
+	bool SkygfxPatchesMoonphases( HMODULE module )
+	{
+		if ( module == nullptr ) return false; // SkyGfx not installed
+
+		struct Config
+		{
+			uint32_t version;
+			// The rest isn't relevant at the moment
+		};
+
+		auto func = (Config*(*)())GetProcAddress( module, "GetConfig" );
+		if ( func == nullptr ) return false; // Old version?
+
+		const Config* config = func();
+		if ( config == nullptr ) return false; // Old version/error?
+
+		constexpr uint32_t SKYGFX_VERSION_WITH_MOONPHASES = 0x360;
+		return config->version >= SKYGFX_VERSION_WITH_MOONPHASES;
+	}
+
+	bool bCdStreamFallBackForOldML = false;
+	bool ModloaderCdStreamRaceConditionAware( HMODULE module )
+	{
+		if ( module == nullptr ) return false; // modloader not installed
+
+		HMODULE stdStreamModule = nullptr;
+		GetModuleHandleEx( 0, TEXT("std.stream.dll"), &stdStreamModule );
+		if ( stdStreamModule == nullptr ) return false; // std.data not loaded
+
+		// ML is installed, so if it's an old version we need to fall back to a less safe implementation (no condition variables)
+		bCdStreamFallBackForOldML = true;
+
+		bool aware = false;
+		const auto func = (uint32_t(*)())GetProcAddress( stdStreamModule, "CdStreamRaceConditionAware" );
+		if ( func != nullptr )
+		{
+			aware = func() >= 1;
+		}
+		FreeLibrary( stdStreamModule );
+		return aware;
+	}
+}
+
 #pragma warning(disable:4733)
 
 // RW wrappers
@@ -1240,6 +1287,14 @@ static void __stdcall CdStreamShutdownSyncObject_Stub( CdStream* stream, size_t 
 	CdStreamShutdownSyncObject( &stream[idx] );
 }
 
+// Fixed return values for GetOverlappedResult - stock code assumes "nonzero" equals 1, might not be future proof
+static uint32_t WINAPI GetOverlappedResult_SilentPatch( HANDLE hFile, LPOVERLAPPED lpOverlapped, LPDWORD lpNumberOfBytesTransferred, BOOL bWait )
+{
+	return GetOverlappedResult( hFile, lpOverlapped, lpNumberOfBytesTransferred, bWait ) != FALSE ? 0 : 254;
+}
+static auto* const pGetOverlappedResult = &GetOverlappedResult_SilentPatch;
+
+
 namespace Sema
 {
 	CdStream::Sync __stdcall InitializeSyncObject()
@@ -1340,7 +1395,7 @@ namespace CV
 static void (*orgCdStreamInitThread)();
 static void CdStreamInitThread()
 {
-	if ( GetASIModuleHandle( L"modloader" ) == nullptr && CV::Funcs::TryInit() )
+	if ( ModCompat::bCdStreamFallBackForOldML != true && CV::Funcs::TryInit() )
 	{
 		CdStreamInitializeSyncObject = CV::InitializeSyncObject;
 		CdStreamShutdownSyncObject = CV::ShutdownSyncObject;
@@ -1359,32 +1414,6 @@ static void CdStreamInitThread()
 
 	orgCdStreamInitThread();
 }
-
-}
-
-// ============= Mod compatibility stuff =============
-
-namespace ModCompat
-{
-	bool SkygfxPatchesMoonphases( HMODULE module )
-	{
-		if ( module == nullptr ) return false; // SkyGfx not installed
-
-		struct Config
-		{
-			uint32_t version;
-			// The rest isn't relevant at the moment
-		};
-
-		auto func = (Config*(*)())GetProcAddress( module, "GetConfig" );
-		if ( func == nullptr ) return false; // Old version?
-
-		const Config* config = func();
-		if ( config == nullptr ) return false; // Old version/error?
-
-		constexpr uint32_t SKYGFX_VERSION_WITH_MOONPHASES = 0x360;
-		return config->version >= SKYGFX_VERSION_WITH_MOONPHASES;
-	}
 
 }
 
@@ -2545,6 +2574,7 @@ BOOL InjectDelayedPatches_10()
 		const bool		bSARender = GetASIModuleHandleW(L"SARender") != nullptr;
 
 		const HMODULE skygfxModule = GetASIModuleHandle( TEXT("skygfx") );
+		const HMODULE modloaderModule = GetASIModuleHandle( TEXT("modloader") );
 
 		ReadRotorFixExceptions(wcModulePath);
 		const bool bHookDoubleRwheels = ReadDoubleRearWheels(wcModulePath);
@@ -2830,6 +2860,59 @@ BOOL InjectDelayedPatches_10()
 		if ( !ModCompat::SkygfxPatchesMoonphases( skygfxModule ) )
 		{
 			InjectHook(0x713ACB, HandleMoonStuffStub, PATCH_JUMP);
+		}
+
+		// Race condition in CdStream fixed
+		// Not taking effect with modloader
+		if ( !ModCompat::ModloaderCdStreamRaceConditionAware( modloaderModule ) )
+		{
+			ReadCall( 0x406C78, CdStreamSync::orgCdStreamInitThread );
+			InjectHook( 0x406C78, CdStreamSync::CdStreamInitThread );
+
+			{
+				uintptr_t address;
+				if ( *(uint8_t*)0x406460 == 0xE9 )
+				{
+					ReadCall( 0x406460, address );
+				}
+				else
+				{
+					address = 0x406460;
+				}
+
+				const uintptr_t waitForSingleObject = address + 0x1D;
+				const uint8_t orgCode[] = { 0x8B, 0x46, 0x04, 0x85, 0xC0, 0x74, 0x10, 0xC6, 0x46, 0x0D, 0x01 };
+				if ( memcmp( orgCode, (void*)waitForSingleObject, sizeof(orgCode) ) == 0 )
+				{
+					VP::Patch( waitForSingleObject, { 0x56, 0xFF, 0x15 } );
+					VP::Patch( waitForSingleObject + 3, &CdStreamSync::CdStreamSyncOnObject );
+					VP::Patch( waitForSingleObject + 3 + 4, { 0x5E, 0xC3 } );
+
+					{
+						const uint8_t orgCode1[] = { 0xFF, 0x15 };
+						const uint8_t orgCode2[] = { 0x48, 0xF7, 0xD8 };
+						const uintptr_t getOverlappedResult = address + 0x5F;
+						if ( memcmp( orgCode1, (void*)getOverlappedResult, sizeof(orgCode1) ) == 0 &&
+							memcmp( orgCode2, (void*)(getOverlappedResult + 6), sizeof(orgCode2) ) == 0 )
+						{
+							VP::Patch( getOverlappedResult + 2, &CdStreamSync::pGetOverlappedResult );
+							VP::Patch( getOverlappedResult + 6, { 0x5E, 0xC3 } ); // pop esi / retn
+						}
+					}
+				}
+			}
+
+			Patch( 0x406669, { 0x56, 0xFF, 0x15 } );
+			Patch( 0x406669 + 3, &CdStreamSync::CdStreamThreadOnObject );
+			Patch( 0x406669 + 3 + 4, { 0xEB, 0x0F } );
+
+			Patch( 0x406910, { 0xFF, 0x15 } );
+			Patch( 0x406910 + 2, &CdStreamSync::CdStreamInitializeSyncObject );
+			Nop( 0x406910 + 6, 4 );
+			Nop( 0x406910 + 0x16, 2 );
+
+			Patch( 0x4063B5, { 0x56, 0x50 } );
+			InjectHook( 0x4063B5 + 2, CdStreamSync::CdStreamShutdownSyncObject_Stub, PATCH_CALL );
 		}
 		
 
@@ -3822,44 +3905,6 @@ void Patch_SA_10()
 	Patch<float>(0x5D88F9 + 6, 0);
 	Patch<float>(0x5D8903 + 6, 0);
 	Patch<float>(0x5D890D + 6, 0);
-
-	// Race condition in CdStream fixed
-	ReadCall( 0x406C78, CdStreamSync::orgCdStreamInitThread );
-	InjectHook( 0x406C78, CdStreamSync::CdStreamInitThread );
-
-	{
-		uintptr_t address;
-		if ( *(uint8_t*)0x406460 == 0xE9 )
-		{
-			ReadCall( 0x406460, address );
-			address += 0x1D;
-		}
-		else
-		{
-			address = 0x406460 + 0x1D;
-		}
-
-		const uint8_t orgCode[] = { 0x8B, 0x46, 0x04, 0x85, 0xC0, 0x74, 0x10, 0xC6, 0x46, 0x0D, 0x01 };
-		if ( memcmp( orgCode, (void*)address, sizeof(orgCode) ) == 0 )
-		{
-			VP::Patch( address, { 0x56, 0xFF, 0x15 } );
-			VP::Patch( address + 3, &CdStreamSync::CdStreamSyncOnObject );
-			VP::Patch( address + 3 + 4, { 0x5E, 0xC3 } );
-		}
-	}
-	
-	Patch( 0x406669, { 0x56, 0xFF, 0x15 } );
-	Patch( 0x406669 + 3, &CdStreamSync::CdStreamThreadOnObject );
-	Patch( 0x406669 + 3 + 4, { 0xEB, 0x0F } );
-
-	Patch( 0x406910, { 0xFF, 0x15 } );
-	Patch( 0x406910 + 2, &CdStreamSync::CdStreamInitializeSyncObject );
-	Nop( 0x406910 + 6, 4 );
-
-	Nop( 0x406926, 2 );
-
-	Patch( 0x4063B5, { 0x56, 0x50 } );
-	InjectHook( 0x4063B5 + 2, CdStreamSync::CdStreamShutdownSyncObject_Stub, PATCH_CALL );
 }
 
 void Patch_SA_11()
