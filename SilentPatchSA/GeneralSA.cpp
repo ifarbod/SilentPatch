@@ -76,6 +76,7 @@ void CObject::Render()
 						m_nCarColor[1].Get(), m_nCarColor[2].Get(), m_nCarColor[3].Get() );
 
 		SetEditableMaterialsCB(reinterpret_cast<RpAtomic*>(m_pRwObject), &pData);
+		assert( pData >= std::begin(materialRestoreData) && pData < std::end(materialRestoreData) );
 		pData->first = nullptr;
 
 		// Disable backface culling for the part

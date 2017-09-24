@@ -127,7 +127,10 @@ protected:
 	BYTE			__pad2[108];
 	float			m_fGasPedal;
 	float			m_fBrakePedal;
-	BYTE			__pad6[44];
+	uint8_t			m_VehicleCreatedBy;
+	uint32_t		m_BombOnBoard : 3;
+	BYTE			__pad6[32];
+	CEntity*		m_pBombOwner;
 	signed int		m_nTimeTillWeNeedThisCar;
 	BYTE			__pad4[56];
 	CEntity*		pDamagingEntity;
@@ -135,13 +138,23 @@ protected:
 	char			padpad, padpad2, padpad3;
 	int8_t			PlateDesign;
 	RwTexture*		PlateTexture;
-	BYTE			__pad5[20];
+	BYTE			__pad78[4];
+	uint32_t		m_dwVehicleClass;
+	uint32_t		m_dwVehicleSubClass;
+	BYTE			__pad5[8];
 
 public:
 	CVehicleFlags&	GetVehicleFlags() 
 						{ return m_nVehicleFlags; }
 	CEntity*		GetDamagingEntity()
 						{ return pDamagingEntity; }
+	uint32_t		GetClass() const
+						{ return m_dwVehicleClass; }
+
+	void			SetBombOnBoard( uint32_t bombOnBoard )
+						{ m_BombOnBoard = bombOnBoard; }
+	void			SetBombOwner( CEntity* owner )
+						{ m_pBombOwner = owner; }
 
 	virtual void	Render() override;
 	virtual void	PreRender() override;
@@ -229,10 +242,33 @@ public:
 	void			PreRender_SilentPatch();
 };
 
+class CStoredCar
+{
+private:
+	CVector m_position;
+	uint32_t m_handlingFlags;
+	uint8_t m_flags;
+	uint16_t m_modelIndex;
+	uint16_t m_carMods[15];
+	uint8_t m_colour[4];
+	uint8_t m_radioStation;
+	uint8_t m_extra[2];
+	uint8_t m_bombType;
+	uint8_t m_remapIndex;
+	uint8_t m_nitro;
+	int8_t m_angleX, m_angleY, m_angleZ;
+
+public:
+	static CVehicle* (CStoredCar::*orgRestoreCar)();
+
+	CVehicle* RestoreCar_SilentPatch();
+};
+
 void ReadRotorFixExceptions(const wchar_t* pPath);
 
 static_assert(sizeof(CBouncingPanel) == 0x20, "Wrong size: CBouncingPanel");
 static_assert(sizeof(CVehicle) == 0x5A0, "Wrong size: CVehicle");
 static_assert(sizeof(CAutomobile) == 0x988, "Wrong size: CAutomobile");
+static_assert(sizeof(CStoredCar) == 0x40, "Wrong size: CStoredCar");
 
 #endif

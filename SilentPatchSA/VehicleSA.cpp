@@ -5,6 +5,7 @@
 #include <vector>
 #include "VehicleSA.h"
 #include "TimerSA.h"
+#include "PedSA.h"
 #include "DelimStringReader.h"
 
 static constexpr float PHOENIX_FLUTTER_PERIOD	= 70.0f;
@@ -27,9 +28,12 @@ WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
 static void*	varIsLawEnforcementVehicle = AddressByVersion<void*>(0x6D2370, 0x6D2BA0, 0x70D8C0);
 WRAPPER bool CVehicle::IsLawEnforcementVehicle() { VARJMP(varIsLawEnforcementVehicle); }
 
+auto			FindPlayerPed = AddressByVersion<CPed*(*)(int)>( 0x56E210, 0, 0 ); // TODO: DO
+
 void (CVehicle::*CVehicle::orgVehiclePreRender)();
 void (CAutomobile::*CAutomobile::orgAutomobilePreRender)();
 void (CPlane::*CPlane::orgPlanePreRender)();
+CVehicle* (CStoredCar::*CStoredCar::orgRestoreCar)();
 
 static int32_t random(int32_t from, int32_t to)
 {
@@ -457,4 +461,18 @@ void CAutomobile::ProcessNewsvan()
 		if ( m_fGunOrientation > 2.0f * PI ) m_fGunOrientation -= 2.0f * PI;
 		SetComponentRotation( m_pCarNode[20], ROT_AXIS_Z, m_fGunOrientation );
 	}
+}
+
+CVehicle* CStoredCar::RestoreCar_SilentPatch()
+{
+	CVehicle* vehicle = (this->*(orgRestoreCar))();
+
+	// Fixup bomb stuff
+	if ( vehicle->GetClass() == VEHICLE_AUTOMOBILE || vehicle->GetClass() == VEHICLE_BIKE )
+	{
+		vehicle->SetBombOnBoard( m_bombType );
+		vehicle->SetBombOwner( FindPlayerPed(-1) );
+	}
+
+	return vehicle;
 }

@@ -3982,6 +3982,17 @@ void Patch_SA_10()
 
 	// Car generators placed in interiors visible everywhere
 	InjectHook( 0x6F3B30, &CEntity::SetPositionAndAreaCode );
+
+
+	// Fixed bomb ownership/bombs saving for bikes
+	{
+		void* pRestoreCar;
+		ReadCall( 0x44856A, pRestoreCar );
+		CStoredCar::orgRestoreCar = *(decltype(CStoredCar::orgRestoreCar)*)&pRestoreCar;
+		InjectHook( 0x44856A, &CStoredCar::RestoreCar_SilentPatch );
+		InjectHook( 0x4485DB, &CStoredCar::RestoreCar_SilentPatch );
+	}
+
 }
 
 void Patch_SA_11()
