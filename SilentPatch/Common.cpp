@@ -184,7 +184,18 @@ namespace Common {
 				{
 					Patch<uint8_t>( mem.get_first( 0x12 ), 0xEB );
 				}
-			}		
+			}
+
+
+			// No censorships
+			{
+				auto addr = pattern( "83 FB 07 74 0A 83 FD 07 74 05 83 FE 07 75 15" ).count_hint(1);
+				if ( addr.size() == 1 )
+				{
+					Patch( addr.get_first(), { 0xEB, 0x5E } );
+				}
+			
+			}
 		}
 	}
 }

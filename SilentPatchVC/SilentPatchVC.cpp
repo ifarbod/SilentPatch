@@ -627,6 +627,13 @@ void Patch_VC_Common()
 		Patch<uint8_t>( addr.get<void>( 0x4B + 2 ), 0xC );
 	}
 
+
+	// No censorships
+	{
+		auto addr = get_pattern( "8B 43 50 85 C0 8B 53 50 74 2B 83 E8 01" );
+		Patch( addr, { 0x83, 0xC4, 0x08, 0x5B, 0xC3 } );	// add     esp, 8 \ pop ebx \ retn
+	}
+
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)

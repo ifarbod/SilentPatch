@@ -815,6 +815,13 @@ void Patch_III_Common()
 		// Uncomment this to get rid of "treadable hack" in CCarCtrl::PickNextNodeToChaseCar (to mirror VC behaviour)
 		//InjectHook( funcAddr + 0x2A, funcAddr + 0x182, PATCH_JUMP );
 	}
+
+
+	// No censorships
+	{
+		auto addr = get_pattern( "8B 15 ? ? ? ? C6 05 ? ? ? ? 00 89 D0" );
+		Patch( addr, { 0x83, 0xC4, 0x08, 0xC3 } );	// add     esp, 8 \ retn
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
