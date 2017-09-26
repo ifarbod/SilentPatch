@@ -36,6 +36,7 @@ public:
 	};
 
 	static void Init();
+	static bool UsesEnhancedIMGs();
 
 private:
 	static constexpr int32_t MAX_UINT8_ID = 0xFF;

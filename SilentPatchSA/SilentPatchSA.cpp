@@ -2912,9 +2912,11 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x713ACB, HandleMoonStuffStub, PATCH_JUMP);
 		}
 
+		FLAUtils::Init();
+
 		// Race condition in CdStream fixed
 		// Not taking effect with modloader
-		if ( !ModCompat::ModloaderCdStreamRaceConditionAware( modloaderModule ) )
+		if ( !ModCompat::ModloaderCdStreamRaceConditionAware( modloaderModule ) && !FLAUtils::UsesEnhancedIMGs() )
 		{
 			ReadCall( 0x406C78, CdStreamSync::orgCdStreamInitThread );
 			InjectHook( 0x406C78, CdStreamSync::CdStreamInitThread );
@@ -2980,9 +2982,6 @@ BOOL InjectDelayedPatches_10()
 			}
 		}
 #endif
-		
-
-		FLAUtils::Init();
 
 		return FALSE;
 	}
