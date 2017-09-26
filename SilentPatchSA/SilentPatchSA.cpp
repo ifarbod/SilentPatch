@@ -1412,6 +1412,10 @@ static void CdStreamInitThread()
 
 	InitializeCriticalSectionAndSpinCount( &CdStreamCritSec, 10 );
 
+	FLAUtils::SetCdStreamWakeFunction( []( CdStream* pStream ) {
+		CdStreamThreadOnObject( pStream );
+	} );
+
 	orgCdStreamInitThread();
 }
 
@@ -2916,55 +2920,66 @@ BOOL InjectDelayedPatches_10()
 
 		// Race condition in CdStream fixed
 		// Not taking effect with modloader
-		if ( !ModCompat::ModloaderCdStreamRaceConditionAware( modloaderModule ) && !FLAUtils::UsesEnhancedIMGs() )
+		if ( !ModCompat::ModloaderCdStreamRaceConditionAware( modloaderModule ) )
 		{
-			ReadCall( 0x406C78, CdStreamSync::orgCdStreamInitThread );
-			InjectHook( 0x406C78, CdStreamSync::CdStreamInitThread );
+			// Don't patch if old FLA and enhanced IMGs are in place
+			// For new FLA, we patch everything except CdStreamThread and then interop with FLA
+			const bool flaBugAware = FLAUtils::CdStreamRaceConditionAware();
+			const bool usesEnhancedImages = FLAUtils::UsesEnhancedIMGs();
 
+			if ( !usesEnhancedImages || flaBugAware )
 			{
-				uintptr_t address;
-				if ( *(uint8_t*)0x406460 == 0xE9 )
-				{
-					ReadCall( 0x406460, address );
-				}
-				else
-				{
-					address = 0x406460;
-				}
+				ReadCall( 0x406C78, CdStreamSync::orgCdStreamInitThread );
+				InjectHook( 0x406C78, CdStreamSync::CdStreamInitThread );
 
-				const uintptr_t waitForSingleObject = address + 0x1D;
-				const uint8_t orgCode[] = { 0x8B, 0x46, 0x04, 0x85, 0xC0, 0x74, 0x10, 0xC6, 0x46, 0x0D, 0x01 };
-				if ( memcmp( orgCode, (void*)waitForSingleObject, sizeof(orgCode) ) == 0 )
 				{
-					VP::Patch( waitForSingleObject, { 0x56, 0xFF, 0x15 } );
-					VP::Patch( waitForSingleObject + 3, &CdStreamSync::CdStreamSyncOnObject );
-					VP::Patch( waitForSingleObject + 3 + 4, { 0x5E, 0xC3 } );
-
+					uintptr_t address;
+					if ( *(uint8_t*)0x406460 == 0xE9 )
 					{
-						const uint8_t orgCode1[] = { 0xFF, 0x15 };
-						const uint8_t orgCode2[] = { 0x48, 0xF7, 0xD8 };
-						const uintptr_t getOverlappedResult = address + 0x5F;
-						if ( memcmp( orgCode1, (void*)getOverlappedResult, sizeof(orgCode1) ) == 0 &&
-							memcmp( orgCode2, (void*)(getOverlappedResult + 6), sizeof(orgCode2) ) == 0 )
+						ReadCall( 0x406460, address );
+					}
+					else
+					{
+						address = 0x406460;
+					}
+
+					const uintptr_t waitForSingleObject = address + 0x1D;
+					const uint8_t orgCode[] = { 0x8B, 0x46, 0x04, 0x85, 0xC0, 0x74, 0x10, 0xC6, 0x46, 0x0D, 0x01 };
+					if ( memcmp( orgCode, (void*)waitForSingleObject, sizeof(orgCode) ) == 0 )
+					{
+						VP::Patch( waitForSingleObject, { 0x56, 0xFF, 0x15 } );
+						VP::Patch( waitForSingleObject + 3, &CdStreamSync::CdStreamSyncOnObject );
+						VP::Patch( waitForSingleObject + 3 + 4, { 0x5E, 0xC3 } );
+
 						{
-							VP::Patch( getOverlappedResult + 2, &CdStreamSync::pGetOverlappedResult );
-							VP::Patch( getOverlappedResult + 6, { 0x5E, 0xC3 } ); // pop esi / retn
+							const uint8_t orgCode1[] = { 0xFF, 0x15 };
+							const uint8_t orgCode2[] = { 0x48, 0xF7, 0xD8 };
+							const uintptr_t getOverlappedResult = address + 0x5F;
+							if ( memcmp( orgCode1, (void*)getOverlappedResult, sizeof(orgCode1) ) == 0 &&
+								memcmp( orgCode2, (void*)(getOverlappedResult + 6), sizeof(orgCode2) ) == 0 )
+							{
+								VP::Patch( getOverlappedResult + 2, &CdStreamSync::pGetOverlappedResult );
+								VP::Patch( getOverlappedResult + 6, { 0x5E, 0xC3 } ); // pop esi / retn
+							}
 						}
 					}
 				}
+
+				if ( !usesEnhancedImages )
+				{
+					Patch( 0x406669, { 0x56, 0xFF, 0x15 } );
+					Patch( 0x406669 + 3, &CdStreamSync::CdStreamThreadOnObject );
+					Patch( 0x406669 + 3 + 4, { 0xEB, 0x0F } );
+				}
+
+				Patch( 0x406910, { 0xFF, 0x15 } );
+				Patch( 0x406910 + 2, &CdStreamSync::CdStreamInitializeSyncObject );
+				Nop( 0x406910 + 6, 4 );
+				Nop( 0x406910 + 0x16, 2 );
+
+				Patch( 0x4063B5, { 0x56, 0x50 } );
+				InjectHook( 0x4063B5 + 2, CdStreamSync::CdStreamShutdownSyncObject_Stub, PATCH_CALL );
 			}
-
-			Patch( 0x406669, { 0x56, 0xFF, 0x15 } );
-			Patch( 0x406669 + 3, &CdStreamSync::CdStreamThreadOnObject );
-			Patch( 0x406669 + 3 + 4, { 0xEB, 0x0F } );
-
-			Patch( 0x406910, { 0xFF, 0x15 } );
-			Patch( 0x406910 + 2, &CdStreamSync::CdStreamInitializeSyncObject );
-			Nop( 0x406910 + 6, 4 );
-			Nop( 0x406910 + 0x16, 2 );
-
-			Patch( 0x4063B5, { 0x56, 0x50 } );
-			InjectHook( 0x4063B5 + 2, CdStreamSync::CdStreamShutdownSyncObject_Stub, PATCH_CALL );
 		}
 
 #ifndef NDEBUG

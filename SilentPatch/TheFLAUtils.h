@@ -35,8 +35,23 @@ public:
 		uint16_t value;
 	};
 
+	typedef void(*CdStreamWakeFunc)( struct CdStream* );
+
 	static void Init();
 	static bool UsesEnhancedIMGs();
+
+	static void SetCdStreamWakeFunction( CdStreamWakeFunc func )
+	{
+		if ( SetCdStreamWakeFunc != nullptr )
+		{
+			SetCdStreamWakeFunc( func );
+		}
+	}
+
+	static bool CdStreamRaceConditionAware()
+	{
+		return SetCdStreamWakeFunc != nullptr;
+	}
 
 private:
 	static constexpr int32_t MAX_UINT8_ID = 0xFF;
@@ -56,6 +71,7 @@ private:
 
 	static int32_t (*GetExtendedID8Func)(const uint8_t* ptr);
 	static int32_t (*GetExtendedID16Func)(const uint16_t* ptr);
+	static void (*SetCdStreamWakeFunc)(CdStreamWakeFunc func);
 
 	static_assert( sizeof(int8) == sizeof(uint8_t) );
 	static_assert( sizeof(int16) == sizeof(uint16_t) );

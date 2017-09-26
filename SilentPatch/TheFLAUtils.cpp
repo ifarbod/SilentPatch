@@ -7,6 +7,7 @@
 
 int32_t (*FLAUtils::GetExtendedID8Func)(const uint8_t* ptr) = FLAUtils::GetExtendedID8_Stock;
 int32_t (*FLAUtils::GetExtendedID16Func)(const uint16_t* ptr) = FLAUtils::GetExtendedID16_Stock;
+void (*FLAUtils::SetCdStreamWakeFunc)(CdStreamWakeFunc func) = nullptr;
 
 static HMODULE flaModule = nullptr;
 
@@ -26,6 +27,8 @@ void FLAUtils::Init()
 		{
 			GetExtendedID16Func = function16;
 		}
+
+		SetCdStreamWakeFunc = reinterpret_cast<decltype(SetCdStreamWakeFunc)>(GetProcAddress( flaModule, "SetCdStreamReleaseChannelfUsedByTheFLA" ));
 	}
 }
 
