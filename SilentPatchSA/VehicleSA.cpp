@@ -68,7 +68,7 @@ static RwFrame* GetFrameFromName( RwFrame* topFrame, const char* name )
 
 		RwFrame* operator() ( RwFrame* frame )
 		{
-			if ( strcmp( m_name, GetFrameNodeName(frame) ) == 0 )
+			if ( _stricmp( m_name, GetFrameNodeName(frame) ) == 0 )
 			{
 				foundFrame = frame;
 				return nullptr;
