@@ -3,6 +3,8 @@
 #include "Timer.h"
 #include "Patterns.h"
 #include "Common.h"
+#include "Common_ddraw.h"
+#include "General.h"
 
 #include <memory>
 
@@ -659,6 +661,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			else if (*(DWORD*)0x601048 == 0x5E5F5D60) Patch_VC_JP();
 
 			Patch_VC_Common();
+			Common::Patches::III_VC_Common();
 			Common::Patches::DDraw_Common();
 		}
 

@@ -4,6 +4,7 @@
 #include "Timer.h"
 #include "Patterns.h"
 #include "Common.h"
+#include "Common_ddraw.h"
 
 #include <memory>
 
@@ -813,7 +814,7 @@ void Patch_III_Common()
 
 		// For NICK007J
 		// Uncomment this to get rid of "treadable hack" in CCarCtrl::PickNextNodeToChaseCar (to mirror VC behaviour)
-		//InjectHook( funcAddr + 0x2A, funcAddr + 0x182, PATCH_JUMP );
+		InjectHook( funcAddr + 0x2A, funcAddr + 0x182, PATCH_JUMP );
 	}
 
 
@@ -844,6 +845,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			else if (*(DWORD*)0x5C6FD5 == 0xB85548EC) Patch_III_Steam(desktop);
 
 			Patch_III_Common();
+			Common::Patches::III_VC_Common();
 			Common::Patches::DDraw_Common();
 		}
 

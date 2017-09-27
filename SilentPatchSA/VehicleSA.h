@@ -128,8 +128,8 @@ protected:
 	float			m_fGasPedal;
 	float			m_fBrakePedal;
 	uint8_t			m_VehicleCreatedBy;
-	uint32_t		m_BombOnBoard : 3;
-	BYTE			__pad6[32];
+	uint8_t			m_BombOnBoard : 3;
+	BYTE			__pad6[35];
 	CEntity*		m_pBombOwner;
 	signed int		m_nTimeTillWeNeedThisCar;
 	BYTE			__pad4[56];

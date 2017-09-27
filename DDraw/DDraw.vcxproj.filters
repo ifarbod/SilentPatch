@@ -21,7 +21,7 @@
     <ClCompile Include="..\SilentPatch\Patterns.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\SilentPatch\Common.cpp">
+    <ClCompile Include="..\SilentPatch\Common_ddraw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -32,7 +32,7 @@
     <ClInclude Include="..\SilentPatch\Patterns.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\SilentPatch\Common.h">
+    <ClInclude Include="..\SilentPatch\Common_ddraw.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

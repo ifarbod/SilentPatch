@@ -466,12 +466,16 @@ void CAutomobile::ProcessNewsvan()
 CVehicle* CStoredCar::RestoreCar_SilentPatch()
 {
 	CVehicle* vehicle = (this->*(orgRestoreCar))();
+	if ( vehicle == nullptr ) return nullptr;
 
-	// Fixup bomb stuff
-	if ( vehicle->GetClass() == VEHICLE_AUTOMOBILE || vehicle->GetClass() == VEHICLE_BIKE )
+	if ( m_bombType != 0 )
 	{
-		vehicle->SetBombOnBoard( m_bombType );
-		vehicle->SetBombOwner( FindPlayerPed(-1) );
+		// Fixup bomb stuff
+		if ( vehicle->GetClass() == VEHICLE_AUTOMOBILE || vehicle->GetClass() == VEHICLE_BIKE )
+		{
+			vehicle->SetBombOnBoard( m_bombType );
+			vehicle->SetBombOwner( FindPlayerPed(-1) );
+		}
 	}
 
 	return vehicle;

@@ -88,7 +88,6 @@ public:
 };
 
 // Type definitions for specific pool types
-#include "General.h"
 
 typedef CPool<class CObject, uint8_t[0x19C]> CObjectPool;
 

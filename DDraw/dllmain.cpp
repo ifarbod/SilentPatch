@@ -9,7 +9,7 @@
 #include "MemoryMgr.h"
 #include "Patterns.h"
 
-#include "Common.h"
+#include "Common_ddraw.h"
 
 #pragma comment(lib, "shlwapi.lib")
 
