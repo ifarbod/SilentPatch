@@ -9,6 +9,7 @@
 
 #include <cassert>
 #include <vector>
+#include <string_view>
 
 #pragma warning(push)
 #pragma warning(disable:4201)
@@ -98,7 +99,7 @@ namespace hook
 		{
 		}
 
-		void Initialize(const char* pattern, size_t length);
+		void Initialize(std::string_view pattern);
 
 	private:
 		bool ConsiderHint(uintptr_t offset);
@@ -115,7 +116,7 @@ namespace hook
 		pattern(const char (&pattern)[Len])
 			: pattern(getRVA<void>(0))
 		{
-			Initialize(pattern, Len-1);
+			Initialize(std::string_view(pattern, Len-1));
 		}
 
 		inline pattern&& count(uint32_t expected)
@@ -203,7 +204,7 @@ namespace hook
 		range_pattern(uintptr_t begin, uintptr_t end, const char(&pattern)[Len])
 			: pattern(begin, end)
 		{
-			Initialize(pattern, Len-1);
+			Initialize(std::string_view(pattern, Len-1));
 		}
 	};
 

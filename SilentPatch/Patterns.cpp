@@ -11,7 +11,6 @@
 #define NOMINMAX
 #include <windows.h>
 #include <algorithm>
-#include <string_view>
 
 #if PATTERNS_USE_HINTS
 #include <map>
@@ -138,15 +137,15 @@ public:
 	inline uintptr_t end() const   { return m_end; }
 };
 
-void pattern::Initialize(const char* pattern, size_t length)
+void pattern::Initialize(std::string_view pattern)
 {
 	// get the hash for the base pattern
 #if PATTERNS_USE_HINTS
-	m_hash = fnv_1()(std::string_view(pattern, length));
+	m_hash = fnv_1()(pattern);
 #endif
 
 	// transform the base pattern from IDA format to canonical format
-	TransformPattern(std::string_view(pattern, length), m_bytes, m_mask);
+	TransformPattern(pattern, m_bytes, m_mask);
 
 #if PATTERNS_USE_HINTS
 	// if there's hints, try those first
