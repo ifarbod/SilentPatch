@@ -4,6 +4,7 @@
 #include <d3d9.h>
 #include <Shlwapi.h>
 #include <ShlObj.h>
+#include <ShellAPI.h>
 
 #include "ScriptSA.h"
 #include "GeneralSA.h"
@@ -2499,6 +2500,10 @@ BOOL InjectDelayedPatches_10()
 
 BOOL InjectDelayedPatches_11()
 {
+#ifdef NDEBUG
+	MessageBoxW( nullptr, L"You're using a 1.01 executable which is no longer supported by SilentPatch!\n\nI have no idea if anyone was still using it, so if you do - send me an e-mail!", L"SilentPatch", MB_OK | MB_ICONWARNING );
+#endif
+
 	if ( !IsAlreadyRunning() )
 	{
 		using namespace Memory;
@@ -2652,6 +2657,20 @@ BOOL InjectDelayedPatches_11()
 
 BOOL InjectDelayedPatches_Steam()
 {
+#ifdef NDEBUG
+	{
+		const int messageResult = MessageBoxW( nullptr, L"You're using a 3.0 executable which is no longer supported by SilentPatch!\n\n"
+			L"Since this is an old Steam EXE, by now you should have either downgraded to 1.0 or started using an up to date version. It is recommended to "
+			L"verify your game's cache on Steam and then downgrade it to 1.0. Do you want to download San Andreas Downgrader now?\n\n"
+			L"Pressing Yes will close the game and open your web browser. Press No to proceed to the game anyway.", L"SilentPatch", MB_YESNO | MB_ICONWARNING );
+		if ( messageResult == IDYES )
+		{
+			ShellExecuteW( nullptr, L"open", L"http://gtaforums.com/topic/753764-/", nullptr, nullptr, SW_SHOWNORMAL );
+			return TRUE;
+		}
+	}
+#endif
+
 	if ( !IsAlreadyRunning() )
 	{
 		using namespace Memory;
@@ -4612,8 +4631,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		ScopedUnprotect::Section Protect2( hInstance, ".rdata" );
 
 		if (*(DWORD*)DynBaseAddress(0x82457C) == 0x94BF || *(DWORD*)DynBaseAddress(0x8245BC) == 0x94BF) Patch_SA_10();
-		else if (*(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF || *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF) Patch_SA_11(), MessageBoxW( nullptr, L"You're using a 1.01 executable which is no longer supported by SilentPatch!\n\nI have no idea if anyone was still using it, so if you do - shoot me an e-mail!", L"SilentPatch", MB_OK | MB_ICONWARNING );
-		else if (*(DWORD*)DynBaseAddress(0x85EC4A) == 0x94BF) Patch_SA_Steam();
+		else if (*(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF || *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF) Patch_SA_11(); // Not supported anymore
+		else if (*(DWORD*)DynBaseAddress(0x85EC4A) == 0x94BF) Patch_SA_Steam(); // Not supported anymore
 		else
 		{
 			if ( *(DWORD*)DynBaseAddress(0x858D21) == 0x3539F633) Patch_SA_NewSteam_r1();
