@@ -91,36 +91,6 @@ static void* varRwMatrixRotate = AddressByVersion<void*>(0x7F1FD0, 0x7F28D0, 0x8
 WRAPPER RwMatrix* RwMatrixRotate(RwMatrix* matrix, const RwV3d* axis, RwReal angle, RwOpCombineType combineOp) { WRAPARG(matrix); WRAPARG(axis); WRAPARG(angle); WRAPARG(combineOp); VARJMP(varRwMatrixRotate); }
 static void* varRwD3D9SetRenderState = AddressByVersion<void*>(0x7FC2D0, 0x7FCBD0, 0x836290);
 WRAPPER void RwD3D9SetRenderState(RwUInt32 state, RwUInt32 value) { WRAPARG(state); WRAPARG(value); VARJMP(varRwD3D9SetRenderState); }
-static void* varRwD3D9GetTransform = AddressByVersion<void*>(0x7FA4F0, 0x7FADF0, 0x8344B0);
-WRAPPER void _RwD3D9GetTransform(RwUInt32 state, void* matrix) { VARJMP(varRwD3D9GetTransform); }
-
-static LPDIRECT3DDEVICE9& _RwD3DDevice = **AddressByVersion<LPDIRECT3DDEVICE9**>(0x7FAC64 + 1, 0x7FB564 + 1, 0x34C24 + 1);
-static void*& _rwD3D9LastVertexShaderUsed = **AddressByVersion<void***>(0x7FAC7C + 2, 0x7FB57C + 2, 0x834C3C + 2);
-
-void _rwD3D9SetVertexShaderConstant(RwUInt32 registerAddress, const void *constantData, RwUInt32 constantCount)
-{
-	_RwD3DDevice->SetVertexShaderConstantF( registerAddress, (const float*)constantData, constantCount );
-}
-
-RwBool RwD3D9CreateVertexShader(const RwUInt32 *function, void **shader)
-{
-	HRESULT result = _RwD3DDevice->CreateVertexShader( (const DWORD*)function, (LPDIRECT3DVERTEXSHADER9*)shader );
-	if ( SUCCEEDED(result) )
-	{
-		_rwD3D9LastVertexShaderUsed = (void*)-1;
-		return TRUE;
-	}
-	return FALSE;
-}
-
-void _rwD3D9SetVertexShader(void *shader)
-{
-	if ( _rwD3D9LastVertexShaderUsed != shader )
-	{
-		HRESULT result = _RwD3DDevice->SetVertexShader( (LPDIRECT3DVERTEXSHADER9)shader );
-		_rwD3D9LastVertexShaderUsed = SUCCEEDED(result) ? shader : (void*)-1;
-	}
-}
 
 RwCamera* RwCameraBeginUpdate(RwCamera* camera)
 {
@@ -320,17 +290,13 @@ static void				(__thiscall* SetVolume)(void*,float);
 static BOOL				(*IsAlreadyRunning)();
 static void				(*TheScriptsLoad)();
 static void				(*WipeLocalVariableMemoryForMissionScript)();
-static bool				(*InitialiseRenderWare)();
-static void				(*ShutdownRenderWare)();
 static void				(*DoSunAndMoon)();
-static void				(*D3D9RenderPreLit)(void*, void*, void*, void*);
 
 auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370, 0x57C480, 0x57C3B0);
 
 
 // SA variables
 void**					rwengine = *AddressByVersion<void***>(0x58FFC0, 0x53F032, 0x48C194, 0x48B167, 0x48B167);
-RwInt32&				ms_extraVertColourPluginOffset = **AddressByVersion<int**>(0x5D6362, 0x5D6B42, 0x5F2B65);
 
 unsigned char&			nGameClockDays = **AddressByVersion<unsigned char**>(0x4E841D, 0x4E886D, 0x4F3871);
 unsigned char&			nGameClockMonths = **AddressByVersion<unsigned char**>(0x4E842D, 0x4E887D, 0x4F3861);
@@ -343,9 +309,6 @@ int&					MoonSize = **AddressByVersion<int**>(0x713B0C, 0x71433C, 0x72F0AB);
 
 CZoneInfo*&				pCurrZoneInfo = **AddressByVersion<CZoneInfo***>(0x58ADB1, 0x58B581, 0x407F93);
 CRGBA*					HudColour = *AddressByVersion<CRGBA**>(0x58ADF6, 0x58B5C6, 0x440648);
-
-float&					m_fDNBalanceParam = **AddressByVersion<float**>(0x4A9062, 0x4A90F2, 0x4B2512);
-RpLight*&				pAmbient = **AddressByVersion<RpLight***>(0x5BA53A, 0x735D11, 0x5D90F0);
 
 CLinkListSA<CPed*>&			ms_weaponPedsForPC = **AddressByVersion<CLinkListSA<CPed*>**>(0x53EACA, 0x53EF6A, 0x551101);
 CLinkListSA<AlphaObjectInfo>&	m_alphaList = **AddressByVersion<CLinkListSA<AlphaObjectInfo>**>(0x733A4D, 0x73427D, 0x76DCA3);
@@ -1581,280 +1544,6 @@ void InstallMemValidator()
 
 #endif
 
-#pragma warning(push)
-#pragma warning(disable:4838)
-#include <xnamath.h>
-#pragma warning(pop)
-
-static void*					pNVCShader = nullptr;
-static bool						bRenderNVC = false;
-static bool						bXMSupported;
-
-bool ShaderAttach()
-{
-	// CGame::InitialiseRenderWare
-	if ( InitialiseRenderWare() )
-	{
-		HRSRC		resource = FindResourceW(hDLLModule, MAKEINTRESOURCE(IDR_NVCSHADER), RT_RCDATA);
-		RwUInt32*	shader = static_cast<RwUInt32*>(LockResource( LoadResource(hDLLModule, resource) ));
-
-		RwD3D9CreateVertexShader(shader, reinterpret_cast<void**>(&pNVCShader));
-
-		bXMSupported = XMVerifyCPUSupport() != FALSE;
-		return true;
-	}
-	return false;
-}
-
-void ShaderDetach()
-{
-	if ( pNVCShader != nullptr )
-	{
-		RwD3D9DeleteVertexShader(pNVCShader);
-		pNVCShader = nullptr;
-	}
-
-	// PluginDetach?
-	ShutdownRenderWare();
-}
-
-// Function for 1.01
-BOOL Initialise3D(void* pParam)
-{
-	RwBool	(*RsRwInitialize)(void*);
-	Memory::ReadCall( 0x5BFB92, RsRwInitialize);
-	if ( RsRwInitialize(pParam) )
-		return ShaderAttach();
-	return false;
-}
-
-void SetShader(RxD3D9InstanceData* pInstData)
-{
-	if (bRenderNVC )
-	{
-		float			fEnvVars[2] = { m_fDNBalanceParam, RpMaterialGetColor(pInstData->material)->alpha * (1.0f/255.0f) };
-		RwRGBAReal*		AmbientLight = RpLightGetColor(pAmbient);
-
-		// Normalise the balance
-		if ( fEnvVars[0] < 0.0f )
-			fEnvVars[0] = 0.0f;
-		else if ( fEnvVars[0] > 1.0f )
-			fEnvVars[0] = 1.0f;
-
-		RwD3D9SetVertexShader(pNVCShader);
-
-		//_rwD3D9VSSetActiveWorldMatrix(RwFrameGetLTM(RpAtomicGetFrame(pRenderedAtomic)));
-		//_rwD3D9VSSetActiveWorldMatrix(RwFrameGetMatrix(RpAtomicGetFrame(pRenderedAtomic)));
-		//_rwD3D9VSGetComposedTransformMatrix(&outMat);
-
-		XMMATRIX	worldMat, viewMat, projMat;
-		XMMATRIX	worldViewProjMat;
-		_RwD3D9GetTransform(D3DTS_WORLD, &worldMat);
-		_RwD3D9GetTransform(D3DTS_VIEW, &viewMat);
-		_RwD3D9GetTransform(D3DTS_PROJECTION, &projMat);
-
-		if ( bXMSupported )
-		{
-			worldViewProjMat = XMMatrixMultiply(XMMatrixMultiply(worldMat, viewMat), projMat);
-		}
-		else
-		{
-			XMMATRIX		tempMat;
-			ZeroMemory(&worldViewProjMat, sizeof(worldViewProjMat));
-			ZeroMemory(&tempMat, sizeof(tempMat));
-
-			for( int i = 0; i < 4; i++ )
-			{ 
-				for( int j = 0; j < 4; j++ )
-				{ 
-					for(int x = 0; x < 4; x++)
-						tempMat.m[i][j] += worldMat.m[i][x] * viewMat.m[x][j];
-				}
-			}
-
-			for( int i = 0; i < 4; i++ )
-			{ 
-				for( int j = 0; j < 4; j++ )
-				{ 
-					for(int x = 0; x < 4; x++)
-						worldViewProjMat.m[i][j] += tempMat.m[i][x] * projMat.m[x][j];
-				}
-			}
-
-		}
-
-		//RwD3D9SetVertexShaderConstant(2, &worldMat, 4);
-		//RwD3D9SetVertexShaderConstant(6, &viewMat, 4);
-		//RwD3D9SetVertexShaderConstant(10, &projMat, 4);
-		RwD3D9SetVertexShaderConstant(2, &worldViewProjMat, 4);
-
-		RwD3D9SetVertexShaderConstant(0, fEnvVars, 1);
-		RwD3D9SetVertexShaderConstant(1, AmbientLight, 1);
-	}
-	else
-		RwD3D9SetVertexShader(pInstData->vertexShader);
-}
-
-void __declspec(naked) SetShader2()
-{
-	_asm
-	{
-		mov		bRenderNVC, 1
-		push    ecx
-		push    edx
-		push    edi
-		push    ebp
-		call	D3D9RenderPreLit
-		add		esp, 10h
-		mov		bRenderNVC, 0
-		retn
-	}
-}
-
-static void*	pJackedEsi;
-static void*	PassDayColoursToShader_NextIt = AddressByVersion<void*>(0x5D6382, 0x5D6B62, 0x5F2B81);
-static void*	PassDayColoursToShader_Return = AddressByVersion<void*>(0x5D63BD, 0x5D6B9D, 0x5F2BB4);
-void __declspec(naked) HijackEsi()
-{
-	_asm
-	{
-		mov     [esp+48h-2Ch], eax
-		mov		pJackedEsi, esi
-		lea     esi, [ebp+44h]
-
-		jmp		PassDayColoursToShader_NextIt
-	}
-}
-
-void __declspec(naked) PassDayColoursToShader()
-{
-	_asm
-	{
-		mov		[esp+54h],eax
-		jz		PassDayColoursToShader_FindDayColours
-		jmp		PassDayColoursToShader_NextIt
-
-PassDayColoursToShader_FindDayColours:
-		xor		eax, eax
-
-PassDayColoursToShader_FindDayColours_Loop:
-		cmp     byte ptr [esp+eax*8+48h-28h+6], D3DDECLUSAGE_COLOR
-		jnz		PassDayColoursToShader_FindDayColours_Next
-		cmp     byte ptr [esp+eax*8+48h-28h+7], 1
-		jz		PassDayColoursToShader_DoDayColours
-
-PassDayColoursToShader_FindDayColours_Next:
-		inc		eax
-		jmp		PassDayColoursToShader_FindDayColours_Loop
-
-PassDayColoursToShader_DoDayColours:
-		mov		esi, pJackedEsi
-		mov     edx, [ms_extraVertColourPluginOffset]
-		mov		edx, dword ptr [edx]
-		mov     edx, dword ptr [edx+esi+4]
-		mov     edi, dword ptr [ebp+18h]
-		mov     [esp+48h+4], edx
-		mov     edx, dword ptr [ebp+4]
-		lea     eax, [esp+eax*8+48h-26h]
-		mov     [esp+48h+0Ch], edx
-		mov     [esp+48h-2Ch], eax
-		lea     esi, [ebp+44h]
-
-PassDayColoursToShader_Iterate:
-		mov     edx, dword ptr [esi+14h]
-		mov     eax, dword ptr [esi]
-		push    edi         
-		push    edx            
-		mov     edx, dword ptr [esp+50h+4]
-		lea     edx, [edx+eax*4]
-		imul    eax, edi
-		push    edx            
-		mov     edx, dword ptr [esp+54h-2Ch]
-		movzx   edx, word ptr [edx]
-		add     ecx, eax
-		add     edx, ecx
-		push    edx             
-		call    _rpD3D9VertexDeclarationInstColor
-		mov     ecx, dword ptr [esp+58h-34h]
-		mov     [esi+8], eax
-		mov     eax, dword ptr [esp+58h+0Ch]
-		add     esp, 10h
-		add     esi, 24h
-		dec     eax
-		mov     [esp+48h+0Ch], eax
-		jnz     PassDayColoursToShader_Iterate
-
-		jmp		PassDayColoursToShader_Return
-	}
-}
-
-void __declspec(naked) PassDayColoursToShader_Steam()
-{
-	_asm
-	{
-		dec		ebx
-		jz		PassDayColoursToShader_FindDayColours
-		jmp		PassDayColoursToShader_NextIt
-
-PassDayColoursToShader_FindDayColours:
-		xor		eax, eax
-
-PassDayColoursToShader_FindDayColours_Loop:
-		cmp     byte ptr [esp+eax*8+48h-28h+6], D3DDECLUSAGE_COLOR
-		jnz		PassDayColoursToShader_FindDayColours_Next
-		cmp     byte ptr [esp+eax*8+48h-28h+7], 1
-		jz		PassDayColoursToShader_DoDayColours
-
-PassDayColoursToShader_FindDayColours_Next:
-		inc		eax
-		jmp		PassDayColoursToShader_FindDayColours_Loop
-
-PassDayColoursToShader_DoDayColours:
-		mov		esi, pJackedEsi
-		mov     edx, [ms_extraVertColourPluginOffset]
-		mov		edx, dword ptr [edx]
-		mov     edx, dword ptr [edx+esi+4]
-		mov     edi, dword ptr [ebp+18h]
-		mov     [esp+48h+0Ch], edx
-		mov     ebx, dword ptr [ebp+4]
-		lea     eax, [esp+eax*8+48h-26h]
-		mov     [esp+48h-2Ch], eax
-		lea     esi, [ebp+44h]
-
-PassDayColoursToShader_Iterate:
-		mov     edx, dword ptr [esi+14h]
-		mov     eax, dword ptr [esi]
-		push    edi         
-		push    edx            
-		mov     edx, dword ptr [esp+50h+0Ch]
-		lea     edx, [edx+eax*4]
-		imul    eax, edi
-		push    edx            
-		mov     edx, dword ptr [esp+54h-2Ch]
-		add     eax, dword ptr [esp+54h-34h]
-		movzx   edx, word ptr [edx]
-		add     edx, eax
-		push    edx             
-		call    _rpD3D9VertexDeclarationInstColor
-		mov     [esi+8], eax
-		add     esp, 10h
-		add     esi, 24h
-		dec     ebx
-		jnz     PassDayColoursToShader_Iterate
-
-		jmp		PassDayColoursToShader_Return
-	}
-}
-
-void __declspec(naked) ChangeEdi_Steam()
-{
-	_asm
-	{
-		mov		edi, SIZE D3DCOLOR
-		cmp     byte ptr [esp+4Ch-35h], 0
-		retn
-	}
-}
 
 // Hooks
 void __declspec(naked) LightMaterialsFix()
@@ -2691,40 +2380,6 @@ BOOL InjectDelayedPatches_10()
 				}
 			}
 
-
-			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", -1, wcModulePath) == 1 )
-			{
-				// Shaders!
-				// plugin-sdk compatibility
-				ReadCall( 0x5BF3A1, InitialiseRenderWare );
-				ReadCall( 0x53D910, ShutdownRenderWare );
-				ReadCall( 0x5D66F1, D3D9RenderPreLit );
-
-				InjectHook(0x5DA743, SetShader);
-				InjectHook(0x5D66F1, SetShader2);
-				InjectHook(0x5D6116, UsageIndex1, PATCH_JUMP);
-				InjectHook(0x5D63B7, PassDayColoursToShader, PATCH_JUMP);
-				InjectHook(0x5D637B, HijackEsi, PATCH_JUMP);
-				InjectHook(0x5BF3A1, ShaderAttach);
-				InjectHook(0x53D910, ShaderDetach);
-				Patch<BYTE>(0x5D7200, 0xC3);
-				Patch<WORD>(0x5D67BB, 0x6890);
-				Patch<WORD>(0x5D67D7, 0x6890);
-				Patch<DWORD>(0x5D67BD, 0x5D5FE0);
-				Patch<DWORD>(0x5D67D9, 0x5D5FE0);
-				Patch<DWORD>(0x5DA73F, 0x90909056);
-
-				Patch<BYTE>(0x5D60D9, D3DDECLTYPE_D3DCOLOR);
-				Patch<BYTE>(0x5D60E2, D3DDECLUSAGE_COLOR);
-				Patch<BYTE>(0x5D60CF, sizeof(D3DCOLOR));
-				Patch<BYTE>(0x5D60EA, sizeof(D3DCOLOR));
-				Patch<BYTE>(0x5D60C2, 0x13);
-				Patch<BYTE>(0x5D62F0, 0xEB);
-
-				// PostFX fix
-				Patch<float>(*(float**)0x7034C0, 0.0);
-			}
-
 			// Weapons rendering
 			InjectHook(0x5E7859, RenderWeapon);
 			InjectHook(0x732F30, RenderWeaponPedsForPC, PATCH_JUMP);
@@ -3077,54 +2732,6 @@ BOOL InjectDelayedPatches_11()
 				}
 			}
 
-			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", -1, wcModulePath) == 1 )
-			{
-				// Shaders!
-				// plugin-sdk compatibility
-				// 1.01 needs to reverse Initialise3D
-				ReadCall( 0x5BFB9E, InitialiseRenderWare );
-				ReadCall( 0x53DDB0, ShutdownRenderWare );
-				ReadCall( 0x5D6ED1, D3D9RenderPreLit );
-
-				InjectHook(0x5BFB70, Initialise3D, PATCH_JUMP);
-				InjectHook(0x5D6ED1, SetShader2);
-				InjectHook(0x5D68F6, UsageIndex1, PATCH_JUMP);
-				InjectHook(0x5D6B97, PassDayColoursToShader, PATCH_JUMP);
-				InjectHook(0x5D6B5B, HijackEsi, PATCH_JUMP);
-				//InjectHook(0x5BF3A1, ShaderAttach);
-				InjectHook(0x53DDB0, ShaderDetach);
-				Patch<BYTE>(0x5D79E0, 0xC3);
-				Patch<WORD>(0x5D6F9B, 0x6890);
-				Patch<WORD>(0x5D6FB7, 0x6890);
-				Patch<DWORD>(0x5D6F9D, 0x5D67C0);
-				Patch<DWORD>(0x5D6FB9, 0x5D67C0);
-
-				Patch<BYTE>(0x5D68B9, D3DDECLTYPE_D3DCOLOR);
-				Patch<BYTE>(0x5D68C2, D3DDECLUSAGE_COLOR);
-				Patch<BYTE>(0x5D68AF, sizeof(D3DCOLOR));
-				Patch<BYTE>(0x5D68CA, sizeof(D3DCOLOR));
-				Patch<BYTE>(0x5D68A2, 0x13);
-				Patch<BYTE>(0x5D6AD0, 0xEB);
-
-				if ( *(DWORD*)0x5DAEC0 == 0x0C2444F6 )
-				{
-					InjectHook(0x5DAEC0 + 0xA3, SetShader);
-					Patch<DWORD>(0x5DAEC0 + 0x9F, 0x90909056);
-				}
-				else
-				{
-					// securom'd EXE
-					if ( *(DWORD*)0x14D0882 == 0x51104E8B )
-					{
-						InjectHook(0x14D088B, SetShader, PATCH_JUMP);
-						Patch<DWORD>(0x14D0882, 0x90909056);
-					}
-				}
-
-				// PostFX fix
-				Patch<float>(*(float**)0x703CF0, 0.0);
-			}
-
 			// Weapons rendering
 			InjectHook(0x5E8079, RenderWeapon);
 			InjectHook(0x733760, RenderWeaponPedsForPC, PATCH_JUMP);
@@ -3308,41 +2915,6 @@ BOOL InjectDelayedPatches_Steam()
 					Patch<const void*>(0x76E160, TwoPassAlphaRender_aap);
 					Patch(0x76E4F0, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
 				}
-			}
-
-			if ( !bSAMP && GetPrivateProfileIntW(L"SilentPatch", L"NVCShader", -1, wcModulePath) == 1 )
-			{
-				// Shaders!
-				// plugin-sdk compatibility
-				ReadCall( 0x5DE5A1, InitialiseRenderWare );
-				ReadCall( 0x550070, ShutdownRenderWare );
-				ReadCall( 0x5F663E, D3D9RenderPreLit );
-
-				InjectHook(0x5F6EB3, SetShader);
-				InjectHook(0x5F2F02, SetShader2);
-				//InjectHook(0x5F292C, UsageIndex1, PATCH_JUMP);
-				InjectHook(0x5F2BAF, PassDayColoursToShader_Steam, PATCH_JUMP);
-				InjectHook(0x5F2B7A, HijackEsi, PATCH_JUMP);
-				InjectHook(0x5DE5A1, ShaderAttach);
-				InjectHook(0x550070, ShaderDetach);
-				Patch<BYTE>(0x5F3760, 0xC3);
-				Patch<WORD>(0x5F2FCB, 0x6890);
-				Patch<WORD>(0x5F2FE7, 0x6890);
-				Patch<DWORD>(0x5F2FCD, 0x5F27C0);
-				Patch<DWORD>(0x5F2FE9, 0x5F27C0);
-				Patch<DWORD>(0x5F6EAF, 0x90909056);
-
-				Patch<BYTE>(0x5F28D0, 1);
-				Patch<BYTE>(0x5F28C1, D3DDECLTYPE_D3DCOLOR);
-				Patch<BYTE>(0x5F28CB, D3DDECLUSAGE_COLOR);
-				//Patch<BYTE>(0x5D60CF, sizeof(D3DCOLOR));
-				//Patch<BYTE>(0x5D60EA, sizeof(D3DCOLOR));
-				InjectHook(0x5F28A7, ChangeEdi_Steam, PATCH_CALL);
-				//Patch<BYTE>(0x5D60C2, 0x13);
-				Patch<BYTE>(0x5F2AE7, 0xEB);
-
-				// PostFX fix
-				Patch<float>(*(float**)0x746E57, 0.0);
 			}
 
 			// Weapons rendering

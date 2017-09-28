@@ -212,29 +212,6 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClCompile Include="WaveDecoderSA.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="..\SilentPatch\nvc.fx">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /T vs_2_0 /E NVC_vertex_shader /Fo ..\SilentPatch\nvc.cso ..\SilentPatch\nvc.fx</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\SilentPatch\nvc.cso</Outputs>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling shaders...</Message>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">fxc /T vs_2_0 /E NVC_vertex_shader /Fo ..\SilentPatch\nvc.cso ..\SilentPatch\nvc.fx</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Master|Win32'">fxc /T vs_2_0 /E NVC_vertex_shader /Fo ..\SilentPatch\nvc.cso ..\SilentPatch\nvc.fx</Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling shaders...</Message>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Master|Win32'">Compiling shaders...</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\SilentPatch\nvc.cso</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Master|Win32'">..\SilentPatch\nvc.cso</Outputs>
-      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NVC_vertex_shader</EntryPointName>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NVC_vertex_shader</EntryPointName>
-      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Master|Win32'">NVC_vertex_shader</EntryPointName>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Master|Win32'">Vertex</ShaderType>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)\SilentPatch\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\SilentPatch\%(Filename).cso</ObjectFileOutput>
-      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Master|Win32'">$(SolutionDir)\SilentPatch\%(Filename).cso</ObjectFileOutput>
-    </FxCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\SilentPatch\ASIModuleHandle.h" />
     <ClInclude Include="..\SilentPatch\debugmenu_public.h" />
     <ClInclude Include="..\SilentPatch\DelimStringReader.h" />
@@ -266,7 +243,6 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClInclude Include="WaveDecoderSA.h" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="Shaders.rc" />
     <ResourceCompile Include="..\SilentPatch\SilentPatch.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
