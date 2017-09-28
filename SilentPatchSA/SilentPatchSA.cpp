@@ -283,7 +283,6 @@ RpHAnimHierarchy*		(*GetAnimHierarchyFromSkinClump)(RpClump*) = AddressByVersion
 auto					InitializeUtrax = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0x4F3A10, 0x4FFA80);
 auto					CanSeeOutSideFromCurrArea = AddressByVersion<bool(*)()>(0x53C4A0, 0x53C940, 0x54E440);
 
-auto					__rwD3D9TextureHasAlpha = AddressByVersion<BOOL(*)(RwTexture*)>(0x4C9EA0, 0x4CA090, 0x4D47E0);
 auto					RenderOneXLUSprite = AddressByVersion<void(*)(float, float, float, float, float, int, int, int, int, float, char, char, char)>(0x70D000, 0x70D830, 0x7592C0);
 
 static void				(__thiscall* SetVolume)(void*,float);	
@@ -301,7 +300,6 @@ void**					rwengine = *AddressByVersion<void***>(0x58FFC0, 0x53F032, 0x48C194, 0
 unsigned char&			nGameClockDays = **AddressByVersion<unsigned char**>(0x4E841D, 0x4E886D, 0x4F3871);
 unsigned char&			nGameClockMonths = **AddressByVersion<unsigned char**>(0x4E842D, 0x4E887D, 0x4F3861);
 void*&					pUserTracksStuff = **AddressByVersion<void***>(0x4D9B7B, 0x4DA06C, 0x4E4A43);
-bool&					CCutsceneMgr__ms_running = **AddressByVersion<bool**>(0x53F92D, 0x434241, 0x422061);
 
 float&					fFarClipZ = **AddressByVersion<float**>(0x70D21F, 0x70DA4F, 0x421AB2);
 RwTexture** const		gpCoronaTexture = *AddressByVersion<RwTexture***>(0x6FAA8C, 0x6FB2BC, 0x5480BF);
@@ -333,136 +331,15 @@ static struct
 
 
 // Regular functions
-static bool AtomicAlphaTest( RpAtomic* atomic )
-{
-	bool hasAlpha = false;
-	RpGeometryForAllMaterials( RpAtomicGetGeometry(atomic), [&hasAlpha]( RpMaterial* material ) -> RpMaterial* {
-		if ( RpMaterialGetTexture(material) != nullptr )
-		{
-			if ( __rwD3D9TextureHasAlpha(RpMaterialGetTexture(material)) )
-			{
-				hasAlpha = true;
-				return nullptr;
-			}
-		}
-		else if ( RpMaterialGetColor(material)->alpha < 255 )
-		{
-			hasAlpha = true;
-			return nullptr;
-		}
-
-		return material;
-	} );
-
-	return hasAlpha;
-}
-
 static RpAtomic* RenderAtomic(RpAtomic* pAtomic, float fComp)
 {
 	UNREFERENCED_PARAMETER(fComp);
 	return AtomicDefaultRenderCallBack(pAtomic);
 }
 
-RpAtomic* OnePassAlphaRender(RpAtomic* atomic)
+static RpAtomic* StaticPropellerRender(RpAtomic* pAtomic)
 {
-	BOOL	nAlphaBlending;
-
-	RwRenderStateGet(rwRENDERSTATEVERTEXALPHAENABLE, &nAlphaBlending);
-	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
-
-	atomic = AtomicDefaultRenderCallBack(atomic);
-
-	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
-	return atomic;
-}
-
-RpAtomic* TwoPassAlphaRender_aap(RpAtomic* atomic)
-{
-	// For cutscenes, fall back to one-pass render
-	if ( CCutsceneMgr__ms_running && !CanSeeOutSideFromCurrArea() )
-		return AtomicDefaultRenderCallBack(atomic);
-
-	int		nPushedAlpha, nAlphaFunction;
-	int		nAlphaBlending;
-
-	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
-	RwRenderStateGet(rwRENDERSTATEVERTEXALPHAENABLE, &nAlphaBlending);
-	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTION, &nAlphaFunction);
-
-	// 1st pass
-	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
-	if (nPushedAlpha == 100)	// or should we just force it? do we ever use something else anyway?
-		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(128));
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONGREATEREQUAL));
-
-	atomic = AtomicDefaultRenderCallBack(atomic);
-
-	if ( atomic != nullptr )
-	{
-		// 2nd pass
-		int		nZWrite;
-		RwRenderStateGet(rwRENDERSTATEZWRITEENABLE, &nZWrite);
-
-		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
-		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
-
-		atomic = AtomicDefaultRenderCallBack(atomic);
-
-		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
-	}
-
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
-	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
-
-	return atomic;
-}
-
-RpAtomic* TwoPassAlphaRender_Silent(RpAtomic* atomic)
-{
-	// For cutscenes, fall back to one-pass render
-	if ( CCutsceneMgr__ms_running && !CanSeeOutSideFromCurrArea() )
-		return AtomicDefaultRenderCallBack(atomic);
-
-	int		nPushedAlpha, nAlphaFunction;
-	int		nAlphaBlending;
-
-	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
-	RwRenderStateGet(rwRENDERSTATEVERTEXALPHAENABLE, &nAlphaBlending);
-	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTION, &nAlphaFunction);
-
-	// 1st pass
-	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(FALSE));
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(255));
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONEQUAL));
-
-	atomic = AtomicDefaultRenderCallBack(atomic);
-
-	if ( atomic != nullptr )
-	{
-		int		nZWrite;
-		RwRenderStateGet(rwRENDERSTATEZWRITEENABLE, &nZWrite);
-
-		// 2nd pass
-		RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
-		RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
-		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
-
-		atomic = AtomicDefaultRenderCallBack(atomic);
-
-		RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
-	}
-
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
-	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
-
-	return atomic;
-}
-
-RpAtomic* StaticPropellerRender(RpAtomic* pAtomic)
-{
-	int		nPushedAlpha;
+	int nPushedAlpha;
 
 	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
 
@@ -473,17 +350,31 @@ RpAtomic* StaticPropellerRender(RpAtomic* pAtomic)
 	return pAtomic;
 }
 
-template <RpAtomic* renderer(RpAtomic*)>
-RpAtomic* RenderBigVehicleActomic(RpAtomic* pAtomic, float fComp)
+static RpAtomic* MovingPropellerRender(RpAtomic* pAtomic)
 {
-	UNREFERENCED_PARAMETER(fComp);
+	int		nPushedAlpha, nAlphaBlending;
 
+	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
+	RwRenderStateGet(rwRENDERSTATEVERTEXALPHAENABLE, &nAlphaBlending);
+
+	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, 0);
+	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
+
+	pAtomic = AtomicDefaultRenderCallBack(pAtomic);
+
+	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
+	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
+	return pAtomic;
+}
+
+RpAtomic* RenderBigVehicleActomic(RpAtomic* pAtomic, float)
+{
 	const char*		pNodeName = GetFrameNodeName(RpAtomicGetFrame(pAtomic));
 
-	if ( !strncmp(pNodeName, "moving_prop", 11) )
-		return renderer(pAtomic);
+	if ( _strnicmp(pNodeName, "moving_prop", 11) == 0 )
+		return MovingPropellerRender(pAtomic);
 
-	if ( !strncmp(pNodeName, "static_prop", 11) )
+	if ( _strnicmp(pNodeName, "static_prop", 11) == 0 )
 		return StaticPropellerRender(pAtomic);
 
 	return AtomicDefaultRenderCallBack(pAtomic);
@@ -498,19 +389,6 @@ void RenderVehicleHiDetailAlphaCB_HunterDoor(RpAtomic* pAtomic)
 	NewObject.pAtomic = pAtomic;
 
 	m_alphaList.InsertFront(NewObject);
-}
-
-template <RpAtomic* renderer(RpAtomic*)>
-void SetRendererForAtomic(RpAtomic* pAtomic)
-{
-	if ( AtomicAlphaTest( pAtomic ) )
-		RpAtomicSetRenderCallBack(pAtomic, renderer);
-}
-
-template <RpAtomic* renderer(RpAtomic*)>
-void SetRendererForAtomic_NoTest(RpAtomic* pAtomic)
-{
-	RpAtomicSetRenderCallBack(pAtomic, renderer);
 }
 
 void RenderWeapon(CPed* pPed)
@@ -561,15 +439,6 @@ void RenderWeaponPedsForPC()
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
 }*/
-
-template <RpAtomic* renderer(RpAtomic*)>
-RpAtomic* RenderPedCB(RpAtomic* pAtomic)
-{
-	if ( AtomicAlphaTest( pAtomic ) )
-		return renderer(pAtomic);
-	
-	return AtomicDefaultRenderCallBack(pAtomic);
-}
 
 static CAEFLACDecoder* __stdcall DecoderCtor(CAEDataStream* pData)
 {
@@ -2345,40 +2214,10 @@ BOOL InjectDelayedPatches_10()
 		if ( !bSARender )
 		{
 			// Twopass rendering (experimental)
-			int	dwTwoPassMethod = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", -1, wcModulePath);
-			if ( dwTwoPassMethod != -1 )
-			{
-				Patch<BYTE>(0x4C441E, 0x57);
-				Patch<DWORD>(0x4C4424, 0x5F04C483);
-				Patch<DWORD>(0x4C4428, 0x0004C25E);
-				if ( dwTwoPassMethod == 1 )
-				{
-					// Silent's twopass
-					InjectHook(0x4C441F, SetRendererForAtomic<TwoPassAlphaRender_Silent>, PATCH_CALL);
-					Patch<const void*>(0x7341D9, TwoPassAlphaRender_Silent);
-					Patch<const void*>(0x734127, TwoPassAlphaRender_Silent);
-					Patch(0x73445E, RenderBigVehicleActomic<TwoPassAlphaRender_Silent>);
-					// Twopass for peds
-					InjectHook(0x733614, RenderPedCB<TwoPassAlphaRender_Silent>);
-				}
-				else if ( dwTwoPassMethod == 2 )
-				{
-					// aap's twopass
-					InjectHook(0x4C441F, SetRendererForAtomic_NoTest<TwoPassAlphaRender_aap>, PATCH_CALL);
-					Patch<const void*>(0x7341D9, TwoPassAlphaRender_aap);
-					Patch<const void*>(0x734127, TwoPassAlphaRender_aap);
-					Patch(0x73445E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
-					// Twopass for peds
-					InjectHook(0x733614, RenderPedCB<TwoPassAlphaRender_aap>);
-				}
-				else
-				{
-					Patch<const void*>(0x7341D9, TwoPassAlphaRender_aap);
-					Patch<const void*>(0x734127, TwoPassAlphaRender_aap);
-					Patch(0x73445E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
-					InjectHook(0x4C441F, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
-				}
-			}
+			Patch<const void*>(0x7341D9, MovingPropellerRender);
+			Patch<const void*>(0x734127, MovingPropellerRender);
+			Patch(0x73445E, RenderBigVehicleActomic);
+
 
 			// Weapons rendering
 			InjectHook(0x5E7859, RenderWeapon);
@@ -2696,41 +2535,9 @@ BOOL InjectDelayedPatches_11()
 		if ( !bSARender )
 		{
 			// Twopass rendering (experimental)
-			int	dwTwoPassMethod = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", -1, wcModulePath);
-			if ( dwTwoPassMethod != -1 )
-			{
-				Patch<BYTE>(0x4C449E, 0x57);
-				Patch<DWORD>(0x4C44A4, 0x5F04C483);
-				Patch<DWORD>(0x4C44A8, 0x0004C25E);
-
-				if ( dwTwoPassMethod == 1 )
-				{
-					// Silent's twopass
-					InjectHook(0x4C449F, SetRendererForAtomic<TwoPassAlphaRender_Silent>, PATCH_CALL);
-					Patch<const void*>(0x734A09, TwoPassAlphaRender_Silent);
-					Patch<const void*>(0x734957, TwoPassAlphaRender_Silent);
-					Patch(0x734C8E, RenderBigVehicleActomic<TwoPassAlphaRender_Silent>);
-					// Twopass for peds
-					InjectHook(0x733E44, RenderPedCB<TwoPassAlphaRender_Silent>);
-				}
-				else if ( dwTwoPassMethod == 2 )
-				{
-					// aap's twopass
-					InjectHook(0x4C449F, SetRendererForAtomic_NoTest<TwoPassAlphaRender_aap>, PATCH_CALL);
-					Patch<const void*>(0x734A09, TwoPassAlphaRender_aap);
-					Patch<const void*>(0x734957, TwoPassAlphaRender_aap);
-					Patch(0x734C8E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
-					// Twopass for peds
-					InjectHook(0x733E44, RenderPedCB<TwoPassAlphaRender_aap>);
-				}
-				else
-				{
-					InjectHook(0x4C449F, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
-					Patch<const void*>(0x734A09, TwoPassAlphaRender_aap);
-					Patch<const void*>(0x734957, TwoPassAlphaRender_aap);
-					Patch(0x734C8E, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
-				}
-			}
+			Patch<const void*>(0x734A09, MovingPropellerRender);
+			Patch<const void*>(0x734957, MovingPropellerRender);
+			Patch(0x734C8E, RenderBigVehicleActomic);
 
 			// Weapons rendering
 			InjectHook(0x5E8079, RenderWeapon);
@@ -2881,41 +2688,10 @@ BOOL InjectDelayedPatches_Steam()
 		if ( !bSARender )
 		{
 			// Twopass rendering (experimental)
-			int	dwTwoPassMethod = GetPrivateProfileIntW(L"SilentPatch", L"TwoPassRendering", -1, wcModulePath);
-			if ( dwTwoPassMethod != -1 )
-			{
-				Patch<BYTE>(0x4CEBF3, 0x57);
-				Patch<DWORD>(0x4CEBF9, 0xC25E5F5F);
-				Patch<WORD>(0x4CEBFD, 0x0004);
+			Patch<const void*>(0x76E230, MovingPropellerRender);
+			Patch<const void*>(0x76E160, MovingPropellerRender);
+			Patch(0x76E4F0, RenderBigVehicleActomic);
 
-				if ( dwTwoPassMethod == 1 )
-				{
-					// Silent's twopass
-					InjectHook(0x4CEBF4, SetRendererForAtomic<TwoPassAlphaRender_Silent>, PATCH_CALL);
-					Patch<const void*>(0x76E230, TwoPassAlphaRender_Silent);
-					Patch<const void*>(0x76E160, TwoPassAlphaRender_Silent);
-					Patch(0x76E4F0, RenderBigVehicleActomic<TwoPassAlphaRender_Silent>);
-					// Twopass for peds
-					InjectHook(0x76D88E, RenderPedCB<TwoPassAlphaRender_Silent>);
-				}
-				else if ( dwTwoPassMethod == 2 )
-				{
-					// aap's twopass
-					InjectHook(0x4CEBF4, SetRendererForAtomic_NoTest<TwoPassAlphaRender_aap>, PATCH_CALL);
-					Patch<const void*>(0x76E230, TwoPassAlphaRender_aap);
-					Patch<const void*>(0x76E160, TwoPassAlphaRender_aap);
-					Patch(0x76E4F0, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
-					// Twopass for peds
-					InjectHook(0x76D88E, RenderPedCB<TwoPassAlphaRender_aap>);
-				}
-				else
-				{
-					InjectHook(0x4CEBF4, SetRendererForAtomic<OnePassAlphaRender>, PATCH_CALL);
-					Patch<const void*>(0x76E230, TwoPassAlphaRender_aap);
-					Patch<const void*>(0x76E160, TwoPassAlphaRender_aap);
-					Patch(0x76E4F0, RenderBigVehicleActomic<TwoPassAlphaRender_aap>);
-				}
-			}
 
 			// Weapons rendering
 			InjectHook(0x604DD9, RenderWeapon);
@@ -3066,8 +2842,6 @@ void Patch_SA_10()
 	// Heli rotors
 	InjectHook(0x6CAB70, &CPlane::Render_Stub, PATCH_JUMP);
 	InjectHook(0x6C4400, &CHeli::Render_Stub, PATCH_JUMP);
-	//InjectHook(0x553318, RenderAlphaAtomics);
-	//Patch<const void*>(0x73406E, TwoPassAlphaRender);
 
 	// Boats
 	/*Patch<BYTE>(0x4C79DF, 0x19);
