@@ -196,6 +196,17 @@ namespace Common {
 				}
 			
 			}
+
+			// unnamed CdStream semaphore
+			{
+				auto mem = pattern( "8D 04 85 00 00 00 00 50 6A 40 FF 15" ).count_hint(1);
+				if ( mem.size() == 1 )
+				{
+					Patch( mem.get_first( 0x25 ), { 0x6A, 0x00 } ); // push 0 \ nop
+					Nop( mem.get_first( 0x25 + 2 ), 3 );
+				}
+			
+			}
 		}
 	}
 }

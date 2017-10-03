@@ -3383,6 +3383,10 @@ void Patch_SA_10()
 		InjectHook( 0x4485DB, &CStoredCar::RestoreCar_SilentPatch );
 	}
 
+
+	// unnamed CdStream semaphore
+	Patch( 0x406945, { 0x6A, 0x00 } ); // push 0 \ nop
+	Nop( 0x406945 + 2, 3 );
 }
 
 void Patch_SA_11()
