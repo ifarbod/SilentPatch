@@ -149,10 +149,10 @@
     <ClInclude Include="PoolsSA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\SilentPatch\ASIModuleHandle.h">
+    <ClInclude Include="..\SilentPatch\debugmenu_public.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\SilentPatch\debugmenu_public.h">
+    <ClInclude Include="..\SilentPatch\ModuleList.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

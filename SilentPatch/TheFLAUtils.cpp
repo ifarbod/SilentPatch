@@ -3,7 +3,9 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#include "ASIModuleHandle.h"
+#include "ModuleList.hpp"
+
+extern ModuleList moduleList;
 
 int32_t (*FLAUtils::GetExtendedID8Func)(const uint8_t* ptr) = FLAUtils::GetExtendedID8_Stock;
 int32_t (*FLAUtils::GetExtendedID16Func)(const uint16_t* ptr) = FLAUtils::GetExtendedID16_Stock;
@@ -13,7 +15,7 @@ static HMODULE flaModule = nullptr;
 
 void FLAUtils::Init()
 {
-	flaModule = GetASIModuleHandle(TEXT("$fastman92limitAdjuster"));
+	flaModule = moduleList.Get( L"$fastman92limitAdjuster" );
 	if ( flaModule != nullptr )
 	{
 		const auto function8 = reinterpret_cast<decltype(GetExtendedID8Func)>(GetProcAddress( flaModule, "GetExtendedIDfrom8bitBefore" ));

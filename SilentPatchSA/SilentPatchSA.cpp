@@ -20,9 +20,11 @@
 
 #include "Patterns.h"
 #include "DelimStringReader.h"
-#include "ASIModuleHandle.h"
+#include "ModuleList.hpp"
 
 #include "debugmenu_public.h"
+
+ModuleList moduleList;
 
 // ============= Mod compatibility stuff =============
 
@@ -2182,12 +2184,14 @@ BOOL InjectDelayedPatches_10()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
-		const bool		bHasImVehFt = GetASIModuleHandleW(L"ImVehFt") != nullptr;
-		const bool		bSAMP = GetModuleHandleW(L"samp") != nullptr;
-		const bool		bSARender = GetASIModuleHandleW(L"SARender") != nullptr;
+		moduleList.Enumerate();
 
-		const HMODULE skygfxModule = GetASIModuleHandle( TEXT("skygfx") );
-		const HMODULE modloaderModule = GetASIModuleHandle( TEXT("modloader") );
+		const bool		bHasImVehFt = moduleList.Get(L"ImVehFt") != nullptr;
+		const bool		bSAMP = moduleList.Get(L"samp") != nullptr;
+		const bool		bSARender = moduleList.Get(L"SARender") != nullptr;
+
+		const HMODULE skygfxModule = moduleList.Get( L"skygfx" );
+		const HMODULE modloaderModule = moduleList.Get( L"modloader" );
 
 		ReadRotorFixExceptions(wcModulePath);
 		const bool bHookDoubleRwheels = ReadDoubleRearWheels(wcModulePath);
@@ -2312,7 +2316,7 @@ BOOL InjectDelayedPatches_10()
 		}
 
 		// SSE conflicts
-		if ( GetASIModuleHandleW(L"shadows") == nullptr )
+		if ( moduleList.Get(L"shadows") == nullptr )
 		{
 			Patch<DWORD>(0x70665C, 0x52909090);
 			InjectHook(0x706662, &CShadowCamera::Update);
@@ -2346,7 +2350,7 @@ BOOL InjectDelayedPatches_10()
 
 		// Adblocker
 #if DISABLE_FLA_DONATION_WINDOW
-		if (  GetASIModuleHandleW(L"$fastman92limitAdjuster") != nullptr )
+		if (  moduleList.Get(L"$fastman92limitAdjuster") != nullptr )
 		{
 			if ( *(DWORD*)0x748736 != 0xE8186A53 )
 			{
@@ -2412,6 +2416,7 @@ BOOL InjectDelayedPatches_10()
 		}
 
 		FLAUtils::Init();
+		moduleList.Clear();
 
 		// Race condition in CdStream fixed
 		// Not taking effect with modloader
@@ -2516,9 +2521,11 @@ BOOL InjectDelayedPatches_11()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
-		bool		bHasImVehFt = GetASIModuleHandleW(L"ImVehFt") != nullptr;
-		bool		bSAMP = GetModuleHandleW(L"samp") != nullptr;
-		bool		bSARender = GetASIModuleHandleW(L"SARender") != nullptr;
+		moduleList.Enumerate();
+
+		bool		bHasImVehFt = moduleList.Get(L"ImVehFt") != nullptr;
+		bool		bSAMP = moduleList.Get(L"samp") != nullptr;
+		bool		bSARender = moduleList.Get(L"SARender") != nullptr;
 
 		ReadRotorFixExceptions(wcModulePath);
 
@@ -2629,7 +2636,7 @@ BOOL InjectDelayedPatches_11()
 		}
 
 		// SSE conflicts
-		if ( GetASIModuleHandleW(L"shadows") == nullptr )
+		if ( moduleList.Get(L"shadows") == nullptr )
 		{
 			Patch<DWORD>(0x706E8C, 0x52909090);
 			InjectHook(0x706E92, &CShadowCamera::Update);
@@ -2649,6 +2656,7 @@ BOOL InjectDelayedPatches_11()
 		CCustomCarPlateMgr::GeneratePlateText = (decltype(CCustomCarPlateMgr::GeneratePlateText))0x6FDDE0;
 		
 		FLAUtils::Init();
+		moduleList.Clear();
 
 		return FALSE;
 	}
@@ -2683,9 +2691,11 @@ BOOL InjectDelayedPatches_Steam()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
-		bool		bHasImVehFt = GetASIModuleHandleW(L"ImVehFt") != nullptr;
-		bool		bSAMP = GetModuleHandleW(L"samp") != nullptr;
-		bool		bSARender = GetASIModuleHandleW(L"SARender") != nullptr;
+		moduleList.Enumerate();
+
+		bool		bHasImVehFt = moduleList.Get(L"ImVehFt") != nullptr;
+		bool		bSAMP = moduleList.Get(L"samp") != nullptr;
+		bool		bSARender = moduleList.Get(L"SARender") != nullptr;
 
 		ReadRotorFixExceptions(wcModulePath);
 
@@ -2798,7 +2808,7 @@ BOOL InjectDelayedPatches_Steam()
 		}
 
 		// SSE conflicts
-		if ( GetASIModuleHandleW(L"shadows") == nullptr )
+		if ( moduleList.Get(L"shadows") == nullptr )
 		{
 			Patch<DWORD>(0x74A864, 0x52909090);
 			InjectHook(0x74A86A, &CShadowCamera::Update);
@@ -2817,6 +2827,7 @@ BOOL InjectDelayedPatches_Steam()
 		ReadCall( 0x4D3DA4, CCustomCarPlateMgr::GeneratePlateText );
 		
 		FLAUtils::Init();
+		moduleList.Clear();
 
 		return FALSE;
 	}
