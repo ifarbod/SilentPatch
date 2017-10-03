@@ -2169,6 +2169,8 @@ static const double		dRetailRadioNamePosY = 22.0;
 static const double		dRetailRadioNameSizeX = 0.6;
 static const double		dRetailRadioNameSizeY = 0.9;
 
+#pragma comment(lib, "shlwapi.lib")
+
 BOOL InjectDelayedPatches_10()
 {
 	if ( !IsAlreadyRunning() )

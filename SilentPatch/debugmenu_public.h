@@ -71,6 +71,8 @@ inline void DebugMenuEntrySetAddress(DebugMenuEntry *e, void *addr)
 
 #include <tchar.h>
 
+#pragma comment(lib, "shlwapi.lib")
+
 inline bool DebugMenuLoad(void)
 {
 	if(gDebugMenuAPI.isLoaded)
