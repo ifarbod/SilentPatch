@@ -24,8 +24,6 @@
 
 #include "debugmenu_public.h"
 
-ModuleList moduleList;
-
 // ============= Mod compatibility stuff =============
 
 namespace ModCompat
@@ -2186,6 +2184,7 @@ BOOL InjectDelayedPatches_10()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
+		ModuleList moduleList;
 		moduleList.Enumerate();
 
 		const bool		bHasImVehFt = moduleList.Get(L"ImVehFt") != nullptr;
@@ -2417,8 +2416,7 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x713ACB, HandleMoonStuffStub, PATCH_JUMP);
 		}
 
-		FLAUtils::Init();
-		moduleList.Clear();
+		FLAUtils::Init( moduleList );
 
 		// Race condition in CdStream fixed
 		// Not taking effect with modloader
@@ -2523,6 +2521,7 @@ BOOL InjectDelayedPatches_11()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
+		ModuleList moduleList;
 		moduleList.Enumerate();
 
 		bool		bHasImVehFt = moduleList.Get(L"ImVehFt") != nullptr;
@@ -2657,8 +2656,7 @@ BOOL InjectDelayedPatches_11()
 		// Albeit 1.01 obfuscates this function
 		CCustomCarPlateMgr::GeneratePlateText = (decltype(CCustomCarPlateMgr::GeneratePlateText))0x6FDDE0;
 		
-		FLAUtils::Init();
-		moduleList.Clear();
+		FLAUtils::Init( moduleList );
 
 		return FALSE;
 	}
@@ -2693,6 +2691,7 @@ BOOL InjectDelayedPatches_Steam()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
+		ModuleList moduleList;
 		moduleList.Enumerate();
 
 		bool		bHasImVehFt = moduleList.Get(L"ImVehFt") != nullptr;
@@ -2828,8 +2827,7 @@ BOOL InjectDelayedPatches_Steam()
 		// to work fine with Deji's Custom Plate Format
 		ReadCall( 0x4D3DA4, CCustomCarPlateMgr::GeneratePlateText );
 		
-		FLAUtils::Init();
-		moduleList.Clear();
+		FLAUtils::Init( moduleList );
 
 		return FALSE;
 	}

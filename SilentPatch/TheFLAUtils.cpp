@@ -5,15 +5,13 @@
 
 #include "ModuleList.hpp"
 
-extern ModuleList moduleList;
-
 int32_t (*FLAUtils::GetExtendedID8Func)(const uint8_t* ptr) = FLAUtils::GetExtendedID8_Stock;
 int32_t (*FLAUtils::GetExtendedID16Func)(const uint16_t* ptr) = FLAUtils::GetExtendedID16_Stock;
 void (*FLAUtils::SetCdStreamWakeFunc)(CdStreamWakeFunc func) = nullptr;
 
 static HMODULE flaModule = nullptr;
 
-void FLAUtils::Init()
+void FLAUtils::Init( const ModuleList& moduleList )
 {
 	flaModule = moduleList.Get( L"$fastman92limitAdjuster" );
 	if ( flaModule != nullptr )

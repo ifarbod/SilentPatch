@@ -4,45 +4,64 @@
 #include <algorithm>
 #include <cassert>
 
-#define PSAPI_VERSION 1
-#include <Psapi.h>
-#include <malloc.h>
-
-#pragma comment(lib, "Psapi.lib")
-
 // Stores a list of loaded modules with their names, WITHOUT extension
 class ModuleList
 {
 public:
 	void Enumerate()
 	{
-		const HANDLE currentProcess = GetCurrentProcess();
-
 		constexpr size_t INITIAL_SIZE = sizeof(HMODULE) * 256;
 		HMODULE* modules = static_cast<HMODULE*>(malloc( INITIAL_SIZE ));
 		if ( modules != nullptr )
 		{
-			DWORD cbNeeded = 0;
-			if ( EnumProcessModules( currentProcess, modules, INITIAL_SIZE, &cbNeeded ) != 0 )
-			{
-				if ( cbNeeded > INITIAL_SIZE )
-				{
-					HMODULE* newModules = static_cast<HMODULE*>(realloc( modules, cbNeeded ));
-					if ( newModules != nullptr )
-					{
-						modules = newModules;
+			typedef BOOL (WINAPI * Func)(HANDLE hProcess, HMODULE *lphModule, DWORD cb, LPDWORD lpcbNeeded);
 
-						if ( EnumProcessModules( currentProcess, modules, cbNeeded, &cbNeeded ) != 0 )
-						{
-							EnumerateInternal( modules, cbNeeded / sizeof(HMODULE) );
-						}
-					}
-				}
-				else
+			HMODULE hLib = LoadLibrary( TEXT("kernel32") );
+			assert( hLib != nullptr ); // If this fails then everything is probably broken anyway
+
+			Func pEnumProcessModules = reinterpret_cast<Func>(GetProcAddress( hLib, "K32EnumProcessModules" ));
+			if ( pEnumProcessModules == nullptr )
+			{
+				// Try psapi
+				FreeLibrary( hLib );
+				hLib = LoadLibrary( TEXT("psapi") );
+				if ( hLib != nullptr )
 				{
-					EnumerateInternal( modules, cbNeeded / sizeof(HMODULE) );
+					pEnumProcessModules = reinterpret_cast<Func>(GetProcAddress( hLib, "EnumProcessModules" ));
 				}
 			}
+
+			if ( pEnumProcessModules != nullptr )
+			{
+				const HANDLE currentProcess = GetCurrentProcess();
+				DWORD cbNeeded = 0;
+				if ( pEnumProcessModules( currentProcess, modules, INITIAL_SIZE, &cbNeeded ) != 0 )
+				{
+					if ( cbNeeded > INITIAL_SIZE )
+					{
+						HMODULE* newModules = static_cast<HMODULE*>(realloc( modules, cbNeeded ));
+						if ( newModules != nullptr )
+						{
+							modules = newModules;
+
+							if ( pEnumProcessModules( currentProcess, modules, cbNeeded, &cbNeeded ) != 0 )
+							{
+								EnumerateInternal( modules, cbNeeded / sizeof(HMODULE) );
+							}
+						}
+					}
+					else
+					{
+						EnumerateInternal( modules, cbNeeded / sizeof(HMODULE) );
+					}
+				}
+			}
+
+			if ( hLib != nullptr )
+			{
+				FreeLibrary( hLib );
+			}
+
 			free( modules );
 		}
 	}

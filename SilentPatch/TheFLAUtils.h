@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+class ModuleList;
 
 class FLAUtils
 {
@@ -37,7 +38,7 @@ public:
 
 	typedef void(*CdStreamWakeFunc)( struct CdStream* );
 
-	static void Init();
+	static void Init( const ModuleList& moduleList );
 	static bool UsesEnhancedIMGs();
 
 	static void SetCdStreamWakeFunction( CdStreamWakeFunc func )
