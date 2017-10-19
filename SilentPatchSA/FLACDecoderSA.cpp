@@ -37,7 +37,8 @@ FLAC__StreamDecoderWriteStatus CAEFLACDecoder::write_cb(const FLAC__StreamDecode
 	size_t processedChannels;
 
 	// Obtain current sample
-	pClientData->m_currentSample = frame->header.number_type == FLAC__FRAME_NUMBER_TYPE_SAMPLE_NUMBER ? frame->header.number.sample_number : frame->header.number.frame_number;
+	assert( frame->header.number_type == FLAC__FRAME_NUMBER_TYPE_SAMPLE_NUMBER );
+	pClientData->m_currentSample = frame->header.number.sample_number;
 	processedChannels = std::min<size_t>(2, frame->header.channels);
 	pClientData->m_curBlockSize = frame->header.blocksize;
 	pClientData->m_bufferCursor = 0;
