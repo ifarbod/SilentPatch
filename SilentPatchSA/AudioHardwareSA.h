@@ -22,7 +22,7 @@ enum eDecoderType
 };
 
 // 1.0/Steam structure
-class NOVMT CAEDataStreamOld : public IStream
+class NOVMT CAEDataStreamOld final : public IStream
 {
 private:
 	HANDLE			hHandle;
@@ -57,9 +57,9 @@ public:
 		}
 	}
 
-	inline DWORD	GetID()
+	inline DWORD	GetID() const
 		{ return dwID; }
-	inline HANDLE	GetFile()
+	inline HANDLE	GetFile() const
 		{ return hHandle; }
 
 	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject);
@@ -87,7 +87,7 @@ public:
 	// Custom methods
 	DWORD		Seek(LONG nToSeek, DWORD nPoint);
 	DWORD		FillBuffer(void* pBuf, DWORD nLen);
-	DWORD		GetCurrentPosition()
+	DWORD		GetCurrentPosition() const
 	{
 		LARGE_INTEGER filePointer;
 		filePointer.QuadPart = 0;
@@ -97,7 +97,7 @@ public:
 };
 
 // 1.01 structure
-class NOVMT CAEDataStreamNew : public IStream
+class NOVMT CAEDataStreamNew final : public IStream
 {
 private:
 	void*			pUselessMalloc;
@@ -134,9 +134,9 @@ public:
 		}
 	}
 
-	inline DWORD	GetID()
+	inline DWORD	GetID() const
 		{ return dwID; }
-	inline HANDLE	GetFile()
+	inline HANDLE	GetFile() const
 		{ return hHandle; }
 
 	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject);
@@ -164,7 +164,7 @@ public:
 	// Custom methods
 	DWORD		Seek(LONG nToSeek, DWORD nPoint);
 	DWORD		FillBuffer(void* pBuf, DWORD nLen);
-	DWORD		GetCurrentPosition()
+	DWORD		GetCurrentPosition() const
 	{
 		LARGE_INTEGER filePointer;
 		filePointer.QuadPart = 0;
@@ -201,20 +201,20 @@ public:
 			return reinterpret_cast<CAEDataStreamNew*>(this)->FillBuffer(pBuf, nLen);
 		return reinterpret_cast<CAEDataStreamOld*>(this)->FillBuffer(pBuf, nLen); }
 
-	unsigned int		GetCurrentPosition()
+	unsigned int		GetCurrentPosition() const
 	{	if ( m_bUseNewStruct ) 
-			return reinterpret_cast<CAEDataStreamNew*>(this)->GetCurrentPosition();
-		return reinterpret_cast<CAEDataStreamOld*>(this)->GetCurrentPosition(); }
+			return reinterpret_cast<const CAEDataStreamNew*>(this)->GetCurrentPosition();
+		return reinterpret_cast<const CAEDataStreamOld*>(this)->GetCurrentPosition(); }
 
-	inline DWORD	GetID()
+	inline DWORD	GetID() const
 	{	if ( m_bUseNewStruct ) 
-			return reinterpret_cast<CAEDataStreamNew*>(this)->GetID();
-		return reinterpret_cast<CAEDataStreamOld*>(this)->GetID(); }
+			return reinterpret_cast<const CAEDataStreamNew*>(this)->GetID();
+		return reinterpret_cast<const CAEDataStreamOld*>(this)->GetID(); }
 
-	inline HANDLE	GetFile()
+	inline HANDLE	GetFile() const
 	{	if ( m_bUseNewStruct ) 
-			return reinterpret_cast<CAEDataStreamNew*>(this)->GetFile();
-		return reinterpret_cast<CAEDataStreamOld*>(this)->GetFile(); }
+			return reinterpret_cast<const CAEDataStreamNew*>(this)->GetFile();
+		return reinterpret_cast<const CAEDataStreamOld*>(this)->GetFile(); }
 };
 
 
@@ -233,18 +233,20 @@ public:
 
 	inline CAEDataStream*	GetStream()
 		{ return pStream; }
+	inline const CAEDataStream*	GetStream() const
+	{ return pStream; }
 
 	virtual bool			Initialise()=0;
 	virtual uint32_t		FillBuffer(void* pBuf,uint32_t nLen)=0;
 
-	virtual uint32_t		GetStreamLengthMs()=0;
-	virtual uint32_t		GetStreamPlayTimeMs()=0;
+	virtual uint32_t		GetStreamLengthMs() const =0;
+	virtual uint32_t		GetStreamPlayTimeMs() const =0;
 	virtual void			SetCursor(uint32_t nTime)=0;
-	virtual uint32_t		GetSampleRate()=0;
+	virtual uint32_t		GetSampleRate() const =0;
 
 	virtual					~CAEStreamingDecoder();
 
-	virtual uint32_t		GetStreamID()=0;
+	virtual uint32_t		GetStreamID() const =0;
 };
 
 static_assert(sizeof(CAEDataStreamOld) == 0x28, "Wrong size: CAEDataStreamOld");

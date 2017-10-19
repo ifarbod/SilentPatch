@@ -2,7 +2,7 @@
 
 #include "AudioHardwareSA.h"
 
-class CAEWaveDecoder : public CAEStreamingDecoder
+class CAEWaveDecoder final : public CAEStreamingDecoder
 {
 private:
 	uint32_t	m_dataSize;
@@ -33,9 +33,9 @@ public:
 	virtual bool			Initialise() override;
 	virtual uint32_t		FillBuffer(void* pBuf, uint32_t nLen) override;
 
-	virtual uint32_t		GetStreamLengthMs() override
+	virtual uint32_t		GetStreamLengthMs() const override
 	{ return (static_cast<uint64_t>(m_dataSize) * 1000) / m_formatChunk.blockAlign; }
-	virtual uint32_t		GetStreamPlayTimeMs() override
+	virtual uint32_t		GetStreamPlayTimeMs() const override
 	{ return (static_cast<uint64_t>(GetStream()->GetCurrentPosition() - m_offsetToData) * 1000) / m_formatChunk.blockAlign; }
 
 	virtual void			SetCursor(uint32_t nTime) override
@@ -44,10 +44,10 @@ public:
 		GetStream()->Seek( m_offsetToData + (static_cast<uint32_t>(sampleNum) * m_formatChunk.blockAlign), FILE_BEGIN );
 	}
 
-	virtual uint32_t		GetSampleRate() override
+	virtual uint32_t		GetSampleRate() const override
 	{ return m_formatChunk.sampleRate; }
 
-	virtual uint32_t		GetStreamID() override
+	virtual uint32_t		GetStreamID() const override
 	{ return GetStream()->GetID(); }
 	
 private:
