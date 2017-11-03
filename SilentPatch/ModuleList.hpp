@@ -8,6 +8,8 @@
 class ModuleList
 {
 public:
+	// Initializes module list
+	// Needs to be called before any calls to Get or GetAll
 	void Enumerate()
 	{
 		constexpr size_t INITIAL_SIZE = sizeof(HMODULE) * 256;
@@ -66,17 +68,20 @@ public:
 		}
 	}
 
+	// Recreates module list
 	void ReEnumerate()
 	{
 		Clear();
 		Enumerate();
 	}
 
+	// Clears module list
 	void Clear()
 	{
 		m_moduleList.clear();
 	}
 
+	// Gets handle of a loaded module with given name, NULL otherwise
 	HMODULE Get( const wchar_t* moduleName ) const
 	{
 		// If vector is empty then we're trying to call it without calling Enumerate first
@@ -88,6 +93,7 @@ public:
 		return it != m_moduleList.end() ? it->first : nullptr;
 	}
 
+	// Gets handles to all loaded modules with given name
 	std::vector<HMODULE> GetAll( const wchar_t* moduleName ) const
 	{
 		// If vector is empty then we're trying to call it without calling Enumerate first
@@ -142,7 +148,7 @@ private:
 					}
 					else
 					{
-						m_moduleList.emplace_back( *modules,  nameBegin );
+						m_moduleList.emplace_back( *modules, nameBegin );
 					}
 				}
 				modules++;
