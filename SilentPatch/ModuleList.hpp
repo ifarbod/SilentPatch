@@ -108,24 +108,47 @@ public:
 private:
 	void EnumerateInternal( HMODULE* modules, size_t numModules )
 	{
-		m_moduleList.reserve( numModules );
-		for ( size_t i = 0; i < numModules; i++ )
+		size_t moduleNameLength = MAX_PATH;
+		wchar_t* moduleName = static_cast<wchar_t*>( malloc( moduleNameLength * sizeof(moduleName[0]) ) );
+		if ( moduleName != nullptr )
 		{
-			wchar_t moduleName[MAX_PATH];
-			if ( GetModuleFileNameW( *modules, moduleName, MAX_PATH ) != 0 )
+			m_moduleList.reserve( numModules );
+			for ( size_t i = 0; i < numModules; i++ )
 			{
-				const wchar_t* nameBegin = wcsrchr( moduleName, '\\' ) + 1;
-				const wchar_t* dotPos = wcsrchr( nameBegin, '.' );
-				if ( dotPos != nullptr )
+				// Obtain module name, with resizing if necessary
+				DWORD size;
+				while ( size = GetModuleFileNameW( *modules, moduleName, moduleNameLength ), size == moduleNameLength )
 				{
-					m_moduleList.emplace_back( *modules, std::wstring( nameBegin, std::distance( nameBegin, dotPos ) ) );
+					wchar_t* newName = static_cast<wchar_t*>( realloc( moduleName, 2 * moduleNameLength * sizeof(moduleName[0]) ) );
+					if ( newName != nullptr )
+					{
+						moduleName = newName;
+						moduleNameLength *= 2;
+					}
+					else
+					{
+						size = 0;
+						break;
+					}
 				}
-				else
+
+				if ( size != 0 )
 				{
-					m_moduleList.emplace_back( *modules,  nameBegin );
+					const wchar_t* nameBegin = wcsrchr( moduleName, '\\' ) + 1;
+					const wchar_t* dotPos = wcsrchr( nameBegin, '.' );
+					if ( dotPos != nullptr )
+					{
+						m_moduleList.emplace_back( *modules, std::wstring( nameBegin, std::distance( nameBegin, dotPos ) ) );
+					}
+					else
+					{
+						m_moduleList.emplace_back( *modules,  nameBegin );
+					}
 				}
+				modules++;
 			}
-			modules++;
+
+			free( moduleName );
 		}
 	}
 
