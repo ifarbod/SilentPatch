@@ -668,8 +668,8 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 
 CRGBA* CRGBA::BlendGangColour(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
-	double colourIntensity = static_cast<double>(pCurrZoneInfo->ZoneColour.a) / 255.0;
-	*this = CRGBA(BlendSqr( CRGBA(r, g, b), HudColour[3], colourIntensity ), a);
+	const double colourIntensity = std::min( static_cast<double>(pCurrZoneInfo->ZoneColour.a) / 120.0, 1.0 );
+	*this = CRGBA(BlendSqr( HudColour[3], CRGBA(r, g, b), colourIntensity ), a);
 	return this;
 }
 
