@@ -104,8 +104,7 @@ void CObject::Render()
 extern void (*WorldRemove)(CEntity*);
 void CObject::TryToFreeUpTempObjects_SilentPatch( int numObjects )
 {
-	int numProcessed, numFreed;
-	std::tie( numProcessed, numFreed ) = TryOrFreeUpTempObjects( numObjects, false );
+	const auto [ numProcessed, numFreed ] = TryOrFreeUpTempObjects( numObjects, false );
 	if ( numProcessed >= numObjects && numObjects > numFreed )
 	{
 		TryOrFreeUpTempObjects( numObjects - numFreed, true );
