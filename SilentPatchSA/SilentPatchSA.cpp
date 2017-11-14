@@ -664,6 +664,21 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 	//D3DPERF_EndEvent();
 }
 
+static bool bColouredZoneNames;
+CRGBA* CRGBA::BlendGangColour_Dynamic(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+	if ( bColouredZoneNames )
+	{
+		const double colourIntensity = std::min( static_cast<double>(pCurrZoneInfo->ZoneColour.a) / 120.0, 1.0 );
+		*this = CRGBA(BlendSqr( HudColour[3], CRGBA(r, g, b), colourIntensity ), a);
+	}
+	else
+	{
+		*this = HudColour[3];
+	}
+	return this;
+}
+
 CRGBA* CRGBA::BlendGangColour(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
 	const double colourIntensity = std::min( static_cast<double>(pCurrZoneInfo->ZoneColour.a) / 120.0, 1.0 );
@@ -2256,19 +2271,19 @@ BOOL InjectDelayedPatches_10()
 			Patch<const void*>(0x4E9F38, &fSteamRadioNameSizeX);
 		}
 
+		if ( int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath); INIoption != -1 )
 		{
-			int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath);
-			if ( INIoption == 1 )
-			{
-				// Coloured zone names
-				Patch<WORD>(0x58ADBE, 0x0E75);
-				Patch<WORD>(0x58ADC5, 0x0775);
+			// Coloured zone names
+			bColouredZoneNames = INIoption != 0;
 
-				InjectHook(0x58ADE4, &CRGBA::BlendGangColour);
-			}
-			else if ( INIoption == 0 )
+			Patch<WORD>(0x58ADBE, 0x0E75);
+			Patch<WORD>(0x58ADC5, 0x0775);
+
+			InjectHook(0x58ADE4, &CRGBA::BlendGangColour_Dynamic);
+
+			if ( bHasDebugMenu )
 			{
-				Patch<BYTE>(0x58ADAE, 0xEB);
+				DebugMenuAddVar( "SilentPatch", "Coloured zone names", &bColouredZoneNames, nullptr );
 			}
 		}
 
@@ -2589,20 +2604,17 @@ BOOL InjectDelayedPatches_11()
 			Patch<const void*>(0x4EA388, &fSteamRadioNameSizeX);
 		}
 
+		if ( int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath); INIoption == 1 )
 		{
-			int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath);
-			if ( INIoption == 1 )
-			{
-				// Coloured zone names
-				Patch<WORD>(0x58B58E, 0x0E75);
-				Patch<WORD>(0x58B595, 0x0775);
+			// Coloured zone names
+			Patch<WORD>(0x58B58E, 0x0E75);
+			Patch<WORD>(0x58B595, 0x0775);
 
-				InjectHook(0x58B5B4, &CRGBA::BlendGangColour);
-			}
-			else if ( INIoption == 0 )
-			{
-				Patch<BYTE>(0x58B57E, 0xEB);
-			}
+			InjectHook(0x58B5B4, &CRGBA::BlendGangColour);
+		}
+		else if ( INIoption == 0 )
+		{
+			Patch<BYTE>(0x58B57E, 0xEB);
 		}
 
 		// ImVehFt conflicts
@@ -2754,20 +2766,17 @@ BOOL InjectDelayedPatches_Steam()
 			Patch<const void*>(0x4F59BF, &dRetailRadioNameSizeX);
 		}
 
+		if ( int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath); INIoption == 1 )
 		{
-			int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath);
-			if ( INIoption == 1 )
-			{
-				// Coloured zone names
-				Patch<WORD>(0x598F65, 0x0C75);
-				Patch<WORD>(0x598F6B, 0x0675);
+			// Coloured zone names
+			Patch<WORD>(0x598F65, 0x0C75);
+			Patch<WORD>(0x598F6B, 0x0675);
 
-				InjectHook(0x598F87, &CRGBA::BlendGangColour);
-			}
-			else if ( INIoption == 0 )
-			{
-				Patch<BYTE>(0x598F56, 0xEB);
-			}
+			InjectHook(0x598F87, &CRGBA::BlendGangColour);
+		}
+		else if ( INIoption == 0 )
+		{
+			Patch<BYTE>(0x598F56, 0xEB);
 		}
 
 		// ImVehFt conflicts
