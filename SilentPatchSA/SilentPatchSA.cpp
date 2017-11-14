@@ -312,9 +312,7 @@ CRGBA*					HudColour = *AddressByVersion<CRGBA**>(0x58ADF6, 0x58B5C6, 0x440648);
 CLinkListSA<CPed*>&			ms_weaponPedsForPC = **AddressByVersion<CLinkListSA<CPed*>**>(0x53EACA, 0x53EF6A, 0x551101);
 CLinkListSA<AlphaObjectInfo>&	m_alphaList = **AddressByVersion<CLinkListSA<AlphaObjectInfo>**>(0x733A4D, 0x73427D, 0x76DCA3);
 
-#ifndef NDEBUG
 DebugMenuAPI gDebugMenuAPI;
-#endif
 
 
 // Custom variables
@@ -1061,24 +1059,16 @@ static void DoPCScreenChange_Mod()
 	}
 }
 
-#ifndef NDEBUG
-static bool bUseAaronSun = true;
-static bool bFixedPCVehLight = true;
-#endif
+static bool bUseAaronSun;
 static CVector curVecToSun;
 static void (*orgSetLightsWithTimeOfDayColour)( RpWorld* );
 static void SetLightsWithTimeOfDayColour_SilentPatch( RpWorld* world )
 {
 	static CVector* const VectorToSun = *AddressByVersion<CVector**>( 0x6FC5B7 + 3, 0, 0 ); // TODO: DO
 	static int& CurrentStoredValue = **AddressByVersion<int**>( 0x6FC632 + 1, 0, 0 ); // TODO: DO
+	static CVector& vecDirnLightToSun = **AddressByVersion<CVector**>( 0x5BC040 + 2, 0, 0 ); // TODO: Do
 
-#ifndef NDEBUG
-	static CVector& vecDirnLightToSun = *(CVector*)0xB7CB14;
 	curVecToSun = bUseAaronSun ? VectorToSun[CurrentStoredValue] : vecDirnLightToSun;
-#else
-	curVecToSun = VectorToSun[CurrentStoredValue];
-#endif
-
 	orgSetLightsWithTimeOfDayColour( world );
 }
 
@@ -2197,11 +2187,7 @@ BOOL InjectDelayedPatches_10()
 		ReadRotorFixExceptions(wcModulePath);
 		const bool bHookDoubleRwheels = ReadDoubleRearWheels(wcModulePath);
 
-#ifndef NDEBUG
 		const bool bHasDebugMenu = DebugMenuLoad();
-#else
-		constexpr bool bHasDebugMenu = false;
-#endif
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == 1 )
 		{
@@ -2372,42 +2358,48 @@ BOOL InjectDelayedPatches_10()
 
 
 		// Fix directional light position
-		ReadCall( 0x53E997, orgSetLightsWithTimeOfDayColour );
-		InjectHook( 0x53E997, SetLightsWithTimeOfDayColour_SilentPatch );
-		Patch<const void*>( 0x735618 + 2, &curVecToSun.x );
-		Patch<const void*>( 0x73561E + 2, &curVecToSun.y );
-		Patch<const void*>( 0x735624 + 1, &curVecToSun.z );
-#ifndef NDEBUG
-		if ( bHasDebugMenu )
+		if ( int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"DirectionalFromSun", -1, wcModulePath); INIoption != -1 )
 		{
-			DebugMenuAddVar( "SilentPatch", "Directional from sun", &bUseAaronSun, nullptr );
+			bUseAaronSun = INIoption != 0;
 
-			// Switch for fixed PC vehicle lighting
-			DebugMenuAddVar( "SilentPatch", "Fixed PC vehicle light", &bFixedPCVehLight, []() {
-				if ( bFixedPCVehLight )
-				{
-					Memory::VP::Patch<float>(0x5D88D1 + 6, 0);
-					Memory::VP::Patch<float>(0x5D88DB + 6, 0);
-					Memory::VP::Patch<float>(0x5D88E5 + 6, 0);
+			ReadCall( 0x53E997, orgSetLightsWithTimeOfDayColour );
+			InjectHook( 0x53E997, SetLightsWithTimeOfDayColour_SilentPatch );
+			Patch<const void*>( 0x735618 + 2, &curVecToSun.x );
+			Patch<const void*>( 0x73561E + 2, &curVecToSun.y );
+			Patch<const void*>( 0x735624 + 1, &curVecToSun.z );
 
-					Memory::VP::Patch<float>(0x5D88F9 + 6, 0);
-					Memory::VP::Patch<float>(0x5D8903 + 6, 0);
-					Memory::VP::Patch<float>(0x5D890D + 6, 0);
-				}
-				else
-				{
-					Memory::VP::Patch<float>(0x5D88D1 + 6, 0.25f);
-					Memory::VP::Patch<float>(0x5D88DB + 6, 0.25f);
-					Memory::VP::Patch<float>(0x5D88E5 + 6, 0.25f);
+			if ( bHasDebugMenu )
+			{
+				DebugMenuAddVar( "SilentPatch", "Directional from sun", &bUseAaronSun, nullptr );
 
-					Memory::VP::Patch<float>(0x5D88F9 + 6, 0.75f);
-					Memory::VP::Patch<float>(0x5D8903 + 6, 0.75f);
-					Memory::VP::Patch<float>(0x5D890D + 6, 0.75f);
-				}
-			} );
-			
+	#ifndef NDEBUG
+				// Switch for fixed PC vehicle lighting
+				static bool bFixedPCVehLight = true;
+				DebugMenuAddVar( "SilentPatch", "Fixed PC vehicle light", &bFixedPCVehLight, []() {
+					if ( bFixedPCVehLight )
+					{
+						Memory::VP::Patch<float>(0x5D88D1 + 6, 0);
+						Memory::VP::Patch<float>(0x5D88DB + 6, 0);
+						Memory::VP::Patch<float>(0x5D88E5 + 6, 0);
+
+						Memory::VP::Patch<float>(0x5D88F9 + 6, 0);
+						Memory::VP::Patch<float>(0x5D8903 + 6, 0);
+						Memory::VP::Patch<float>(0x5D890D + 6, 0);
+					}
+					else
+					{
+						Memory::VP::Patch<float>(0x5D88D1 + 6, 0.25f);
+						Memory::VP::Patch<float>(0x5D88DB + 6, 0.25f);
+						Memory::VP::Patch<float>(0x5D88E5 + 6, 0.25f);
+
+						Memory::VP::Patch<float>(0x5D88F9 + 6, 0.75f);
+						Memory::VP::Patch<float>(0x5D8903 + 6, 0.75f);
+						Memory::VP::Patch<float>(0x5D890D + 6, 0.75f);
+					}
+				} );
+	#endif
+			}
 		}
-#endif
 
 		// Moonphases
 		// Not taking effect with new skygfx since aap has it too now
