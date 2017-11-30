@@ -2271,7 +2271,7 @@ BOOL InjectDelayedPatches_10()
 			Patch<const void*>(0x4E9F38, &fSteamRadioNameSizeX);
 		}
 
-		if ( int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath); INIoption != -1 )
+		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath); INIoption != -1 )
 		{
 			// Coloured zone names
 			bColouredZoneNames = INIoption != 0;
@@ -2373,7 +2373,7 @@ BOOL InjectDelayedPatches_10()
 
 
 		// Fix directional light position
-		if ( int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"DirectionalFromSun", -1, wcModulePath); INIoption != -1 )
+		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"DirectionalFromSun", -1, wcModulePath); INIoption != -1 )
 		{
 			bUseAaronSun = INIoption != 0;
 
@@ -2490,18 +2490,15 @@ BOOL InjectDelayedPatches_10()
 		}
 
 #ifndef NDEBUG
+		if ( const int QPCDays = GetPrivateProfileIntW(L"Debug", L"AddDaysToQPC", 0, wcModulePath); QPCDays != 0 )
 		{
-			const int QPCDays = GetPrivateProfileIntW(L"Debug", L"AddDaysToQPC", 0, wcModulePath);
-			if ( QPCDays != 0 )
-			{
-				using namespace FakeQPC;
+			using namespace FakeQPC;
 
-				LARGE_INTEGER Freq;
-				QueryPerformanceFrequency( &Freq );
-				AddedTime = Freq.QuadPart * QPCDays * 60 * 24;
+			LARGE_INTEGER Freq;
+			QueryPerformanceFrequency( &Freq );
+			AddedTime = Freq.QuadPart * QPCDays * 60 * 24;
 
-				Patch( 0x8580C8, &FakeQueryPerformanceCounter );
-			}
+			Patch( 0x8580C8, &FakeQueryPerformanceCounter );
 		}
 #endif
 
