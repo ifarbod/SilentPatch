@@ -61,13 +61,13 @@ private:
 	static int32_t GetExtendedID8_Stock(const uint8_t* ptr)
 	{
 		const uint8_t uID = *ptr;
-		return uID == MAX_UINT8_ID ? -1 : uID;
+		return uID != MAX_UINT8_ID ? uID : -1;
 	}
 
 	static int32_t GetExtendedID16_Stock(const uint16_t* ptr)
 	{
 		const uint16_t uID = *ptr;
-		return uID > MAX_UINT16_ID ? *reinterpret_cast<const int16_t*>(ptr) : uID;
+		return uID <= MAX_UINT16_ID ? uID : *reinterpret_cast<const int16_t*>(ptr);
 	}
 
 	static int32_t (*GetExtendedID8Func)(const uint8_t* ptr);
