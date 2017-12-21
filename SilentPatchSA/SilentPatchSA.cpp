@@ -284,7 +284,7 @@ RpHAnimHierarchy*		(*GetAnimHierarchyFromSkinClump)(RpClump*) = AddressByVersion
 auto					InitializeUtrax = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0x4F3A10, 0x4FFA80);
 auto					CanSeeOutSideFromCurrArea = AddressByVersion<bool(*)()>(0x53C4A0, 0x53C940, 0x54E440);
 
-auto					RenderOneXLUSprite = AddressByVersion<void(*)(float, float, float, float, float, int, int, int, int, float, char, char, char)>(0x70D000, 0x70D830, 0x7592C0);
+auto					RenderOneXLUSprite = AddressByVersion<void(*)(float, float, float, float, float, uint8_t, uint8_t, uint8_t, int16_t, float, uint8_t, uint8_t, uint8_t)>(0x70D000, 0x70D830, 0x7592C0);
 
 static void				(__thiscall* SetVolume)(void*,float);	
 static BOOL				(*IsAlreadyRunning)();
@@ -610,7 +610,7 @@ bool GetCurrentZoneLockedOrUnlocked_Steam(float fPosX, float fPosY)
 }
 
 // By NTAuthority
-void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float sizeY)
+void DrawMoonWithPhases(uint8_t moonColor, float* screenPos, float sizeX, float sizeY)
 {
 	static RwTexture*	gpMoonMask = [] () {
 		if ( GetFileAttributesW(L"lunar.png") != INVALID_FILE_ATTRIBUTES )
@@ -638,7 +638,7 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 
 	RwD3D9SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA);
 
-	RenderOneXLUSprite(screenPos[0], screenPos[1], fFarClipZ, sizeX * size, sizeY * size, 0, 0, 0, 0, a10, -1, 0, 0);
+	RenderOneXLUSprite(screenPos[0], screenPos[1], fFarClipZ, sizeX * size, sizeY * size, 0, 0, 0, 0, a10, 255, 0, 0);
 
 	RwRenderStateSet(rwRENDERSTATETEXTURERASTER, gpMoonMask != nullptr ? RwTextureGetRaster(gpMoonMask) : nullptr );
 	RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDINVSRCCOLOR);
@@ -647,7 +647,7 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 	float maskX = (sizeX * size) * 5.4f * (currentDayFraction - 0.5f) + screenPos[0];
 	float maskY = screenPos[1] + ((sizeY * size) * 0.7f);
 
-	RenderOneXLUSprite(maskX, maskY, fFarClipZ, sizeX * size * 1.7f, sizeY * size * 1.7f, 0, 0, 0, 255, a10, -1, 0, 0);
+	RenderOneXLUSprite(maskX, maskY, fFarClipZ, sizeX * size * 1.7f, sizeY * size * 1.7f, 0, 0, 0, 255, a10, 255, 0, 0);
 
 	RwD3D9SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED);
 
@@ -656,7 +656,7 @@ void DrawMoonWithPhases(int moonColor, float* screenPos, float sizeX, float size
 	RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDONE);
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, 0);
 
-	RenderOneXLUSprite(screenPos[0], screenPos[1], fFarClipZ, sizeX * size, sizeY * size, moonColor, moonColor, static_cast<int>(moonColor * 0.85f), 255, a10, -1, 0, 0);
+	RenderOneXLUSprite(screenPos[0], screenPos[1], fFarClipZ, sizeX * size, sizeY * size, moonColor, moonColor, static_cast<uint8_t>(moonColor * 0.85f), 255, a10, 255, 0, 0);
 
 	RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDONE);
 	RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDONE);
@@ -1262,12 +1262,12 @@ static void CdStreamInitThread()
 // Dancing timers fix
 static long UtilsVariablesInit = 0;
 static LARGE_INTEGER UtilsStartTime;
-static LARGE_INTEGER* pUtilsFrequency;
+static LARGE_INTEGER UtilsFrequency;
 static BOOL WINAPI AudioUtilsFrequency( PLARGE_INTEGER lpFrequency )
 {
-	pUtilsFrequency = lpFrequency;
-	::QueryPerformanceFrequency( lpFrequency );
-	lpFrequency->QuadPart /= 1000;
+	::QueryPerformanceFrequency( &UtilsFrequency );
+	UtilsFrequency.QuadPart /= 1000;
+	lpFrequency->QuadPart = UtilsFrequency.QuadPart;
 	return TRUE;
 }
 static auto* const pAudioUtilsFrequency = &AudioUtilsFrequency;
@@ -1289,7 +1289,22 @@ static int64_t AudioUtilsGetCurrentTimeInMs()
 
 	LARGE_INTEGER currentTime;
 	QueryPerformanceCounter( &currentTime );
-	return (currentTime.QuadPart - UtilsStartTime.QuadPart) / pUtilsFrequency->QuadPart;
+	return (currentTime.QuadPart - UtilsStartTime.QuadPart) / UtilsFrequency.QuadPart;
+}
+
+// Minimal HUD changes
+static CRGBA* __fastcall SetRGBA_FloatAlpha( CRGBA* rgba, void*, uint8_t red, uint8_t green, uint8_t blue, float alpha )
+{
+	rgba->r = red;
+	rgba->g = green;
+	rgba->b = blue;
+	rgba->a = static_cast<uint8_t>(alpha);
+	return rgba;
+}
+
+static void RenderXLUSprite_FloatAlpha( float arg1, float arg2, float arg3, float arg4, float arg5, uint8_t red, uint8_t green, uint8_t blue, int16_t mult, float arg10, float alpha, uint8_t arg12, uint8_t arg13 )
+{
+	RenderOneXLUSprite( arg1, arg2, arg3, arg4, arg5, red, green, blue, mult, arg10, static_cast<uint8_t>(alpha), arg12, arg13 );
 }
 
 
@@ -1464,19 +1479,6 @@ void __declspec(naked) UserTracksFix_Steam()
 		mov		byte ptr [ecx+5], 1
 		call	InitializeUtrax
 		retn	4
-	}
-}
-
-// Unused on Steam EXE
-static void* UsageIndex1_JumpBack = AddressByVersion<void*>(0x5D611B, 0x5D68FB, 1);
-void __declspec(naked) UsageIndex1()
-{
-	_asm
-	{
-		mov		byte ptr [esp+eax*8+27h], 1
-		inc		eax
-
-		jmp		UsageIndex1_JumpBack
 	}
 }
 
@@ -2414,6 +2416,24 @@ BOOL InjectDelayedPatches_10()
 				} );
 	#endif
 			}
+		}
+
+		// Minimal HUD
+		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"MinimalHud", -1, wcModulePath); INIoption != -1 )
+		{
+			// Fix original bugs
+			Patch( 0x58950E, { 0x90, 0xFF, 0x74, 0x24, 0x1C } );
+			InjectHook( 0x58951D, &SetRGBA_FloatAlpha );
+
+			Patch( 0x58D88A, { 0x90, 0xFF, 0x74, 0x24, 0x20 + 0x10 } );
+			InjectHook( 0x58D8FD, &RenderXLUSprite_FloatAlpha );
+		
+			// Re-enable
+			if ( INIoption == 1 )
+			{
+				Patch<int32_t>( 0x588905 + 1, 0 );
+			}
+		
 		}
 
 		// Moonphases
