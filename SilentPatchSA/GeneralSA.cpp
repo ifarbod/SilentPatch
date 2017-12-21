@@ -116,21 +116,20 @@ std::tuple<int,int> CObject::TryOrFreeUpTempObjects( int numObjects, bool force 
 	int numProcessed = 0, numFreed = 0;
 
 	auto& pool = CPools::GetObjectPool();
-	for ( auto& obj : pool )
+	for ( auto obj : pool )
 	{
 		if ( numFreed >= numObjects ) break;
 
-		CObject* const objPtr = &obj;
-		if ( pool.IsValidPtr( objPtr ) )
+		if ( pool.IsValidPtr( obj ) )
 		{
-			if ( objPtr->m_objectCreatedBy == TEMP_OBJECT )
+			if ( obj->m_objectCreatedBy == TEMP_OBJECT )
 			{
 				numProcessed++;
-				if ( force || !objPtr->IsVisible() )
+				if ( force || !obj->IsVisible() )
 				{
 					numFreed++;
-					WorldRemove( objPtr );
-					delete objPtr;
+					WorldRemove( obj );
+					delete obj;
 				}
 			}
 		}

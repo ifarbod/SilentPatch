@@ -53,9 +53,15 @@ public:
 		return !GetIsFree( index );
 	}
 
-	class iterator : public std::iterator<std::random_access_iterator_tag, ReturnType>
+	class iterator
 	{
 	public:
+		using iterator_category = std::random_access_iterator_tag;
+		using value_type = ReturnType*;
+		using difference_type = ptrdiff_t;
+		using pointer = ReturnType* const *;
+		using reference = ReturnType*;
+
 		iterator() : m_ptr(nullptr)
 		{
 		}
@@ -64,8 +70,8 @@ public:
 		{
 		}
 
-		reference operator* () const { return *reinterpret_cast<ReturnType*>(m_ptr); }
-		pointer operator->() const { return reinterpret_cast<ReturnType*>(m_ptr); }
+		reference operator* () const { return reinterpret_cast<ReturnType*>(m_ptr); }
+		pointer operator->() const { return &reinterpret_cast<ReturnType*>(m_ptr); }
 
 		iterator& operator ++ () { ++m_ptr; return *this; }
 		bool operator == ( const iterator& rhs ) const { return m_ptr == rhs.m_ptr; } 
