@@ -2509,6 +2509,15 @@ BOOL InjectDelayedPatches_10()
 			}
 		}
 
+		// For imfast compatibility
+		if ( MemEquals( 0x590ADE, { 0xFF, 0x05 } ) )
+		{
+			// Modulo over CLoadingScreen::m_currDisplayedSplash
+			Nop( 0x590ADE, 1 );
+			InjectHook( 0x590ADE + 1, DoPCScreenChange_Mod, PATCH_CALL );
+			Patch<const void*>( 0x590042 + 2, &currDisplayedSplash_ForLastSplash );
+		}
+
 #ifndef NDEBUG
 		if ( const int QPCDays = GetPrivateProfileIntW(L"Debug", L"AddDaysToQPC", 0, wcModulePath); QPCDays != 0 )
 		{
@@ -3362,12 +3371,6 @@ void Patch_SA_10()
 	// Fixed impounding of random vehicles (because CVehicle::~CVehicle doesn't remove cars from apCarsToKeep)
 	ReadCall( 0x6E2B6E, orgRecordVehicleDeleted );
 	InjectHook( 0x6E2B6E, RecordVehicleDeleted_AndRemoveFromVehicleList );
-
-
-	// Modulo over CLoadingScreen::m_currDisplayedSplash
-	Nop( 0x590ADE, 1 );
-	InjectHook( 0x590ADE + 1, DoPCScreenChange_Mod, PATCH_CALL );
-	Patch<const void*>( 0x590042 + 2, &currDisplayedSplash_ForLastSplash );
 
 
 	// Don't include an extra D3DLIGHT on vehicles since we fixed directional already
