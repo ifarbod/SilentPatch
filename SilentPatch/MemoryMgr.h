@@ -480,6 +480,14 @@ namespace Memory
 		func = Func(*(ptrdiff_t*)((intptr_t)address+1) + (intptr_t)address + 5);
 	}
 
+#ifndef _MEMORY_NO_CRT
+	inline bool MemEquals(uintptr_t address, std::initializer_list<uint8_t> val)
+	{
+		const uint8_t* mem = reinterpret_cast<const uint8_t*>(address);
+		return std::equal( val.begin(), val.end(), stdext::make_checked_array_iterator(mem, val.size()) );
+	}
+#endif
+
 	namespace DynBase
 	{
 		template<typename T, typename AT>
@@ -519,6 +527,13 @@ namespace Memory
 		{
 			Memory::ReadCall(DynBaseAddress(address), func);
 		}
+
+#ifndef _MEMORY_NO_CRT
+		inline bool MemEquals(uintptr_t address, std::initializer_list<uint8_t> val)
+		{
+			return Memory::MemEquals(DynBaseAddress(address), val);
+		}
+#endif
 	};
 
 	namespace VP
@@ -578,6 +593,13 @@ namespace Memory
 			Memory::ReadCall(address, func);
 		}
 
+#ifndef _MEMORY_NO_CRT
+		inline bool MemEquals(uintptr_t address, std::initializer_list<uint8_t> val)
+		{
+			return Memory::MemEquals(address, val);
+		}
+#endif
+
 		namespace DynBase
 		{
 			template<typename T, typename AT>
@@ -617,6 +639,13 @@ namespace Memory
 			{
 				Memory::ReadCall(DynBaseAddress(address), func);
 			}
+
+#ifndef _MEMORY_NO_CRT
+			inline bool MemEquals(uintptr_t address, std::initializer_list<uint8_t> val)
+			{
+				return Memory::MemEquals(DynBaseAddress(address), val);
+			}
+#endif
 		};
 	};
 };
