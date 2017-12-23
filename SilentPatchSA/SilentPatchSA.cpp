@@ -715,7 +715,7 @@ void DrawRect_HalfPixel_Steam(CRect& rect, const CRGBA& rgba)
 char* GetMyDocumentsPathSA()
 {
 	static char	cUserFilesPath[MAX_PATH];
-	static char* const ppTempBufPtr = *GetVer() == 0 ? *AddressByRegion_10<char**>(0x744FE5) : cUserFilesPath;
+	static char* const ppTempBufPtr = *Memory::internal::GetVer() == 0 ? *AddressByRegion_10<char**>(0x744FE5) : cUserFilesPath;
 
 	static bool initPath = [&] () {	
 		char** const ppUserFilesDir = AddressByVersion<char**>(0x74503F, 0x74586F, 0x77EE50, 0x77902B, 0x778F1B);
@@ -1707,7 +1707,7 @@ void __declspec(naked) TrailerDoubleRWheelsFix2_Steam()
 	}
 }
 
-static void*	LoadFLAC_JumpBack = AddressByVersion<void*>(0x4F3743, *GetVer() == 1 ? (*(BYTE*)0x4F3A50 == 0x6A ? 0x4F3BA3 : 0x5B6B81) : 0, 0x4FFC3F);
+static void*	LoadFLAC_JumpBack = AddressByVersion<void*>(0x4F3743, *Memory::internal::GetVer() == 1 ? (*(BYTE*)0x4F3A50 == 0x6A ? 0x4F3BA3 : 0x5B6B81) : 0, 0x4FFC3F);
 void __declspec(naked) LoadFLAC()
 {
 	_asm
