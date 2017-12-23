@@ -187,34 +187,40 @@ void __stdcall Recalculate(signed int nShadow)
 	fShadowYSize = nShadow * GetHeightMult() * RsGlobal->MaximumHeight;
 }
 
-template<int pFltX, int pFltY>
-void AlteredPrintString(float fX, float fY, const wchar_t* pText)
+static void AlteredPrintString_Internal(float fX, float fY, float fMarginX, float fMarginY, const wchar_t* pText)
 {
-	float	fMarginX = **reinterpret_cast<float**>(pFltX);
-	float	fMarginY = **reinterpret_cast<float**>(pFltY);
 	PrintString(fX - fMarginX + (fMarginX * GetWidthMult() * RsGlobal->MaximumWidth), fY - fMarginY + (fMarginY * GetHeightMult() * RsGlobal->MaximumHeight), pText);
 }
 
-template<int pFltX, int pFltY>
+template<uintptr_t pFltX, uintptr_t pFltY>
+void AlteredPrintString(float fX, float fY, const wchar_t* pText)
+{
+	const float	fMarginX = **reinterpret_cast<float**>(pFltX);
+	const float	fMarginY = **reinterpret_cast<float**>(pFltY);
+	AlteredPrintString_Internal(fX, fY, fMarginX, fMarginY, pText);
+}
+
+template<uintptr_t pFltX, uintptr_t pFltY>
 void AlteredPrintStringMinus(float fX, float fY, const wchar_t* pText)
 {
-	float	fMarginX = **reinterpret_cast<float**>(pFltX);
-	float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	PrintString(fX + fMarginX - (fMarginX * GetWidthMult() * RsGlobal->MaximumWidth), fY + fMarginY - (fMarginY * GetHeightMult() * RsGlobal->MaximumHeight), pText);
+	const float	fMarginX = **reinterpret_cast<float**>(pFltX);
+	const float	fMarginY = **reinterpret_cast<float**>(pFltY);
+	AlteredPrintString_Internal(fX, fY, -fMarginX, -fMarginY, pText);
 }
 
-template<int pFltX>
+template<uintptr_t pFltX>
 void AlteredPrintStringXOnly(float fX, float fY, const wchar_t* pText)
 {
-	float	fMarginX = **reinterpret_cast<float**>(pFltX);
-	PrintString(fX - fMarginX + (fMarginX * GetWidthMult() * RsGlobal->MaximumWidth), fY, pText);
+	const float	fMarginX = **reinterpret_cast<float**>(pFltX);
+	AlteredPrintString_Internal(fX, fY, fMarginX, 0.0f, pText);
 }
 
-template<int pFltY>
+template<uintptr_t pFltY>
 void AlteredPrintStringYOnly(float fX, float fY, const wchar_t* pText)
 {
-	float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	PrintString(fX, fY - fMarginY + (fMarginY * GetHeightMult() * RsGlobal->MaximumHeight), pText);
+	const float	fMarginY = **reinterpret_cast<float**>(pFltY);
+	AlteredPrintString_Internal(fX, fY, 0.0f, fMarginY, pText);
+	
 }
 
 float FixedRefValue()
