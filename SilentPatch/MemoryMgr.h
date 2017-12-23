@@ -432,7 +432,7 @@ namespace Memory
 	inline void		Patch(AT address, std::initializer_list<uint8_t> list )
 	{
 		uint8_t* const addr = (uint8_t*)address;
-		std::copy( list.begin(), list.end(), stdext::checked_array_iterator<uint8_t*>(addr, list.size()) );
+		std::copy( list.begin(), list.end(), stdext::make_checked_array_iterator(addr, list.size()) );
 	}
 #endif
 
@@ -531,7 +531,7 @@ namespace Memory
 #ifndef _MEMORY_NO_CRT
 		inline bool MemEquals(uintptr_t address, std::initializer_list<uint8_t> val)
 		{
-			return Memory::MemEquals(DynBaseAddress(address), val);
+			return Memory::MemEquals(DynBaseAddress(address), std::move(val));
 		}
 #endif
 	};
@@ -596,7 +596,7 @@ namespace Memory
 #ifndef _MEMORY_NO_CRT
 		inline bool MemEquals(uintptr_t address, std::initializer_list<uint8_t> val)
 		{
-			return Memory::MemEquals(address, val);
+			return Memory::MemEquals(address, std::move(val));
 		}
 #endif
 
@@ -643,7 +643,7 @@ namespace Memory
 #ifndef _MEMORY_NO_CRT
 			inline bool MemEquals(uintptr_t address, std::initializer_list<uint8_t> val)
 			{
-				return Memory::MemEquals(DynBaseAddress(address), val);
+				return Memory::MemEquals(DynBaseAddress(address), std::move(val));
 			}
 #endif
 		};

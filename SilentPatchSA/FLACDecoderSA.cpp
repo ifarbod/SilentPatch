@@ -50,10 +50,10 @@ FLAC__StreamDecoderWriteStatus CAEFLACDecoder::write_cb(const FLAC__StreamDecode
 		pClientData->m_maxBlockSize = pClientData->m_curBlockSize;
 	}
 	
-	std::copy_n( buffer[0], pClientData->m_curBlockSize, stdext::checked_array_iterator<FLAC__int32*>(pClientData->m_buffer, pClientData->m_curBlockSize) );
+	std::copy_n( buffer[0], pClientData->m_curBlockSize, stdext::make_checked_array_iterator(pClientData->m_buffer, pClientData->m_curBlockSize) );
 	if ( processedChannels > 1 )
 	{
-		std::copy_n( buffer[1], pClientData->m_curBlockSize, stdext::checked_array_iterator<FLAC__int32*>(pClientData->m_buffer+pClientData->m_curBlockSize, pClientData->m_curBlockSize) );
+		std::copy_n( buffer[1], pClientData->m_curBlockSize, stdext::make_checked_array_iterator(pClientData->m_buffer+pClientData->m_curBlockSize, pClientData->m_curBlockSize) );
 	}
 
 	return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;

@@ -72,7 +72,7 @@ void CVehicleModelInfo::FindEditableMaterialList()
 	if ( m_numDirtMaterials > IN_PLACE_BUFFER_DIRT_SIZE )
 	{
 		m_dirtMaterials = new RpMaterial* [m_numDirtMaterials];
-		std::copy( editableMaterials.begin(), editableMaterials.end(), stdext::checked_array_iterator<RpMaterial**>(m_dirtMaterials, m_numDirtMaterials) );
+		std::copy( editableMaterials.begin(), editableMaterials.end(), stdext::make_checked_array_iterator(m_dirtMaterials, m_numDirtMaterials) );
 	}
 	else
 	{
@@ -131,13 +131,13 @@ void CCustomCarPlateMgr::PollPlates( RpClump* clump, PlateMaterialsData* materia
 	if ( materials->m_numPlates > 0 )
 	{
 		materials->m_plates = new RpMaterial* [materials->m_numPlates];
-		std::copy( carplates.begin(), carplates.end(), stdext::checked_array_iterator<RpMaterial**>(materials->m_plates, materials->m_numPlates) );
+		std::copy( carplates.begin(), carplates.end(), stdext::make_checked_array_iterator(materials->m_plates, materials->m_numPlates) );
 	}
 
 	if ( materials->m_numPlatebacks > 0 )
 	{
 		materials->m_platebacks = new RpMaterial* [materials->m_numPlatebacks];
-		std::copy( carpbacks.begin(), carpbacks.end(), stdext::checked_array_iterator<RpMaterial**>(materials->m_platebacks, materials->m_numPlatebacks) );
+		std::copy( carpbacks.begin(), carpbacks.end(), stdext::make_checked_array_iterator(materials->m_platebacks, materials->m_numPlatebacks) );
 	}
 }
 
