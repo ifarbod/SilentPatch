@@ -89,16 +89,6 @@ namespace hook
 		};
 
 	protected:
-		inline pattern(void* module)
-			: m_module(module), m_rangeEnd(0)
-		{
-		}
-
-		inline pattern(uintptr_t begin, uintptr_t end)
-			: m_rangeStart(begin), m_rangeEnd(end)
-		{
-		}
-
 		void Initialize(std::string_view pattern);
 
 	private:
@@ -111,10 +101,34 @@ namespace hook
 			return m_matches[index];
 		}
 
+		inline pattern(void* module)
+			: m_module(module), m_rangeEnd(0)
+		{
+		}
+
+		inline pattern(uintptr_t begin, uintptr_t end)
+			: m_rangeStart(begin), m_rangeEnd(end)
+		{
+		}
+
 	public:
 		template<size_t Len>
 		pattern(const char (&pattern)[Len])
 			: pattern(getRVA<void>(0))
+		{
+			Initialize(std::string_view(pattern, Len-1));
+		}
+
+		template<size_t Len>
+		inline pattern(void* module, const char (&pattern)[Len])
+			: pattern(module)
+		{
+			Initialize(std::string_view(pattern, Len-1));
+		}
+
+		template<size_t Len>
+		inline pattern(uintptr_t begin, uintptr_t end, const char (&pattern)[Len])
+			: m_rangeStart(begin), m_rangeEnd(end)
 		{
 			Initialize(std::string_view(pattern, Len-1));
 		}
@@ -184,30 +198,17 @@ namespace hook
 #endif
 	};
 
-	class module_pattern
-		: public pattern
+	template<size_t Len>
+	pattern make_module_pattern(void* module, const char (&bytes)[Len])
 	{
-	public:
-		template<size_t Len>
-		module_pattern(void* module, const char(&pattern)[Len])
-			: pattern(module)
-		{
-			Initialize(pattern, Len-1);
-		}
-	};
+		return pattern(module, bytes);
+	}
 
-	class range_pattern
-		: public pattern
+	template<size_t Len>
+	pattern make_range_pattern(uintptr_t begin, uintptr_t end, const char(&bytes)[Len])
 	{
-	public:
-		template<size_t Len>
-		range_pattern(uintptr_t begin, uintptr_t end, const char(&pattern)[Len])
-			: pattern(begin, end)
-		{
-			Initialize(std::string_view(pattern, Len-1));
-		}
-	};
-
+		return pattern(begin, end, bytes);
+	}
 
 	template<typename T = void, size_t Len>
 	auto get_pattern(const char(&pattern_string)[Len], ptrdiff_t offset = 0)
