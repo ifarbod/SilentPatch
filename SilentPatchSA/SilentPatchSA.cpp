@@ -520,7 +520,7 @@ static void SweetsGirlFix()
 
 static void MountainCloudBoysFix()
 {
-	auto pattern = hook::range_pattern( uintptr_t(ScriptSpace+ScriptFileSize), uintptr_t(ScriptSpace+ScriptFileSize+ScriptMissionSize), 
+	auto pattern = hook::make_range_pattern( uintptr_t(ScriptSpace+ScriptFileSize), uintptr_t(ScriptSpace+ScriptFileSize+ScriptMissionSize), 
 										"D6 00 04 00 39 00 03 EF 00 04 02 4D 00 01 90 F2 FF FF D6 00 04 01" ).count_hint(1);
 	if ( pattern.size() == 1 ) // Faulty code lies under offset 3367 - replace it if it matches
 	{
@@ -535,7 +535,7 @@ static void MountainCloudBoysFix()
 static void QuadrupleStuntBonus()
 {
 	// IF HEIGHT_FLOAT_HJ > 4.0 -> IF HEIGHT_INT_HJ > 4
-	auto pattern = hook::range_pattern( uintptr_t(ScriptSpace), uintptr_t(ScriptSpace+ScriptFileSize), "20 00 02 60 14 06 00 00 80 40" ).count_hint(1);
+	auto pattern = hook::make_range_pattern( uintptr_t(ScriptSpace), uintptr_t(ScriptSpace+ScriptFileSize), "20 00 02 60 14 06 00 00 80 40" ).count_hint(1);
 	if ( pattern.size() == 1 )
 	{
 		const uint8_t newCode[10] = {
