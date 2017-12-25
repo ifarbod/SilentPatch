@@ -715,7 +715,7 @@ void DrawRect_HalfPixel_Steam(CRect& rect, const CRGBA& rgba)
 char* GetMyDocumentsPathSA()
 {
 	static char	cUserFilesPath[MAX_PATH];
-	static char* const ppTempBufPtr = *Memory::internal::GetVer() == 0 ? *AddressByRegion_10<char**>(0x744FE5) : cUserFilesPath;
+	static char* const ppTempBufPtr = Memory::GetVersion().version == 0 ? *AddressByRegion_10<char**>(0x744FE5) : cUserFilesPath;
 
 	static bool initPath = [&] () {	
 		char** const ppUserFilesDir = AddressByVersion<char**>(0x74503F, 0x74586F, 0x77EE50, 0x77902B, 0x778F1B);
@@ -1707,7 +1707,7 @@ void __declspec(naked) TrailerDoubleRWheelsFix2_Steam()
 	}
 }
 
-static void*	LoadFLAC_JumpBack = AddressByVersion<void*>(0x4F3743, *Memory::internal::GetVer() == 1 ? (*(BYTE*)0x4F3A50 == 0x6A ? 0x4F3BA3 : 0x5B6B81) : 0, 0x4FFC3F);
+static void*	LoadFLAC_JumpBack = AddressByVersion<void*>(0x4F3743, Memory::GetVersion().version == 1 ? (*(BYTE*)0x4F3A50 == 0x6A ? 0x4F3BA3 : 0x5B6B81) : 0, 0x4FFC3F);
 void __declspec(naked) LoadFLAC()
 {
 	_asm
@@ -4666,14 +4666,15 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( hInstance, ".text" );
 		ScopedUnprotect::Section Protect2( hInstance, ".rdata" );
 
-		if (*(DWORD*)DynBaseAddress(0x82457C) == 0x94BF || *(DWORD*)DynBaseAddress(0x8245BC) == 0x94BF) Patch_SA_10();
-		else if (*(DWORD*)DynBaseAddress(0x8252FC) == 0x94BF || *(DWORD*)DynBaseAddress(0x82533C) == 0x94BF) Patch_SA_11(); // Not supported anymore
-		else if (*(DWORD*)DynBaseAddress(0x85EC4A) == 0x94BF) Patch_SA_Steam(); // Not supported anymore
+		const int8_t version = Memory::GetVersion().version;
+		if ( version == 0 ) Patch_SA_10();
+		else if ( version == 1 ) Patch_SA_11(); // Not supported anymore
+		else if ( version == 2 ) Patch_SA_Steam(); // Not supported anymore
 		else
 		{
-			if ( *(DWORD*)DynBaseAddress(0x858D21) == 0x3539F633) Patch_SA_NewSteam_r1();
-			else if ( *(DWORD*)DynBaseAddress(0x858D51) == 0x3539F633) Patch_SA_NewSteam_r2();
-			else if ( *(DWORD*)DynBaseAddress(0x858C61) == 0x3539F633) Patch_SA_NewSteam_r2_lv();
+			if ( version == 3 ) Patch_SA_NewSteam_r1();
+			else if ( version == 4 ) Patch_SA_NewSteam_r2();
+			else if ( version == 5 ) Patch_SA_NewSteam_r2_lv();
 			Patch_SA_NewSteam_Common();
 		}	
 	}

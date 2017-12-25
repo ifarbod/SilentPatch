@@ -62,21 +62,20 @@ inline AT DynBaseAddress(AT address)
 	return (ptrdiff_t)GetModuleHandle(nullptr) - 0x400000 + address;
 }
 
-#if defined _GTA_III
-
 namespace Memory
 {
 	namespace internal
 	{
+#if defined _GTA_III
 		inline void InitializeVersions()
 		{
 			signed char*	bVer = GetVer();
 
 			if ( *bVer == -1 )
 			{
-				if (*(uint32_t*)0x5C1E70 == 0x53E58955) *bVer = 0;
-				else if (*(uint32_t*)0x5C2130 == 0x53E58955) *bVer = 1;
-				else if (*(uint32_t*)0x5C6FD0 == 0x53E58955) *bVer = 2;
+				if (*(uint32_t*)0x5C1E75 == 0xB85548EC) *bVer = 0;
+				else if (*(uint32_t*)0x5C2135 == 0xB85548EC) *bVer = 1;
+				else if (*(uint32_t*)0x5C6FD5 == 0xB85548EC) *bVer = 2;
 			}
 		}
 
@@ -106,24 +105,18 @@ namespace Memory
 				return address10;
 			}
 		}
-	}
-}
 
 #elif defined _GTA_VC
 
-namespace Memory
-{
-	namespace internal
-	{
 		inline void InitializeVersions()
 		{
 			signed char*	bVer = GetVer();
 
 			if ( *bVer == -1 )
 			{
-				if (*(uint32_t*)0x667BF0 == 0x53E58955) *bVer = 0;
-				else if (*(uint32_t*)0x667C40 == 0x53E58955) *bVer = 1;
-				else if (*(uint32_t*)0x666BA0 == 0x53E58955) *bVer = 2;
+				if (*(uint32_t*)0x667BF5 == 0xB85548EC) *bVer = 0;
+				else if (*(uint32_t*)0x667C45 == 0xB85548EC) *bVer = 1;
+				else if (*(uint32_t*)0x666BA5 == 0xB85548EC) *bVer = 2;
 			}
 		}
 
@@ -153,72 +146,105 @@ namespace Memory
 				return address10;
 			}
 		}
-	}
-}
 
 #elif defined _GTA_SA
 
-namespace Memory
-{
-	namespace internal
-	{
+		inline bool TryMatch_10()
+		{
+			if ( *(uint32_t*)DynBaseAddress(0x82457C) == 0x94BF )
+			{
+				// 1.0 US
+				*GetVer() = 0;
+				*GetEuropean() = false;
+				return true;
+			}
+			if ( *(uint32_t*)DynBaseAddress(0x8245BC) == 0x94BF )
+			{
+				// 1.0 EU
+				*GetVer() = 0;
+				*GetEuropean() = true;
+				return true;
+			}
+			return false;
+		}
+
+		inline bool TryMatch_11()
+		{
+			if ( *(uint32_t*)DynBaseAddress(0x8252FC) == 0x94BF )
+			{
+				// 1.01 US
+				*GetVer() = 1;
+				*GetEuropean() = false;
+				return true;
+			}
+			if ( *(uint32_t*)DynBaseAddress(0x82533C) == 0x94BF )
+			{
+				// 1.01 EU
+				*GetVer() = 1;
+				*GetEuropean() = true;
+				return true;
+			}
+			return false;
+		}
+
+		inline bool TryMatch_30()
+		{
+			if (*(uint32_t*)DynBaseAddress(0x85EC4A) == 0x94BF )
+			{
+				// 3.0
+				*GetVer() = 2;
+				*GetEuropean() = false;
+				return true;
+			}
+			return false;
+		}
+
+		inline bool TryMatch_newsteam_r1()
+		{
+			if ( *(uint32_t*)DynBaseAddress(0x858D21) == 0x3539F633 )
+			{
+				// newsteam r1
+				*GetVer() = 3;
+				*GetEuropean() = false;
+				return true;
+			}
+			return false;
+		}
+
+		inline bool TryMatch_newsteam_r2()
+		{
+			if ( *(uint32_t*)DynBaseAddress(0x858D51) == 0x3539F633 )
+			{
+				// newsteam r2
+				*GetVer() = 4;
+				*GetEuropean() = false;
+				return true;
+			}
+			return false;
+		}
+
+		inline bool TryMatch_newsteam_r2_lv()
+		{
+			if ( *(uint32_t*)DynBaseAddress(0x858C61) == 0x3539F633 )
+			{
+				// newsteam r2 lv
+				*GetVer() = 5;
+				*GetEuropean() = false;
+				return true;
+			}
+			return false;
+		}
+
 		inline void InitializeVersions()
 		{
-			signed char*	bVer = GetVer();
-
-			if ( *bVer == -1 )
+			if ( *GetVer() == -1 )
 			{
-				bool* bEuropean = GetEuropean();
-
-				if ( *(uint32_t*)DynBaseAddress(0x82457C) == 0x94BF )
-				{
-					// 1.0 US
-					*bVer = 0;
-					*bEuropean = false;
-				}
-				else if ( *(uint32_t*)DynBaseAddress(0x8245BC) == 0x94BF )
-				{
-					// 1.0 EU
-					*bVer = 0;
-					*bEuropean = true;
-				}
-				else if ( *(uint32_t*)DynBaseAddress(0x8252FC) == 0x94BF )
-				{
-					// 1.01 US
-					*bVer = 1;
-					*bEuropean = false;
-				}
-				else if ( *(uint32_t*)DynBaseAddress(0x82533C) == 0x94BF )
-				{
-					// 1.01 EU
-					*bVer = 1;
-					*bEuropean = true;
-				}
-				else if (*(uint32_t*)DynBaseAddress(0x85EC4A) == 0x94BF )
-				{
-					// 3.0
-					*bVer = 2;
-					*bEuropean = false;
-				}
-
-				else if ( *(uint32_t*)DynBaseAddress(0x858D21) == 0x3539F633 )
-				{
-					// newsteam r1
-					*bVer = 3;
-					*bEuropean = false;
-				}
-				else if ( *(uint32_t*)DynBaseAddress(0x858D51) == 0x3539F633 )
-				{
-					// newsteam r2
-					*bVer = 4;
-					*bEuropean = false;
-				}
-				else if ( *(uint32_t*)DynBaseAddress(0x858C61) == 0x3539F633 )
-				{
-					// newsteam r2 lv
-					*bVer = 5;
-					*bEuropean = false;
-				}
+				if ( TryMatch_10() ) return;
+				if ( TryMatch_11() ) return;
+				if ( TryMatch_30() ) return;
+				if ( TryMatch_newsteam_r1() ) return;
+				if ( TryMatch_newsteam_r2() ) return;
+				if ( TryMatch_newsteam_r2_lv() ) return;	
 			}
 		}
 
@@ -228,19 +254,7 @@ namespace Memory
 
 			if ( *bVer == -1 )
 			{
-				bool* bEuropean = GetEuropean();
-
-				if ( *(uint32_t*)0x82457C == 0x94BF )
-				{
-					*bVer = 0;
-					*bEuropean = false;
-				}
-				else if ( *(uint32_t*)0x8245BC == 0x94BF )
-				{
-					*bVer = 0;
-					*bEuropean = true;
-				}
-				else
+				if ( !TryMatch_10() )
 				{
 		#ifdef assert
 					assert(!"AddressByRegion_10 on non-1.0 EXE!");
@@ -255,19 +269,7 @@ namespace Memory
 
 			if ( *bVer == -1 )
 			{
-				bool* bEuropean = GetEuropean();
-
-				if ( *(uint32_t*)0x8252FC == 0x94BF )
-				{
-					*bVer = 1;
-					*bEuropean = false;
-				}
-				else if ( *(uint32_t*)0x82533C == 0x94BF )
-				{
-					*bVer = 1;
-					*bEuropean = true;
-				}
-				else
+				if ( !TryMatch_11() )
 				{
 		#ifdef assert
 					assert(!"AddressByRegion_11 on non-1.01 EXE!");
@@ -276,12 +278,35 @@ namespace Memory
 			}
 		}
 
+		inline uintptr_t AdjustAddress_10(uintptr_t address10)
+		{
+			if ( *GetEuropean() && address10 > 0x7466D0 )
+			{
+				if ( address10 < 0x7BA940 )
+					address10 += 0x50;
+				else
+					address10 += 0x40;
+			}
+			return address10;
+		}
+
+		inline uintptr_t AdjustAddress_11(uintptr_t address11)
+		{
+			if ( !(*GetEuropean()) && address11 > 0x746FA0 )
+			{
+				if ( address11 < 0x7BB240 )
+					address11 -= 0x50;
+				else
+					address11 -= 0x40;
+			}
+			return address11;
+		}
+
 		inline uintptr_t AddressByVersion(uintptr_t address10, uintptr_t address11, uintptr_t addressSteam, uintptr_t addressNewsteamR2, uintptr_t addressNewsteamR2_LV)
 		{
 			InitializeVersions();
 
 			signed char	bVer = *GetVer();
-			const bool bEuropean = *GetEuropean();
 
 			switch ( bVer )
 			{
@@ -295,14 +320,7 @@ namespace Memory
 					return GetDummy();
 
 				// Adjust to US if needed
-				if ( bEuropean && address11 > 0x746FA0 )
-				{
-					if ( address11 < 0x7BB240 )
-						address11 -= 0x50;
-					else
-						address11 -= 0x40;
-				}
-				return address11;
+				return AdjustAddress_11(address11);
 			case 2:
 		#ifdef assert
 				assert(addressSteam);
@@ -335,14 +353,7 @@ namespace Memory
 				assert(address10);
 		#endif
 				// Adjust to EU if needed
-				if ( bEuropean && address10 > 0x7466D0 )
-				{
-					if ( address10 < 0x7BA940 )
-						address10 += 0x50;
-					else
-						address10 += 0x40;
-				}
-				return address10;
+				return AdjustAddress_10(address10);
 			}
 		}
 
@@ -350,39 +361,28 @@ namespace Memory
 		{
 			InitializeRegion_10();
 
-			const bool bEuropean = *GetEuropean();
-
 			// Adjust to EU if needed
-			if ( bEuropean && address10 > 0x7466D0 )
-			{
-				if ( address10 < 0x7BA940 )
-					address10 += 0x50;
-				else
-					address10 += 0x40;
-			}
-			return address10;
+			return AdjustAddress_10(address10);
 		}
 
 		inline uintptr_t AddressByRegion_11(uintptr_t address11)
 		{
 			InitializeRegion_11();
 
-			const bool bEuropean = *GetEuropean();
-
 			// Adjust to US if needed
-			if ( !bEuropean && address11 > 0x746FA0 )
-			{
-				if ( address11 < 0x7BB240 )
-					address11 -= 0x50;
-				else
-					address11 -= 0x40;
-			}
-			return address11;
+			return AdjustAddress_11(address11);
 		}
-	}
-}
+
+#else
+
+		inline void InitializeVersions()
+		{
+		}
 
 #endif
+
+	}
+}
 
 #if defined _GTA_III || defined _GTA_VC
 
@@ -419,6 +419,21 @@ inline T AddressByRegion_11(uintptr_t address11)
 }
 
 #endif
+
+namespace Memory
+{
+	struct VersionInfo
+	{
+		int8_t version;
+		bool european;
+	};
+
+	inline VersionInfo GetVersion()
+	{
+		Memory::internal::InitializeVersions();
+		return { *Memory::internal::GetVer(), *Memory::internal::GetEuropean() };
+	}
+};
 
 namespace Memory
 {
