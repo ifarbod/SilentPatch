@@ -282,7 +282,6 @@ void					(*GTAdelete)(void*) = AddressByVersion<void(*)(void*)>(0x82413F, 0x824E
 const char*				(*GetFrameNodeName)(RwFrame*) = AddressByVersion<const char*(*)(RwFrame*)>(0x72FB30, 0x730360, 0x769C20);
 RpHAnimHierarchy*		(*GetAnimHierarchyFromSkinClump)(RpClump*) = AddressByVersion<RpHAnimHierarchy*(*)(RpClump*)>(0x734A40, 0x735270, 0x7671B0);	
 auto					InitializeUtrax = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0x4F3A10, 0x4FFA80);
-auto					CanSeeOutSideFromCurrArea = AddressByVersion<bool(*)()>(0x53C4A0, 0x53C940, 0x54E440);
 
 auto					RenderOneXLUSprite = AddressByVersion<void(*)(float, float, float, float, float, uint8_t, uint8_t, uint8_t, int16_t, float, uint8_t, uint8_t, uint8_t)>(0x70D000, 0x70D830, 0x7592C0);
 
@@ -778,6 +777,11 @@ void InitBufferSwitchZ( RwRenderState rwa, void* rwb )
 }
 
 static void* const g_fx = *AddressByVersion<void**>(0x4A9649, 0x4AA4EF, 0x4B2BB9, 0x4B0BE4, 0x4B0BC4);
+static int32_t GetFxQuality()
+{
+	return *(int32_t*)( (uint8_t*)g_fx + 0x54 );
+}
+
 
 DWORD*				msaaValues = *AddressByVersion<DWORD**>(0x4CCBC5, 0x4CCDB5, 0x4D7462, 0x4D6CE5, 0x4D6CB5);
 RwRaster*&			pMirrorBuffer = **AddressByVersion<RwRaster***>(0x723001, 0x723831, 0x754971, 0x74F3E1, 0x74F311);
@@ -789,7 +793,7 @@ void CreateMirrorBuffers()
 		DWORD oldMsaa[2] = { msaaValues[0], msaaValues[1] };
 		msaaValues[0] = msaaValues[1] = 0;
 
-		DWORD quality = *(DWORD*)((BYTE*)g_fx + 0x54);
+		int32_t quality = GetFxQuality();
 		RwInt32 width, height;
 
 		if ( quality >= 3 ) // Very High
@@ -1305,6 +1309,12 @@ static CRGBA* __fastcall SetRGBA_FloatAlpha( CRGBA* rgba, void*, uint8_t red, ui
 static void RenderXLUSprite_FloatAlpha( float arg1, float arg2, float arg3, float arg4, float arg5, uint8_t red, uint8_t green, uint8_t blue, int16_t mult, float arg10, float alpha, uint8_t arg12, uint8_t arg13 )
 {
 	RenderOneXLUSprite( arg1, arg2, arg3, arg4, arg5, red, green, blue, mult, arg10, static_cast<uint8_t>(alpha), arg12, arg13 );
+}
+
+// 6 directionals on Medium/High/Very High Visual FX
+int32_t GetMaxExtraDirectionals( uint32_t areaID )
+{
+	return areaID != 0 || GetFxQuality() >= 1 ? 6 : 4;
 }
 
 
@@ -2047,27 +2057,6 @@ void __declspec(naked) asmTimers_SCMdelta()
 		sub		esp, 8
 		fstp	qword ptr [esp]
 		call	Timers_ftol_SCMdelta
-		retn
-	}
-}
-
-void __declspec(naked) GetMaxExtraDirectionals()
-{
-	_asm
-	{
-		call	CanSeeOutSideFromCurrArea
-		test	al, al
-		jz		GetMaxExtraDirectionals_Six
-		
-		// Low details?
-		mov		eax, [g_fx]
-		cmp		dword ptr [eax+54h], 0
-		jne		GetMaxExtraDirectionals_Six
-		mov		ebx, 4
-		retn
-
-GetMaxExtraDirectionals_Six:
-		mov		ebx, 6
 		retn
 	}
 }
@@ -3088,8 +3077,15 @@ void Patch_SA_10()
 	Patch<BYTE>(0x5D9F1F, 8);
 
 	// 6 extra directionals on Medium and higher
-	InjectHook(0x735881, GetMaxExtraDirectionals, PATCH_CALL);
-	Patch<WORD>(0x735886, 0x07EB);
+	// push eax
+	// call GetMaxExtraDirectionals
+	// add esp, 4
+	// mov ebx, eax
+	// nop
+	Patch<uint8_t>( 0x735881, 0x50 );
+	InjectHook( 0x735881 + 1, GetMaxExtraDirectionals, PATCH_CALL );
+	Patch( 0x735881 + 6, { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
+	Nop( 0x735881 + 11, 3 );
 
 	// Default resolution to native resolution
 	RECT			desktop;
@@ -3615,8 +3611,15 @@ void Patch_SA_11()
 	Patch<BYTE>(0x5DA73F, 8);
 
 	// 6 extra directionals on Medium and higher
-	InjectHook(0x7360B1, GetMaxExtraDirectionals, PATCH_CALL);
-	Patch<WORD>(0x7360B6, 0x07EB);
+	// push eax
+	// call GetMaxExtraDirectionals
+	// add esp, 4
+	// mov ebx, eax
+	// nop
+	Patch<uint8_t>( 0x7360B1, 0x50 );
+	InjectHook( 0x7360B1 + 1, GetMaxExtraDirectionals, PATCH_CALL );
+	Patch( 0x7360B1 + 6, { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
+	Nop( 0x7360B1 + 11, 3 );
 
 	// Default resolution to native resolution
 	RECT			desktop;
@@ -3917,8 +3920,15 @@ void Patch_SA_Steam()
 	Patch<BYTE>(0x5F666D, 8);
 
 	// 6 extra directionals on Medium and higher
-	InjectHook(0x768046, GetMaxExtraDirectionals, PATCH_CALL);
-	Patch<WORD>(0x76804B, 0x0AEB);
+	// push dword ptr [CGame::currArea]
+	// call GetMaxExtraDirectionals
+	// add esp, 4
+	// mov ebx, eax
+	// nop
+	Patch( 0x768046, { 0xFF, 0x35 } );
+	InjectHook( 0x768046 + 6, GetMaxExtraDirectionals, PATCH_CALL );
+	Patch( 0x768046 + 11, { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
+	Nop( 0x768046 + 16, 1 );
 
 	// Default resolution to native resolution
 	RECT			desktop;
