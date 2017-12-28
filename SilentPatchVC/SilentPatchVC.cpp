@@ -642,6 +642,15 @@ void Patch_VC_Common()
 		Patch( addr, { 0x83, 0xC4, 0x08, 0x5B, 0xC3 } );	// add     esp, 8 \ pop ebx \ retn
 	}
 
+
+	// 014C cargen counter fix (by spaceeinstein)
+	{
+		auto do_processing = pattern( "0F B7 43 28 83 F8 FF 7D 04 66 FF 4B 28" ).get_one();
+
+		Patch<uint8_t>( do_processing.get<uint8_t*>(1), 0xBF ); // movzx   eax, word ptr [ebx+28h] -> movsx   eax, word ptr [ebx+28h]
+		Patch<uint8_t>( do_processing.get<uint8_t*>(7), 0x74 ); // jge -> jz
+	}
+
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
