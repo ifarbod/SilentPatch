@@ -4605,6 +4605,21 @@ void Patch_SA_NewSteam_Common()
 	using namespace Memory;
 	using namespace hook;
 
+	// 6 extra directionals on Medium and higher
+	// push dword ptr [CGame::currArea]
+	// call GetMaxExtraDirectionals
+	// add esp, 4
+	// mov ebx, eax
+	// nop
+	{
+		auto maxdirs_addr = pattern( "83 3D ? ? ? ? 00 8D 5E 05 74 05 BB 06 00 00 00" ).get_one();
+
+		Patch( maxdirs_addr.get<void>(), { 0xFF, 0x35 } );
+		InjectHook( maxdirs_addr.get<void>(6), GetMaxExtraDirectionals, PATCH_CALL );
+		Patch( maxdirs_addr.get<void>(11), { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
+		Nop( maxdirs_addr.get<void>(16), 1 );
+	}
+
 	// AI accuracy issue
 	{
 		auto match = pattern( "8B 82 8C 05 00 00 85 C0 74 09" ).get_one(); // 0x76DEA7 in newsteam r1
