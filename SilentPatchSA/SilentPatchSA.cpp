@@ -23,6 +23,7 @@
 #include "ModuleList.hpp"
 
 #include "debugmenu_public.h"
+#include "resource.h"
 
 // ============= Mod compatibility stuff =============
 
@@ -619,7 +620,7 @@ void DrawMoonWithPhases(uint8_t moonColor, float* screenPos, float sizeX, float 
 		}
 
 		// Load from memory
-		HRSRC		resource = FindResourceW(hDLLModule, MAKEINTRESOURCE(IDR_LUNAR64), RT_RCDATA);
+		HRSRC		resource = FindResource(hDLLModule, MAKEINTRESOURCE(IDB_LUNAR64), RT_RCDATA);
 		void*		pMoonMask = LockResource( LoadResource(hDLLModule, resource) );
 		
 		return CPNGFile::ReadFromMemory(pMoonMask, SizeofResource(hDLLModule, resource));

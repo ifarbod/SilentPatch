@@ -1,2 +1,5 @@
-#define IDR_NVCSHADER			101
-#define IDR_LUNAR64				102
+//{{NO_DEPENDENCIES}}
+// Microsoft Visual C++ generated include file.
+// Used by SilentPatchSA.rc
+//
+#define IDB_LUNAR64                     101

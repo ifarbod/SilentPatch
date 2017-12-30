@@ -244,6 +244,10 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\SilentPatch\SilentPatch.rc" />
+    <ResourceCompile Include="SilentPatchSA.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="lunar64.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

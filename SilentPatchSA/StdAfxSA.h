@@ -17,8 +17,6 @@
 #include <rphanim.h>
 #include <rtpng.h>
 
-#include "resource.h"
-
 #include "MemoryMgr.h"
 #include "Maths.h"
 #include "rwpred.hpp"
