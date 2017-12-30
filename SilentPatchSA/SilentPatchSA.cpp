@@ -664,25 +664,21 @@ void DrawMoonWithPhases(uint8_t moonColor, float* screenPos, float sizeX, float 
 	//D3DPERF_EndEvent();
 }
 
+CRGBA* CRGBA::BlendGangColour(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+{
+	const double colourIntensity = std::min( static_cast<double>(pCurrZoneInfo->ZoneColour.a) / 120.0, 1.0 );
+	*this = CRGBA(BlendSqr( HudColour[3], CRGBA(r, g, b), colourIntensity ), a);
+	return this;
+}
+
 static bool bColouredZoneNames;
 CRGBA* CRGBA::BlendGangColour_Dynamic(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
 	if ( bColouredZoneNames )
 	{
-		const double colourIntensity = std::min( static_cast<double>(pCurrZoneInfo->ZoneColour.a) / 120.0, 1.0 );
-		*this = CRGBA(BlendSqr( HudColour[3], CRGBA(r, g, b), colourIntensity ), a);
+		return BlendGangColour(r, g, b, a);
 	}
-	else
-	{
-		*this = HudColour[3];
-	}
-	return this;
-}
-
-CRGBA* CRGBA::BlendGangColour(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
-{
-	const double colourIntensity = std::min( static_cast<double>(pCurrZoneInfo->ZoneColour.a) / 120.0, 1.0 );
-	*this = CRGBA(BlendSqr( HudColour[3], CRGBA(r, g, b), colourIntensity ), a);
+	*this = HudColour[3];
 	return this;
 }
 
