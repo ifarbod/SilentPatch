@@ -73,17 +73,15 @@ static RwFrame* GetFrameFromName( RwFrame* topFrame, const char* name )
 				foundFrame = frame;
 				return nullptr;
 			}
-			RwFrameForAllChildren( frame, *this );
+			RwFrameForAllChildren( frame, std::forward<GetFramePredicate>(*this) );
 			return foundFrame != nullptr ? nullptr : frame;
 		}
 	
 	private:
 		const char* const m_name;
 	};
-
-	GetFramePredicate p( name );
-	RwFrameForAllChildren( topFrame, p );
-	return p.foundFrame;
+;
+	return RwFrameForAllChildren( topFrame, GetFramePredicate(name) ).foundFrame;
 }
 
 void ReadRotorFixExceptions(const wchar_t* pPath)
