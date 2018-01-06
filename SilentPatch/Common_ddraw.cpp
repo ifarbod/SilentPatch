@@ -16,9 +16,15 @@ namespace Common {
 
 		if ( cUserFilesPath[0] == '\0' )
 		{	
-			SHGetFolderPathA(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, cUserFilesPath);
-			PathAppendA(cUserFilesPath, *ppUserFilesDir);
-			CreateDirectoryA(cUserFilesPath, nullptr);
+			if ( SHGetFolderPathA(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, cUserFilesPath) == S_OK )
+			{
+				PathAppendA(cUserFilesPath, *ppUserFilesDir);
+				CreateDirectoryA(cUserFilesPath, nullptr);
+			}
+			else
+			{
+				strcpy_s(cUserFilesPath, "data");
+			}
 		}
 		return cUserFilesPath;
 	}

@@ -716,11 +716,17 @@ char* GetMyDocumentsPathSA()
 	static bool initPath = [&] () {	
 		char** const ppUserFilesDir = AddressByVersion<char**>(0x74503F, 0x74586F, 0x77EE50, 0x77902B, 0x778F1B);
 
-		char		cTmpPath[MAX_PATH];
+		if ( SHGetFolderPathA(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, ppTempBufPtr) == S_OK )
+		{
+			PathAppendA(ppTempBufPtr, *ppUserFilesDir);
+			CreateDirectoryA(ppTempBufPtr, nullptr);
+		}
+		else
+		{
+			strcpy_s(ppTempBufPtr, MAX_PATH, "data");
+		}
 
-		SHGetFolderPathA(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, ppTempBufPtr);
-		PathAppendA(ppTempBufPtr, *ppUserFilesDir);
-		CreateDirectoryA(ppTempBufPtr, nullptr);
+		char cTmpPath[MAX_PATH];
 
 		strcpy_s(cTmpPath, ppTempBufPtr);
 		PathAppendA(cTmpPath, "Gallery");

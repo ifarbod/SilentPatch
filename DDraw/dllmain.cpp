@@ -30,21 +30,6 @@ extern "C" HRESULT WINAPI DirectDrawCreateEx(GUID FAR *lpGUID, LPVOID *lplpDD, R
 
 char** ppUserFilesDir;
 
-char* GetMyDocumentsPath()
-{
-	static char	cUserFilesPath[MAX_PATH];
-
-	if ( cUserFilesPath[0] == '\0' )
-	{	
-		SHGetFolderPathA(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, cUserFilesPath);
-		PathAppendA(cUserFilesPath, *ppUserFilesDir);
-
-		CreateDirectoryA(cUserFilesPath, nullptr);
-	}
-	return cUserFilesPath;
-}
-
-
 void InjectHooks()
 {
 	static char		aNoDesktopMode[64];
