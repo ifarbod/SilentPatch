@@ -710,14 +710,14 @@ void DrawRect_HalfPixel_Steam(CRect& rect, const CRGBA& rgba)
 
 char* GetMyDocumentsPathSA()
 {
-	static char	cUserFilesPath[MAX_PATH];
-	static char* const ppTempBufPtr = Memory::GetVersion().version == 0 ? *AddressByRegion_10<char**>(0x744FE5) : cUserFilesPath;
-
-	static bool initPath = [&] () {	
-		char** const ppUserFilesDir = AddressByVersion<char**>(0x74503F, 0x74586F, 0x77EE50, 0x77902B, 0x778F1B);
+	static char* const pDocumentsPath = [&] () -> char* {	
+		static char	cUserFilesPath[MAX_PATH];
+		char* const ppTempBufPtr = Memory::GetVersion().version == 0 ? *AddressByRegion_10<char**>(0x744FE5) : cUserFilesPath;
 
 		if ( SHGetFolderPathA(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, ppTempBufPtr) == S_OK )
 		{
+			char** const ppUserFilesDir = AddressByVersion<char**>(0x74503F, 0x74586F, 0x77EE50, 0x77902B, 0x778F1B);
+
 			PathAppendA(ppTempBufPtr, *ppUserFilesDir);
 			CreateDirectoryA(ppTempBufPtr, nullptr);
 		}
@@ -736,9 +736,9 @@ char* GetMyDocumentsPathSA()
 		PathAppendA(cTmpPath, "User Tracks");
 		CreateDirectoryA(cTmpPath, nullptr);
 
-		return true;
+		return ppTempBufPtr;
 	} ();
-	return ppTempBufPtr;
+	return pDocumentsPath;
 }
 
 static LARGE_INTEGER	FrameTime;
