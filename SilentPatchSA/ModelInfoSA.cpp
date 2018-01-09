@@ -2,8 +2,6 @@
 #include "ModelInfoSA.h"
 
 #include <iterator>
-#include <vector>
-#include <algorithm>
 
 static void* BaseModelInfoShutdown = AddressByVersion<void*>(0x4C4D50, 0x4C4DD0, 0x4CF590);
 WRAPPER void CBaseModelInfo::Shutdown() { VARJMP(BaseModelInfoShutdown); }
@@ -20,56 +18,6 @@ bool (*CCustomCarPlateMgr::GeneratePlateText)(char* pBuf, int nLen); // Read fro
 
 CBaseModelInfo** const			ms_modelInfoPtrs = *AddressByVersion<CBaseModelInfo***>(0x509CB1, 0x4C0C96, 0x403DB7);
 const uint32_t					m_numModelInfoPtrs = *AddressByVersion<uint32_t*>(0x4C5956+2, 0, 0);
-
-static bool IsTextureRegistered( const std::vector<std::string>& registeredNames, const char* textureName )
-{
-	return std::find_if( registeredNames.begin(), registeredNames.end(), [&] ( const auto& texture ) {
-		return _stricmp(textureName, texture.c_str()) == 0;
-	}) != registeredNames.end();
-}
-
-static std::vector< std::string > registeredGrungeTextures = { "vehiclegrunge256" };
-static bool IsGrungeTexture( const char* textureName )
-{
-	return IsTextureRegistered( registeredGrungeTextures, textureName );
-}
-
-static std::vector< std::string > registeredCarplateTextures = { "carplate" };
-static bool IsCarplateTexture( const char* textureName )
-{
-	return IsTextureRegistered( registeredCarplateTextures, textureName );
-}
-
-static std::vector< std::string > registeredCarpbackTextures = { "carpback" };
-static bool IsCarpbackTexture( const char* textureName )
-{
-	return IsTextureRegistered( registeredCarpbackTextures, textureName );
-}
-
-static void RegisterTextureName( std::vector<std::string>& registeredNames, const char* textureName )
-{
-	assert( textureName != nullptr );
-	registeredNames.emplace_back( textureName );
-}
-
-extern "C" {
-
-__declspec(dllexport) void RegisterGrungeTextureName( const char* textureName )
-{
-	RegisterTextureName( registeredGrungeTextures, textureName );
-}
-
-__declspec(dllexport) void RegisterCarplateTextureName( const char* textureName )
-{
-	RegisterTextureName( registeredCarplateTextures, textureName );
-}
-
-__declspec(dllexport) void RegisterCarpbackTextureName( const char* textureName )
-{
-	RegisterTextureName( registeredCarpbackTextures, textureName );
-}
-
-}
 
 
 static RwTexture** const		ms_aDirtTextures = *AddressByVersion<RwTexture***>( 0x5D5DCC + 3, 0, 0x5F259C + 3 );
@@ -104,7 +52,7 @@ void CVehicleModelInfo::FindEditableMaterialList()
 			{
 				if ( const char* texName = RwTextureGetName(texture) )
 				{
-					if ( IsGrungeTexture(texName) )
+					if ( _stricmp(texName, "vehiclegrunge256") == 0 )
 					{
 						editableMaterials.push_back( material );
 					}
@@ -161,11 +109,11 @@ void CCustomCarPlateMgr::PollPlates( RpClump* clump, PlateMaterialsData* materia
 			{
 				if ( const char* texName = RwTextureGetName(texture) )
 				{
-					if ( IsCarplateTexture(texName) )
+					if ( _stricmp( texName, "carplate" ) == 0 )
 					{
 						carplates.push_back( material );
 					}
-					else if ( IsCarpbackTexture(texName) )
+					else if ( _stricmp( texName, "carpback" ) == 0 )
 					{
 						carpbacks.push_back( material );
 					}
