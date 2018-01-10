@@ -77,8 +77,8 @@ LRESULT CALLBACK CustomWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 }
 static auto* const pCustomWndProc = CustomWndProc;
 
-static void (* const ConstructRenderList)() = AddressByVersion<void(*)()>(0x4CA260, 0x4CA280, 0x4CA120);
 static void (* const RsMouseSetPos)(RwV2d*) = AddressByVersion<void(*)(RwV2d*)>(0x6030C0, 0x6030A0, 0x602CE0);
+static void (*orgConstructRenderList)();
 void ResetMousePos()
 {
 	if ( bGameInFocus )
@@ -86,7 +86,7 @@ void ResetMousePos()
 		RwV2d	vecPos = { RsGlobal->MaximumWidth * 0.5f, RsGlobal->MaximumHeight * 0.5f };
 		RsMouseSetPos(&vecPos);
 	}
-	ConstructRenderList();
+	orgConstructRenderList();
 }
 
 void __stdcall Recalculate(float& fX, float& fY, signed int nShadow)
@@ -265,6 +265,7 @@ void Patch_VC_10(const RECT& desktop)
 
 
 	// RsMouseSetPos call (SA style fix)
+	ReadCall( 0x4A5E45, orgConstructRenderList );
 	InjectHook(0x4A5E45, ResetMousePos);
 
 	// New wndproc
@@ -378,6 +379,7 @@ void Patch_VC_11(const RECT& desktop)
 	InjectHook(0x600469, GetTimeSinceLastFrame);
 
 	// RsMouseSetPos call (SA style fix)
+	ReadCall( 0x4A5E65, orgConstructRenderList );
 	InjectHook(0x4A5E65, ResetMousePos);
 
 	// New wndproc
@@ -482,6 +484,7 @@ void Patch_VC_Steam(const RECT& desktop)
 	InjectHook(0x6000A9, GetTimeSinceLastFrame);
 
 	// RsMouseSetPos call (SA style fix)
+	ReadCall( 0x4A5D15, orgConstructRenderList );
 	InjectHook(0x4A5D15, ResetMousePos);
 
 	// New wndproc
