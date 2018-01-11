@@ -7,6 +7,7 @@
 #include "TimerSA.h"
 #include "PedSA.h"
 #include "DelimStringReader.h"
+#include "PlayerInfoSA.h"
 
 static constexpr float PHOENIX_FLUTTER_PERIOD	= 70.0f;
 static constexpr float PHOENIX_FLUTTER_AMP		= 0.13f;
@@ -27,8 +28,6 @@ static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0x6D1680, 0x70
 WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
 static void*	varIsLawEnforcementVehicle = AddressByVersion<void*>(0x6D2370, 0x6D2BA0, 0x70D8C0);
 WRAPPER bool CVehicle::IsLawEnforcementVehicle() { VARJMP(varIsLawEnforcementVehicle); }
-
-auto			FindPlayerPed = AddressByVersion<CPed*(*)(int)>( 0x56E210, 0, 0 ); // TODO: DO
 
 void (CVehicle::*CVehicle::orgVehiclePreRender)();
 void (CAutomobile::*CAutomobile::orgAutomobilePreRender)();
@@ -472,7 +471,7 @@ CVehicle* CStoredCar::RestoreCar_SilentPatch()
 		if ( vehicle->GetClass() == VEHICLE_AUTOMOBILE || vehicle->GetClass() == VEHICLE_BIKE )
 		{
 			vehicle->SetBombOnBoard( m_bombType );
-			vehicle->SetBombOwner( FindPlayerPed(-1) );
+			vehicle->SetBombOwner( FindPlayerPed() );
 		}
 	}
 

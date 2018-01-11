@@ -314,6 +314,15 @@ public:
 	void				RenderForShadow();
 };
 
+class NOVMT CPlayerPed : public CPed
+{
+private:
+	CPed*				m_pMouseLockOnRecruitPed;
+	int					m_iMouseLockOnRecruitTimer;
+};
+
 static_assert(sizeof(CPed) == 0x79C, "Wrong size: CPed");
+static_assert(sizeof(CPlayerPed) == 0x7A4, "Wrong size: CPlayerPed");
+
 
 #endif

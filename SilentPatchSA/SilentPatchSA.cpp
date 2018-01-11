@@ -14,6 +14,7 @@
 #include "AudioHardwareSA.h"
 #include "LinkListSA.h"
 #include "PNGFile.h"
+#include "PlayerInfoSA.h"
 
 #include "WaveDecoderSA.h"
 #include "FLACDecoderSA.h"
@@ -1333,6 +1334,11 @@ namespace FakeQPC
 		lpPerformanceCount->QuadPart += AddedTime;
 		return result;
 	}
+}
+
+static CVehicle* FindPlayerVehicle_RCWrap( int playerID, bool )
+{
+	return FindPlayerVehicle( playerID, true );
 }
 
 #endif
@@ -3407,6 +3413,11 @@ void Patch_SA_10()
 	// unnamed CdStream semaphore
 	Patch( 0x406945, { 0x6A, 0x00 } ); // push 0 \ nop
 	Nop( 0x406945 + 2, 3 );
+
+
+	// Correct streaming when using RC vehicles
+	InjectHook( 0x55574B, FindPlayerEntityWithRC );
+	InjectHook( 0x5557C3, FindPlayerVehicle_RCWrap );
 }
 
 void Patch_SA_11()
