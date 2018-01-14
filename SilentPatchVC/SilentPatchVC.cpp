@@ -671,9 +671,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		{
 			std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( GetModuleHandle( nullptr ), ".text" );
 
-			if(*(DWORD*)0x667BF5 == 0xB85548EC) Patch_VC_10(desktop);
-			else if(*(DWORD*)0x667C45 == 0xB85548EC) Patch_VC_11(desktop);
-			else if (*(DWORD*)0x666BA5 == 0xB85548EC) Patch_VC_Steam(desktop);
+			const int8_t version = Memory::GetVersion().version;
+			if ( version == 0 ) Patch_VC_10(desktop);
+			else if ( version == 1 ) Patch_VC_11(desktop);
+			else if ( version == 2 ) Patch_VC_Steam(desktop);
 
 			// Y axis sensitivity only
 			else if (*(DWORD*)0x601048 == 0x5E5F5D60) Patch_VC_JP();
