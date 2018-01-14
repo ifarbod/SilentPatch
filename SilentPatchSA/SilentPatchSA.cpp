@@ -533,6 +533,16 @@ static void MountainCloudBoysFix()
 	}
 }
 
+static void SupplyLinesFix( bool isBeefyBaron )
+{
+	auto pattern = hook::make_range_pattern( uintptr_t(ScriptSpace+ScriptFileSize), uintptr_t(ScriptSpace+ScriptFileSize+ScriptMissionSize),
+		isBeefyBaron ? "B8 9E 3A 44" : "B8 1E 2F 44" ).count_hint(1);
+	if ( pattern.size() == 1 ) // 700.48 -> 10.0 (teleports car with CJ under the building instead)
+	{
+		*pattern.get(0).get<float>() = 10.0f;
+	}
+}
+
 static void QuadrupleStuntBonus()
 {
 	// IF HEIGHT_FLOAT_HJ > 4.0 -> IF HEIGHT_INT_HJ > 4
@@ -560,18 +570,27 @@ void StartNewMission_SCMFixes()
 	WipeLocalVariableMemoryForMissionScript();
 	InitializeScriptGlobals();
 
+	const int missionID = ScriptParams[0];
+
 	// INITIAL - Basketball fix, Quadruple Stunt Bonus
-	if ( ScriptParams[0] == 0 )
+	if ( missionID == 0 )
 	{
 		BasketballFix(ScriptSpace+ScriptFileSize, ScriptMissionSize);
 		QuadrupleStuntBonus();
 	}
 	// HOODS5 - Sweet's Girl fix
-	else if ( ScriptParams[0] == 18 )
+	else if ( missionID == 18 )
 		SweetsGirlFix();
 	// WUZI1 - Mountain Cloud Boys fix
-	else if ( ScriptParams[0] == 53 )
+	else if ( missionID == 53 )
 		MountainCloudBoysFix();
+	// ZERO2 - Supply Lines fix
+	else if ( missionID == 73 )
+		SupplyLinesFix( false );
+	// ZERO5 - Beefy Baron fix
+	else if ( missionID == 10 )
+		SupplyLinesFix( true );
+
 }
 
 // 1.01 kinda fixed it
