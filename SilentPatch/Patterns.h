@@ -112,25 +112,22 @@ namespace hook
 		}
 
 	public:
-		template<size_t Len>
-		pattern(const char (&pattern)[Len])
+		pattern(std::string_view pattern)
 			: pattern(getRVA<void>(0))
 		{
-			Initialize(std::string_view(pattern, Len-1));
+			Initialize(std::move(pattern));
 		}
 
-		template<size_t Len>
-		inline pattern(void* module, const char (&pattern)[Len])
+		inline pattern(void* module, std::string_view pattern)
 			: pattern(module)
 		{
-			Initialize(std::string_view(pattern, Len-1));
+			Initialize(std::move(pattern));
 		}
 
-		template<size_t Len>
-		inline pattern(uintptr_t begin, uintptr_t end, const char (&pattern)[Len])
+		inline pattern(uintptr_t begin, uintptr_t end, std::string_view pattern)
 			: m_rangeStart(begin), m_rangeEnd(end)
 		{
-			Initialize(std::string_view(pattern, Len-1));
+			Initialize(std::move(pattern));
 		}
 
 		inline pattern&& count(uint32_t expected)
@@ -182,13 +179,14 @@ namespace hook
 		}
 
 		template <typename Pred>
-		inline void for_each_result(Pred&& pred)
+		inline Pred for_each_result(Pred&& pred)
 		{
 			EnsureMatches(UINT32_MAX);
 			for ( auto it : m_matches )
 			{
 				std::forward<Pred>(pred)(it);
 			}
+			return std::forward<Pred>(pred);
 		}
 
 	public:
@@ -198,22 +196,20 @@ namespace hook
 #endif
 	};
 
-	template<size_t Len>
-	pattern make_module_pattern(void* module, const char (&bytes)[Len])
+	inline pattern make_module_pattern(void* module, std::string_view bytes)
 	{
-		return pattern(module, bytes);
+		return pattern(module, std::move(bytes));
 	}
 
-	template<size_t Len>
-	pattern make_range_pattern(uintptr_t begin, uintptr_t end, const char(&bytes)[Len])
+	inline pattern make_range_pattern(uintptr_t begin, uintptr_t end, std::string_view bytes)
 	{
-		return pattern(begin, end, bytes);
+		return pattern(begin, end, std::move(bytes));
 	}
 
-	template<typename T = void, size_t Len>
-	auto get_pattern(const char(&pattern_string)[Len], ptrdiff_t offset = 0)
+	template<typename T = void>
+	inline auto get_pattern(std::string_view pattern_string, ptrdiff_t offset = 0)
 	{
-		return pattern(pattern_string).get_first<T>(offset);
+		return pattern(std::move(pattern_string)).get_first<T>(offset);
 	}
 }
 
