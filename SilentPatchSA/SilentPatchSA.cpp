@@ -1341,6 +1341,11 @@ int32_t GetMaxExtraDirectionals( uint32_t areaID )
 	return areaID != 0 || GetFxQuality() >= 1 ? 6 : 4;
 }
 
+static CVehicle* FindPlayerVehicle_RCWrap( int playerID, bool )
+{
+	return FindPlayerVehicle( playerID, true );
+}
+
 
 #ifndef NDEBUG
 
@@ -1354,11 +1359,6 @@ namespace FakeQPC
 		lpPerformanceCount->QuadPart += AddedTime;
 		return result;
 	}
-}
-
-static CVehicle* FindPlayerVehicle_RCWrap( int playerID, bool )
-{
-	return FindPlayerVehicle( playerID, true );
 }
 
 #endif
