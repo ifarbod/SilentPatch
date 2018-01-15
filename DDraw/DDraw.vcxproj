@@ -162,6 +162,9 @@ copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\dd
       <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto 3\ddraw.dll"
 copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\ddraw.dll"</Command>
     </PostBuildEvent>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\SilentPatch\Common_ddraw.cpp" />

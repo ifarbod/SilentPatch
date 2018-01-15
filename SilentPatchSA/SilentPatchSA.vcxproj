@@ -181,6 +181,9 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <FxCompile>
       <ShaderModel>2.0</ShaderModel>
     </FxCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\SilentPatch\Patterns.cpp">

@@ -166,6 +166,9 @@
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\SilentPatchVC.asi"</Command>
     </PostBuildEvent>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\SilentPatch\Common_ddraw.h" />

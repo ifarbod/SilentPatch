@@ -211,6 +211,9 @@
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto 3\SilentPatchIII.asi"</Command>
     </PostBuildEvent>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
