@@ -88,6 +88,7 @@
       <ModuleDefinitionFile>ddraw.def</ModuleDefinitionFile>
       <SubSystem>Windows</SubSystem>
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto 3\ddraw.dll"
@@ -122,6 +123,7 @@ copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\dd
       <ModuleDefinitionFile>ddraw.def</ModuleDefinitionFile>
       <SubSystem>Windows</SubSystem>
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto 3\ddraw.dll"
@@ -157,6 +159,7 @@ copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\dd
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto 3\ddraw.dll"

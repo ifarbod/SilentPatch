@@ -133,6 +133,7 @@
       <EntryPointSymbol>
       </EntryPointSymbol>
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto 3\SilentPatchIII.asi"</Command>
@@ -170,6 +171,7 @@
       <EntryPointSymbol>
       </EntryPointSymbol>
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto 3\SilentPatchIII.asi"</Command>
@@ -207,6 +209,7 @@
       <EntryPointSymbol>
       </EntryPointSymbol>
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto 3\SilentPatchIII.asi"</Command>

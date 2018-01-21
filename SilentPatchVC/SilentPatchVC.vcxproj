@@ -92,6 +92,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\SilentPatchVC.asi"</Command>
@@ -127,6 +128,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Windows</SubSystem>
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\SilentPatchVC.asi"</Command>
@@ -162,6 +164,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Windows</SubSystem>
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\SilentPatchVC.asi"</Command>

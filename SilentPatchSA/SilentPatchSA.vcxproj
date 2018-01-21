@@ -92,6 +92,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"
@@ -132,6 +133,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Windows</SubSystem>
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"
@@ -172,6 +174,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Windows</SubSystem>
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
+      <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"
