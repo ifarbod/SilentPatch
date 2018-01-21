@@ -34,14 +34,13 @@ namespace hook
 	// sets the base to the process main base
 	void set_base();
 
-	template<typename T>
-	inline T* getRVA(uintptr_t rva)
+	inline uintptr_t getRVA(uintptr_t rva)
 	{
 		set_base();
 #ifdef _M_IX86
-		return (T*)(baseAddressDifference + 0x400000 + rva);
+		return static_cast<uintptr_t>(baseAddressDifference + 0x400000 + rva);
 #elif defined(_M_AMD64)
-		return (T*)(0x140000000 + rva);
+		return static_cast<uintptr_t>(baseAddressDifference(0x140000000 + rva);
 #endif
 	}
 
@@ -78,20 +77,12 @@ namespace hook
 
 		bool m_matched = false;
 
-		union
-		{
-			void* m_module;
-			struct
-			{
-				uintptr_t m_rangeStart;
-				uintptr_t m_rangeEnd;
-			};
-		};
-
-	protected:
-		void Initialize(std::string_view pattern);
+		uintptr_t m_rangeStart;
+		uintptr_t m_rangeEnd;
 
 	private:
+		void Initialize(std::string_view pattern);
+
 		bool ConsiderHint(uintptr_t offset);
 
 		void EnsureMatches(uint32_t maxCount);
@@ -101,8 +92,8 @@ namespace hook
 			return m_matches[index];
 		}
 
-		inline pattern(void* module)
-			: m_module(module), m_rangeEnd(0)
+		inline pattern(uintptr_t module)
+			: pattern( module, 0 )
 		{
 		}
 
@@ -113,13 +104,13 @@ namespace hook
 
 	public:
 		pattern(std::string_view pattern)
-			: pattern(getRVA<void>(0))
+			: pattern(getRVA(0))
 		{
 			Initialize(std::move(pattern));
 		}
 
 		inline pattern(void* module, std::string_view pattern)
-			: pattern(module)
+			: pattern(reinterpret_cast<uintptr_t>(module))
 		{
 			Initialize(std::move(pattern));
 		}

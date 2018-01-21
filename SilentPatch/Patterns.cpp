@@ -119,8 +119,8 @@ public:
 		return (TReturn*)(m_begin + rva);
 	}
 
-	explicit executable_meta(void* module)
-		: m_begin((uintptr_t)module)
+	explicit executable_meta(uintptr_t module)
+		: m_begin(module)
 	{
 		PIMAGE_DOS_HEADER dosHeader = getRVA<IMAGE_DOS_HEADER>(0);
 		PIMAGE_NT_HEADERS ntHeader = getRVA<IMAGE_NT_HEADERS>(dosHeader->e_lfanew);
@@ -149,7 +149,9 @@ void pattern::Initialize(std::string_view pattern)
 
 #if PATTERNS_USE_HINTS
 	// if there's hints, try those first
-	if (m_module == GetModuleHandle(nullptr))
+#if PATTERNS_CAN_SERIALIZE_HINTS
+	if (m_rangeStart == reinterpret_cast<uintptr_t>(GetModuleHandle(nullptr)))
+#endif
 	{
 		auto range = getHints().equal_range(m_hash);
 
@@ -179,7 +181,7 @@ void pattern::EnsureMatches(uint32_t maxCount)
 	}
 
 	// scan the executable for code
-	executable_meta executable = m_rangeStart != 0 && m_rangeEnd != 0 ? executable_meta(m_rangeStart, m_rangeEnd) : executable_meta(m_module);
+	executable_meta executable = m_rangeStart != 0 && m_rangeEnd != 0 ? executable_meta(m_rangeStart, m_rangeEnd) : executable_meta(m_rangeStart);
 
 	auto matchSuccess = [&] (uintptr_t address)
 	{
