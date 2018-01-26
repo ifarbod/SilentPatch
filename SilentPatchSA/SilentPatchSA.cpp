@@ -3442,6 +3442,10 @@ void Patch_SA_10()
 
 	// Fixed CPlayerInfo assignment operator
 	InjectHook( 0x45DEF0, &CPlayerInfo::operator=, PATCH_JUMP );
+
+
+	// Fixed triangle above recruitable peds' heads
+	Patch<uint8_t>( 0x60BC52 + 2, 8 ); // GANG2
 }
 
 void Patch_SA_11()
