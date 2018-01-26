@@ -3438,6 +3438,10 @@ void Patch_SA_10()
 	// Correct streaming when using RC vehicles
 	InjectHook( 0x55574B, FindPlayerEntityWithRC );
 	InjectHook( 0x5557C3, FindPlayerVehicle_RCWrap );
+
+
+	// Fixed CPlayerInfo assignment operator
+	InjectHook( 0x45DEF0, &CPlayerInfo::operator=, PATCH_JUMP );
 }
 
 void Patch_SA_11()

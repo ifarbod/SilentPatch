@@ -38,3 +38,9 @@ CVehicle* FindPlayerVehicle( int playerID, bool withRC )
 	}
 	return vehicle;
 }
+
+CPlayerInfo& CPlayerInfo::operator=( const CPlayerInfo& rhs )
+{
+	memcpy( this, &rhs, sizeof(*this) );
+	return *this;
+}
