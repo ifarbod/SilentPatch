@@ -3497,6 +3497,15 @@ void Patch_SA_10()
 	// Credits =)
 	ReadCall( 0x5AF87A, Credits::PrintCreditText );
 	InjectHook( 0x5AF8A4, Credits::PrintSPCredits );
+
+
+	// Fixed ammo from SCM
+	{
+		void* pGiveWeapon;
+		ReadCall( 0x47D335, pGiveWeapon );
+		CPed::orgGiveWeapon = *(decltype(CPed::orgGiveWeapon)*)&pGiveWeapon;
+		InjectHook( 0x47D335, &CPed::GiveWeapon_SP );
+	}
 }
 
 void Patch_SA_11()

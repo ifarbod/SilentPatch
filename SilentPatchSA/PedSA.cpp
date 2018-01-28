@@ -14,6 +14,8 @@ WRAPPER CTaskSimpleJetPack* CPedIntelligence::GetTaskJetPack() const { VARJMP(va
 static void* varRenderJetPack = AddressByVersion<void*>(0x67F6A0, 0x67FEC0, 0x6AB110);
 WRAPPER void CTaskSimpleJetPack::RenderJetPack(CPed* pPed) { WRAPARG(pPed); VARJMP(varRenderJetPack); }
 
+void (CPed::*CPed::orgGiveWeapon)(uint32_t weapon, uint32_t ammo, bool flag);
+
 RwObject* GetFirstObject(RwFrame* pFrame)
 {
 	RwObject*	pObject = nullptr;
@@ -90,4 +92,10 @@ void CPed::RenderForShadow()
 	auto*	pJetPackTask = pPedIntelligence->GetTaskJetPack();
 	if ( pJetPackTask )
 		pJetPackTask->RenderJetPack(this);
+}
+
+void CPed::GiveWeapon_SP(uint32_t weapon, uint32_t ammo, bool flag)
+{
+ 	if ( ammo == 0 ) ammo = 1;
+	(this->*(orgGiveWeapon))( weapon, ammo, flag );
 }

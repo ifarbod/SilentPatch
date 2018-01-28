@@ -312,6 +312,9 @@ public:
 
 	void				RenderWeapon(bool bMuzzleFlash, bool bForShadow);
 	void				RenderForShadow();
+
+	static void (CPed::*orgGiveWeapon)(uint32_t weapon, uint32_t ammo, bool flag);
+	void				GiveWeapon_SP( uint32_t weapon, uint32_t ammo, bool flag );
 };
 
 class NOVMT CPlayerPed : public CPed
