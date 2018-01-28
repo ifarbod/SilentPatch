@@ -22,7 +22,7 @@ enum eDecoderType
 };
 
 // 1.0/Steam structure
-class NOVMT CAEDataStreamOld final : public IStream
+class NOVMT CAEDataStreamOld final : IStream
 {
 private:
 	HANDLE			hHandle;
@@ -62,27 +62,6 @@ public:
 	inline HANDLE	GetFile() const
 		{ return hHandle; }
 
-	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject) override = 0;
-    virtual ULONG STDMETHODCALLTYPE AddRef(void) override = 0;
-    virtual ULONG STDMETHODCALLTYPE Release(void) override = 0;
-
-    // ISequentialStream Interface
-public:
-    virtual HRESULT STDMETHODCALLTYPE Read(void* pv, ULONG cb, ULONG* pcbRead) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE Write(void const* pv, ULONG cb, ULONG* pcbWritten) override = 0;
-
-    // IStream Interface
-public:
-    virtual HRESULT STDMETHODCALLTYPE SetSize(ULARGE_INTEGER) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE CopyTo(IStream*, ULARGE_INTEGER, ULARGE_INTEGER*, ULARGE_INTEGER*) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE Commit(DWORD) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE Revert(void) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE LockRegion(ULARGE_INTEGER, ULARGE_INTEGER, DWORD) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE UnlockRegion(ULARGE_INTEGER, ULARGE_INTEGER, DWORD) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE Clone(IStream **) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE Seek(LARGE_INTEGER liDistanceToMove, DWORD dwOrigin, ULARGE_INTEGER* lpNewFilePointer) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE Stat(STATSTG* pStatstg, DWORD grfStatFlag) override = 0;
-
 public:
 	// Custom methods
 	DWORD		Seek(LONG nToSeek, DWORD nPoint);
@@ -97,7 +76,7 @@ public:
 };
 
 // 1.01 structure
-class NOVMT CAEDataStreamNew final : public IStream
+class NOVMT CAEDataStreamNew final : IStream
 {
 private:
 	void*			pUselessMalloc;
@@ -138,27 +117,6 @@ public:
 		{ return dwID; }
 	inline HANDLE	GetFile() const
 		{ return hHandle; }
-
-	virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, void ** ppvObject) override = 0;
-    virtual ULONG STDMETHODCALLTYPE AddRef(void) override = 0;
-    virtual ULONG STDMETHODCALLTYPE Release(void) override = 0;
-
-    // ISequentialStream Interface
-public:
-    virtual HRESULT STDMETHODCALLTYPE Read(void* pv, ULONG cb, ULONG* pcbRead) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE Write(void const* pv, ULONG cb, ULONG* pcbWritten) override = 0;
-
-    // IStream Interface
-public:
-    virtual HRESULT STDMETHODCALLTYPE SetSize(ULARGE_INTEGER) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE CopyTo(IStream*, ULARGE_INTEGER, ULARGE_INTEGER*, ULARGE_INTEGER*) override = 0; 
-    virtual HRESULT STDMETHODCALLTYPE Commit(DWORD) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE Revert(void) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE LockRegion(ULARGE_INTEGER, ULARGE_INTEGER, DWORD) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE UnlockRegion(ULARGE_INTEGER, ULARGE_INTEGER, DWORD) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE Clone(IStream **) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE Seek(LARGE_INTEGER liDistanceToMove, DWORD dwOrigin, ULARGE_INTEGER* lpNewFilePointer) override = 0;
-    virtual HRESULT STDMETHODCALLTYPE Stat(STATSTG* pStatstg, DWORD grfStatFlag) override = 0;
 
 public:
 	// Custom methods
