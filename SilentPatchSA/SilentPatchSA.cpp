@@ -1346,6 +1346,52 @@ static CVehicle* FindPlayerVehicle_RCWrap( int playerID, bool )
 	return FindPlayerVehicle( playerID, true );
 }
 
+// ============= Credits! =============
+namespace Credits
+{
+	static void (*PrintCreditText)(float scaleX, float scaleY, const char* text, unsigned int& pos, float timeOffset, bool isHeader);
+
+	static void PrintCreditSpace( float scale, unsigned int& pos )
+	{
+		pos += static_cast<unsigned int>( scale * 25.0f );
+	}
+
+	constexpr char xvChar(const char ch)
+	{
+		constexpr uint8_t xv = __LINE__ & 0xFF;
+		return ch ^ xv;
+	}
+
+	constexpr char operator "" _xv(const char ch)
+	{
+		return xvChar(ch);
+	}
+
+	static void PrintSPCredits( float scaleX, float scaleY, const char* text, unsigned int& pos, float timeOffset, bool isHeader )
+	{
+		// Original text we intercepted
+		PrintCreditText( scaleX, scaleY, text, pos, timeOffset, isHeader );
+		PrintCreditSpace( 1.5f, pos );
+
+		{
+			char spText[] = { 'A'_xv, 'N'_xv, 'D'_xv, '\0'_xv };
+
+			for ( auto& ch : spText ) ch = xvChar(ch);
+			PrintCreditText( scaleX, scaleY, spText, pos, timeOffset, true );
+		}
+
+		PrintCreditSpace( 1.5f, pos );
+
+		{
+			char spText[] = { 'A'_xv, 'd'_xv, 'r'_xv, 'i'_xv, 'a'_xv, 'n'_xv, ' '_xv, '\"'_xv, 'S'_xv, 'i'_xv, 'l'_xv, 'e'_xv, 'n'_xv, 't'_xv, '\"'_xv, ' '_xv,
+							'Z'_xv, 'd'_xv, 'a'_xv, 'n'_xv, 'o'_xv, 'w'_xv, 'i'_xv, 'c'_xv, 'z'_xv, '\0'_xv };
+
+			for ( auto& ch : spText ) ch = xvChar(ch);
+			PrintCreditText( scaleX, scaleY, spText, pos, timeOffset, false );
+		}
+	}
+}
+
 
 #ifndef NDEBUG
 
@@ -3446,6 +3492,11 @@ void Patch_SA_10()
 
 	// Fixed triangle above recruitable peds' heads
 	Patch<uint8_t>( 0x60BC52 + 2, 8 ); // GANG2
+
+
+	// Credits =)
+	ReadCall( 0x5AF87A, Credits::PrintCreditText );
+	InjectHook( 0x5AF8A4, Credits::PrintSPCredits );
 }
 
 void Patch_SA_11()
