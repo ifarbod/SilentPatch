@@ -219,6 +219,13 @@ void __declspec(naked) AutoPilotTimerFix_VC()
 	}
 }
 
+static void (__thiscall *orgGiveWeapon)( void* ped, unsigned int weapon, unsigned int ammo, bool flag );
+static void __fastcall GiveWeapon_SP( void* ped, void*, unsigned int weapon, unsigned int ammo, bool flag )
+{
+	if ( ammo == 0 ) ammo = 1;
+	orgGiveWeapon( ped, weapon, ammo, flag );
+}
+
 void Patch_VC_10(const RECT& desktop)
 {
 	using namespace Memory;
@@ -652,6 +659,17 @@ void Patch_VC_Common()
 
 		Patch<uint8_t>( do_processing.get<uint8_t*>(1), 0xBF ); // movzx   eax, word ptr [ebx+28h] -> movsx   eax, word ptr [ebx+28h]
 		Patch<uint8_t>( do_processing.get<uint8_t*>(7), 0x74 ); // jge -> jz
+	}
+
+
+	// Fixed ammo from SCM
+	{
+		auto give_weapon = get_pattern( "6B C0 2E 6A 01 56 8B 3C", 0x15 );
+		ReadCall( give_weapon, orgGiveWeapon );
+		InjectHook( give_weapon, GiveWeapon_SP );
+
+		give_weapon = get_pattern( "89 F9 6A 01 55 50 E8", 6 );
+		InjectHook( give_weapon, GiveWeapon_SP );
 	}
 
 }
