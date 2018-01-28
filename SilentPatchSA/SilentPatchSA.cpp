@@ -1358,7 +1358,7 @@ namespace Credits
 
 	constexpr char xvChar(const char ch)
 	{
-		constexpr uint8_t xv = __LINE__ & 0xFF;
+		constexpr uint8_t xv = 0x27;
 		return ch ^ xv;
 	}
 
