@@ -1,10 +1,9 @@
 #include "StdAfxSA.h"
 #include "PedSA.h"
+#include "VehicleSA.h"
 
 static void* varGetWeaponSkill = AddressByVersion<void*>(0x5E6580, 0x5E6DA0, 0x6039F0);
 WRAPPER unsigned char CPed::GetWeaponSkill() { VARJMP(varGetWeaponSkill); }
-static void* varResetGunFlashAlpha = AddressByVersion<void*>(0x5DF4E0, 0x5DFD00, 0x5FC210);
-WRAPPER void CPed::ResetGunFlashAlpha() { VARJMP(varResetGunFlashAlpha); }
 static void* varSetGunFlashAlpha = AddressByVersion<void*>(0x5DF400, 0x5DFC20, 0x5FC120);
 WRAPPER void CPed::SetGunFlashAlpha(bool bSecondWeapon) { WRAPARG(bSecondWeapon); VARJMP(varSetGunFlashAlpha); }
 
@@ -24,6 +23,18 @@ RwObject* GetFirstObject(RwFrame* pFrame)
 		return nullptr;
 	} );
 	return pObject;
+}
+
+void CPed::ResetGunFlashAlpha()
+{
+	if ( m_pMuzzleFlashFrame != nullptr )
+	{
+		if ( RpAtomic* atomic = reinterpret_cast<RpAtomic*>(GetFirstObject(m_pMuzzleFlashFrame)) )
+		{
+			RpAtomicSetFlags(atomic, 0);
+			CVehicle::SetComponentAtomicAlpha(atomic, 0);
+		}
+	}
 }
 
 void CPed::RenderWeapon(bool bMuzzleFlash, bool bForShadow)
