@@ -51,6 +51,10 @@ public:
 								EnumerateInternal( modules, cbNeeded / sizeof(HMODULE) );
 							}
 						}
+						else
+						{
+							EnumerateInternal( modules, INITIAL_SIZE / sizeof(HMODULE) );
+						}
 					}
 					else
 					{
