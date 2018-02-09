@@ -37,13 +37,18 @@ enum
 
 namespace Memory
 {
-	struct PatternAndRange
+	struct PatternAndOffset
 	{
+		PatternAndOffset( std::string_view pattern, ptrdiff_t offset = 0 )
+			: pattern(std::move(pattern)), offset(offset)
+		{
+		}
+
 		std::string_view pattern;
 		ptrdiff_t offset;
 	};
 
-	using AddrVariant = std::variant<uintptr_t, PatternAndRange>;
+	using AddrVariant = std::variant<uintptr_t, PatternAndOffset>;
 
 	namespace internal
 	{
@@ -77,7 +82,7 @@ namespace Memory
 {
 	namespace internal
 	{
-		inline uintptr_t HandlePattern( const PatternAndRange& pattern )
+		inline uintptr_t HandlePattern( const PatternAndOffset& pattern )
 		{
 			void* addr = hook::get_pattern( pattern.pattern, pattern.offset );
 			return reinterpret_cast<uintptr_t>(addr);
@@ -274,7 +279,7 @@ namespace Memory
 			switch ( bVer )
 			{
 			case 1:
-				if ( std::holds_alternative<PatternAndRange>(address11) ) return HandlePattern( std::get<PatternAndRange>(address11) );
+				if ( std::holds_alternative<PatternAndOffset>(address11) ) return HandlePattern( std::get<PatternAndOffset>(address11) );
 				else
 				{
 					const uintptr_t addr = std::get<uintptr_t>(address11);
@@ -290,7 +295,7 @@ namespace Memory
 					return AdjustAddress_11(addr);
 				}
 			case 2:
-				if ( std::holds_alternative<PatternAndRange>(addressSteam) ) return HandlePattern( std::get<PatternAndRange>(addressSteam) );
+				if ( std::holds_alternative<PatternAndOffset>(addressSteam) ) return HandlePattern( std::get<PatternAndOffset>(addressSteam) );
 				else
 				{
 					const uintptr_t addr = std::get<uintptr_t>(addressSteam);
@@ -306,7 +311,7 @@ namespace Memory
 			case 3:
 				return GetDummy();
 			case 4:
-				if ( std::holds_alternative<PatternAndRange>(addressNewsteamR2) ) return HandlePattern( std::get<PatternAndRange>(addressNewsteamR2) );
+				if ( std::holds_alternative<PatternAndOffset>(addressNewsteamR2) ) return HandlePattern( std::get<PatternAndOffset>(addressNewsteamR2) );
 				else
 				{
 					const uintptr_t addr = std::get<uintptr_t>(addressNewsteamR2);
@@ -319,7 +324,7 @@ namespace Memory
 					return DynBaseAddress(addr);
 				}
 			case 5:
-				if ( std::holds_alternative<PatternAndRange>(addressNewsteamR2_LV) ) return HandlePattern( std::get<PatternAndRange>(addressNewsteamR2_LV) );
+				if ( std::holds_alternative<PatternAndOffset>(addressNewsteamR2_LV) ) return HandlePattern( std::get<PatternAndOffset>(addressNewsteamR2_LV) );
 				else
 				{
 					const uintptr_t addr = std::get<uintptr_t>(addressNewsteamR2_LV);
@@ -332,7 +337,7 @@ namespace Memory
 					return DynBaseAddress(addr);
 				}
 			default:
-				if ( std::holds_alternative<PatternAndRange>(address10) ) return HandlePattern( std::get<PatternAndRange>(address10) );
+				if ( std::holds_alternative<PatternAndOffset>(address10) ) return HandlePattern( std::get<PatternAndOffset>(address10) );
 				else
 				{
 					const uintptr_t addr = std::get<uintptr_t>(address10);
@@ -371,7 +376,7 @@ namespace Memory
 
 #if defined _GTA_III || defined _GTA_VC
 
-		inline uintptr_t AddressByVersion(Memory::AddrVariant address10, Memory::AddrVariant address11, Memory::AddrVariant addressSteam)
+		inline uintptr_t AddressByVersion(AddrVariant address10, AddrVariant address11, AddrVariant addressSteam)
 		{
 			InitializeVersions();
 
@@ -380,7 +385,7 @@ namespace Memory
 			switch ( bVer )
 			{
 			case 1:
-				if ( std::holds_alternative<PatternAndRange>(address11) ) return HandlePattern( std::get<PatternAndRange>(address11) );
+				if ( std::holds_alternative<PatternAndOffset>(address11) ) return HandlePattern( std::get<PatternAndOffset>(address11) );
 				else
 				{
 					const uintptr_t addr = std::get<uintptr_t>(address11);
@@ -390,7 +395,7 @@ namespace Memory
 					return addr;
 				}
 			case 2:
-				if ( std::holds_alternative<PatternAndRange>(addressSteam) ) return HandlePattern( std::get<PatternAndRange>(addressSteam) );
+				if ( std::holds_alternative<PatternAndOffset>(addressSteam) ) return HandlePattern( std::get<PatternAndOffset>(addressSteam) );
 				else
 				{
 					const uintptr_t addr = std::get<uintptr_t>(addressSteam);
@@ -400,7 +405,7 @@ namespace Memory
 					return addr;
 				}
 			default:
-				if ( std::holds_alternative<PatternAndRange>(address10) ) return HandlePattern( std::get<PatternAndRange>(address10) );
+				if ( std::holds_alternative<PatternAndOffset>(address10) ) return HandlePattern( std::get<PatternAndOffset>(address10) );
 				else
 				{
 					const uintptr_t addr = std::get<uintptr_t>(address10);
