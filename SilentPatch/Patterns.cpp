@@ -62,7 +62,7 @@ static auto& getHints()
 }
 #endif
 
-static void TransformPattern(std::string_view pattern, std::string& data, std::string& mask)
+static void TransformPattern(std::string_view pattern, std::basic_string<uint8_t>& data, std::basic_string<uint8_t>& mask)
 {
 	uint8_t tempDigit = 0;
 	bool tempFlag = false;
@@ -83,7 +83,7 @@ static void TransformPattern(std::string_view pattern, std::string& data, std::s
 		else if (ch == '?')
 		{
 			data.push_back(0);
-			mask.push_back('?');
+			mask.push_back(0);
 		}
 		else if ((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F') || (ch >= 'a' && ch <= 'f'))
 		{
@@ -100,7 +100,7 @@ static void TransformPattern(std::string_view pattern, std::string& data, std::s
 				tempFlag = false;
 
 				data.push_back(tempDigit);
-				mask.push_back('x');
+				mask.push_back(0xFF);
 			}
 		}
 	}
@@ -194,10 +194,10 @@ void pattern::EnsureMatches(uint32_t maxCount)
 		return (m_matches.size() == maxCount);
 	};
 
-	const uint8_t* pattern = reinterpret_cast<const uint8_t*>(m_bytes.c_str());
-	const char* mask = m_mask.c_str();
-	size_t maskSize = m_mask.size();
-	size_t lastWild = m_mask.find_last_of('?');
+	const uint8_t* pattern = m_bytes.data();
+	const uint8_t* mask = m_mask.data();
+	const size_t maskSize = m_mask.size();
+	const size_t lastWild = m_mask.find_last_not_of(uint8_t(0xFF));
 
 	ptrdiff_t Last[256];
 
@@ -216,7 +216,7 @@ void pattern::EnsureMatches(uint32_t maxCount)
 		uint8_t* ptr = reinterpret_cast<uint8_t*>(i);
 		ptrdiff_t j = maskSize - 1;
 
-		while((j >= 0) && (mask[j] == '?' || pattern[j] == ptr[j])) j--;
+		while((j >= 0) && pattern[j] == (ptr[j] & mask[j])) j--;
 
 		if(j < 0)
 		{
@@ -236,20 +236,15 @@ void pattern::EnsureMatches(uint32_t maxCount)
 
 bool pattern::ConsiderHint(uintptr_t offset)
 {
-	char* ptr = reinterpret_cast<char*>(offset);
+	uint8_t* ptr = reinterpret_cast<uint8_t*>(offset);
 
 #if PATTERNS_CAN_SERIALIZE_HINTS
-	const char* pattern = m_bytes.c_str();
-	const char* mask = m_mask.c_str();
+	const uint8_t* pattern = m_bytes.data();
+	const uint8_t* mask = m_mask.data();
 
 	for (size_t i = 0, j = m_mask.size(); i < j; i++)
 	{
-		if (mask[i] == '?')
-		{
-			continue;
-		}
-
-		if (pattern[i] != ptr[i])
+		if (pattern[i] != (ptr[i] & mask[i]))
 		{
 			return false;
 		}
