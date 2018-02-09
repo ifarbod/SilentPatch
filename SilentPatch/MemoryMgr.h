@@ -24,6 +24,9 @@
 #ifndef _MEMORY_NO_CRT
 #include <initializer_list>
 #include <iterator>
+#include <variant>
+
+#include "Patterns.h"
 #endif
 
 enum
@@ -34,6 +37,14 @@ enum
 
 namespace Memory
 {
+	struct PatternAndRange
+	{
+		std::string_view pattern;
+		ptrdiff_t offset;
+	};
+
+	using AddrVariant = std::variant<uintptr_t, PatternAndRange>;
+
 	namespace internal
 	{
 		inline signed char* GetVer()
@@ -66,6 +77,12 @@ namespace Memory
 {
 	namespace internal
 	{
+		inline uintptr_t HandlePattern( const PatternAndRange& pattern )
+		{
+			void* addr = hook::get_pattern( pattern.pattern, pattern.offset );
+			return reinterpret_cast<uintptr_t>(addr);
+		}
+
 #if defined _GTA_III
 		inline void InitializeVersions()
 		{
@@ -76,33 +93,6 @@ namespace Memory
 				if (*(uint32_t*)0x5C1E75 == 0xB85548EC) *bVer = 0;
 				else if (*(uint32_t*)0x5C2135 == 0xB85548EC) *bVer = 1;
 				else if (*(uint32_t*)0x5C6FD5 == 0xB85548EC) *bVer = 2;
-			}
-		}
-
-		// This function initially detects III version then chooses the address basing on game version
-		inline uintptr_t AddressByVersion(uintptr_t address10, uintptr_t address11, uintptr_t addressSteam)
-		{
-			InitializeVersions();
-
-			signed char		bVer = *GetVer();
-
-			switch ( bVer )
-			{
-			case 1:
-		#ifdef assert
-				assert(address11);
-		#endif
-				return address11;
-			case 2:
-		#ifdef assert
-				assert(addressSteam);
-		#endif
-				return addressSteam;
-			default:
-		#ifdef assert
-				assert(address10);
-		#endif
-				return address10;
 			}
 		}
 
@@ -117,33 +107,6 @@ namespace Memory
 				if (*(uint32_t*)0x667BF5 == 0xB85548EC) *bVer = 0;
 				else if (*(uint32_t*)0x667C45 == 0xB85548EC) *bVer = 1;
 				else if (*(uint32_t*)0x666BA5 == 0xB85548EC) *bVer = 2;
-			}
-		}
-
-		// This function initially detects VC version then chooses the address basing on game version
-		inline uintptr_t AddressByVersion(uintptr_t address10, uintptr_t address11, uintptr_t addressSteam)
-		{
-			InitializeVersions();
-
-			signed char	bVer = *GetVer();
-
-			switch ( bVer )
-			{
-			case 1:
-		#ifdef assert
-				assert(address11);
-		#endif
-				return address11;
-			case 2:
-		#ifdef assert
-				assert(addressSteam);
-		#endif
-				return addressSteam;
-			default:
-		#ifdef assert
-				assert(address10);
-		#endif
-				return address10;
 			}
 		}
 
@@ -244,7 +207,7 @@ namespace Memory
 				if ( TryMatch_30() ) return;
 				if ( TryMatch_newsteam_r1() ) return;
 				if ( TryMatch_newsteam_r2() ) return;
-				if ( TryMatch_newsteam_r2_lv() ) return;	
+				if ( TryMatch_newsteam_r2_lv() ) return;
 			}
 		}
 
@@ -302,7 +265,7 @@ namespace Memory
 			return address11;
 		}
 
-		inline uintptr_t AddressByVersion(uintptr_t address10, uintptr_t address11, uintptr_t addressSteam, uintptr_t addressNewsteamR2, uintptr_t addressNewsteamR2_LV)
+		inline uintptr_t AddressByVersion(AddrVariant address10, AddrVariant address11, AddrVariant addressSteam, AddrVariant addressNewsteamR2, AddrVariant addressNewsteamR2_LV)
 		{
 			InitializeVersions();
 
@@ -311,49 +274,74 @@ namespace Memory
 			switch ( bVer )
 			{
 			case 1:
+				if ( std::holds_alternative<PatternAndRange>(address11) ) return HandlePattern( std::get<PatternAndRange>(address11) );
+				else
+				{
+					const uintptr_t addr = std::get<uintptr_t>(address11);
 		#ifdef assert
-				assert(address11);
+					assert(addr);
 		#endif
 
-				// Safety measures - if null, return dummy var pointer to prevent a crash
-				if ( address11 == 0 )
-					return GetDummy();
+					// Safety measures - if null, return dummy var pointer to prevent a crash
+					if ( addr == 0 )
+						return GetDummy();
 
-				// Adjust to US if needed
-				return AdjustAddress_11(address11);
+					// Adjust to US if needed
+					return AdjustAddress_11(addr);
+				}
 			case 2:
+				if ( std::holds_alternative<PatternAndRange>(addressSteam) ) return HandlePattern( std::get<PatternAndRange>(addressSteam) );
+				else
+				{
+					const uintptr_t addr = std::get<uintptr_t>(addressSteam);
 		#ifdef assert
-				assert(addressSteam);
+					assert(addr);
 		#endif
-				// Safety measures - if null, return dummy var pointer to prevent a crash
-				if ( addressSteam == 0 )
-					return GetDummy();
+					// Safety measures - if null, return dummy var pointer to prevent a crash
+					if ( addr == 0 )
+						return GetDummy();
 
-				return addressSteam;
+					return addr;
+				}
 			case 3:
 				return GetDummy();
 			case 4:
+				if ( std::holds_alternative<PatternAndRange>(addressNewsteamR2) ) return HandlePattern( std::get<PatternAndRange>(addressNewsteamR2) );
+				else
+				{
+					const uintptr_t addr = std::get<uintptr_t>(addressNewsteamR2);
 		#ifdef assert
-				assert(addressNewsteamR2);
+					assert(addr);
 		#endif
-				if ( addressNewsteamR2 == 0 )
-					return GetDummy();
+					if ( addr == 0 )
+						return GetDummy();
 
-				return DynBaseAddress(addressNewsteamR2);
+					return DynBaseAddress(addr);
+				}
 			case 5:
+				if ( std::holds_alternative<PatternAndRange>(addressNewsteamR2_LV) ) return HandlePattern( std::get<PatternAndRange>(addressNewsteamR2_LV) );
+				else
+				{
+					const uintptr_t addr = std::get<uintptr_t>(addressNewsteamR2_LV);
 		#ifdef assert
-				assert(addressNewsteamR2_LV);
+					assert(addr);
 		#endif
-				if ( addressNewsteamR2_LV == 0 )
-					return GetDummy();
+					if ( addr == 0 )
+						return GetDummy();
 
-				return DynBaseAddress(addressNewsteamR2_LV);
+					return DynBaseAddress(addr);
+				}
 			default:
+				if ( std::holds_alternative<PatternAndRange>(address10) ) return HandlePattern( std::get<PatternAndRange>(address10) );
+				else
+				{
+					const uintptr_t addr = std::get<uintptr_t>(address10);
 		#ifdef assert
-				assert(address10);
+					assert(addr);
 		#endif
-				// Adjust to EU if needed
-				return AdjustAddress_10(address10);
+					// Adjust to EU if needed
+					return AdjustAddress_10(addr);
+				}
 			}
 		}
 
@@ -381,13 +369,58 @@ namespace Memory
 
 #endif
 
+#if defined _GTA_III || defined _GTA_VC
+
+		inline uintptr_t AddressByVersion(Memory::AddrVariant address10, Memory::AddrVariant address11, Memory::AddrVariant addressSteam)
+		{
+			InitializeVersions();
+
+			signed char		bVer = *GetVer();
+
+			switch ( bVer )
+			{
+			case 1:
+				if ( std::holds_alternative<PatternAndRange>(address11) ) return HandlePattern( std::get<PatternAndRange>(address11) );
+				else
+				{
+					const uintptr_t addr = std::get<uintptr_t>(address11);
+#ifdef assert
+					assert(addr);
+#endif
+					return addr;
+				}
+			case 2:
+				if ( std::holds_alternative<PatternAndRange>(addressSteam) ) return HandlePattern( std::get<PatternAndRange>(addressSteam) );
+				else
+				{
+					const uintptr_t addr = std::get<uintptr_t>(addressSteam);
+#ifdef assert
+					assert(addr);
+#endif
+					return addr;
+				}
+			default:
+				if ( std::holds_alternative<PatternAndRange>(address10) ) return HandlePattern( std::get<PatternAndRange>(address10) );
+				else
+				{
+					const uintptr_t addr = std::get<uintptr_t>(address10);
+#ifdef assert
+					assert(addr);
+#endif
+					return addr;
+				}
+			}
+		}
+
+#endif
+
 	}
 }
 
 #if defined _GTA_III || defined _GTA_VC
 
 template<typename T>
-inline T AddressByVersion(uintptr_t address10, uintptr_t address11, uintptr_t addressSteam)
+inline T AddressByVersion(Memory::AddrVariant address10, Memory::AddrVariant address11, Memory::AddrVariant addressSteam)
 {
 	return T(Memory::internal::AddressByVersion( address10, address11, addressSteam ));
 }
@@ -395,15 +428,21 @@ inline T AddressByVersion(uintptr_t address10, uintptr_t address11, uintptr_t ad
 #elif defined _GTA_SA
 
 template<typename T>
-inline T AddressByVersion(uintptr_t address10, uintptr_t address11, uintptr_t addressSteam)
+inline T AddressByVersion(Memory::AddrVariant address10, Memory::AddrVariant address11, Memory::AddrVariant addressSteam)
 {
-	return T(Memory::internal::AddressByVersion( address10, address11, addressSteam, 0, 0 ));
+	return T(Memory::internal::AddressByVersion( std::move(address10), std::move(address11), std::move(addressSteam), 0, 0 ));
 }
 
 template<typename T>
-inline T AddressByVersion(uintptr_t address10, uintptr_t address11, uintptr_t addressSteam, uintptr_t addressNewsteamR2, uintptr_t addressNewsteamR2_LV)
+inline T AddressByVersion(Memory::AddrVariant address10, Memory::AddrVariant address11, Memory::AddrVariant addressSteam, Memory::AddrVariant addressNewsteamR2, Memory::AddrVariant addressNewsteamR2_LV)
 {
-	return T(Memory::internal::AddressByVersion( address10, address11, addressSteam, addressNewsteamR2, addressNewsteamR2_LV ));
+	return T(Memory::internal::AddressByVersion( std::move(address10), std::move(address11), std::move(addressSteam), std::move(addressNewsteamR2), std::move(addressNewsteamR2_LV) ));
+}
+
+template<typename T>
+inline T AddressByVersion(Memory::AddrVariant address10, Memory::AddrVariant addressNewsteam)
+{
+	return T(Memory::internal::AddressByVersion( std::move(address10), 0, 0, addressNewsteam, addressNewsteam ));
 }
 
 template<typename T>
@@ -681,7 +720,7 @@ namespace ScopedUnprotect
 			{
 				DWORD dwOldProtect;
 				VirtualProtect( std::get<0>(it), std::get<1>(it), std::get<2>(it), &dwOldProtect );
-			}		
+			}
 		}
 
 	protected:
@@ -696,7 +735,7 @@ namespace ScopedUnprotect
 				DWORD dwOldProtect;
 
 				VirtualQuery( (LPCVOID)(BaseAddress + QueriedSize), &MemoryInf, sizeof(MemoryInf) );
-				if ( MemoryInf.State == MEM_COMMIT && (MemoryInf.Type & MEM_IMAGE) != 0 && 
+				if ( MemoryInf.State == MEM_COMMIT && (MemoryInf.Type & MEM_IMAGE) != 0 &&
 					(MemoryInf.Protect & (PAGE_EXECUTE_READWRITE|PAGE_EXECUTE_WRITECOPY|PAGE_READWRITE|PAGE_WRITECOPY)) == 0 )
 				{
 					const bool wasExecutable = (MemoryInf.Protect & (PAGE_EXECUTE|PAGE_EXECUTE_READ)) != 0;
