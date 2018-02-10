@@ -376,7 +376,7 @@ namespace Memory
 
 #if defined _GTA_III || defined _GTA_VC
 
-		inline uintptr_t AddressByVersion(AddrVariant address10, AddrVariant address11, AddrVariant addressSteam)
+		inline uintptr_t AddressByVersion(uintptr_t address10, uintptr_t address11, uintptr_t addressSteam)
 		{
 			InitializeVersions();
 
@@ -385,35 +385,20 @@ namespace Memory
 			switch ( bVer )
 			{
 			case 1:
-				if ( std::holds_alternative<PatternAndOffset>(address11) ) return HandlePattern( std::get<PatternAndOffset>(address11) );
-				else
-				{
-					const uintptr_t addr = std::get<uintptr_t>(address11);
 #ifdef assert
-					assert(addr);
+				assert(address11);
 #endif
-					return addr;
-				}
+				return address11;
 			case 2:
-				if ( std::holds_alternative<PatternAndOffset>(addressSteam) ) return HandlePattern( std::get<PatternAndOffset>(addressSteam) );
-				else
-				{
-					const uintptr_t addr = std::get<uintptr_t>(addressSteam);
 #ifdef assert
-					assert(addr);
+				assert(addressSteam);
 #endif
-					return addr;
-				}
+				return addressSteam;
 			default:
-				if ( std::holds_alternative<PatternAndOffset>(address10) ) return HandlePattern( std::get<PatternAndOffset>(address10) );
-				else
-				{
-					const uintptr_t addr = std::get<uintptr_t>(address10);
 #ifdef assert
-					assert(addr);
+				assert(address10);
 #endif
-					return addr;
-				}
+				return address10;
 			}
 		}
 
@@ -425,7 +410,7 @@ namespace Memory
 #if defined _GTA_III || defined _GTA_VC
 
 template<typename T>
-inline T AddressByVersion(Memory::AddrVariant address10, Memory::AddrVariant address11, Memory::AddrVariant addressSteam)
+inline T AddressByVersion(uintptr_t address10, uintptr_t address11, uintptr_t addressSteam)
 {
 	return T(Memory::internal::AddressByVersion( address10, address11, addressSteam ));
 }
