@@ -1037,6 +1037,7 @@ bool ReadDoubleRearWheels(const wchar_t* pPath)
 	return listedAny;
 }
 
+// 1.0 ONLY!
 bool __stdcall CheckDoubleRWheelsList( void* modelInfo, uint8_t* handlingData )
 {
 	static void* lastModelInfo = nullptr;
@@ -1045,7 +1046,8 @@ bool __stdcall CheckDoubleRWheelsList( void* modelInfo, uint8_t* handlingData )
 	if ( modelInfo == lastModelInfo ) return lastResult;
 	lastModelInfo = modelInfo;
 
-	int32_t modelID = std::distance( ms_modelInfoPtrs, std::find( ms_modelInfoPtrs, ms_modelInfoPtrs+m_numModelInfoPtrs, modelInfo ) );
+	const uint32_t numModelInfoPtrs = *(uint32_t*)0x4C5956+2;
+	int32_t modelID = std::distance( ms_modelInfoPtrs, std::find( ms_modelInfoPtrs, ms_modelInfoPtrs+numModelInfoPtrs, modelInfo ) );
 
 	auto it = std::find_if( doubleRearWheelsList.begin(), doubleRearWheelsList.end(), [modelID]( const auto& item ) {
 			return item.first == modelID;
@@ -1072,7 +1074,7 @@ CVehicleModelInfo* __fastcall VehicleModelInfoCtor(CVehicleModelInfo* me)
 	return me;
 }
 
-static void (*RemoveFromInterestingVehicleList)(CVehicle*) = AddressByVersion<void(*)(CVehicle*)>( 0x423ED0, 0, 0 ); // TODO: DO
+static void (*RemoveFromInterestingVehicleList)(CVehicle*) = AddressByVersion<void(*)(CVehicle*)>( 0x423ED0, Memory::PatternAndOffset("39 10 75 06 C7 00 00 00 00 00 83 C0 04 49 75 F0 5D C3", -10) );
 static void (*orgRecordVehicleDeleted)(CVehicle*);
 static void RecordVehicleDeleted_AndRemoveFromVehicleList( CVehicle* vehicle )
 {
@@ -1083,11 +1085,11 @@ static void RecordVehicleDeleted_AndRemoveFromVehicleList( CVehicle* vehicle )
 static int currDisplayedSplash_ForLastSplash = 0;
 static void DoPCScreenChange_Mod()
 {
-	static int& currDisplayedSplash = **AddressByVersion<int**>( 0x590B22 + 1, 0, 0 ); // TODO: DO
+	static int& currDisplayedSplash = **AddressByVersion<int**>( 0x590B22 + 1, Memory::PatternAndOffset("8B 51 20 6A 01 6A 0C FF D2 83 C4 08 E8", 17 + 1) );
 
 	static const int numSplashes = [] () -> int {
-		RwTexture** begin = *AddressByVersion<RwTexture***>( 0x590CB4 + 1, 0, 0 ); // TODO: DO
-		RwTexture** end = *AddressByVersion<RwTexture***>( 0x590CCE + 2, 0, 0 ); // TODO: DO
+		RwTexture** begin = *AddressByVersion<RwTexture***>( 0x590CB4 + 1, Memory::PatternAndOffset("8D 49 00 83 3E 00 74 07 8B CE E8", -5 + 1) );
+		RwTexture** end = *AddressByVersion<RwTexture***>( 0x590CCE + 2, Memory::PatternAndOffset("8D 49 00 83 3E 00 74 07 8B CE E8", 18 + 2) );
 		return std::distance( begin, end );
 	} () - 1;
 
@@ -1107,9 +1109,9 @@ static CVector curVecToSun;
 static void (*orgSetLightsWithTimeOfDayColour)( RpWorld* );
 static void SetLightsWithTimeOfDayColour_SilentPatch( RpWorld* world )
 {
-	static CVector* const VectorToSun = *AddressByVersion<CVector**>( 0x6FC5B7 + 3, 0, 0 ); // TODO: DO
-	static int& CurrentStoredValue = **AddressByVersion<int**>( 0x6FC632 + 1, 0, 0 ); // TODO: DO
-	static CVector& vecDirnLightToSun = **AddressByVersion<CVector**>( 0x5BC040 + 2, 0, 0 ); // TODO: Do
+	static CVector* const VectorToSun = *AddressByVersion<CVector**>( 0x6FC5B7 + 3, Memory::PatternAndOffset("DC 0D ? ? ? ? 8D 04 40 8B 0C 85", 9 + 3) );
+	static int& CurrentStoredValue = **AddressByVersion<int**>( 0x6FC632 + 1, Memory::PatternAndOffset("84 C0 0F 84 AB 01 00 00 A1", 8 + 1) );
+	static CVector& vecDirnLightToSun = **AddressByVersion<CVector**>( 0x5BC040 + 2, Memory::PatternAndOffset("E8 ? ? ? ? D9 5D F8 D9 45 F8 D8 4D F4 D9 1D", 15 + 2) );
 
 	curVecToSun = bUseAaronSun ? VectorToSun[CurrentStoredValue] : vecDirnLightToSun;
 	orgSetLightsWithTimeOfDayColour( world );

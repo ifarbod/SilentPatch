@@ -323,7 +323,6 @@ public:
 };
 
 extern CBaseModelInfo** const		ms_modelInfoPtrs;
-extern const uint32_t				m_numModelInfoPtrs;
 
 void RemapDirt( CVehicleModelInfo* modelInfo, uint32_t dirtID );
 

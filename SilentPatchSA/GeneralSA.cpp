@@ -9,7 +9,7 @@
 static void* EntityRender = AddressByVersion<void*>(0x534310, 0x5347B0, 0x545B30);
 WRAPPER void CEntity::Render() { VARJMP(EntityRender); }
 
-static void* varEntityIsVisible = AddressByVersion<void*>( 0x536BC0, 0, 0 ); // TODO
+static void* varEntityIsVisible = AddressByVersion<void*>( 0x536BC0, Memory::PatternAndOffset("0B F6 41 1C 80 74 05 E9", -5) );
 WRAPPER bool CEntity::IsVisible() { VARJMP(varEntityIsVisible); }
 
 static void* varInvertRaster = AddressByVersion<void*>(0x705660, 0x705E90, 0x7497A0);
