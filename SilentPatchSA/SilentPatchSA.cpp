@@ -2605,7 +2605,11 @@ BOOL InjectDelayedPatches_10()
 BOOL InjectDelayedPatches_11()
 {
 #ifdef NDEBUG
-	MessageBoxW( nullptr, L"You're using a 1.01 executable which is no longer supported by SilentPatch!\n\nI have no idea if anyone was still using it, so if you do - send me an e-mail!", L"SilentPatch", MB_OK | MB_ICONWARNING );
+	MessageBoxW( nullptr, L"You're using a 1.01 executable which is no longer supported by SilentPatch!\n\n"
+				L"Since this EXE is used by only a few people, I recommend downgrading back to 1.0 - you gain full compatibility with mods "
+				L"and any relevant fixes 1.01 brings are backported to 1.0 by SilentPatch anyway.\n\n"
+				L"To downgrade to 1.0, just find a 1.0 EXE and use it. If you are having issues with this, feel free to send me an e-mail!",
+				L"SilentPatch", MB_OK | MB_ICONWARNING );
 #endif
 
 	if ( !IsAlreadyRunning() )
@@ -3488,8 +3492,11 @@ void Patch_SA_10()
 	InjectHook( 0x5557C3, FindPlayerVehicle_RCWrap );
 
 
+	// TODO: Verify this fix, might be causing crashes atm and too risky to include
+#if 0
 	// Fixed CPlayerInfo assignment operator
 	InjectHook( 0x45DEF0, &CPlayerInfo::operator=, PATCH_JUMP );
+#endif
 
 
 	// Fixed triangle above recruitable peds' heads
