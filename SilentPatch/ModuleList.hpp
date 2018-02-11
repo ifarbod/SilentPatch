@@ -148,7 +148,7 @@ private:
 					const wchar_t* dotPos = wcsrchr( nameBegin, '.' );
 					if ( dotPos != nullptr )
 					{
-						m_moduleList.emplace_back( *modules, std::wstring( nameBegin, std::distance( nameBegin, dotPos ) ) );
+						m_moduleList.emplace_back( *modules, std::wstring( nameBegin, dotPos ) );
 					}
 					else
 					{
