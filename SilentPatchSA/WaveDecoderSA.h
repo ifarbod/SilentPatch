@@ -8,7 +8,7 @@ private:
 	uint32_t	m_dataSize;
 	uint32_t	m_offsetToData;
 	size_t		m_maxBlockSize = 0;
-	void*		m_buffer = nullptr;
+	uint8_t*	m_buffer = nullptr;
 
 	struct FormatChunk
 	{
