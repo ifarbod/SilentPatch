@@ -3,6 +3,7 @@
 
 #include "GeneralSA.h"
 #include "ModelInfoSA.h"
+#include "PedSA.h"
 
 enum eVehicleType
 {
@@ -124,7 +125,10 @@ class NOVMT CVehicle	: public CPhysical
 protected:
 	BYTE			__pad1[752];
 	CVehicleFlags	m_nVehicleFlags;
-	BYTE			__pad2[108];
+	BYTE			__pad2[48];
+	CPed*			m_pDriver;
+	CPed*			m_apPassengers[8];
+	BYTE			__pad8[24];
 	float			m_fGasPedal;
 	float			m_fBrakePedal;
 	uint8_t			m_VehicleCreatedBy;
@@ -150,6 +154,8 @@ public:
 						{ return pDamagingEntity; }
 	uint32_t		GetClass() const
 						{ return m_dwVehicleClass; }
+	CPed*			GetDriver() const
+						{ return m_pDriver;}
 
 	void			SetBombOnBoard( uint32_t bombOnBoard )
 						{ m_BombOnBoard = bombOnBoard; }

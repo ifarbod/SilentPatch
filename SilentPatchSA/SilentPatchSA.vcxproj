@@ -200,6 +200,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Master|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="AudioHardwareSA.cpp" />
+    <ClCompile Include="FireManagerSA.cpp" />
     <ClCompile Include="FLACDecoderSA.cpp" />
     <ClCompile Include="GeneralSA.cpp" />
     <ClCompile Include="ModelInfoSA.cpp" />
@@ -233,6 +234,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClInclude Include="..\SilentPatch\resource1.h" />
     <ClInclude Include="..\SilentPatch\TheFLAUtils.h" />
     <ClInclude Include="AudioHardwareSA.h" />
+    <ClInclude Include="FireManagerSA.h" />
     <ClInclude Include="FLACDecoderSA.h" />
     <ClInclude Include="GeneralSA.h" />
     <ClInclude Include="LinkListSA.h" />

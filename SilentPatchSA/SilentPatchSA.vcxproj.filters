@@ -69,6 +69,9 @@
     <ClCompile Include="PlayerInfoSA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FireManagerSA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\SilentPatch\MemoryMgr.h">
@@ -159,6 +162,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PlayerInfoSA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FireManagerSA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

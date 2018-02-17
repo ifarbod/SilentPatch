@@ -15,6 +15,7 @@
 #include "LinkListSA.h"
 #include "PNGFile.h"
 #include "PlayerInfoSA.h"
+#include "FireManagerSA.h"
 
 #include "WaveDecoderSA.h"
 #include "FLACDecoderSA.h"
@@ -1390,6 +1391,23 @@ namespace Credits
 
 			for ( auto& ch : spText ) ch = xvChar(ch);
 			PrintCreditText( scaleX, scaleY, spText, pos, timeOffset, false );
+		}
+	}
+}
+
+// ============= Bicycle fire fix =============
+namespace BicycleFire
+{
+	CPed* GetVehicleDriver( const CVehicle* vehicle )
+	{
+		return vehicle->GetDriver();
+	}
+
+	void __fastcall DoStuffToGoOnFire_NullAndPlayerCheck( CPed* ped )
+	{
+		if ( ped != nullptr && ped->IsPlayer() )
+		{
+			static_cast<CPlayerPed*>(ped)->DoStuffToGoOnFire();
 		}
 	}
 }
@@ -3514,6 +3532,25 @@ void Patch_SA_10()
 		ReadCall( 0x47D335, pGiveWeapon );
 		CPed::orgGiveWeapon = *(decltype(CPed::orgGiveWeapon)*)&pGiveWeapon;
 		InjectHook( 0x47D335, &CPed::GiveWeapon_SP );
+	}
+
+	// Fixed bicycle on fire - instead of CJ being set on fire, bicycle's driver is
+	{
+		using namespace BicycleFire;
+
+		Patch( 0x53A984, { 0x90, 0x57 } );
+		Patch( 0x53A9A7, { 0x90, 0x57 } );
+		InjectHook( 0x53A986, GetVehicleDriver );
+		InjectHook( 0x53A9A9, GetVehicleDriver );
+
+		void* func;
+		ReadCall( 0x53A990, func );
+		CPlayerPed::orgDoStuffToGoOnFire = *(decltype(CPlayerPed::orgDoStuffToGoOnFire)*)&func;
+		InjectHook( 0x53A990, DoStuffToGoOnFire_NullAndPlayerCheck );
+
+		ReadCall( 0x53A9B7, func );
+		CFireManager::orgStartFire = *(decltype(CFireManager::orgStartFire)*)&func;
+		InjectHook( 0x53A9B7, &CFireManager::StartFire_NullEntityCheck );
 	}
 }
 

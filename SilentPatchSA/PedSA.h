@@ -306,6 +306,9 @@ public:
 	inline void			SetTargetHeading(float fVal)
 		{ m_fTargetRotation = fVal; }
 
+	bool				IsPlayer() const
+		{ return pedType == 0 || pedType == 1; }
+
 	unsigned char		GetWeaponSkill();
 	void				ResetGunFlashAlpha();
 	void				SetGunFlashAlpha(bool bSecondWeapon);
@@ -322,6 +325,14 @@ class NOVMT CPlayerPed : public CPed
 private:
 	CPed*				m_pMouseLockOnRecruitPed;
 	int					m_iMouseLockOnRecruitTimer;
+
+public:
+	static void (CPlayerPed::*orgDoStuffToGoOnFire)();
+
+	void DoStuffToGoOnFire()
+	{
+		(this->*orgDoStuffToGoOnFire)();
+	}
 };
 
 static_assert(sizeof(CPed) == 0x79C, "Wrong size: CPed");
