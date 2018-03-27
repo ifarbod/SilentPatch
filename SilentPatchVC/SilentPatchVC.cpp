@@ -22,12 +22,6 @@ struct RsGlobalType
 	void*			pad;
 };
 
-struct RwV2d
-{
-    float x;   /**< X value*/
-    float y;   /**< Y value */
-};
-
 static const void*		RosieAudioFix_JumpBack;
 
 static void (*PrintString)(float,float,const wchar_t*);
