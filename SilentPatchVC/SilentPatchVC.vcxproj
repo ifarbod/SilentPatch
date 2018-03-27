@@ -181,6 +181,7 @@
     <ClInclude Include="..\SilentPatch\StdAfx.h" />
     <ClInclude Include="..\SilentPatch\StoredCar.h" />
     <ClInclude Include="..\SilentPatch\Timer.h" />
+    <ClInclude Include="ModelInfoVC.h" />
     <ClInclude Include="VehicleVC.h" />
   </ItemGroup>
   <ItemGroup>
@@ -201,6 +202,7 @@
     </ClCompile>
     <ClCompile Include="..\SilentPatch\StoredCar.cpp" />
     <ClCompile Include="..\SilentPatch\Timer.cpp" />
+    <ClCompile Include="ModelInfoVC.cpp" />
     <ClCompile Include="SilentPatchVC.cpp" />
     <ClCompile Include="StdAfxVC.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

@@ -1,6 +1,8 @@
 #ifndef __GENERAL
 #define __GENERAL
 
+#include <cstdint>
+
 class CRGBA
 {
 public:

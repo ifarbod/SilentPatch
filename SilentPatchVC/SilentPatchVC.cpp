@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "Common_ddraw.h"
 #include "General.h"
+#include "ModelInfoVC.h"
 
 #include <memory>
 
@@ -143,6 +144,17 @@ void __declspec(naked) SubtitlesShadowFix()
 		push	eax
 		call	Recalculate
 		jmp		SubtitlesShadowFix_JumpBack
+	}
+}
+
+void __declspec(naked) CreateInstance_BikeFix()
+{
+	_asm
+	{
+		push	eax
+		mov		ecx, ebp
+		call	CVehicleModelInfo::GetExtrasFrame
+		retn
 	}
 }
 
@@ -664,6 +676,13 @@ void Patch_VC_Common()
 
 		give_weapon = get_pattern( "89 F9 6A 01 55 50 E8", 6 );
 		InjectHook( give_weapon, GiveWeapon_SP );
+	}
+
+
+	// Extras working correctly on bikes
+	{
+		auto createInstance = get_pattern( "89 C1 8B 41 04" );
+		InjectHook( createInstance, CreateInstance_BikeFix, PATCH_CALL );
 	}
 
 }
