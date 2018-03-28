@@ -361,6 +361,25 @@ static void __fastcall GiveWeapon_SP( void* ped, void*, unsigned int weapon, uns
 	orgGiveWeapon( ped, weapon, ammo );
 }
 
+
+// ============= Keyboard latency input fix =============
+namespace KeyboardInputFix
+{
+	static void* NewKeyState;
+	static void* OldKeyState;
+	static void* TempKeyState;
+	static constexpr size_t objSize = 0x270;
+	static void (__fastcall *orgClearSimButtonPressCheckers)(void*);
+	void __fastcall ClearSimButtonPressCheckers(void* pThis)
+	{
+		memcpy( OldKeyState, NewKeyState, objSize );
+		memcpy( NewKeyState, TempKeyState, objSize );
+
+		orgClearSimButtonPressCheckers(pThis);
+	}
+}
+
+
 void Patch_III_10(const RECT& desktop)
 {
 	using namespace Memory;
@@ -858,6 +877,24 @@ void Patch_III_Common()
 
 		give_weapon = get_pattern( "89 C7 A1 ? ? ? ? 55 89 F9 50", 11 );
 		InjectHook( give_weapon, GiveWeapon_SP );
+	}
+
+
+	// Decreased keyboard input latency
+	{
+		using namespace KeyboardInputFix;
+
+		auto updatePads = pattern( "BE ? ? ? ? BF ? ? ? ? A5" ).get_one();
+		void* jmpDest = get_pattern( "66 A3 ? ? ? ? 5F", 6 );
+		void* simButtonCheckers = get_pattern( "84 DB 74 11 6A 00", -0x24 );
+
+		NewKeyState = *updatePads.get<void*>( 1 );
+		OldKeyState = *updatePads.get<void*>( 5 + 1 );
+		TempKeyState = *updatePads.get<void*>( 0x244 + 1 );
+
+		ReadCall( simButtonCheckers, orgClearSimButtonPressCheckers );
+		InjectHook( simButtonCheckers, ClearSimButtonPressCheckers );
+		InjectHook( updatePads.get<void>( 10 ), jmpDest, PATCH_JUMP );
 	}
 }
 

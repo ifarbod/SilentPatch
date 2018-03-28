@@ -1413,6 +1413,24 @@ namespace BicycleFire
 }
 
 
+// ============= Keyboard latency input fix =============
+namespace KeyboardInputFix
+{
+	static void* NewKeyState;
+	static void* OldKeyState;
+	static void* TempKeyState;
+	static size_t objSize;
+	static void (__fastcall *orgClearSimButtonPressCheckers)(void*);
+	void __fastcall ClearSimButtonPressCheckers(void* pThis)
+	{
+		memcpy( OldKeyState, NewKeyState, objSize );
+		memcpy( NewKeyState, TempKeyState, objSize );
+
+		orgClearSimButtonPressCheckers(pThis);
+	}
+}
+
+
 #ifndef NDEBUG
 
 // ============= QPC spoof for verifying high timer issues =============
@@ -3552,6 +3570,22 @@ void Patch_SA_10()
 		CFireManager::orgStartFire = *(decltype(CFireManager::orgStartFire)*)&func;
 		InjectHook( 0x53A9B7, &CFireManager::StartFire_NullEntityCheck );
 	}
+
+	
+	// Decreased keyboard input latency
+	{
+		using namespace KeyboardInputFix;
+
+		NewKeyState = *(void**)( 0x541E21 + 1 );
+		OldKeyState = *(void**)( 0x541E26 + 1 );
+		TempKeyState = *(void**)( 0x541E32 + 1 );
+		objSize = *(uint32_t*)( 0x541E1C + 1 ) * 4;
+
+		ReadCall( 0x541DEB, orgClearSimButtonPressCheckers );
+		InjectHook( 0x541DEB, ClearSimButtonPressCheckers );
+		Nop( 0x541E2B, 2 );
+		Nop( 0x541E3C, 2 );
+	}
 }
 
 void Patch_SA_11()
@@ -4823,6 +4857,26 @@ void Patch_SA_NewSteam_Common()
 		void* drawScriptSprites = get_pattern( "81 EC 94 01 00 00 53 56 57 50", 10 );
 		ReadCall( drawScriptSprites, orgDrawScriptSpritesAndRectangles );
 		InjectHook( drawScriptSprites, DrawScriptSpritesAndRectangles );
+	}
+
+
+	// TODO: OTHER FIXES NEED TO GO HERE
+
+	// Decreased keyboard input latency
+	{
+		using namespace KeyboardInputFix;
+
+		auto updatePads = pattern( "E8 ? ? ? ? B9 ? ? ? ? BE" ).get_one(); // 0x552DB7
+
+		NewKeyState = *updatePads.get<void*>( 10 + 1 );
+		OldKeyState = *updatePads.get<void*>( 15 + 1 );
+		TempKeyState = *updatePads.get<void*>( 27 + 1 );
+		objSize = *updatePads.get<uint32_t>( 5 + 1 ) * 4;
+
+		ReadCall( updatePads.get<void>( -44 ), orgClearSimButtonPressCheckers );
+		InjectHook( updatePads.get<void>( -44 ), ClearSimButtonPressCheckers );
+		Nop( updatePads.get<void>( 20 ), 2 );
+		Nop( updatePads.get<void>( 37 ), 2 );
 	}
 }
 
