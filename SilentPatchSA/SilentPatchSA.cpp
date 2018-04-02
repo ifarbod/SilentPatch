@@ -3456,9 +3456,7 @@ void Patch_SA_10()
 
 
 	// Fixed animations for boats
-	void* vehiclePreRender;
-	ReadCall( 0x6F119E, vehiclePreRender );
-	CVehicle::orgVehiclePreRender = *(decltype(CVehicle::orgVehiclePreRender)*)(&vehiclePreRender);
+	ReadCall( 0x6F119E, CVehicle::orgVehiclePreRender );
 	InjectHook( 0x6F119E, &CBoat::PreRender_SilentPatch );
 
 
