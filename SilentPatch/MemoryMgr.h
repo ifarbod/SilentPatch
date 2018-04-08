@@ -249,12 +249,15 @@ namespace Memory
 
 		inline uintptr_t AdjustAddress_10(uintptr_t address10)
 		{
-			if ( *GetEuropean() && address10 > 0x7466D0 )
-			{
-				if ( address10 < 0x7BA940 )
-					address10 += 0x50;
-				else
-					address10 += 0x40;
+			if ( *GetEuropean() )
+			{		
+				if ( address10 >= 0x746720 && address10 < 0x857000 )
+				{
+					if ( address10 >= 0x7BA940 )
+						address10 += 0x40;
+					else
+						address10 += 0x50;
+				}
 			}
 			return address10;
 		}
