@@ -2299,6 +2299,7 @@ BOOL InjectDelayedPatches_10()
 		const bool		bHasImVehFt = moduleList.Get(L"ImVehFt") != nullptr;
 		const bool		bSAMP = moduleList.Get(L"samp") != nullptr;
 		const bool		bSARender = moduleList.Get(L"SARender") != nullptr;
+		const bool		bOutfit = moduleList.Get(L"outfit") != nullptr;
 
 		const HMODULE skygfxModule = moduleList.Get( L"skygfx" );
 		const HMODULE modloaderModule = moduleList.Get( L"modloader" );
@@ -2331,8 +2332,11 @@ BOOL InjectDelayedPatches_10()
 
 
 			// Weapons rendering
-			InjectHook(0x5E7859, RenderWeapon);
-			InjectHook(0x732F30, RenderWeaponPedsForPC, PATCH_JUMP);
+			if ( !bOutfit )
+			{
+				InjectHook(0x5E7859, RenderWeapon);
+				InjectHook(0x732F30, RenderWeaponPedsForPC, PATCH_JUMP);
+			}
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == 1 )
@@ -2666,6 +2670,7 @@ BOOL InjectDelayedPatches_11()
 		bool		bHasImVehFt = moduleList.Get(L"ImVehFt") != nullptr;
 		bool		bSAMP = moduleList.Get(L"samp") != nullptr;
 		bool		bSARender = moduleList.Get(L"SARender") != nullptr;
+		const bool	bOutfit = moduleList.Get(L"outfit") != nullptr;
 
 		ReadRotorFixExceptions(wcModulePath);
 
@@ -2692,8 +2697,11 @@ BOOL InjectDelayedPatches_11()
 			Patch(0x734C8E, RenderBigVehicleActomic);
 
 			// Weapons rendering
-			InjectHook(0x5E8079, RenderWeapon);
-			InjectHook(0x733760, RenderWeaponPedsForPC, PATCH_JUMP);
+			if ( !bOutfit )
+			{
+				InjectHook(0x5E8079, RenderWeapon);
+				InjectHook(0x733760, RenderWeaponPedsForPC, PATCH_JUMP);
+			}
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == 1 )
@@ -2833,6 +2841,7 @@ BOOL InjectDelayedPatches_Steam()
 		bool		bHasImVehFt = moduleList.Get(L"ImVehFt") != nullptr;
 		bool		bSAMP = moduleList.Get(L"samp") != nullptr;
 		bool		bSARender = moduleList.Get(L"SARender") != nullptr;
+		const bool	bOutfit = moduleList.Get(L"outfit") != nullptr;
 
 		ReadRotorFixExceptions(wcModulePath);
 
@@ -2860,8 +2869,11 @@ BOOL InjectDelayedPatches_Steam()
 
 
 			// Weapons rendering
-			InjectHook(0x604DD9, RenderWeapon);
-			InjectHook(0x76D170, RenderWeaponPedsForPC, PATCH_JUMP);
+			if ( !bOutfit )
+			{
+				InjectHook(0x604DD9, RenderWeapon);
+				InjectHook(0x76D170, RenderWeaponPedsForPC, PATCH_JUMP);
+			}
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == 1 )
