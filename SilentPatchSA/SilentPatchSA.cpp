@@ -372,10 +372,10 @@ RpAtomic* RenderBigVehicleActomic(RpAtomic* pAtomic, float)
 {
 	const char*		pNodeName = GetFrameNodeName(RpAtomicGetFrame(pAtomic));
 
-	if ( _strnicmp(pNodeName, "moving_prop", 11) == 0 )
+	if ( _stricmp(pNodeName, "moving_prop") == 0 )
 		return MovingPropellerRender(pAtomic);
 
-	if ( _strnicmp(pNodeName, "static_prop", 11) == 0 )
+	if ( _stricmp(pNodeName, "static_prop") == 0 )
 		return StaticPropellerRender(pAtomic);
 
 	return AtomicDefaultRenderCallBack(pAtomic);
@@ -1655,18 +1655,16 @@ void __declspec(naked) PlaneAtomicRendererSetup()
 		call	GetFrameNodeName
 		//push	eax
 		mov		[esp+8+8], eax
-		push	11
 		push	offset aStaticProp
 		push	eax
-		call	strncmp
-		add		esp, 10h
+		call	_stricmp
+		add		esp, 0Ch
 		test	eax, eax
 		jz		PlaneAtomicRendererSetup_Alpha
-		push	11
 		push	offset aMovingProp
-		push	[esp+12+8]
-		call	strncmp
-		add		esp, 0Ch
+		push	[esp+12+4]
+		call	_stricmp
+		add		esp, 8
 		test	eax, eax
 		jnz		PlaneAtomicRendererSetup_NoAlpha
 
@@ -1700,27 +1698,24 @@ void __declspec(naked) HunterTest()
 		setnz	al
 		movzx	di, al
 
-		push	10
 		push	offset aWindscreen
 		push	ebp
-		call	strncmp
-		add		esp, 0Ch
+		call	_stricmp
+		add		esp, 8
 		test	eax, eax
 		jz		HunterTest_RegularAlpha
 
-		push	13
 		push	offset aStaticRotor2
 		push	ebp
-		call	strncmp
-		add		esp, 0Ch
+		call	_stricmp
+		add		esp, 8
 		test	eax, eax
 		jz		HunterTest_StaticRotor2AlphaSet
 
-		push	12
 		push	offset aStaticRotor
 		push	ebp
-		call	strncmp
-		add		esp, 0Ch
+		call	_stricmp
+		add		esp, 8
 		test	eax, eax
 		jz		HunterTest_StaticRotorAlphaSet
 
@@ -1733,11 +1728,10 @@ void __declspec(naked) HunterTest()
 HunterTest_DoorTest:
 		cmp		nCachedCRC, 0x45D0B41C
 		jnz		HunterTest_RegularAlpha
-		push	10
 		push	offset aDoorDummy
 		push	ebp
-		call	strncmp
-		add		esp, 0Ch
+		call	_stricmp
+		add		esp, 8
 		test	eax, eax
 		jnz		HunterTest_RegularAlpha
 		push	RenderVehicleHiDetailAlphaCB_HunterDoor
