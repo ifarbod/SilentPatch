@@ -224,3 +224,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 	return TRUE;
 }
+
+extern "C" __declspec(dllexport)
+uint32_t GetBuildNumber()
+{
+	return (SILENTPATCH_REVISION_ID << 8) | SILENTPATCH_BUILD_ID;
+}
