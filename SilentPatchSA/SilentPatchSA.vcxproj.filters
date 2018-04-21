@@ -167,6 +167,9 @@
     <ClInclude Include="FireManagerSA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\SilentPatch\MemoryMgr.GTA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\SilentPatch\SilentPatch.rc">

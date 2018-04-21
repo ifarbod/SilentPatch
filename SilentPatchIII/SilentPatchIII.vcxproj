@@ -43,6 +43,7 @@
     <ClInclude Include="..\SilentPatch\Common.h" />
     <ClInclude Include="..\SilentPatch\Common_ddraw.h" />
     <ClInclude Include="..\SilentPatch\General.h" />
+    <ClInclude Include="..\SilentPatch\MemoryMgr.GTA.h" />
     <ClInclude Include="..\SilentPatch\MemoryMgr.h" />
     <ClInclude Include="..\SilentPatch\Patterns.h" />
     <ClInclude Include="..\SilentPatch\StdAfx.h" />

@@ -18,6 +18,7 @@
 #include <rtpng.h>
 
 #include "MemoryMgr.h"
+#include "MemoryMgr.GTA.h"
 #include "Maths.h"
 #include "rwpred.hpp"
 

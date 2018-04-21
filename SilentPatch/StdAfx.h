@@ -9,5 +9,6 @@
 #include <cstdio>
 
 #include "MemoryMgr.h"
+#include "MemoryMgr.GTA.h"
 
 #define DISABLE_FLA_DONATION_WINDOW		0
