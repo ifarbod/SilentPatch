@@ -3514,9 +3514,7 @@ void Patch_SA_10()
 
 	// Fixed bomb ownership/bombs saving for bikes
 	{
-		void* pRestoreCar;
-		ReadCall( 0x44856A, pRestoreCar );
-		CStoredCar::orgRestoreCar = *(decltype(CStoredCar::orgRestoreCar)*)&pRestoreCar;
+		ReadCall( 0x44856A, CStoredCar::orgRestoreCar );
 		InjectHook( 0x44856A, &CStoredCar::RestoreCar_SilentPatch );
 		InjectHook( 0x4485DB, &CStoredCar::RestoreCar_SilentPatch );
 	}
@@ -3550,9 +3548,7 @@ void Patch_SA_10()
 
 	// Fixed ammo from SCM
 	{
-		void* pGiveWeapon;
-		ReadCall( 0x47D335, pGiveWeapon );
-		CPed::orgGiveWeapon = *(decltype(CPed::orgGiveWeapon)*)&pGiveWeapon;
+		ReadCall( 0x47D335, CPed::orgGiveWeapon );
 		InjectHook( 0x47D335, &CPed::GiveWeapon_SP );
 	}
 
@@ -3565,13 +3561,10 @@ void Patch_SA_10()
 		InjectHook( 0x53A986, GetVehicleDriver );
 		InjectHook( 0x53A9A9, GetVehicleDriver );
 
-		void* func;
-		ReadCall( 0x53A990, func );
-		CPlayerPed::orgDoStuffToGoOnFire = *(decltype(CPlayerPed::orgDoStuffToGoOnFire)*)&func;
+		ReadCall( 0x53A990, CPlayerPed::orgDoStuffToGoOnFire );
 		InjectHook( 0x53A990, DoStuffToGoOnFire_NullAndPlayerCheck );
 
-		ReadCall( 0x53A9B7, func );
-		CFireManager::orgStartFire = *(decltype(CFireManager::orgStartFire)*)&func;
+		ReadCall( 0x53A9B7, CFireManager::orgStartFire );
 		InjectHook( 0x53A9B7, &CFireManager::StartFire_NullEntityCheck );
 	}
 

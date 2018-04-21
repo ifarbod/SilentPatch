@@ -15,9 +15,7 @@ namespace Common {
 			{
 				auto addr = get_pattern( "83 3C 33 00 74 19 89 F9 E8", 8 );
 
-				void* pRestoreCar;
-				ReadCall( addr, pRestoreCar );
-				CStoredCar::orgRestoreCar = *(decltype(CStoredCar::orgRestoreCar)*)&pRestoreCar;
+				ReadCall( addr, CStoredCar::orgRestoreCar );
 				InjectHook( addr, &CStoredCar::RestoreCar_SilentPatch );
 			}
 		}
