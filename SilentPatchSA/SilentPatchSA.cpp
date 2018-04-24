@@ -1430,6 +1430,20 @@ namespace KeyboardInputFix
 	}
 }
 
+// ============= handling.cfg name matching fix =============
+namespace HandlingNameLoadFix
+{
+	void strncpy_Fix( const char** destination, const char* source, size_t )
+	{
+		*destination = source;
+	}
+
+	int strncmp_Fix( const char* str1, const char** str2, size_t )
+	{
+		return strcmp( str1, *str2 );
+	}
+};
+
 
 #ifndef NDEBUG
 
@@ -3583,6 +3597,15 @@ void Patch_SA_10()
 		Nop( 0x541E2B, 2 );
 		Nop( 0x541E3C, 2 );
 	}
+
+
+	// Fixed handling.cfg name matching (names don't need unique prefixes anymore)
+	{
+		using namespace HandlingNameLoadFix;
+
+		InjectHook( 0x6F4F58, strncpy_Fix );
+		InjectHook( 0x6F4F64, strncmp_Fix );
+	}
 }
 
 void Patch_SA_11()
@@ -4874,6 +4897,16 @@ void Patch_SA_NewSteam_Common()
 		InjectHook( updatePads.get<void>( -44 ), ClearSimButtonPressCheckers );
 		Nop( updatePads.get<void>( 20 ), 2 );
 		Nop( updatePads.get<void>( 37 ), 2 );
+	}
+
+	// Fixed handling.cfg name matching (names don't need unique prefixes anymore)
+	{
+		using namespace HandlingNameLoadFix;
+
+		auto findExactWord = pattern( "8B 55 08 56 8D 4D EC" ).get_one(); // 0x6F849B
+
+		InjectHook( findExactWord.get<void>( -5 ), strncpy_Fix );
+		InjectHook( findExactWord.get<void>( 9 ), strncmp_Fix );
 	}
 }
 
