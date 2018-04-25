@@ -5,6 +5,8 @@
 #include "ModelInfoSA.h"
 #include "PoolsSA.h"
 
+#include <algorithm>
+
 // Wrappers
 static void* EntityRender = AddressByVersion<void*>(0x534310, 0x5347B0, 0x545B30);
 WRAPPER void CEntity::Render() { VARJMP(EntityRender); }
@@ -105,9 +107,9 @@ extern void (*WorldRemove)(CEntity*);
 void CObject::TryToFreeUpTempObjects_SilentPatch( int numObjects )
 {
 	const auto [ numProcessed, numFreed ] = TryOrFreeUpTempObjects( numObjects, false );
-	if ( numProcessed >= numObjects && numObjects > numFreed )
+	if ( numFreed < numObjects )
 	{
-		TryOrFreeUpTempObjects( numObjects - numFreed, true );
+		TryOrFreeUpTempObjects( std::min(numProcessed, numObjects - numFreed), true );
 	}
 }
 
