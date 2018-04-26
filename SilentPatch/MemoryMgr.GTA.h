@@ -246,10 +246,10 @@ namespace Memory
 			switch ( bVer )
 			{
 			case 1:
-				if ( std::holds_alternative<PatternAndOffset>(address11) ) return HandlePattern( std::get<PatternAndOffset>(address11) );
+				if ( auto pao = std::get_if<PatternAndOffset>(&address11) ) return HandlePattern( *pao );
 				else
 				{
-					const uintptr_t addr = std::get<uintptr_t>(address11);
+					const uintptr_t addr = *std::get_if<uintptr_t>(&address11);
 		#ifdef assert
 					assert(addr);
 		#endif
@@ -262,10 +262,10 @@ namespace Memory
 					return AdjustAddress_11(addr);
 				}
 			case 2:
-				if ( std::holds_alternative<PatternAndOffset>(addressSteam) ) return HandlePattern( std::get<PatternAndOffset>(addressSteam) );
+				if ( auto pao = std::get_if<PatternAndOffset>(&addressSteam) ) return HandlePattern( *pao );
 				else
 				{
-					const uintptr_t addr = std::get<uintptr_t>(addressSteam);
+					const uintptr_t addr = *std::get_if<uintptr_t>(&addressSteam);
 		#ifdef assert
 					assert(addr);
 		#endif
@@ -278,10 +278,10 @@ namespace Memory
 			case 3:
 				return GetDummy();
 			case 4:
-				if ( std::holds_alternative<PatternAndOffset>(addressNewsteamR2) ) return HandlePattern( std::get<PatternAndOffset>(addressNewsteamR2) );
+				if ( auto pao = std::get_if<PatternAndOffset>(&addressNewsteamR2) ) return HandlePattern( *pao );
 				else
 				{
-					const uintptr_t addr = std::get<uintptr_t>(addressNewsteamR2);
+					const uintptr_t addr = *std::get_if<uintptr_t>(&addressNewsteamR2);
 		#ifdef assert
 					assert(addr);
 		#endif
@@ -291,10 +291,10 @@ namespace Memory
 					return DynBaseAddress(addr);
 				}
 			case 5:
-				if ( std::holds_alternative<PatternAndOffset>(addressNewsteamR2_LV) ) return HandlePattern( std::get<PatternAndOffset>(addressNewsteamR2_LV) );
+				if ( auto pao = std::get_if<PatternAndOffset>(&addressNewsteamR2) ) return HandlePattern( *pao );
 				else
 				{
-					const uintptr_t addr = std::get<uintptr_t>(addressNewsteamR2_LV);
+					const uintptr_t addr = *std::get_if<uintptr_t>(&addressNewsteamR2_LV);
 		#ifdef assert
 					assert(addr);
 		#endif
@@ -304,10 +304,10 @@ namespace Memory
 					return DynBaseAddress(addr);
 				}
 			default:
-				if ( std::holds_alternative<PatternAndOffset>(address10) ) return HandlePattern( std::get<PatternAndOffset>(address10) );
+				if ( auto pao = std::get_if<PatternAndOffset>(&address10) ) return HandlePattern( *pao );
 				else
 				{
-					const uintptr_t addr = std::get<uintptr_t>(address10);
+					const uintptr_t addr = *std::get_if<uintptr_t>(&address10);
 		#ifdef assert
 					assert(addr);
 		#endif
