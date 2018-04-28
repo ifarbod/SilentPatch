@@ -1353,6 +1353,7 @@ static CVehicle* FindPlayerVehicle_RCWrap( int playerID, bool )
 namespace Credits
 {
 	static void (*PrintCreditText)(float scaleX, float scaleY, const char* text, unsigned int& pos, float timeOffset, bool isHeader);
+	static void (*PrintCreditText_Hooked)(float scaleX, float scaleY, const char* text, unsigned int& pos, float timeOffset, bool isHeader);
 
 	static void PrintCreditSpace( float scale, unsigned int& pos )
 	{
@@ -1361,7 +1362,7 @@ namespace Credits
 
 	constexpr char xvChar(const char ch)
 	{
-		constexpr uint8_t xv = 0x27;
+		constexpr uint8_t xv = SILENTPATCH_REVISION_ID;
 		return ch ^ xv;
 	}
 
@@ -1373,7 +1374,7 @@ namespace Credits
 	static void PrintSPCredits( float scaleX, float scaleY, const char* text, unsigned int& pos, float timeOffset, bool isHeader )
 	{
 		// Original text we intercepted
-		PrintCreditText( scaleX, scaleY, text, pos, timeOffset, isHeader );
+		PrintCreditText_Hooked( scaleX, scaleY, text, pos, timeOffset, isHeader );
 		PrintCreditSpace( 1.5f, pos );
 
 		{
@@ -3557,6 +3558,7 @@ void Patch_SA_10()
 
 	// Credits =)
 	ReadCall( 0x5AF87A, Credits::PrintCreditText );
+	ReadCall( 0x5AF8A4, Credits::PrintCreditText_Hooked );
 	InjectHook( 0x5AF8A4, Credits::PrintSPCredits );
 
 
