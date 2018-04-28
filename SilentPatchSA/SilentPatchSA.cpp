@@ -4879,6 +4879,87 @@ void Patch_SA_NewSteam_Common()
 		InjectHook( drawScriptSprites, DrawScriptSpritesAndRectangles );
 	}
 
+	// Animated Phoenix hood scoop
+	// TODO
+
+	// Extra animations for planes
+	// TODO
+
+	// Fixed animations for boats
+	// TODO
+
+	// Stop BF Injection/Bandito/Hotknife rotating engine components when engine is off
+	// TODO
+
+
+	// Make freeing temp objects more aggressive to fix vending crash
+	InjectHook( get_pattern( "57 8B 78 08 89 45 FC 85 FF 74 5B", -9 ), CObject::TryToFreeUpTempObjects_SilentPatch, PATCH_JUMP );
+
+
+	// Remove FILE_FLAG_NO_BUFFERING from CdStreams
+	Patch<uint8_t>( get_pattern( "81 F9 00 08 00 00 ? 05", 6 ), 0xEB );
+
+
+	// Proper metric-imperial conversion constants
+	static const double METERS_TO_FEET_DIV = 1.0 / 3.280839895;
+	Patch<const void*>( get_pattern( "83 EC 08 DC 35 ? ? ? ? DD 1C 24", 3 + 2 ), &METERS_TO_FEET_DIV );
+	Patch<const void*>( get_pattern( "51 DC 35 ? ? ? ? DD 1C 24", 1 + 2 ), &METERS_TO_FEET_DIV );
+
+
+	// Fixed impounding of random vehicles (because CVehicle::~CVehicle doesn't remove cars from apCarsToKeep)
+	{
+		void* recordVehicleDeleted = get_pattern( "E8 ? ? ? ? 33 C0 66 89 86" );
+		ReadCall( recordVehicleDeleted, orgRecordVehicleDeleted );
+		InjectHook( recordVehicleDeleted, RecordVehicleDeleted_AndRemoveFromVehicleList );
+	}
+
+
+	// Don't include an extra D3DLIGHT on vehicles since we fixed directional already
+	// TODO when timecyc.dat illumination is fixed
+
+
+	// Fixed CAEAudioUtility timers - not typecasting to float so we're not losing precision after X days of PC uptime
+	// Also fixed integer division by zero
+	{
+		auto staticInitialize = pattern( "FF 15 ? ? ? ? 5F 5E 85 C0" ).get_one();
+
+		Patch( staticInitialize.get<void>( 2 ), &pAudioUtilsFrequency );
+		InjectHook( staticInitialize.get<void>( 0x1E ), AudioUtilsGetStartTime );
+		InjectHook( get_pattern( "50 FF 15 ? ? ? ? DF 6D F8", -9 ), AudioUtilsGetCurrentTimeInMs, PATCH_JUMP );
+	}
+
+
+	// Car generators placed in interiors visible everywhere
+	InjectHook( get_pattern( "E8 ? ? ? ? 0F B6 57 0A" ), &CEntity::SetPositionAndAreaCode );
+
+
+	// Fixed bomb ownership/bombs saving for bikes
+	{
+		auto restoreForHideout = get_pattern( "8D 4E EE E8", 3 );
+		auto restoreImpoundGarage = get_pattern( "8D 4F EE E8", 3 );
+
+		ReadCall( restoreForHideout, CStoredCar::orgRestoreCar );
+		InjectHook( restoreForHideout, &CStoredCar::RestoreCar_SilentPatch );
+		InjectHook( restoreImpoundGarage, &CStoredCar::RestoreCar_SilentPatch );
+	}
+
+
+	// unnamed CdStream semaphore
+	{
+		auto semaName = pattern( "52 6A 40 FF 15" ).get_one();
+
+		Patch( semaName.get<void>( 9 ), { 0x6A, 0x00 } ); // push 0 \ nop
+		Nop( semaName.get<void>( 9 + 2 ), 3 );
+	}
+
+
+	// Correct streaming when using RC vehicles
+	InjectHook( get_pattern( "88 1D ? ? ? ? E8 ? ? ? ? 8B F0 83 C4 04 3B F3", 6 ), FindPlayerEntityWithRC );
+	InjectHook( get_pattern( "E8 ? ? ? ? 83 C4 08 85 C0 74 07 C6 05" ), FindPlayerVehicle_RCWrap );
+
+
+	// Fixed triangle above recruitable peds' heads
+	Patch<uint8_t>( get_pattern( "83 BE 98 05 00 00 ? D9 45 DC", 6 ), 8 ); // GANG2
 
 	// TODO: OTHER FIXES NEED TO GO HERE
 
