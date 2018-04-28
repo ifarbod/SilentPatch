@@ -4963,6 +4963,17 @@ void Patch_SA_NewSteam_Common()
 	// Fixed triangle above recruitable peds' heads
 	Patch<uint8_t>( get_pattern( "83 BE 98 05 00 00 ? D9 45 DC", 6 ), 8 ); // GANG2
 
+
+	// Credits =)
+	{
+		auto renderCredits = pattern( "83 C4 18 E8 ? ? ? ? 80 3D" ).get_one();
+
+		ReadCall( renderCredits.get<void>( -58 ), Credits::PrintCreditText );
+		ReadCall( renderCredits.get<void>( -5 ), Credits::PrintCreditText_Hooked );
+		InjectHook( renderCredits.get<void>( -5 ), Credits::PrintSPCredits );
+	}
+
+
 	// TODO: OTHER FIXES NEED TO GO HERE
 
 	// Decreased keyboard input latency

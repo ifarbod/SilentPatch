@@ -362,6 +362,53 @@ static void __fastcall GiveWeapon_SP( void* ped, void*, unsigned int weapon, uns
 }
 
 
+// ============= Credits! =============
+namespace Credits
+{
+	static void (*PrintCreditText)(float scaleX, float scaleY, const wchar_t* text, unsigned int& pos, float timeOffset);
+	static void (*PrintCreditText_Hooked)(float scaleX, float scaleY, const wchar_t* text, unsigned int& pos, float timeOffset);
+
+	static void PrintCreditSpace( float scale, unsigned int& pos )
+	{
+		pos += static_cast<unsigned int>( scale * 25.0f );
+	}
+
+	constexpr wchar_t xvChar(const wchar_t ch)
+	{
+		constexpr uint8_t xv = SILENTPATCH_REVISION_ID;
+		return ch ^ xv;
+	}
+
+	constexpr wchar_t operator "" _xv(const char ch)
+	{
+		return xvChar(ch);
+	}
+
+	static void PrintSPCredits( float scaleX, float scaleY, const wchar_t* text, unsigned int& pos, float timeOffset )
+	{
+		// Original text we intercepted
+		PrintCreditText_Hooked( scaleX, scaleY, text, pos, timeOffset );
+		PrintCreditSpace( 2.0f, pos );
+
+		{
+			wchar_t spText[] = { 'A'_xv, 'N'_xv, 'D'_xv, '\0'_xv };
+
+			for ( auto& ch : spText ) ch = xvChar(ch);
+			PrintCreditText( 1.7f, 1.0f, spText, pos, timeOffset );
+		}
+
+		PrintCreditSpace( 2.0f, pos );
+
+		{
+			wchar_t spText[] = { 'A'_xv, 'D'_xv, 'R'_xv, 'I'_xv, 'A'_xv, 'N'_xv, ' '_xv, '\''_xv, 'S'_xv, 'I'_xv, 'L'_xv, 'E'_xv, 'N'_xv, 'T'_xv, '\''_xv, ' '_xv,
+				'Z'_xv, 'D'_xv, 'A'_xv, 'N'_xv, 'O'_xv, 'W'_xv, 'I'_xv, 'C'_xv, 'Z'_xv, '\0'_xv };
+
+			for ( auto& ch : spText ) ch = xvChar(ch);
+			PrintCreditText( 1.7f, 1.7f, spText, pos, timeOffset );
+		}
+	}
+}
+
 // ============= Keyboard latency input fix =============
 namespace KeyboardInputFix
 {
@@ -877,6 +924,16 @@ void Patch_III_Common()
 
 		give_weapon = get_pattern( "89 C7 A1 ? ? ? ? 55 89 F9 50", 11 );
 		InjectHook( give_weapon, GiveWeapon_SP );
+	}
+
+
+	// Credits =)
+	{
+		auto renderCredits = pattern( "83 C4 14 8D 45 F4 50 FF 35 ? ? ? ? E8 ? ? ? ? 59 59 8D 45 F4 50 FF 35 ? ? ? ? E8 ? ? ? ? 59 59 E8" ).get_one();
+
+		ReadCall( renderCredits.get<void>( -48 ), Credits::PrintCreditText );
+		ReadCall( renderCredits.get<void>( -5 ), Credits::PrintCreditText_Hooked );
+		InjectHook( renderCredits.get<void>( -5 ), Credits::PrintSPCredits );
 	}
 
 
