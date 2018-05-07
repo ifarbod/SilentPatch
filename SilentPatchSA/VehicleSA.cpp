@@ -2,7 +2,7 @@
 
 #include <functional>
 #include <algorithm>
-#include <vector>
+#include <map>
 #include "VehicleSA.h"
 #include "TimerSA.h"
 #include "PedSA.h"
@@ -15,13 +15,98 @@ static constexpr float SWEEPER_BRUSH_SPEED      = 0.3f;
 
 static constexpr float PI = 3.14159265358979323846f;
 
-std::vector<int32_t>		vecRotorExceptions;
-
 float CAutomobile::ms_engineCompSpeed;
 
+
+namespace SVF {
+	enum class Feature
+	{
+		PHOENIX_FLUTTER,
+		SWEEPER_BRUSHES,
+		NEWSVAN_DISH,
+		BOAT_MOVING_PROP,
+		EXTRA_AILERONS1, // Like on Beagle
+		EXTRA_AILERONS2, // Like on Stuntplane
+
+		// Internal SP use only, formerly "rotor exceptions"
+		// Unreachable from RegisterSpecialVehicleFeature
+		NO_ROTOR_FADE,
+	};
+
+	int32_t nextFeatureCookie = 0;
+	int32_t _getCookie()
+	{
+		return nextFeatureCookie++;
+	}
+
+	auto _registerFeatureInternal( int32_t modelID, Feature feature )
+	{
+		return std::make_pair( modelID, std::make_tuple( feature, _getCookie() ) );
+	}
+
+	std::multimap<int32_t, std::tuple<Feature, int32_t> > specialVehFeatures = {
+		_registerFeatureInternal( 430, Feature::BOAT_MOVING_PROP ),
+		_registerFeatureInternal( 453, Feature::BOAT_MOVING_PROP ),
+		_registerFeatureInternal( 454, Feature::BOAT_MOVING_PROP ),
+		_registerFeatureInternal( 511, Feature::EXTRA_AILERONS1 ),
+		_registerFeatureInternal( 513, Feature::EXTRA_AILERONS2 ),
+		_registerFeatureInternal( 574, Feature::SWEEPER_BRUSHES ),
+		_registerFeatureInternal( 603, Feature::PHOENIX_FLUTTER ),
+		_registerFeatureInternal( 582, Feature::NEWSVAN_DISH ),
+	};
+
+	int32_t RegisterFeature( int32_t modelID, Feature feature )
+	{
+		const int32_t cookie = _getCookie();
+		specialVehFeatures.emplace( modelID, std::make_tuple(feature, cookie) );
+		return cookie;
+	}
+
+	void DeleteFeature( int32_t cookie )
+	{
+		for ( auto it = specialVehFeatures.begin(); it != specialVehFeatures.end(); ++it )
+		{
+			if ( std::get<int32_t>(it->second) == cookie )
+			{
+				specialVehFeatures.erase( it );
+				return;
+			}
+		}
+	}
+
+	bool ModelHasFeature( int32_t modelID, Feature feature )
+	{
+		auto results = specialVehFeatures.equal_range( modelID );
+		return std::find_if( results.first, results.second, [feature] ( const auto& e ) {
+			return std::get<Feature>(e.second) == feature;
+		} ) != results.second;
+	}
+
+	int32_t _registerFeature( int32_t modelID, const char* featureName )
+	{
+		const std::pair< const char*, Feature > features[] = {
+			{ "PHOENIX_FLUTTER", Feature::PHOENIX_FLUTTER },
+			{ "SWEEPER_BRUSHES", Feature::SWEEPER_BRUSHES },
+			{ "NEWSVAN_DISH", Feature::NEWSVAN_DISH },
+			{ "BOAT_MOVING_PROP", Feature::BOAT_MOVING_PROP },
+			{ "EXTRA_AILERONS1", Feature::EXTRA_AILERONS1 },
+			{ "EXTRA_AILERONS2", Feature::EXTRA_AILERONS2 },
+		};
+
+		auto it = std::find_if( std::begin(features), std::end(features), [featureName]( const auto& e ) {
+			return _stricmp( e.first, featureName ) == 0;
+		});
+
+		if ( it == std::end(features) ) return -1;
+		return RegisterFeature( modelID, it->second );
+	}
+}
+
+
+// Now left only for "backwards compatibility"
 static bool ShouldIgnoreRotor( int32_t id )
 {
-	return std::find( vecRotorExceptions.begin(), vecRotorExceptions.end(), id ) != vecRotorExceptions.end();
+	return SVF::ModelHasFeature( id, SVF::Feature::NO_ROTOR_FADE );
 }
 
 static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0x6D1680, 0x70C0B0);
@@ -93,7 +178,7 @@ void ReadRotorFixExceptions(const wchar_t* pPath)
 	{
 		int32_t toList = wcstol( str, nullptr, 0 );
 		if ( toList > 0 )
-			vecRotorExceptions.push_back( toList );
+			SVF::RegisterFeature( toList, SVF::Feature::NO_ROTOR_FADE );
 	}
 }
 
@@ -306,12 +391,12 @@ void CPlane::PreRender()
 		}
 	};
 
-	if ( extID == 511 )
+	if ( SVF::ModelHasFeature( extID, SVF::Feature::EXTRA_AILERONS1 ) )
 	{
 		copyRotation( 18, 21 );
 	}
 
-	if ( extID == 513 )
+	if ( SVF::ModelHasFeature( extID, SVF::Feature::EXTRA_AILERONS2 ) )
 	{
 		copyRotation( 19, 23 );
 		copyRotation( 20, 24 );
@@ -324,7 +409,7 @@ void CBoat::PreRender_SilentPatch()
 
 	// Fixed moving prop for Predator/Tropic/Reefer
 	const int32_t extID = m_nModelIndex.Get();
-	if ( (extID == 430 || extID == 453 || extID == 454) && m_pBoatNode[1] == nullptr )
+	if ( SVF::ModelHasFeature( extID, SVF::Feature::BOAT_MOVING_PROP ) && m_pBoatNode[1] == nullptr )
 	{
 		m_pBoatNode[1] = GetFrameFromName( RpClumpGetFrame(m_pRwObject), "boat_moving" );
 	}
@@ -338,17 +423,17 @@ void CAutomobile::PreRender()
 	(this->*(orgAutomobilePreRender))();
 
 	const int32_t extID = m_nModelIndex.Get();
-	if ( extID == 603 )
+	if ( SVF::ModelHasFeature( extID, SVF::Feature::PHOENIX_FLUTTER ) )
 	{
 		ProcessPhoenixBlower( extID );
 	}
 
-	if ( extID == 574 )
+	if ( SVF::ModelHasFeature( extID, SVF::Feature::SWEEPER_BRUSHES ) )
 	{
 		ProcessSweeper();
 	}
 
-	if ( extID == 582 )
+	if ( SVF::ModelHasFeature( extID, SVF::Feature::NEWSVAN_DISH ) )
 	{
 		ProcessNewsvan();
 	}
@@ -476,4 +561,22 @@ CVehicle* CStoredCar::RestoreCar_SilentPatch()
 	}
 
 	return vehicle;
+}
+
+
+// Returns "feature cookie" on success, -1 on failure
+extern "C" {
+	
+__declspec(dllexport) int32_t RegisterSpecialVehicleFeature( int32_t modelID, const char* featureName )
+{
+	if ( featureName == nullptr ) return -1;
+	return SVF::_registerFeature( modelID, featureName );
+}
+
+__declspec(dllexport) void DeleteSpecialVehicleFeature( int32_t cookie )
+{
+	if ( cookie == -1 ) return;
+	SVF::DeleteFeature( cookie );
+}
+
 }
