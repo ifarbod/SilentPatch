@@ -21,6 +21,7 @@ float CAutomobile::ms_engineCompSpeed;
 namespace SVF {
 	enum class Feature
 	{
+		NO_FEATURE,
 		PHOENIX_FLUTTER,
 		SWEEPER_BRUSHES,
 		NEWSVAN_DISH,
@@ -33,18 +34,43 @@ namespace SVF {
 		NO_ROTOR_FADE,
 	};
 
-	int32_t nextFeatureCookie = 0;
+	Feature GetFeatureFromName( const char* featureName )
+	{
+		const std::pair< const char*, Feature > features[] = {
+			{ "PHOENIX_FLUTTER", Feature::PHOENIX_FLUTTER },
+			{ "SWEEPER_BRUSHES", Feature::SWEEPER_BRUSHES },
+			{ "NEWSVAN_DISH", Feature::NEWSVAN_DISH },
+			{ "BOAT_MOVING_PROP", Feature::BOAT_MOVING_PROP },
+			{ "EXTRA_AILERONS1", Feature::EXTRA_AILERONS1 },
+			{ "EXTRA_AILERONS2", Feature::EXTRA_AILERONS2 },
+		};
+
+		auto it = std::find_if( std::begin(features), std::end(features), [featureName]( const auto& e ) {
+			return _stricmp( e.first, featureName ) == 0;
+		});
+
+		if ( it == std::end(features) ) return Feature::NO_FEATURE;
+		return it->second;
+	}
+
+	static int32_t nextFeatureCookie = 0;
 	int32_t _getCookie()
 	{
 		return nextFeatureCookie++;
 	}
 
-	auto _registerFeatureInternal( int32_t modelID, Feature feature )
+	static int32_t highestStockCookie = 0;
+	int32_t _getCookieStockID()
 	{
-		return std::make_pair( modelID, std::make_tuple( feature, _getCookie() ) );
+		return highestStockCookie = _getCookie();
 	}
 
-	std::multimap<int32_t, std::tuple<Feature, int32_t> > specialVehFeatures = {
+	auto _registerFeatureInternal( int32_t modelID, Feature feature )
+	{
+		return std::make_pair( modelID, std::make_tuple( feature, _getCookieStockID() ) );
+	}
+
+	static std::multimap<int32_t, std::tuple<Feature, int32_t> > specialVehFeatures = {
 		_registerFeatureInternal( 430, Feature::BOAT_MOVING_PROP ),
 		_registerFeatureInternal( 453, Feature::BOAT_MOVING_PROP ),
 		_registerFeatureInternal( 454, Feature::BOAT_MOVING_PROP ),
@@ -57,6 +83,8 @@ namespace SVF {
 
 	int32_t RegisterFeature( int32_t modelID, Feature feature )
 	{
+		if ( feature == Feature::NO_FEATURE ) return -1;
+
 		const int32_t cookie = _getCookie();
 		specialVehFeatures.emplace( modelID, std::make_tuple(feature, cookie) );
 		return cookie;
@@ -74,31 +102,28 @@ namespace SVF {
 		}
 	}
 
+	void DisableStockVehiclesForFeature( Feature feature )
+	{
+		if ( feature == Feature::NO_FEATURE ) return;
+		for ( auto it = specialVehFeatures.begin(); it != specialVehFeatures.end(); )
+		{
+			if ( std::get<int32_t>(it->second) <= highestStockCookie )
+			{
+				it = specialVehFeatures.erase( it );
+			}
+			else
+			{
+				++it;
+			}
+		}
+	}
+
 	bool ModelHasFeature( int32_t modelID, Feature feature )
 	{
 		auto results = specialVehFeatures.equal_range( modelID );
 		return std::find_if( results.first, results.second, [feature] ( const auto& e ) {
 			return std::get<Feature>(e.second) == feature;
 		} ) != results.second;
-	}
-
-	int32_t _registerFeature( int32_t modelID, const char* featureName )
-	{
-		const std::pair< const char*, Feature > features[] = {
-			{ "PHOENIX_FLUTTER", Feature::PHOENIX_FLUTTER },
-			{ "SWEEPER_BRUSHES", Feature::SWEEPER_BRUSHES },
-			{ "NEWSVAN_DISH", Feature::NEWSVAN_DISH },
-			{ "BOAT_MOVING_PROP", Feature::BOAT_MOVING_PROP },
-			{ "EXTRA_AILERONS1", Feature::EXTRA_AILERONS1 },
-			{ "EXTRA_AILERONS2", Feature::EXTRA_AILERONS2 },
-		};
-
-		auto it = std::find_if( std::begin(features), std::end(features), [featureName]( const auto& e ) {
-			return _stricmp( e.first, featureName ) == 0;
-		});
-
-		if ( it == std::end(features) ) return -1;
-		return RegisterFeature( modelID, it->second );
 	}
 }
 
@@ -570,13 +595,19 @@ extern "C" {
 __declspec(dllexport) int32_t RegisterSpecialVehicleFeature( int32_t modelID, const char* featureName )
 {
 	if ( featureName == nullptr ) return -1;
-	return SVF::_registerFeature( modelID, featureName );
+	return SVF::RegisterFeature( modelID, SVF::GetFeatureFromName(featureName) );
 }
 
 __declspec(dllexport) void DeleteSpecialVehicleFeature( int32_t cookie )
 {
 	if ( cookie == -1 ) return;
 	SVF::DeleteFeature( cookie );
+}
+
+__declspec(dllexport) void DisableStockVehiclesForSpecialVehicleFeature( const char* featureName )
+{
+	if ( featureName == nullptr ) return;
+	SVF::DisableStockVehiclesForFeature( SVF::GetFeatureFromName(featureName) );
 }
 
 }
