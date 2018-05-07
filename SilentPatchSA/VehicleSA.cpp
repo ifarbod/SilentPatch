@@ -22,12 +22,19 @@ namespace SVF {
 	enum class Feature
 	{
 		NO_FEATURE,
+
+		// Those are fully controlled by SilentPatch
 		PHOENIX_FLUTTER,
 		SWEEPER_BRUSHES,
 		NEWSVAN_DISH,
 		BOAT_MOVING_PROP,
 		EXTRA_AILERONS1, // Like on Beagle
 		EXTRA_AILERONS2, // Like on Stuntplane
+
+		// Those are partially controlled by SilentPatch (only affected by minor fixes)
+		VORTEX_EXHAUST,
+		TOWTRUCK_HOOK,
+		TRACTOR_HOOK,
 
 		// Internal SP use only, formerly "rotor exceptions"
 		// Unreachable from RegisterSpecialVehicleFeature
@@ -43,6 +50,9 @@ namespace SVF {
 			{ "BOAT_MOVING_PROP", Feature::BOAT_MOVING_PROP },
 			{ "EXTRA_AILERONS1", Feature::EXTRA_AILERONS1 },
 			{ "EXTRA_AILERONS2", Feature::EXTRA_AILERONS2 },
+			{ "VORTEX_EXHAUST", Feature::VORTEX_EXHAUST },
+			{ "TOWTRUCK_HOOK", Feature::TOWTRUCK_HOOK },
+			{ "TRACTOR_HOOK", Feature::TRACTOR_HOOK },
 		};
 
 		auto it = std::find_if( std::begin(features), std::end(features), [featureName]( const auto& e ) {
@@ -76,9 +86,12 @@ namespace SVF {
 		_registerFeatureInternal( 454, Feature::BOAT_MOVING_PROP ),
 		_registerFeatureInternal( 511, Feature::EXTRA_AILERONS1 ),
 		_registerFeatureInternal( 513, Feature::EXTRA_AILERONS2 ),
+		_registerFeatureInternal( 525, Feature::TOWTRUCK_HOOK ),
+		_registerFeatureInternal( 531, Feature::TRACTOR_HOOK ),
+		_registerFeatureInternal( 539, Feature::VORTEX_EXHAUST ),
 		_registerFeatureInternal( 574, Feature::SWEEPER_BRUSHES ),
-		_registerFeatureInternal( 603, Feature::PHOENIX_FLUTTER ),
 		_registerFeatureInternal( 582, Feature::NEWSVAN_DISH ),
+		_registerFeatureInternal( 603, Feature::PHOENIX_FLUTTER ),
 	};
 
 	int32_t RegisterFeature( int32_t modelID, Feature feature )
@@ -391,7 +404,7 @@ void CPlane::Fix_SilentPatch()
 {
 	// Reset bouncing panels
 	// No reset on Vortex
-	for ( ptrdiff_t i = m_nModelIndex.Get() == 539 ? 1 : 0; i < 3; i++ )
+	for ( ptrdiff_t i = SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::VORTEX_EXHAUST ) ? 1 : 0; i < 3; i++ )
 	{
 		m_aBouncingPanel[i].m_nNodeIndex = -1;
 	}
@@ -470,7 +483,7 @@ void CAutomobile::Fix_SilentPatch()
 
 	// Reset bouncing panels
 	const int32_t extID = m_nModelIndex.Get();
-	for ( ptrdiff_t i = (extID == 525 && m_pCarNode[21]) || (extID == 531 && m_pCarNode[17]) ? 1 : 0; i < 3; i++ )
+	for ( ptrdiff_t i = (SVF::ModelHasFeature( extID, SVF::Feature::TOWTRUCK_HOOK ) && m_pCarNode[21]) || (SVF::ModelHasFeature( extID, SVF::Feature::TRACTOR_HOOK ) && m_pCarNode[17]) ? 1 : 0; i < 3; i++ )
 	{
 		// Towtruck/Tractor fix
 		m_aBouncingPanel[i].m_nNodeIndex = -1;
