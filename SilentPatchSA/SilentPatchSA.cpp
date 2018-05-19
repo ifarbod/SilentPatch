@@ -3572,10 +3572,10 @@ void Patch_SA_10()
 	{
 		using namespace BicycleFire;
 
-		Patch( 0x53A984, { 0x90, 0x57 } );
-		Patch( 0x53A9A7, { 0x90, 0x57 } );
-		InjectHook( 0x53A986, GetVehicleDriver );
-		InjectHook( 0x53A9A9, GetVehicleDriver );
+		Patch( 0x53A984, { 0x90, 0x57 } ); // nop \ push edi
+		Patch( 0x53A9A7, { 0x90, 0x57 } ); // nop \ push edi
+		InjectHook( 0x53A984 + 2, GetVehicleDriver );
+		InjectHook( 0x53A9A7 + 2, GetVehicleDriver );
 
 		ReadCall( 0x53A990, CPlayerPed::orgDoStuffToGoOnFire );
 		InjectHook( 0x53A990, DoStuffToGoOnFire_NullAndPlayerCheck );
@@ -4973,8 +4973,34 @@ void Patch_SA_NewSteam_Common()
 		InjectHook( renderCredits.get<void>( -5 ), Credits::PrintSPCredits );
 	}
 
+	// Fixed ammo from SCM
+	{
+		void* giveWeapon = get_pattern( "8B CE E8 ? ? ? ? 8B CE 8B D8", 2 );
 
-	// TODO: OTHER FIXES NEED TO GO HERE
+		ReadCall( giveWeapon, CPed::orgGiveWeapon );
+		InjectHook( giveWeapon, &CPed::GiveWeapon_SP );
+	}
+
+
+	// Fixed bicycle on fire - instead of CJ being set on fire, bicycle's driver is
+	{
+		using namespace BicycleFire;
+
+		auto doStuffToGoOnFire = pattern( "83 BF 94 05 00 00 0A 75 6D 6A" ).get_one(); // 0x0054A6BE
+		constexpr ptrdiff_t START_FIRE_OFFSET = 0x31;
+
+		Patch( doStuffToGoOnFire.get<void>( 9 ), { 0x90, 0x57 } ); // nop \ push edi
+		Patch( doStuffToGoOnFire.get<void>( START_FIRE_OFFSET ), { 0x90, 0x57 } ); // nop \ push edi
+		InjectHook( doStuffToGoOnFire.get<void>( 9 + 2 ), GetVehicleDriver );
+		InjectHook( doStuffToGoOnFire.get<void>( START_FIRE_OFFSET + 2 ), GetVehicleDriver );
+
+		ReadCall( doStuffToGoOnFire.get<void>( 0x15 ), CPlayerPed::orgDoStuffToGoOnFire );
+		InjectHook( doStuffToGoOnFire.get<void>( 0x15 ), DoStuffToGoOnFire_NullAndPlayerCheck );
+
+		ReadCall( doStuffToGoOnFire.get<void>( START_FIRE_OFFSET + 0x10 ), CFireManager::orgStartFire );
+		InjectHook( doStuffToGoOnFire.get<void>( START_FIRE_OFFSET + 0x10 ), &CFireManager::StartFire_NullEntityCheck );
+	}
+
 
 	// Decreased keyboard input latency
 	{
