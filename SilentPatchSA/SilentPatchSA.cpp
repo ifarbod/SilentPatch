@@ -1075,7 +1075,7 @@ CVehicleModelInfo* __fastcall VehicleModelInfoCtor(CVehicleModelInfo* me)
 	return me;
 }
 
-static void (*RemoveFromInterestingVehicleList)(CVehicle*) = AddressByVersion<void(*)(CVehicle*)>( 0x423ED0, Memory::PatternAndOffset("39 10 75 06 C7 00 00 00 00 00 83 C0 04 49 75 F0 5D C3", -10) );
+static void (*RemoveFromInterestingVehicleList)(CVehicle*) = AddressByVersion<void(*)(CVehicle*)>( 0x423ED0, Memory::PatternAndOffset("39 10 75 06 C7 00 00 00 00 00 83 C0 04 49 75 F0 5D C3", -0x10) );
 static void (*orgRecordVehicleDeleted)(CVehicle*);
 static void RecordVehicleDeleted_AndRemoveFromVehicleList( CVehicle* vehicle )
 {
