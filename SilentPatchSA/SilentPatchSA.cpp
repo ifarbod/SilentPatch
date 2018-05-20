@@ -2988,6 +2988,69 @@ BOOL InjectDelayedPatches_Steam()
 	return TRUE;
 }
 
+BOOL InjectDelayedPatches_Newsteam()
+{
+	if ( !IsAlreadyRunning() )
+	{
+		using namespace Memory;
+		using namespace hook;
+
+		const HINSTANCE hInstance = GetModuleHandle( nullptr );
+		std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( hInstance, ".text" );
+		ScopedUnprotect::Section Protect2( hInstance, ".rdata" );
+
+		// Race condition in CdStream fixed
+		// Not taking effect with modloader
+		//if ( !ModCompat::ModloaderCdStreamRaceConditionAware( modloaderModule ) )
+		{
+			// Don't patch if old FLA and enhanced IMGs are in place
+			// For new FLA, we patch everything except CdStreamThread and then interop with FLA
+			constexpr bool flaBugAware = false;
+			constexpr bool usesEnhancedImages = false;
+
+			if constexpr ( !usesEnhancedImages || flaBugAware )
+			{
+				void* initThread = get_pattern( "74 14 81 25 ? ? ? ? ? ? ? ? C7 05", 0x16 );
+
+				ReadCall( initThread, CdStreamSync::orgCdStreamInitThread );
+				InjectHook( initThread, CdStreamSync::CdStreamInitThread );
+
+				auto cdStreamSync = pattern( "8B 0D ? ? ? ? 8D 04 40 03 C0" ).get_one(); // 0x4064E6
+
+				Patch( cdStreamSync.get<void>( 0x18 ), { 0x56, 0xFF, 0x15 } );
+				Patch( cdStreamSync.get<void>( 0x18 + 3 ), &CdStreamSync::CdStreamSyncOnObject );
+				Patch( cdStreamSync.get<void>( 0x18 + 3 + 4 ), { 0x5E, 0x5D, 0xC3 } ); // pop ebp / retn
+
+				Patch( cdStreamSync.get<void>( 0x5E + 2 ), &CdStreamSync::pGetOverlappedResult );
+				Patch( cdStreamSync.get<void>( 0x5E + 6 ), { 0x5E, 0x5D, 0xC3 } ); // pop esi / pop ebp / retn
+
+				if constexpr ( !usesEnhancedImages )
+				{
+					auto cdStreamThread = pattern( "C7 46 04 00 00 00 00 8A 4E 0D" ).get_one();
+
+					Patch( cdStreamThread.get<void>(), { 0x56, 0xFF, 0x15 } );
+					Patch( cdStreamThread.get<void>( 3 ), &CdStreamSync::CdStreamThreadOnObject );
+					Patch( cdStreamThread.get<void>( 3 + 4 ), { 0xEB, 0x17 } );
+				}
+
+				auto cdStreamInitThread = pattern( "6A 00 6A 02 6A 00 6A 00 FF D3" ).get_one();
+				Patch( cdStreamInitThread.get<void>(), { 0xFF, 0x15 } );
+				Patch( cdStreamInitThread.get<void>( 2 ), &CdStreamSync::CdStreamInitializeSyncObject );
+				Nop( cdStreamInitThread.get<void>( 6 ), 4 );
+				Nop( cdStreamInitThread.get<void>( 0x16 ), 2 );
+
+				auto cdStreamShutdown = pattern( "8B 4C 07 14" ).get_one();
+				Patch( cdStreamShutdown.get<void>(), { 0x56, 0x50 } );
+				InjectHook( cdStreamShutdown.get<void>( 2 ), CdStreamSync::CdStreamShutdownSyncObject_Stub, PATCH_CALL );
+			}
+		}
+
+
+		return FALSE;
+	}
+	return TRUE;
+}
+
 static char		aNoDesktopMode[64];
 
 
@@ -4808,6 +4871,12 @@ void Patch_SA_NewSteam_Common()
 {
 	using namespace Memory;
 	using namespace hook;
+
+	{
+		void* isAlreadyRunning = get_pattern( "85 C0 74 08 33 C0 8B E5 5D C2 10 00", -5 );
+		ReadCall( isAlreadyRunning, IsAlreadyRunning );
+		InjectHook(isAlreadyRunning, InjectDelayedPatches_Newsteam);
+	}
 
 	// 6 extra directionals on Medium and higher
 	// push dword ptr [CGame::currArea]
