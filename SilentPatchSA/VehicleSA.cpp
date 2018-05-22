@@ -590,7 +590,7 @@ void CAutomobile::ProcessSweeper()
 
 void CAutomobile::ProcessNewsvan()
 {
-	if ( GetStatus() == STATUS_PLAYER )
+	if ( GetStatus() == STATUS_PLAYER || GetStatus() == STATUS_PHYSICS || GetStatus() == STATUS_SIMPLE )
 	{
 		// TODO: Point at something? Like nearest collectable or safehouse
 		m_fGunOrientation += CTimer::m_fTimeStep * 0.05f;
