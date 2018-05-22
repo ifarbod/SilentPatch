@@ -35,6 +35,7 @@ namespace SVF {
 		VORTEX_EXHAUST,
 		TOWTRUCK_HOOK,
 		TRACTOR_HOOK,
+		RHINO_WHEELS,
 
 		// Internal SP use only, formerly "rotor exceptions"
 		// Unreachable from RegisterSpecialVehicleFeature
@@ -53,6 +54,7 @@ namespace SVF {
 			{ "VORTEX_EXHAUST", Feature::VORTEX_EXHAUST },
 			{ "TOWTRUCK_HOOK", Feature::TOWTRUCK_HOOK },
 			{ "TRACTOR_HOOK", Feature::TRACTOR_HOOK },
+			{ "RHINO_WHEELS", Feature::RHINO_WHEELS },
 		};
 
 		auto it = std::find_if( std::begin(features), std::end(features), [featureName]( const auto& e ) {
@@ -82,6 +84,7 @@ namespace SVF {
 
 	static std::multimap<int32_t, std::tuple<Feature, int32_t> > specialVehFeatures = {
 		_registerFeatureInternal( 430, Feature::BOAT_MOVING_PROP ),
+		_registerFeatureInternal( 432, Feature::RHINO_WHEELS ),
 		_registerFeatureInternal( 453, Feature::BOAT_MOVING_PROP ),
 		_registerFeatureInternal( 454, Feature::BOAT_MOVING_PROP ),
 		_registerFeatureInternal( 511, Feature::EXTRA_AILERONS1 ),
@@ -487,6 +490,19 @@ void CAutomobile::Fix_SilentPatch()
 	{
 		// Towtruck/Tractor fix
 		m_aBouncingPanel[i].m_nNodeIndex = -1;
+	}
+
+	// Reset Rhino middle wheels state
+	if ( SVF::ModelHasFeature( extID, SVF::Feature::RHINO_WHEELS ) )
+	{
+		Door[REAR_LEFT_DOOR].SetExtraWheelPositions( 1.0f, 1.0f, 1.0f, 1.0f );
+		Door[REAR_RIGHT_DOOR].SetExtraWheelPositions( 1.0f, 1.0f, 1.0f, 1.0f );
+
+		RwObject* object = GetFirstObject( m_pCarNode[3] );
+		RpAtomicSetFlags( object, 0 );
+
+		object = GetFirstObject( m_pCarNode[6] );
+		RpAtomicSetFlags( object, 0 );
 	}
 }
 

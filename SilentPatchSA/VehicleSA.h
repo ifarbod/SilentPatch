@@ -113,11 +113,45 @@ public:
 	CVector	m_vecBounceVector;
 };
 
+class CDoor
+{
+private:
+	float	m_fOpenAngle;
+	float	m_fClosedAngle;
+	int16_t	m_nDirn;
+	uint8_t	m_nAxis;
+	uint8_t	m_nDoorState;
+	float	m_fAngle;
+	float	m_fPrevAngle;
+	float	m_fAngVel;
+
+public:
+	void	SetExtraWheelPositions( float openAngle, float closedAngle, float angle, float prevAngle )
+	{
+		m_fOpenAngle = openAngle;
+		m_fClosedAngle = closedAngle;
+		m_fAngle = angle;
+		m_fPrevAngle = prevAngle;
+	}
+};
+
 enum eRotAxis
 {
 	ROT_AXIS_X = 0,
 	ROT_AXIS_Y = 1,
 	ROT_AXIS_Z = 2
+};
+
+enum eDoor
+{
+	BONNET,
+	BOOT,
+	FRONT_LEFT_DOOR,
+	FRONT_RIGHT_DOOR,
+	REAR_LEFT_DOOR,
+	REAR_RIGHT_DOOR,
+
+	NUM_DOORS
 };
 
 class NOVMT CVehicle	: public CPhysical
@@ -180,7 +214,8 @@ public:
 class NOVMT CAutomobile : public CVehicle
 {
 public:
-	BYTE			paddd[168];
+	BYTE			paddd[24];
+	CDoor			Door[NUM_DOORS];
 	RwFrame*		m_pCarNode[25];
 	CBouncingPanel	m_aBouncingPanel[3];
 	BYTE			padding[320];
@@ -272,6 +307,7 @@ public:
 
 void ReadRotorFixExceptions(const wchar_t* pPath);
 
+static_assert(sizeof(CDoor) == 0x18, "Wrong size: CDoor");
 static_assert(sizeof(CBouncingPanel) == 0x20, "Wrong size: CBouncingPanel");
 static_assert(sizeof(CVehicle) == 0x5A0, "Wrong size: CVehicle");
 static_assert(sizeof(CAutomobile) == 0x988, "Wrong size: CAutomobile");
