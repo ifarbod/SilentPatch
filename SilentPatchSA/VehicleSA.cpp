@@ -450,7 +450,7 @@ void CBoat::PreRender_SilentPatch()
 
 	// Fixed moving prop for Predator/Tropic/Reefer
 	const int32_t extID = m_nModelIndex.Get();
-	if ( SVF::ModelHasFeature( extID, SVF::Feature::BOAT_MOVING_PROP ) && m_pBoatNode[1] == nullptr )
+	if ( m_pBoatNode[1] == nullptr && SVF::ModelHasFeature( extID, SVF::Feature::BOAT_MOVING_PROP ) )
 	{
 		m_pBoatNode[1] = GetFrameFromName( RpClumpGetFrame(m_pRwObject), "boat_moving" );
 	}
@@ -486,7 +486,7 @@ void CAutomobile::Fix_SilentPatch()
 
 	// Reset bouncing panels
 	const int32_t extID = m_nModelIndex.Get();
-	for ( ptrdiff_t i = (SVF::ModelHasFeature( extID, SVF::Feature::TOWTRUCK_HOOK ) && m_pCarNode[21]) || (SVF::ModelHasFeature( extID, SVF::Feature::TRACTOR_HOOK ) && m_pCarNode[17]) ? 1 : 0; i < 3; i++ )
+	for ( ptrdiff_t i = (m_pCarNode[21] != nullptr && SVF::ModelHasFeature( extID, SVF::Feature::TOWTRUCK_HOOK )) || (m_pCarNode[17] != nullptr && SVF::ModelHasFeature( extID, SVF::Feature::TRACTOR_HOOK )) ? 1 : 0; i < 3; i++ )
 	{
 		// Towtruck/Tractor fix
 		m_aBouncingPanel[i].m_nNodeIndex = -1;
