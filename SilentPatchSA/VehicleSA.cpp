@@ -528,7 +528,7 @@ void CAutomobile::ProcessPhoenixBlower( int32_t modelID )
 	}
 
 	float finalAngle = 0.0f;
-	if ( m_fGasPedal > 0.0f )
+	if ( std::abs(m_fGasPedal) > 0.0f )
 	{
 		if ( m_fSpecialComponentAngle < 1.3f )
 		{
