@@ -1446,6 +1446,49 @@ namespace HandlingNameLoadFix
 };
 
 
+// ============= Firela ladder animation =============
+namespace FirelaHook
+{
+	static uintptr_t UpdateMovingCollisionJmp;
+	static uintptr_t HydraulicControlJmpBack;
+
+	void __declspec(naked) TestFirelaAndFlags()
+	{
+		__asm
+		{
+			mov		ecx, esi
+			call	CVehicle::HasFirelaLadder
+			test	al, al
+			jnz		TestFirelaAndFlags_UpdateMovingCollision
+			test	[esi].hFlagsLocal, FLAG_HYDRAULICS_INSTALLED
+			jmp		[HydraulicControlJmpBack]
+
+TestFirelaAndFlags_UpdateMovingCollision:
+			jmp		[UpdateMovingCollisionJmp]
+		}
+	}
+
+	static uintptr_t FollowCarCamNoMovement;
+	static uintptr_t FollowCarCamJmpBack;
+
+	void __declspec(naked) CamControlFirela()
+	{
+		__asm
+		{
+			mov		ecx, edi
+			call	CVehicle::HasFirelaLadder
+			test	al, al
+			jnz		TestFirelaAndFlags_UpdateMovingCollision
+			mov		eax, [edi].m_dwVehicleClass
+			jmp		[FollowCarCamJmpBack]
+
+			TestFirelaAndFlags_UpdateMovingCollision:
+			jmp		[FollowCarCamNoMovement]
+		}
+	}
+}
+
+
 #ifndef NDEBUG
 
 // ============= QPC spoof for verifying high timer issues =============
@@ -3670,6 +3713,20 @@ void Patch_SA_10()
 
 		InjectHook( 0x6F4F58, strncpy_Fix );
 		InjectHook( 0x6F4F64, strncmp_Fix );
+	}
+
+
+	// Firela animations
+	{
+		using namespace FirelaHook;
+	
+		UpdateMovingCollisionJmp = 0x6B200F;
+		HydraulicControlJmpBack = 0x6B1FBF + 10;
+		InjectHook( 0x6B1FBF, TestFirelaAndFlags, PATCH_JUMP );
+
+		FollowCarCamNoMovement = 0x52551E;
+		FollowCarCamJmpBack = 0x5254F6 + 6;
+		InjectHook( 0x5254F6, CamControlFirela, PATCH_JUMP );
 	}
 }
 

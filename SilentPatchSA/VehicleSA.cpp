@@ -36,6 +36,7 @@ namespace SVF {
 		TOWTRUCK_HOOK,
 		TRACTOR_HOOK,
 		RHINO_WHEELS,
+		FIRELA_LADDER,
 
 		// Internal SP use only, formerly "rotor exceptions"
 		// Unreachable from RegisterSpecialVehicleFeature
@@ -55,6 +56,7 @@ namespace SVF {
 			{ "TOWTRUCK_HOOK", Feature::TOWTRUCK_HOOK },
 			{ "TRACTOR_HOOK", Feature::TRACTOR_HOOK },
 			{ "RHINO_WHEELS", Feature::RHINO_WHEELS },
+			{ "FIRELA_LADDER", Feature::FIRELA_LADDER },
 		};
 
 		auto it = std::find_if( std::begin(features), std::end(features), [featureName]( const auto& e ) {
@@ -92,6 +94,7 @@ namespace SVF {
 		_registerFeatureInternal( 525, Feature::TOWTRUCK_HOOK ),
 		_registerFeatureInternal( 531, Feature::TRACTOR_HOOK ),
 		_registerFeatureInternal( 539, Feature::VORTEX_EXHAUST ),
+		_registerFeatureInternal( 544, Feature::FIRELA_LADDER ),
 		_registerFeatureInternal( 574, Feature::SWEEPER_BRUSHES ),
 		_registerFeatureInternal( 582, Feature::NEWSVAN_DISH ),
 		_registerFeatureInternal( 603, Feature::PHOENIX_FLUTTER ),
@@ -221,6 +224,11 @@ void ReadRotorFixExceptions(const wchar_t* pPath)
 		if ( toList > 0 )
 			SVF::RegisterFeature( toList, SVF::Feature::NO_ROTOR_FADE );
 	}
+}
+
+bool CVehicle::HasFirelaLadder() const
+{
+	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::FIRELA_LADDER );
 }
 
 void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha)

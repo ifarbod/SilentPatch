@@ -154,10 +154,14 @@ enum eDoor
 	NUM_DOORS
 };
 
+#define FLAG_HYDRAULICS_INSTALLED 0x20000
+
 class NOVMT CVehicle	: public CPhysical
 {
 protected:
-	BYTE			__pad1[752];
+	BYTE			__pad0[596];
+	uint32_t		hFlagsLocal;
+	BYTE			__pad1[152];
 	CVehicleFlags	m_nVehicleFlags;
 	BYTE			__pad2[48];
 	CPed*			m_pDriver;
@@ -202,6 +206,8 @@ public:
 	bool			CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo);
 	void			CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo);
 	//void			CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo);
+
+	bool			HasFirelaLadder() const;
 
 	bool			IsLawEnforcementVehicle();
 
