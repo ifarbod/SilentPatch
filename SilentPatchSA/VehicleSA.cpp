@@ -126,7 +126,7 @@ namespace SVF {
 		if ( feature == Feature::NO_FEATURE ) return;
 		for ( auto it = specialVehFeatures.begin(); it != specialVehFeatures.end(); )
 		{
-			if ( std::get<int32_t>(it->second) <= highestStockCookie )
+			if ( std::get<Feature>(it->second) == feature && std::get<int32_t>(it->second) <= highestStockCookie )
 			{
 				it = specialVehFeatures.erase( it );
 			}
