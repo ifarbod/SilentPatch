@@ -158,6 +158,8 @@ WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
 static void*	varIsLawEnforcementVehicle = AddressByVersion<void*>(0x6D2370, 0x6D2BA0, 0x70D8C0);
 WRAPPER bool CVehicle::IsLawEnforcementVehicle() { VARJMP(varIsLawEnforcementVehicle); }
 
+auto GetFrameHierarchyId = AddressByVersion<int32_t(*)(RwFrame*)>(0x732A20, 0x733250, 0x76CC30);
+
 void (CVehicle::*CVehicle::orgVehiclePreRender)();
 void (CAutomobile::*CAutomobile::orgAutomobilePreRender)();
 void (CPlane::*CPlane::orgPlanePreRender)();
@@ -210,6 +212,35 @@ static RwFrame* GetFrameFromName( RwFrame* topFrame, const char* name )
 	};
 ;
 	return RwFrameForAllChildren( topFrame, GetFramePredicate(name) ).foundFrame;
+}
+
+static RwFrame* GetFrameFromID( RwFrame* topFrame, int32_t ID )
+{
+	class GetFramePredicate
+	{
+	public:
+		RwFrame* foundFrame = nullptr;
+
+		GetFramePredicate( int32_t ID )
+			: ID( ID )
+		{
+		}
+
+		RwFrame* operator() ( RwFrame* frame )
+		{
+			if ( ID == GetFrameHierarchyId(frame) )
+			{
+				foundFrame = frame;
+				return nullptr;
+			}
+			RwFrameForAllChildren( frame, std::forward<GetFramePredicate>(*this) );
+			return foundFrame != nullptr ? nullptr : frame;
+		}
+
+	private:
+		const int32_t ID;
+	};
+	return RwFrameForAllChildren( topFrame, GetFramePredicate(ID) ).foundFrame;
 }
 
 void ReadRotorFixExceptions(const wchar_t* pPath)
@@ -525,12 +556,20 @@ void CAutomobile::ResetFrames()
 			if ( m_pCarNode[i] != nullptr )
 			{
 				// Find a frame in CBaseModelInfo object
-				RwFrame* origFrame = GetFrameFromName( RpClumpGetFrame(pOrigClump), GetFrameNodeName(m_pCarNode[i]) );
+				RwFrame* origFrame = GetFrameFromID( RpClumpGetFrame(pOrigClump), static_cast<int32_t>(i) );
 				if ( origFrame != nullptr )
 				{
 					// Found a frame, reset it
 					*RwFrameGetMatrix(m_pCarNode[i]) = *RwFrameGetMatrix(origFrame);
 					RwMatrixUpdate(RwFrameGetMatrix(m_pCarNode[i]));
+				}
+				else
+				{
+					// Same as original code
+					CMatrix matrix( RwFrameGetMatrix(m_pCarNode[i]) );
+					const CVector pos( matrix.GetPos() );
+					matrix.SetTranslate( pos.x, pos.y, pos.z );
+					matrix.UpdateRW();
 				}
 			}
 		}
@@ -544,7 +583,7 @@ void CAutomobile::ProcessPhoenixBlower( int32_t modelID )
 	RpClump*	pOrigClump = reinterpret_cast<RpClump*>(ms_modelInfoPtrs[ modelID ]->pRwObject);
 	if ( pOrigClump != nullptr )
 	{
-		RwFrame* origFrame = GetFrameFromName( RpClumpGetFrame(pOrigClump), GetFrameNodeName(m_pCarNode[20]) );
+		RwFrame* origFrame = GetFrameFromID( RpClumpGetFrame(pOrigClump), 20 );
 		if ( origFrame != nullptr )
 		{
 			*RwFrameGetMatrix(m_pCarNode[20]) = *RwFrameGetMatrix(origFrame);
