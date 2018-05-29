@@ -579,6 +579,7 @@ void CAutomobile::ResetFrames()
 void CAutomobile::ProcessPhoenixBlower( int32_t modelID )
 {
 	if ( m_pCarNode[20] == nullptr ) return;
+	if ( !m_nVehicleFlags.bEngineOn ) return;
 
 	RpClump*	pOrigClump = reinterpret_cast<RpClump*>(ms_modelInfoPtrs[ modelID ]->pRwObject);
 	if ( pOrigClump != nullptr )
