@@ -2345,8 +2345,7 @@ BOOL InjectDelayedPatches_10()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
-		ModuleList moduleList;
-		moduleList.Enumerate();
+		const ModuleList moduleList;
 
 		const bool		bHasImVehFt = moduleList.Get(L"ImVehFt") != nullptr;
 		const bool		bSAMP = moduleList.Get(L"samp") != nullptr;
@@ -2716,8 +2715,7 @@ BOOL InjectDelayedPatches_11()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
-		ModuleList moduleList;
-		moduleList.Enumerate();
+		const ModuleList moduleList;
 
 		bool		bHasImVehFt = moduleList.Get(L"ImVehFt") != nullptr;
 		bool		bSAMP = moduleList.Get(L"samp") != nullptr;
@@ -2887,8 +2885,7 @@ BOOL InjectDelayedPatches_Steam()
 		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
-		ModuleList moduleList;
-		moduleList.Enumerate();
+		const ModuleList moduleList;
 
 		bool		bHasImVehFt = moduleList.Get(L"ImVehFt") != nullptr;
 		bool		bSAMP = moduleList.Get(L"samp") != nullptr;
