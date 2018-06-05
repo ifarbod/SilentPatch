@@ -480,6 +480,16 @@ void CPlane::PreRender()
 	}
 }
 
+RwFrame* CAutomobile::GetTowBarFrame() const
+{
+	RwFrame* towBar = m_pCarNode[20];
+	if ( towBar == nullptr )
+	{
+		towBar = m_pCarNode[21];
+	}
+	return towBar;
+}
+
 void CAutomobile::PreRender()
 {
 	// For rotating engine components

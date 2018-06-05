@@ -3753,6 +3753,11 @@ void Patch_SA_10()
 
 	// DFT-30 wheel, Sweeper brushes and other typos in hierarchy
 	InjectHook( 0x4C5311, HierarchyTypoFix::strcasecmp );
+
+
+	// Tug tow bar (misc_b instead of misc_a
+	Nop( 0x6AF2CC, 1 );
+	InjectHook( 0x6AF2CC + 1, &CAutomobile::GetTowBarFrame, PATCH_CALL );
 }
 
 void Patch_SA_11()

@@ -294,6 +294,7 @@ public:
 	virtual void	PreRender() override;
 
 	void		Fix_SilentPatch();
+	RwFrame*	GetTowBarFrame() const;
 
 	static void (CAutomobile::*orgAutomobilePreRender)();
 	static float ms_engineCompSpeed;
