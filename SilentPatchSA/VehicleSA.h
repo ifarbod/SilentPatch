@@ -266,8 +266,6 @@ public:
 
 	static void		SetComponentRotation( RwFrame* component, eRotAxis axis, float angle, bool absolute = true );
 	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);
-
-	static void (CVehicle::*orgVehiclePreRender)();
 };
 
 class NOVMT CAutomobile : public CVehicle
@@ -359,9 +357,6 @@ class NOVMT CBoat : public CVehicle
 {
 	uint8_t			__pad[16];
 	RwFrame*		m_pBoatNode[12];
-
-public:
-	void			PreRender_SilentPatch();
 };
 
 class CStoredCar

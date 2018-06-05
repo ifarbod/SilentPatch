@@ -1488,6 +1488,27 @@ TestFirelaAndFlags_UpdateMovingCollision:
 	}
 }
 
+namespace HierarchyTypoFix
+{
+	// Allow wheel_lm vs wheel_lm_dummy and miscX vs misc_X typos
+	constexpr std::pair<const char*, const char*> typosAndFixes[] = {
+		{ "wheel_lm_dummy", "wheel_lm" },
+		{ "misc_a", "misca" },
+		{ "misc_b", "miscb" },
+		{ "boat_moving_hi", "boat_moving" },
+	};
+	int strcasecmp( const char* dataName, const char* nodeName )
+	{
+		for ( const auto& typo : typosAndFixes )
+		{
+			if ( _stricmp( dataName, typo.first ) == 0 && _stricmp( nodeName, typo.second ) == 0 ) return 0;
+		}
+
+		return _stricmp( dataName, nodeName );
+	}
+
+}
+
 
 #ifndef NDEBUG
 
@@ -3564,7 +3585,7 @@ void Patch_SA_10()
 
 
 	// Animated Phoenix hood scoop
-	auto* automobilePreRender = &(*(decltype(CAutomobile::orgAutomobilePreRender)**)(0x6B0AD2 + 2))[17];
+	auto* automobilePreRender = (*(decltype(CAutomobile::orgAutomobilePreRender)**)(0x6B0AD2 + 2)) + 17;
 	CAutomobile::orgAutomobilePreRender = *automobilePreRender;
 	Patch(automobilePreRender, &CAutomobile::PreRender_Stub);
 
@@ -3574,14 +3595,9 @@ void Patch_SA_10()
 
 
 	// Extra animations for planes
-	auto* planePreRender = &(*(decltype(CPlane::orgPlanePreRender)**)(0x6C8E5A + 2))[17];
+	auto* planePreRender = (*(decltype(CPlane::orgPlanePreRender)**)(0x6C8E5A + 2)) + 17;
 	CPlane::orgPlanePreRender = *planePreRender;
 	Patch(planePreRender, &CPlane::PreRender_Stub);
-
-
-	// Fixed animations for boats
-	ReadCall( 0x6F119E, CVehicle::orgVehiclePreRender );
-	InjectHook( 0x6F119E, &CBoat::PreRender_SilentPatch );
 
 
 	// Stop BF Injection/Bandito/Hotknife rotating engine components when engine is off
@@ -3733,6 +3749,10 @@ void Patch_SA_10()
 		CTrailer::orgGetTowBarPos = *trailerTowBarPos;
 		Patch(trailerTowBarPos, &CTrailer::GetTowBarPos_Stub);
 	}
+
+
+	// DFT-30 wheel, Sweeper brushes and other typos in hierarchy
+	InjectHook( 0x4C5311, HierarchyTypoFix::strcasecmp );
 }
 
 void Patch_SA_11()

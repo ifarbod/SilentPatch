@@ -27,7 +27,6 @@ namespace SVF {
 		PHOENIX_FLUTTER,
 		SWEEPER_BRUSHES,
 		NEWSVAN_DISH,
-		BOAT_MOVING_PROP,
 		EXTRA_AILERONS1, // Like on Beagle
 		EXTRA_AILERONS2, // Like on Stuntplane
 		DOUBLE_TRAILER, // Like on artict3
@@ -50,7 +49,6 @@ namespace SVF {
 			{ "PHOENIX_FLUTTER", Feature::PHOENIX_FLUTTER },
 			{ "SWEEPER_BRUSHES", Feature::SWEEPER_BRUSHES },
 			{ "NEWSVAN_DISH", Feature::NEWSVAN_DISH },
-			{ "BOAT_MOVING_PROP", Feature::BOAT_MOVING_PROP },
 			{ "EXTRA_AILERONS1", Feature::EXTRA_AILERONS1 },
 			{ "EXTRA_AILERONS2", Feature::EXTRA_AILERONS2 },
 			{ "DOUBLE_TRAILER", Feature::DOUBLE_TRAILER },
@@ -87,10 +85,7 @@ namespace SVF {
 	}
 
 	static std::multimap<int32_t, std::tuple<Feature, int32_t> > specialVehFeatures = {
-		_registerFeatureInternal( 430, Feature::BOAT_MOVING_PROP ),
 		_registerFeatureInternal( 432, Feature::RHINO_WHEELS ),
-		_registerFeatureInternal( 453, Feature::BOAT_MOVING_PROP ),
-		_registerFeatureInternal( 454, Feature::BOAT_MOVING_PROP ),
 		_registerFeatureInternal( 511, Feature::EXTRA_AILERONS1 ),
 		_registerFeatureInternal( 513, Feature::EXTRA_AILERONS2 ),
 		_registerFeatureInternal( 525, Feature::TOWTRUCK_HOOK ),
@@ -163,7 +158,6 @@ WRAPPER bool CVehicle::IsLawEnforcementVehicle() { VARJMP(varIsLawEnforcementVeh
 
 auto GetFrameHierarchyId = AddressByVersion<int32_t(*)(RwFrame*)>(0x732A20, 0x733250, 0x76CC30);
 
-void (CVehicle::*CVehicle::orgVehiclePreRender)();
 void (CAutomobile::*CAutomobile::orgAutomobilePreRender)();
 void (CPlane::*CPlane::orgPlanePreRender)();
 CVehicle* (CStoredCar::*CStoredCar::orgRestoreCar)();
@@ -187,7 +181,7 @@ static RwObject* GetCurrentAtomicObject( RwFrame* frame )
 	return obj;
 }
 
-static RwFrame* GetFrameFromName( RwFrame* topFrame, const char* name )
+RwFrame* GetFrameFromName( RwFrame* topFrame, const char* name )
 {
 	class GetFramePredicate
 	{
@@ -217,7 +211,7 @@ static RwFrame* GetFrameFromName( RwFrame* topFrame, const char* name )
 	return RwFrameForAllChildren( topFrame, GetFramePredicate(name) ).foundFrame;
 }
 
-static RwFrame* GetFrameFromID( RwFrame* topFrame, int32_t ID )
+RwFrame* GetFrameFromID( RwFrame* topFrame, int32_t ID )
 {
 	class GetFramePredicate
 	{
@@ -486,18 +480,6 @@ void CPlane::PreRender()
 	}
 }
 
-void CBoat::PreRender_SilentPatch()
-{
-	(this->*(orgVehiclePreRender))();
-
-	// Fixed moving prop for Predator/Tropic/Reefer
-	const int32_t extID = m_nModelIndex.Get();
-	if ( m_pBoatNode[1] == nullptr && SVF::ModelHasFeature( extID, SVF::Feature::BOAT_MOVING_PROP ) )
-	{
-		m_pBoatNode[1] = GetFrameFromName( RpClumpGetFrame(m_pRwObject), "boat_moving" );
-	}
-}
-
 void CAutomobile::PreRender()
 {
 	// For rotating engine components
@@ -623,15 +605,6 @@ void CAutomobile::ProcessSweeper()
 
 	if ( GetStatus() == STATUS_PLAYER || GetStatus() == STATUS_PHYSICS || GetStatus() == STATUS_SIMPLE )
 	{
-		if ( m_pCarNode[20] == nullptr )
-		{
-			m_pCarNode[20] = GetFrameFromName( RpClumpGetFrame(m_pRwObject), "misca" );
-		}
-		if ( m_pCarNode[21] == nullptr )
-		{
-			m_pCarNode[21] = GetFrameFromName( RpClumpGetFrame(m_pRwObject), "miscb" );
-		}
-
 		const float angle = CTimer::m_fTimeStep * SWEEPER_BRUSH_SPEED;
 
 		SetComponentRotation( m_pCarNode[20], ROT_AXIS_Z, angle, false );
