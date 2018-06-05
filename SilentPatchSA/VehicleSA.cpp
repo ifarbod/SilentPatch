@@ -30,6 +30,7 @@ namespace SVF {
 		BOAT_MOVING_PROP,
 		EXTRA_AILERONS1, // Like on Beagle
 		EXTRA_AILERONS2, // Like on Stuntplane
+		DOUBLE_TRAILER, // Like on artict3
 
 		// Those are partially controlled by SilentPatch (only affected by minor fixes)
 		VORTEX_EXHAUST,
@@ -52,6 +53,7 @@ namespace SVF {
 			{ "BOAT_MOVING_PROP", Feature::BOAT_MOVING_PROP },
 			{ "EXTRA_AILERONS1", Feature::EXTRA_AILERONS1 },
 			{ "EXTRA_AILERONS2", Feature::EXTRA_AILERONS2 },
+			{ "DOUBLE_TRAILER", Feature::DOUBLE_TRAILER },
 			{ "VORTEX_EXHAUST", Feature::VORTEX_EXHAUST },
 			{ "TOWTRUCK_HOOK", Feature::TOWTRUCK_HOOK },
 			{ "TRACTOR_HOOK", Feature::TRACTOR_HOOK },
@@ -97,6 +99,7 @@ namespace SVF {
 		_registerFeatureInternal( 544, Feature::FIRELA_LADDER ),
 		_registerFeatureInternal( 574, Feature::SWEEPER_BRUSHES ),
 		_registerFeatureInternal( 582, Feature::NEWSVAN_DISH ),
+		_registerFeatureInternal( 591, Feature::DOUBLE_TRAILER ),
 		_registerFeatureInternal( 603, Feature::PHOENIX_FLUTTER ),
 	};
 
@@ -645,6 +648,31 @@ void CAutomobile::ProcessNewsvan()
 		if ( m_fGunOrientation > 2.0f * PI ) m_fGunOrientation -= 2.0f * PI;
 		SetComponentRotation( m_pCarNode[20], ROT_AXIS_Z, m_fGunOrientation );
 	}
+}
+
+bool CTrailer::GetTowBarPos(CVector& posnOut, bool defaultPos, CVehicle* trailer)
+{
+	const int32_t modelID = m_nModelIndex.Get();
+	if ( SVF::ModelHasFeature( modelID, SVF::Feature::DOUBLE_TRAILER ) )
+	{
+		if ( m_pCarNode[21] != nullptr )
+		{
+			const RwMatrix* ltm = RwFrameGetLTM( m_pCarNode[21] );
+			posnOut.x = ltm->pos.x;
+			posnOut.y = ltm->pos.y;
+			posnOut.z = ltm->pos.z;
+			return true;
+		}
+
+		// Fallback, same as in original CTrailer::GetTowBarPos
+		if ( defaultPos )
+		{
+			posnOut = *GetMatrix() * CVector(0.0f, ms_modelInfoPtrs[ modelID ]->pColModel->boundingBox.vecMin.y - 0.05f, 0.5f - m_fHeightAboveRoad);
+			return true;
+		}
+	}
+
+	return GetTowBarPos_GTA(posnOut, defaultPos, trailer);
 }
 
 CVehicle* CStoredCar::RestoreCar_SilentPatch()

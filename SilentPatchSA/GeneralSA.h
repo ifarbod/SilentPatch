@@ -280,6 +280,9 @@ private:
     float			fLighting;							// 0x12C col lighting? CPhysical::GetLightingFromCol
     float			fLighting_2;							// 0x130 added to col lighting in CPhysical::GetTotalLighting
     BYTE			pad3a[4];								// 0x134
+
+public:
+	virtual void*	ProcessEntityCollision(CEntity*, void*);
 };
 
 enum // m_objectCreatedBy

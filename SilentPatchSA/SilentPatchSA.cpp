@@ -3725,6 +3725,14 @@ void Patch_SA_10()
 		FollowCarCamJmpBack = 0x5254F6 + 6;
 		InjectHook( 0x5254F6, CamControlFirela, PATCH_JUMP );
 	}
+
+
+	// Double artict3 trailer
+	{
+		auto* trailerTowBarPos = (*(decltype(CTrailer::orgGetTowBarPos)**)(0x6D03FD + 2)) + 60;
+		CTrailer::orgGetTowBarPos = *trailerTowBarPos;
+		Patch(trailerTowBarPos, &CTrailer::GetTowBarPos_Stub);
+	}
 }
 
 void Patch_SA_11()

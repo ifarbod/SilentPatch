@@ -142,7 +142,7 @@ enum eRotAxis
 	ROT_AXIS_Z = 2
 };
 
-enum eDoor
+enum eDoors
 {
 	BONNET,
 	BOOT,
@@ -200,6 +200,59 @@ public:
 	void			SetBombOwner( CEntity* owner )
 						{ m_pBombOwner = owner; }
 
+	virtual void ProcessControlCollisionCheck();
+	virtual void ProcessControlInputs(unsigned char playerNum);
+	// component index in m_apModelNodes array
+	virtual void GetComponentWorldPosition(int componentId, CVector& posnOut);
+	// component index in m_apModelNodes array
+	virtual bool IsComponentPresent(int componentId);
+	virtual void OpenDoor(CPed* ped, int componentId, eDoors door, float doorOpenRatio, bool playSound);
+	virtual void ProcessOpenDoor(CPed* ped, unsigned int doorComponentId, unsigned int arg2, unsigned int arg3, float arg4);
+	virtual float GetDooorAngleOpenRatio(unsigned int door);
+	virtual float GetDooorAngleOpenRatio(eDoors door);
+	virtual bool IsDoorReady(unsigned int door);
+	virtual bool IsDoorReady(eDoors door);
+	virtual bool IsDoorFullyOpen(unsigned int door);
+	virtual bool IsDoorFullyOpen(eDoors door);
+	virtual bool IsDoorClosed(unsigned int door);
+	virtual bool IsDoorClosed(eDoors door);
+	virtual bool IsDoorMissing(unsigned int door);
+	virtual bool IsDoorMissing(eDoors door);
+	// check if car has roof as extra
+	virtual bool IsOpenTopCar();
+	// remove ref to this entity
+	virtual void RemoveRefsToVehicle(CEntity* entity);
+	virtual void BlowUpCar(CEntity* damager, unsigned char bHideExplosion);
+	virtual void BlowUpCarCutSceneNoExtras(bool bNoCamShake, bool bNoSpawnFlyingComps, bool bDetachWheels, bool bExplosionSound);
+	virtual bool SetUpWheelColModel(CColModel* wheelCol);
+	// returns false if it's not possible to burst vehicle's tyre or it is already damaged. bPhysicalEffect=true applies random moving force to vehicle
+	virtual bool BurstTyre(unsigned char tyreComponentId, bool bPhysicalEffect);
+	virtual bool IsRoomForPedToLeaveCar(unsigned int arg0, CVector* arg1);
+	virtual void ProcessDrivingAnims(CPed* driver, unsigned char arg1);
+	// get special ride anim data for bile or quad
+	virtual void* GetRideAnimData();
+	virtual void SetupSuspensionLines();
+	virtual CVector AddMovingCollisionSpeed(CVector& arg0);
+	virtual void Fix();
+	virtual void SetupDamageAfterLoad();
+	virtual void DoBurstAndSoftGroundRatios();
+	virtual float GetHeightAboveRoad();
+	virtual void PlayCarHorn();
+	virtual int GetNumContactWheels();
+	virtual void VehicleDamage(float damageIntensity, unsigned short collisionComponent, CEntity* damager, CVector* vecCollisionCoors, CVector* vecCollisionDirection, eWeaponType weapon);
+	virtual bool CanPedStepOutCar(bool arg0);
+	virtual bool CanPedJumpOutCar(CPed* ped);
+	virtual bool GetTowHitchPos(CVector& posnOut, bool defaultPos, CVehicle* trailer);
+	virtual bool GetTowBarPos(CVector& posnOut, bool defaultPos, CVehicle* trailer);
+	// always return true
+	virtual bool SetTowLink(CVehicle* arg0, bool arg1);
+	virtual bool BreakTowLink();
+	virtual float FindWheelWidth(bool bRear);
+	// always return true
+	virtual bool Save();
+	// always return true
+	virtual bool Load();
+
 	virtual void	Render() override;
 	virtual void	PreRender() override;
 
@@ -226,7 +279,10 @@ public:
 	CBouncingPanel	m_aBouncingPanel[3];
 	BYTE			padding[320];
 	float			m_fRotorSpeed;
-	BYTE			__moarpad[252];
+	BYTE			__rotorpad[72];
+	float			m_fHeightAboveRoad;
+	float			m_fRearHeightAboveRoad;
+	BYTE			__moarpad[172];
 	float			m_fGunOrientation;
 	float			m_fGunElevation;
 	float			m_fUnknown;
@@ -278,6 +334,25 @@ public:
 	void				Fix_SilentPatch();
 
 	static void (CPlane::*orgPlanePreRender)();
+};
+
+class NOVMT CTrailer : public CAutomobile
+{
+public:
+	virtual bool GetTowBarPos(CVector& posnOut, bool defaultPos, CVehicle* trailer) override;
+
+	inline bool			GetTowBarPos_Stub( CVector& pos, bool anyPos, CVehicle* trailer )
+	{
+		return CTrailer::GetTowBarPos( pos, anyPos, trailer );
+	}
+
+
+	inline bool GetTowBarPos_GTA( CVector& pos, bool anyPos, CVehicle* trailer )
+	{
+		return std::invoke(orgGetTowBarPos, this, pos, anyPos, trailer);
+	}
+
+	static inline bool (CTrailer::*orgGetTowBarPos)(CVector& pos, bool anyPos, CVehicle* trailer);
 };
 
 class NOVMT CBoat : public CVehicle
