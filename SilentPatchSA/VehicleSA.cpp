@@ -528,7 +528,7 @@ void CAutomobile::ProcessPhoenixBlower( int32_t modelID )
 	}
 
 	float finalAngle = 0.0f;
-	if ( m_fGasPedal > 0.0f )
+	if ( std::abs(m_fGasPedal) > 0.0f )
 	{
 		if ( m_fSpecialComponentAngle < 1.3f )
 		{
@@ -574,7 +574,7 @@ void CAutomobile::ProcessSweeper()
 
 void CAutomobile::ProcessNewsvan()
 {
-	if ( GetStatus() == STATUS_PLAYER )
+	if ( GetStatus() == STATUS_PLAYER || GetStatus() == STATUS_PHYSICS || GetStatus() == STATUS_SIMPLE )
 	{
 		// TODO: Point at something? Like nearest collectable or safehouse
 		m_fGunOrientation += CTimer::m_fTimeStep * 0.05f;
