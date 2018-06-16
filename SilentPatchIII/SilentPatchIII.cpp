@@ -888,7 +888,7 @@ void Patch_III_Common()
 
 		// push ecx
 		// nop...
-		Patch<uint8_t>( addr.get<void>( 0x3E ), 0x59 );
+		Patch<uint8_t>( addr.get<void>( 0x3E ), 0x51 );
 		Nop( addr.get<void>( 0x3E + 1 ), 6 );
 		InjectHook( addr.get<void>( 0x46 ), PickNextNodeToChaseCarXYZ );
 		Patch<uint8_t>( addr.get<void>( 0x4B + 2 ), 0xC );
