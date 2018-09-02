@@ -41,11 +41,13 @@ namespace SVF {
 		// Internal SP use only, formerly "rotor exceptions"
 		// Unreachable from RegisterSpecialVehicleFeature
 		NO_ROTOR_FADE,
+		FORCE_DOUBLE_RWHEELS_OFF,
+		FORCE_DOUBLE_RWHEELS_ON,
 	};
 
 	Feature GetFeatureFromName( const char* featureName )
 	{
-		const std::pair< const char*, Feature > features[] = {
+		constexpr std::pair< const char*, Feature > features[] = {
 			{ "PHOENIX_FLUTTER", Feature::PHOENIX_FLUTTER },
 			{ "SWEEPER_BRUSHES", Feature::SWEEPER_BRUSHES },
 			{ "NEWSVAN_DISH", Feature::NEWSVAN_DISH },
@@ -142,6 +144,90 @@ namespace SVF {
 			return std::get<Feature>(e.second) == feature;
 		} ) != results.second;
 	}
+
+	template<typename Pred>
+	Pred ForAllModelFeatures( int32_t modelID, Pred&& pred )
+	{
+		auto results = specialVehFeatures.equal_range( modelID );
+		for ( auto it = results.first; it != results.second; ++it )
+		{
+			std::forward<Pred>(pred)(std::get<Feature>(it->second));
+		}
+		return std::forward<Pred>(pred);
+	}
+}
+
+bool ReadDoubleRearWheels(const wchar_t* pPath)
+{
+	bool listedAny = false;
+
+	constexpr size_t SCRATCH_PAD_SIZE = 32767;
+	WideDelimStringReader reader( SCRATCH_PAD_SIZE );
+
+	GetPrivateProfileSectionW( L"DoubleRearWheels", reader.GetBuffer(), reader.GetSize(), pPath );
+	while ( const wchar_t* str = reader.GetString() )
+	{
+		wchar_t textLine[64];
+		wchar_t* context = nullptr;
+		wchar_t* token;
+
+		wcscpy_s( textLine, str );
+		token = wcstok_s( textLine, L"=", &context );
+
+		int32_t toList = wcstol( token, nullptr, 0 );
+		if ( toList <= 0 ) continue;
+
+		wchar_t* begin = wcstok_s( nullptr, L"=", &context );	
+		if ( begin == nullptr ) continue;
+
+		wchar_t* end = nullptr;
+		bool value = wcstoul( begin, &end, 0 ) != 0;
+		if ( begin != end )
+		{
+			SVF::RegisterFeature( toList, value ? SVF::Feature::FORCE_DOUBLE_RWHEELS_ON : SVF::Feature::FORCE_DOUBLE_RWHEELS_OFF );
+			listedAny = true;
+		}
+	}
+	return listedAny;
+}
+
+// 1.0 ONLY!
+bool __stdcall CheckDoubleRWheelsList( void* modelInfo, uint8_t* handlingData )
+{
+	static void* lastModelInfo = nullptr;
+	static bool lastResult = false;
+
+	if ( modelInfo == lastModelInfo ) return lastResult;
+	lastModelInfo = modelInfo;
+
+	const uint32_t numModelInfoPtrs = *(uint32_t*)0x4C5956+2;
+	int32_t modelID = std::distance( ms_modelInfoPtrs, std::find( ms_modelInfoPtrs, ms_modelInfoPtrs+numModelInfoPtrs, modelInfo ) );
+
+	bool foundFeature = false;
+	bool featureStatus = false;
+	SVF::ForAllModelFeatures( modelID, [&]( SVF::Feature f ) {
+		if ( foundFeature ) return;
+
+		if ( f == SVF::Feature::FORCE_DOUBLE_RWHEELS_OFF )
+		{
+			foundFeature = true;
+			featureStatus = false;
+		}
+		else if ( f == SVF::Feature::FORCE_DOUBLE_RWHEELS_ON )
+		{
+			foundFeature = true;
+			featureStatus = true;	
+		}
+	} );
+	if ( !foundFeature )
+	{
+		uint32_t flags = *(uint32_t*)(handlingData+0xCC);
+		lastResult = (flags & 0x20000000) != 0;
+		return lastResult;
+	}
+
+	lastResult = featureStatus;
+	return lastResult;
 }
 
 
