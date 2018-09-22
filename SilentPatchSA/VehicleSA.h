@@ -261,8 +261,10 @@ public:
 	//void			CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo);
 
 	bool			HasFirelaLadder() const;
+	void*			PlayPedHitSample_GetColModel();
 
 	bool			IsLawEnforcementVehicle();
+	CPed*			PickRandomPassenger();
 
 	static void		SetComponentRotation( RwFrame* component, eRotAxis axis, float angle, bool absolute = true );
 	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);

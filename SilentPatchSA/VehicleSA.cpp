@@ -345,6 +345,21 @@ bool CVehicle::HasFirelaLadder() const
 	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::FIRELA_LADDER );
 }
 
+void* CVehicle::PlayPedHitSample_GetColModel()
+{
+	if ( this == FindPlayerVehicle() )
+	{
+		CPed *pPassenger = PickRandomPassenger();
+		if ( pPassenger != nullptr )
+		{
+			constexpr uint16_t CONTEXT_GLOBAL_CAR_HIT_PED = 36;
+			pPassenger->Say( CONTEXT_GLOBAL_CAR_HIT_PED );
+		}
+	}
+
+	return GetColModel();
+}
+
 void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha)
 {
 	RpGeometry*	pGeometry = RpAtomicGetGeometry(pAtomic);
@@ -419,6 +434,18 @@ void CVehicle::SetComponentRotation( RwFrame* component, eRotAxis axis, float an
 		matrix.GetPos() += pos;
 	}
 	matrix.UpdateRW();
+}
+
+CPed* CVehicle::PickRandomPassenger()
+{
+	const unsigned int randomNum = static_cast<unsigned int>((static_cast<double>(rand()) / RAND_MAX) * 8.0);
+	for ( size_t i = 0; i < 8; i++ )
+	{
+		const size_t index = (i + randomNum) % 8;
+		if ( m_apPassengers[index] != nullptr ) return m_apPassengers[index];
+	}
+
+	return nullptr;
 }
 
 void CHeli::Render()

@@ -7,6 +7,9 @@ WRAPPER unsigned char CPed::GetWeaponSkill() { VARJMP(varGetWeaponSkill); }
 static void* varSetGunFlashAlpha = AddressByVersion<void*>(0x5DF400, 0x5DFC20, 0x5FC120);
 WRAPPER void CPed::SetGunFlashAlpha(bool bSecondWeapon) { WRAPARG(bSecondWeapon); VARJMP(varSetGunFlashAlpha); }
 
+static void* varSay = AddressByVersion<void*>(0x5EFFE0, 0, 0); // TODO: Do
+WRAPPER void CPed::Say(uint16_t phrase, uint32_t param2, float volume, bool param4, bool param5, bool param6) { VARJMP(varSay); }
+
 static void* varGetTaskJetPack = AddressByVersion<void*>(0x601110, 0x601930, 0x620E70);
 WRAPPER CTaskSimpleJetPack* CPedIntelligence::GetTaskJetPack() const { VARJMP(varGetTaskJetPack); }
 

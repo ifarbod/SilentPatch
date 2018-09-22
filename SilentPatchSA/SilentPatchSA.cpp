@@ -3701,6 +3701,11 @@ void Patch_SA_10()
 	// Tug tow bar (misc_b instead of misc_a
 	Nop( 0x6AF2CC, 1 );
 	InjectHook( 0x6AF2CC + 1, &CAutomobile::GetTowBarFrame, PATCH_CALL );
+
+
+	// Play passenger's voice lines when killing peds with car, not only when hitting them damages player's vehicle
+	ReadCall( 0x5F05CA, CEntity::orgGetColModel );
+	InjectHook( 0x5F05CA, &CVehicle::PlayPedHitSample_GetColModel );
 }
 
 void Patch_SA_11()

@@ -23,6 +23,8 @@ static RwTexture*& ms_pRemapTexture = **AddressByVersion<RwTexture***>(0x59F1BD,
 
 auto	SetEditableMaterialsCB = AddressByVersion<RpAtomic*(*)(RpAtomic*,void*)>(0x4C83E0, 0x4C8460, 0x4D2CE0);
 
+void*	(CEntity::*CEntity::orgGetColModel)();
+
 static void ResetEditableMaterials(std::pair<void*,int>* pData)
 {
 	for ( auto* i = pData; i->first != nullptr; i++ )

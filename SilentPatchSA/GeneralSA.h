@@ -197,7 +197,12 @@ public:
     //********* END CEntityInfo ************//
 
 public:
+	static void*	(CEntity::*orgGetColModel)();
+
+public:
 	uint8_t	GetStatus() const { return nStatus; }
+
+	void* GetColModel() { return std::invoke(orgGetColModel, this); }
 
 	bool IsVisible();
 
