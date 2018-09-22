@@ -3706,6 +3706,8 @@ void Patch_SA_10()
 	// Play passenger's voice lines when killing peds with car, not only when hitting them damages player's vehicle
 	ReadCall( 0x5F05CA, CEntity::orgGetColModel );
 	InjectHook( 0x5F05CA, &CVehicle::PlayPedHitSample_GetColModel );
+	// Prevent samples from playing where they used to, so passengers don't comment on gently pushing peds
+	InjectHook( 0x6A8298, &CPed::Say_SampleBlackList<CONTEXT_GLOBAL_CAR_HIT_PED> );
 }
 
 void Patch_SA_11()

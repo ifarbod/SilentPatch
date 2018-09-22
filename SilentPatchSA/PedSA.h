@@ -319,7 +319,18 @@ public:
 
 	static void (CPed::*orgGiveWeapon)(uint32_t weapon, uint32_t ammo, bool flag);
 	void				GiveWeapon_SP( uint32_t weapon, uint32_t ammo, bool flag );
+
+	template<uint16_t blackSample>
+	void				Say_SampleBlackList(uint16_t phrase, uint32_t param2 = 0, float volume = 1.0f, bool param4 = false, bool param5 = false, bool param6 = false)
+	{
+		if ( !(phrase == blackSample) )
+		{
+			Say( phrase, param2, volume, param4, param5, param6 );
+		}
+	}
 };
+
+constexpr uint16_t CONTEXT_GLOBAL_CAR_HIT_PED = 36; // CPed::Say enum
 
 class NOVMT CPlayerPed : public CPed
 {

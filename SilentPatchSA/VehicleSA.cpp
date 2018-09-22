@@ -352,7 +352,6 @@ void* CVehicle::PlayPedHitSample_GetColModel()
 		CPed *pPassenger = PickRandomPassenger();
 		if ( pPassenger != nullptr )
 		{
-			constexpr uint16_t CONTEXT_GLOBAL_CAR_HIT_PED = 36;
 			pPassenger->Say( CONTEXT_GLOBAL_CAR_HIT_PED );
 		}
 	}
