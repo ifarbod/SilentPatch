@@ -972,30 +972,6 @@ DWORD WINAPI CdStreamSetFilePointer( HANDLE hFile, uint32_t distanceToMove, PLON
 }
 static auto* const pCdStreamSetFilePointer = CdStreamSetFilePointer;
 
-
-static signed int& LastTimeFireTruckCreated = **AddressByVersion<int**>(0x42131F + 2, 0, 0x42224D + 2);
-static signed int& LastTimeAmbulanceCreated = **AddressByVersion<int**>(0x421319 + 2, 0, 0x422247 + 2);
-static float& TimeNextMadDriverChaseCreated = **AddressByVersion<float**>(0x421369 + 2, 0, 0x42229D + 2);
-static void (*orgCarCtrlReInit)();
-void CarCtrlReInit_SilentPatch()
-{
-	orgCarCtrlReInit();
-	LastTimeFireTruckCreated = 0;
-	LastTimeAmbulanceCreated = 0;
-	TimeNextMadDriverChaseCreated = (static_cast<float>(Int32Rand()) / INT32_MAX) * 600.0f + 600.0f;
-}
-
-static signed int* LastTimeFireTruckCreated_Newsteam;
-static signed int* LastTimeAmbulanceCreated_Newsteam;
-static float* TimeNextMadDriverChaseCreated_Newsteam;
-void CarCtrlReInit_SilentPatch_Newsteam()
-{
-	orgCarCtrlReInit();
-	*LastTimeFireTruckCreated_Newsteam = 0;
-	*LastTimeAmbulanceCreated_Newsteam = 0;
-	*TimeNextMadDriverChaseCreated_Newsteam = (static_cast<float>(Int32Rand()) / INT32_MAX) * 600.0f + 600.0f;
-}
-
 static void (*orgDrawScriptSpritesAndRectangles)(uint8_t);
 void DrawScriptSpritesAndRectangles( uint8_t arg )
 {
@@ -1452,6 +1428,40 @@ namespace HierarchyTypoFix
 
 }
 
+
+// Resetting stats and variables on New Game
+namespace VariableResets
+{
+	// Custom reset values for variables
+	template<typename T>
+	struct TimeNextMadDriverChaseCreated_t
+	{
+		T m_timer;
+
+		TimeNextMadDriverChaseCreated_t()
+			: m_timer( (static_cast<float>(Int32Rand()) / INT32_MAX) * 600.0f + 600.0f )
+		{
+		}
+	};
+
+	using VarVariant = std::variant<bool*, int*, TimeNextMadDriverChaseCreated_t<float>*>;
+	std::vector<VarVariant> GameVariablesToReset;
+
+	static void (*orgReInitGameObjectVariables)();
+	void ReInitGameObjectVariables()
+	{
+		// First reinit "our" variables in case stock ones rely on those during resetting
+		for ( const auto& var : GameVariablesToReset )
+		{
+			std::visit( []( auto&& v ) {
+				*v = {};
+			}, var );
+		}
+
+		orgReInitGameObjectVariables();
+	}
+
+}
 
 #ifndef NDEBUG
 
@@ -3252,12 +3262,6 @@ void Patch_SA_10()
 	// Only 1.0 and Steam
 	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
 
-	// CGarages::RespraysAreFree resetting on new game
-	Patch<WORD>(0x448BD8, 0x8966);
-	Patch<BYTE>(0x448BDA, 0x0D);
-	Patch<bool*>(0x448BDB, *(bool**)0x44AC98);
-	Patch<BYTE>(0x448BDF, 0xC3);
-
 	// Bilinear filtering for license plates
 	//Patch<BYTE>(0x6FD528, rwFILTERLINEAR);
 	Patch<BYTE>(0x6FDF47, rwFILTERLINEAR);
@@ -3503,11 +3507,6 @@ void Patch_SA_10()
 	Patch<int8_t>( AddressByRegion_10<int>(0x74825E), 0x4C-0x3C ); // use stack space for new lParam
 
 
-	 // Reinit CCarCtrl fields (firetruck and ambulance generation)
-	ReadCall( 0x53BD5B, orgCarCtrlReInit );
-	InjectHook(0x53BD5B, CarCtrlReInit_SilentPatch);
-
-
 	// FuckCarCompletely not fixing panels
 	Nop(0x6C268D, 3);
 
@@ -3708,6 +3707,35 @@ void Patch_SA_10()
 	InjectHook( 0x5F05CA, &CVehicle::PlayPedHitSample_GetColModel );
 	// Prevent samples from playing where they used to, so passengers don't comment on gently pushing peds
 	InjectHook( 0x6A8298, &CPed::Say_SampleBlackList<CONTEXT_GLOBAL_CAR_HIT_PED> );
+
+
+	// Reset variables on New Game
+	{
+		using namespace VariableResets;
+
+		ReadCall( 0x53C6DB, orgReInitGameObjectVariables );
+		InjectHook( 0x53C6DB, ReInitGameObjectVariables );
+		InjectHook( 0x53C76D, ReInitGameObjectVariables );
+
+		// Variables to reset
+		GameVariablesToReset.emplace_back( *(bool**)(0x63E8D8+1) ); // CPlayerPed::bHasDisplayedPlayerQuitEnterCarHelpText
+		GameVariablesToReset.emplace_back( *(bool**)(0x44AC97+1) ); // CGarages::RespraysAreFree
+		GameVariablesToReset.emplace_back( *(bool**)(0x44B49D+1) ); // CGarages::BombsAreFree
+
+		GameVariablesToReset.emplace_back( *(int**)(0x42131F + 2) ); // CCarCtrl::LastTimeFireTruckCreated
+		GameVariablesToReset.emplace_back( *(int**)(0x421319 + 2) ); // CCarCtrl::LastTimeAmbulanceCreated
+
+		GameVariablesToReset.emplace_back( *(int**)(0x55C843 + 1) ); // CStats::m_CycleSkillCounter
+		GameVariablesToReset.emplace_back( *(int**)(0x55CA39 + 1) ); // CStats::m_SwimUnderWaterCounter
+		GameVariablesToReset.emplace_back( *(int**)(0x55CF3E + 2) ); // CStats::m_WeaponCounter
+		GameVariablesToReset.emplace_back( *(int**)(0x55CF2A + 2) ); // CStats::m_LastWeaponTypeFired
+		GameVariablesToReset.emplace_back( *(int**)(0x55CFC1 + 1) ); // CStats::m_DeathCounter
+		GameVariablesToReset.emplace_back( *(int**)(0x55C5E5 + 1) ); // CStats::m_MaxHealthCounter
+		GameVariablesToReset.emplace_back( *(int**)(0x55D043 + 1) ); // CStats::m_AddToHealthCounter
+
+		// Non-zero inits still need to be done
+		GameVariablesToReset.emplace_back( *(TimeNextMadDriverChaseCreated_t<float>**)(0x421369 + 2) ); // CCarCtrl::TimeNextMadDriverChaseCreated
+	}
 }
 
 void Patch_SA_11()
@@ -4408,11 +4436,6 @@ void Patch_SA_Steam()
 	Patch<int8_t>( 0x782220 + 3, 0x4C-0x2C ); // use stack space for new lParam
 
 
-	// Reinit CCarCtrl fields (firetruck and ambulance generation)
-	ReadCall( 0x54DCCB, orgCarCtrlReInit );
-	InjectHook(0x54DCCB, CarCtrlReInit_SilentPatch);
-
-
 	// FuckCarCompletely not fixing panels
 	Nop(0x6F5EC1, 3);
 
@@ -4956,14 +4979,13 @@ void Patch_SA_NewSteam_Common()
 
 	// Reinit CCarCtrl fields (firetruck and ambulance generation)
 	{
-		void* reinit_addr = get_pattern( "53 E8 ? ? ? ? E8 ? ? ? ? D9 05 ? ? ? ? D9 1C 24", -15 );
+		using namespace VariableResets;
+
 		auto timers_init = pattern( "89 45 FC DB 45 FC C6 05 ? ? ? ? 01" ).get_one();
 
-		LastTimeAmbulanceCreated_Newsteam = *timers_init.get<signed int*>(-17 + 2);
-		LastTimeFireTruckCreated_Newsteam = *timers_init.get<signed int*>(-11 + 2);
-		TimeNextMadDriverChaseCreated_Newsteam = *timers_init.get<float*>(0x41 + 2);
-		ReadCall( reinit_addr, orgCarCtrlReInit );
-		InjectHook(reinit_addr, CarCtrlReInit_SilentPatch_Newsteam);
+		GameVariablesToReset.emplace_back( *timers_init.get<signed int*>(-17 + 2) );
+		GameVariablesToReset.emplace_back( *timers_init.get<signed int*>(-11 + 2) );
+		GameVariablesToReset.emplace_back( *timers_init.get<TimeNextMadDriverChaseCreated_t<float>*>(0x41 + 2) );
 	}
 
 	// FuckCarCompletely not fixing panels
