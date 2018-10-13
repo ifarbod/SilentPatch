@@ -555,7 +555,7 @@ void Patch_III_10(const RECT& desktop)
 	Patch<DWORD>(0x566A15, 0);
 	Nop(0x566A56, 6);
 	Nop(0x581C44, 2);
-	Nop(0x581C52, 6);
+	Nop(0x581C52, 2);
 	Patch<const char*>(0x566A3D, "");
 
 	// Fixed crash related to autopilot timing calculations
@@ -692,7 +692,7 @@ void Patch_III_11(const RECT& desktop)
 	Patch<DWORD>(0x566B55, 0);
 	Nop(0x566B96, 6);
 	Nop(0x581F84, 2);
-	Nop(0x581F92, 6);
+	Nop(0x581F92, 2);
 	Patch<const char*>(0x566B7D, "");
 
 	// Fixed crash related to autopilot timing calculations
