@@ -3736,6 +3736,9 @@ void Patch_SA_10()
 		// Non-zero inits still need to be done
 		GameVariablesToReset.emplace_back( *(TimeNextMadDriverChaseCreated_t<float>**)(0x421369 + 2) ); // CCarCtrl::TimeNextMadDriverChaseCreated
 	}
+
+	// Don't clean the car BEFORE Pay 'n Spray doors close, as it gets cleaned later again anyway!
+	Nop( 0x44ACDC, 6 );
 }
 
 void Patch_SA_11()
