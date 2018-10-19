@@ -33,7 +33,7 @@ void CVehicleModelInfo::Shutdown()
 {
 	CBaseModelInfo::Shutdown();
 
-	delete m_dirtMaterials;
+	delete[] m_dirtMaterials;
 	m_dirtMaterials = nullptr;
 
 	delete m_apPlateMaterials;

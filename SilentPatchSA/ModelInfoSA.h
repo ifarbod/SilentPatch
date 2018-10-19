@@ -232,8 +232,8 @@ struct PlateMaterialsData // Added in SilentPatch
 
 	~PlateMaterialsData()
 	{
-		delete m_plates;
-		delete m_platebacks;
+		delete[] m_plates;
+		delete[] m_platebacks;
 	}
 };
 
