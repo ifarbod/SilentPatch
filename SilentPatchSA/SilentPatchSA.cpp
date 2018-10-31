@@ -56,9 +56,8 @@ namespace ModCompat
 	{
 		if ( module == nullptr ) return false; // modloader not installed
 
-		HMODULE stdStreamModule = nullptr;
-		GetModuleHandleEx( 0, TEXT("std.stream.dll"), &stdStreamModule );
-		if ( stdStreamModule == nullptr ) return false; // std.data not loaded
+		HMODULE stdStreamModule;
+		if ( GetModuleHandleEx( 0, TEXT("std.stream.dll"), &stdStreamModule ) == 0 ) return false; // std.data not loaded
 
 		// ML is installed, so if it's an old version we need to fall back to a less safe implementation (no condition variables)
 		bCdStreamFallBackForOldML = true;
