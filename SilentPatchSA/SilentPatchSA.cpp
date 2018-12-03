@@ -372,10 +372,10 @@ RpAtomic* RenderBigVehicleActomic(RpAtomic* pAtomic, float)
 {
 	const char*		pNodeName = GetFrameNodeName(RpAtomicGetFrame(pAtomic));
 
-	if ( _stricmp(pNodeName, "moving_prop") == 0 )
+	if ( strncmp(pNodeName, "moving_prop", 11) == 0 )
 		return MovingPropellerRender(pAtomic);
 
-	if ( _stricmp(pNodeName, "static_prop") == 0 )
+	if ( strncmp(pNodeName, "static_prop", 11) == 0 )
 		return StaticPropellerRender(pAtomic);
 
 	return AtomicDefaultRenderCallBack(pAtomic);
@@ -1670,16 +1670,18 @@ void __declspec(naked) PlaneAtomicRendererSetup()
 		call	GetFrameNodeName
 		//push	eax
 		mov		[esp+8+8], eax
+		push	11
 		push	offset aStaticProp
 		push	eax
-		call	_stricmp
-		add		esp, 0Ch
+		call	strncmp
+		add		esp, 10h
 		test	eax, eax
 		jz		PlaneAtomicRendererSetup_Alpha
+		push	11
 		push	offset aMovingProp
-		push	[esp+12+4]
-		call	_stricmp
-		add		esp, 8
+		push	[esp+12+8]
+		call	strncmp
+		add		esp, 0Ch
 		test	eax, eax
 		jnz		PlaneAtomicRendererSetup_NoAlpha
 
@@ -1702,6 +1704,13 @@ static void*	RenderVehicleHiDetailAlphaCB = AddressByVersion<void*>(0x733F80, 0x
 static void*	RenderHeliRotorAlphaCB = AddressByVersion<void*>(0x7340B0, 0x7348E0, 0x76E110);
 static void*	RenderHeliTailRotorAlphaCB = AddressByVersion<void*>(0x734170, 0x7349A0, 0x76E1E0);
 static void*	HunterTest_JumpBack = AddressByVersion<void*>(0x4C7914, 0x4C7994, 0x4D2203);
+
+// strcmp can't be invoked from inline assembly block?
+static int strcmp_wrap(const char *s1, const char *s2)
+{
+	return strcmp( s1, s2 );
+}
+
 void __declspec(naked) HunterTest()
 {
 	static const char	aDoorDummy[] = "door_lf_ok";
@@ -1713,23 +1722,24 @@ void __declspec(naked) HunterTest()
 		setnz	al
 		movzx	di, al
 
+		push	10
 		push	offset aWindscreen
 		push	ebp
-		call	_stricmp
-		add		esp, 8
+		call	strncmp
+		add		esp, 0Ch
 		test	eax, eax
 		jz		HunterTest_RegularAlpha
 
 		push	offset aStaticRotor2
 		push	ebp
-		call	_stricmp
+		call	strcmp_wrap
 		add		esp, 8
 		test	eax, eax
 		jz		HunterTest_StaticRotor2AlphaSet
 
 		push	offset aStaticRotor
 		push	ebp
-		call	_stricmp
+		call	strcmp_wrap
 		add		esp, 8
 		test	eax, eax
 		jz		HunterTest_StaticRotorAlphaSet
@@ -1745,7 +1755,7 @@ HunterTest_DoorTest:
 		jnz		HunterTest_RegularAlpha
 		push	offset aDoorDummy
 		push	ebp
-		call	_stricmp
+		call	strcmp_wrap
 		add		esp, 8
 		test	eax, eax
 		jnz		HunterTest_RegularAlpha
