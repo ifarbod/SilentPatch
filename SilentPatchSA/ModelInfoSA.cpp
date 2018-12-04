@@ -50,7 +50,7 @@ void CVehicleModelInfo::FindEditableMaterialList()
 			{
 				if ( const char* texName = RwTextureGetName(texture) )
 				{
-					if ( _stricmp(texName, "vehiclegrunge256") == 0 )
+					if ( strcmp(texName, "vehiclegrunge256") == 0 )
 					{
 						editableMaterials.push_back( material );
 					}
@@ -107,11 +107,11 @@ void CCustomCarPlateMgr::PollPlates( RpClump* clump, PlateMaterialsData* materia
 			{
 				if ( const char* texName = RwTextureGetName(texture) )
 				{
-					if ( _stricmp( texName, "carplate" ) == 0 )
+					if ( strcmp( texName, "carplate" ) == 0 )
 					{
 						carplates.push_back( material );
 					}
-					else if ( _stricmp( texName, "carpback" ) == 0 )
+					else if ( strcmp( texName, "carpback" ) == 0 )
 					{
 						carpbacks.push_back( material );
 					}
