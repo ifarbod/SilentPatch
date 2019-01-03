@@ -763,7 +763,7 @@ char* GetMyDocumentsPathSA()
 }
 
 static LARGE_INTEGER	FrameTime;
-int32_t GetTimeSinceLastFrame()
+__declspec(safebuffers) int32_t GetTimeSinceLastFrame()
 {
 	LARGE_INTEGER	curTime;
 	QueryPerformanceCounter(&curTime);
@@ -2134,7 +2134,7 @@ DarkVehiclesFix4_MakeItDark:
 }
 // 1.0 ONLY ENDS HERE
 
-static int _Timers_ftol_internal( double timer, double& remainder )
+__declspec(safebuffers) static int _Timers_ftol_internal( double timer, double& remainder )
 {
 	double integral;
 	remainder = modf( timer + remainder, &integral );

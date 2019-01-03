@@ -161,7 +161,7 @@ void __declspec(naked) CreateInstance_BikeFix()
 extern char** ppUserFilesDir = AddressByVersion<char**>(0x6022AA, 0x60228A, 0x601ECA);
 
 static LARGE_INTEGER	FrameTime;
-int32_t GetTimeSinceLastFrame()
+__declspec(safebuffers) int32_t GetTimeSinceLastFrame()
 {
 	LARGE_INTEGER	curTime;
 	QueryPerformanceCounter(&curTime);

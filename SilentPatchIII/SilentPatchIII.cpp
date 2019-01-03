@@ -296,7 +296,7 @@ void __declspec(naked) RadarBoundsCheckEntityBlip()
 extern char** ppUserFilesDir = AddressByVersion<char**>(0x580C16, 0x580F66, 0x580E66);
 
 static LARGE_INTEGER	FrameTime;
-int32_t GetTimeSinceLastFrame()
+__declspec(safebuffers) int32_t GetTimeSinceLastFrame()
 {
 	LARGE_INTEGER	curTime;
 	QueryPerformanceCounter(&curTime);
