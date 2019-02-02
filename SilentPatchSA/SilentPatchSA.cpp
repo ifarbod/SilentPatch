@@ -3748,6 +3748,15 @@ void Patch_SA_10()
 
 	// Don't clean the car BEFORE Pay 'n Spray doors close, as it gets cleaned later again anyway!
 	Nop( 0x44ACDC, 6 );
+
+
+#if FULL_PRECISION_D3D
+	// Test - full precision D3D device
+	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
+	Patch<uint8_t>( 0x7F6751+1, *(uint8_t*)(0x7F6751+1) | D3DCREATE_FPU_PRESERVE );
+	Patch<uint8_t>( 0x7F6755+1, *(uint8_t*)(0x7F6755+1) | D3DCREATE_FPU_PRESERVE );
+	Patch<uint8_t>( 0x7F6759+1, *(uint8_t*)(0x7F6759+1) | D3DCREATE_FPU_PRESERVE );
+#endif
 }
 
 void Patch_SA_11()
