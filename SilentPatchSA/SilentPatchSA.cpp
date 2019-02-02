@@ -1462,6 +1462,52 @@ namespace VariableResets
 
 }
 
+namespace LightbeamFix
+{
+	template<RwRenderState State>
+	class RenderStateWrapper
+	{
+	private:
+		static inline void* SavedState;
+
+		static void PushState( RwRenderState state, void* value )
+		{
+			assert( State == state );
+			RwRenderStateGet( state, &SavedState );
+			RwRenderStateSet( state, value );
+		}
+		static inline const auto pPushState = &PushState;
+
+		static void PopState( RwRenderState state, void* )
+		{
+			assert( State == state );
+			RwRenderStateSet( state, SavedState );
+
+			// Restore states R* did not restore after changing them
+			if constexpr ( State == rwRENDERSTATEDESTBLEND )
+			{
+				RenderStateWrapper<rwRENDERSTATESHADEMODE>::PopAnotherState();
+			}
+			if constexpr ( State == rwRENDERSTATECULLMODE )
+			{
+				RenderStateWrapper<rwRENDERSTATEALPHATESTFUNCTION>::PopAnotherState();
+				RenderStateWrapper<rwRENDERSTATEALPHATESTFUNCTIONREF>::PopAnotherState();
+			}
+		}
+		static inline const auto pPopState = &PopState;
+
+	public:
+		static void PopAnotherState()
+		{
+			PopState( State, nullptr );
+		}
+
+		static inline const uintptr_t PushStatePPtr = reinterpret_cast<uintptr_t>(&pPushState) - 0x20;
+		static inline const uintptr_t PopStatePPtr = reinterpret_cast<uintptr_t>(&pPopState) - 0x20;
+	};
+
+}
+
 #ifndef NDEBUG
 
 // ============= QPC spoof for verifying high timer issues =============
@@ -1633,42 +1679,6 @@ void __declspec(naked) UserTracksFix_Steam()
 		mov		byte ptr [ecx+5], 1
 		call	InitializeUtrax
 		retn	4
-	}
-}
-
-void __declspec(naked) ResetAlphaFuncRefAfterRender()
-{
-	_asm
-	{
-		mov		edx, [rwengine]
-		mov		edx, [edx]
-		mov		ecx, [esp+7Ch-74h]
-		push	ecx
-		push	rwRENDERSTATEALPHATESTFUNCTIONREF
-		call    dword ptr [edx+20h]
-		add		esp, 8
-		pop		edi
-		pop		esi
-		add     esp, 74h
-		retn
-	}
-}
-
-void __declspec(naked) ResetAlphaFuncRefAfterRender_Steam()
-{
-	_asm
-	{
-		mov		edx, [rwengine]
-		mov		edx, [edx]
-		mov		ecx, [esp+80h-74h]
-		push	ecx
-		push	rwRENDERSTATEALPHATESTFUNCTIONREF
-		call    dword ptr [edx+20h]
-		add		esp, 8
-		pop		edi
-		pop		esi
-		add     esp, 78h
-		retn
 	}
 }
 
@@ -3176,22 +3186,28 @@ void Patch_SA_10()
 	//Patch<BYTE>(0x5B3ADD, 4);
 
 	// Lightbeam fix
-	Nop(0x6A2E95, 3);
-	Patch<WORD>(0x6E0F63, 0x0AEB);
-	Patch<WORD>(0x6E0F7C, 0x0BEB);
-	Patch<WORD>(0x6E0F95, 0x0BEB);
-	Patch<WORD>(0x6E0FAF, 0x1AEB);
+	{
+		using namespace LightbeamFix;
 
-	Patch<WORD>(0x6E13D5, 0x09EB);
-	Patch<WORD>(0x6E13ED, 0x17EB);
-	Patch<WORD>(0x6E141F, 0x0AEB);
+		Patch( 0x6E0F37 + 2, &RenderStateWrapper<rwRENDERSTATEZWRITEENABLE>::PushStatePPtr );
+		Patch( 0x6E0F63 + 1, &RenderStateWrapper<rwRENDERSTATEZTESTENABLE>::PushStatePPtr );
+		Patch( 0x6E0F6F + 2, &RenderStateWrapper<rwRENDERSTATEVERTEXALPHAENABLE>::PushStatePPtr );
+		Patch( 0x6E0F7C + 2, &RenderStateWrapper<rwRENDERSTATESRCBLEND>::PushStatePPtr );
+		Patch( 0x6E0F89 + 1, &RenderStateWrapper<rwRENDERSTATEDESTBLEND>::PushStatePPtr );
+		Patch( 0x6E0F95 + 2, &RenderStateWrapper<rwRENDERSTATESHADEMODE>::PushStatePPtr );
+		// rwRENDERSTATETEXTURERASTER not saved
+		Patch( 0x6E0FAF + 1, &RenderStateWrapper<rwRENDERSTATECULLMODE>::PushStatePPtr );
+		Patch( 0x6E0FBB + 2, &RenderStateWrapper<rwRENDERSTATEALPHATESTFUNCTION>::PushStatePPtr );
+		Patch( 0x6E0FCB + 2, &RenderStateWrapper<rwRENDERSTATEALPHATESTFUNCTIONREF>::PushStatePPtr );
 
-	Patch<BYTE>(0x6E0FE0, 0x28);
-	Patch<BYTE>(0x6E142D, 0x18);
-	Patch<BYTE>(0x6E0FDB, 0xC8-0x7C);
-	//InjectHook(0x6A2EDA, CullTest);
-
-	InjectHook(0x6A2EF7, ResetAlphaFuncRefAfterRender, PATCH_JUMP);
+		// rwRENDERSTATETEXTURERASTER not saved
+		Patch( 0x6E13E0 + 2, &RenderStateWrapper<rwRENDERSTATEZWRITEENABLE>::PopStatePPtr );
+		Patch( 0x6E13ED + 2, &RenderStateWrapper<rwRENDERSTATEZTESTENABLE>::PopStatePPtr );
+		Patch( 0x6E13FA + 1, &RenderStateWrapper<rwRENDERSTATESRCBLEND>::PopStatePPtr );
+		Patch( 0x6E1406 + 2, &RenderStateWrapper<rwRENDERSTATEDESTBLEND>::PopStatePPtr );
+		Patch( 0x6E1413 + 2, &RenderStateWrapper<rwRENDERSTATEVERTEXALPHAENABLE>::PopStatePPtr );
+		Patch( 0x6E141F + 1, &RenderStateWrapper<rwRENDERSTATECULLMODE>::PopStatePPtr );
+	}
 
 	// PS2 SUN!!!!!!!!!!!!!!!!!
 	Nop(0x6FB17C, 3);
@@ -3820,6 +3836,8 @@ void Patch_SA_11()
 	InjectHook(0x7142FB, HandleMoonStuffStub, PATCH_JUMP);
 
 	// Lightbeam fix
+	// Removed in Build 30 because the fix has been revisited
+	/*
 	Nop(0x6A36B5, 3);
 	Patch<WORD>(0x6E1793, 0x0AEB);
 	Patch<WORD>(0x6E17AC, 0x0BEB);
@@ -3835,6 +3853,7 @@ void Patch_SA_11()
 	Patch<BYTE>(0x6E180B, 0xC8-0x7C);
 
 	InjectHook(0x6A3717, ResetAlphaFuncRefAfterRender, PATCH_JUMP);
+	*/
 
 	// PS2 SUN!!!!!!!!!!!!!!!!!
 	Nop(0x6FB9AC, 3);
@@ -4162,6 +4181,8 @@ void Patch_SA_Steam()
 	InjectHook(0x72F058, HandleMoonStuffStub_Steam, PATCH_JUMP);
 
 	// Lightbeam fix
+	// Removed in Build 30 because the fix has been revisited
+	/*
 	Patch<WORD>(0x6CFEF9, 0x10EB);
 	Nop(0x6CFF0F, 3);
 	Patch<WORD>(0x71D1F5, 0x0DEB);
@@ -4179,6 +4200,7 @@ void Patch_SA_Steam()
 	//InjectHook(0x6A2EDA, CullTest);
 
 	InjectHook(0x6CFF69, ResetAlphaFuncRefAfterRender_Steam, PATCH_JUMP);
+	*/
 
 	// PS2 SUN!!!!!!!!!!!!!!!!!
 	Nop(0x73362F, 2);
