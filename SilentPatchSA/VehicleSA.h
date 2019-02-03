@@ -271,8 +271,9 @@ public:
 
 	static inline void	(CVehicle::*orgDoHeadLightBeam)( int type, CMatrix& m, bool right );
 
-	static inline int8_t ms_lightbeamFixOverride = 0; // 0 - normal, 1 - always on, -1 - always off
+	static inline int8_t ms_lightbeamFixOverride = 0, ms_rotorFixOverride = 0; // 0 - normal, 1 - always on, -1 - always off
 	bool				IgnoresLightbeamFix() const;
+	bool				IgnoresRotorFix() const;
 
 	void DoHeadLightBeam( int type, CMatrix& m, bool right )
 	{

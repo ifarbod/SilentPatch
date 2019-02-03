@@ -233,9 +233,13 @@ bool __stdcall CheckDoubleRWheelsList( void* modelInfo, uint8_t* handlingData )
 
 
 // Now left only for "backwards compatibility"
-static bool ShouldIgnoreRotor( int32_t id )
+bool CVehicle::IgnoresRotorFix() const
 {
-	return SVF::ModelHasFeature( id, SVF::Feature::NO_ROTOR_FADE );
+	if ( ms_rotorFixOverride != 0 )
+	{
+		return ms_rotorFixOverride < 0;
+	}
+	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::NO_ROTOR_FADE );
 }
 
 static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0x6D1680, 0x70C0B0);
@@ -482,9 +486,9 @@ CPed* CVehicle::PickRandomPassenger()
 void CHeli::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
-	bool		bDisplayRotors = !ShouldIgnoreRotor( m_nModelIndex.Get() );
-	bool		bHasMovingRotor = m_pCarNode[13] != nullptr && bDisplayRotors;
-	bool		bHasMovingRotor2 = m_pCarNode[15] != nullptr && bDisplayRotors;
+	const bool	bDisplayRotors = !IgnoresRotorFix();
+	const bool	bHasMovingRotor = m_pCarNode[13] != nullptr && bDisplayRotors;
+	const bool	bHasMovingRotor2 = m_pCarNode[15] != nullptr && bDisplayRotors;
 
 	m_nTimeTillWeNeedThisCar = CTimer::m_snTimeInMilliseconds + 3000;
 
@@ -534,9 +538,9 @@ void CHeli::Render()
 void CPlane::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
-	bool		bDisplayRotors = !ShouldIgnoreRotor( m_nModelIndex.Get() );
-	bool		bHasMovingProp = m_pCarNode[13] != nullptr && bDisplayRotors;
-	bool		bHasMovingProp2 = m_pCarNode[15] != nullptr && bDisplayRotors;
+	const bool	bDisplayRotors = !IgnoresRotorFix();
+	const bool	bHasMovingProp = m_pCarNode[13] != nullptr && bDisplayRotors;
+	const bool	bHasMovingProp2 = m_pCarNode[15] != nullptr && bDisplayRotors;
 
 	m_nTimeTillWeNeedThisCar = CTimer::m_snTimeInMilliseconds + 3000;
 

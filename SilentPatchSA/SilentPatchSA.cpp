@@ -2331,6 +2331,48 @@ static const float		fSteamRadioNamePosY = 33.0f;
 static const float		fSteamRadioNameSizeX = 0.4f;
 static const float		fSteamRadioNameSizeY = 0.6f;
 
+static float* orgSubtitleSizeX;
+static float* orgSubtitleSizeY;
+static float* orgRadioNamePosY;
+static float* orgRadioNameSizeX;
+static float* orgRadioNameSizeY;
+
+static void ToggleSteamTexts( bool enable )
+{
+	using namespace Memory::VP;
+
+	if ( enable )
+	{
+		Patch<const void*>(0x58C387, &fSteamSubtitleSizeY);
+		Patch<const void*>(0x58C40F, &fSteamSubtitleSizeY);
+		Patch<const void*>(0x58C4CE, &fSteamSubtitleSizeY);
+
+		Patch<const void*>(0x58C39D, &fSteamSubtitleSizeX);
+		Patch<const void*>(0x58C425, &fSteamSubtitleSizeX);
+		Patch<const void*>(0x58C4E4, &fSteamSubtitleSizeX);
+
+		Patch<const void*>(0x4E9FD8, &fSteamRadioNamePosY);
+		Patch<const void*>(0x4E9F22, &fSteamRadioNameSizeY);
+		Patch<const void*>(0x4E9F38, &fSteamRadioNameSizeX);
+	}
+	else
+	{
+		assert( orgSubtitleSizeY != nullptr && orgSubtitleSizeX != nullptr && orgRadioNamePosY != nullptr && orgRadioNameSizeY != nullptr && orgRadioNameSizeX != nullptr );
+
+		Patch<const void*>(0x58C387, orgSubtitleSizeY);
+		Patch<const void*>(0x58C40F, orgSubtitleSizeY);
+		Patch<const void*>(0x58C4CE, orgSubtitleSizeY);
+
+		Patch<const void*>(0x58C39D, orgSubtitleSizeX);
+		Patch<const void*>(0x58C425, orgSubtitleSizeX);
+		Patch<const void*>(0x58C4E4, orgSubtitleSizeX);
+
+		Patch<const void*>(0x4E9FD8, orgRadioNamePosY);
+		Patch<const void*>(0x4E9F22, orgRadioNameSizeY);
+		Patch<const void*>(0x4E9F38, orgRadioNameSizeX);
+	}
+}
+
 static const double		dRetailSubtitleSizeX = 0.58;
 static const double		dRetailSubtitleSizeY = 1.2;
 static const double		dRetailSubtitleSizeY2 = 1.22;
@@ -2425,20 +2467,29 @@ BOOL InjectDelayedPatches_10()
 			Patch<WORD>(AddressByRegion_10<DWORD>(0x748AA8), 0x3DEB);
 		}
 
-		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == 1 )
 		{
-			// We're on 1.0 - make texts smaller
-			Patch<const void*>(0x58C387, &fSteamSubtitleSizeY);
-			Patch<const void*>(0x58C40F, &fSteamSubtitleSizeY);
-			Patch<const void*>(0x58C4CE, &fSteamSubtitleSizeY);
+			static bool bSmallSteamTexts = false;
+			if ( bHasDebugMenu )
+			{
+				orgSubtitleSizeX = *(float**)0x58C39D;
+				orgSubtitleSizeY = *(float**)0x58C387;
+				orgRadioNamePosY = *(float**)0x4E9FD8;
+				orgRadioNameSizeY = *(float**)0x4E9F22;
+				orgRadioNameSizeX = *(float**)0x4E9F38;
 
-			Patch<const void*>(0x58C39D, &fSteamSubtitleSizeX);
-			Patch<const void*>(0x58C425, &fSteamSubtitleSizeX);
-			Patch<const void*>(0x58C4E4, &fSteamSubtitleSizeX);
+				DebugMenuAddVar( "SilentPatch", "Small Steam texts", &bSmallSteamTexts, []() {
+					ToggleSteamTexts( bSmallSteamTexts );
+				} );
+			
+			}
 
-			Patch<const void*>(0x4E9FD8, &fSteamRadioNamePosY);
-			Patch<const void*>(0x4E9F22, &fSteamRadioNameSizeY);
-			Patch<const void*>(0x4E9F38, &fSteamRadioNameSizeX);
+			if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == 1 )
+			{
+				// We're on 1.0 - make texts smaller
+				ToggleSteamTexts( true );
+
+				bSmallSteamTexts = true;
+			}
 		}
 
 		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"ColouredZoneNames", -1, wcModulePath); INIoption != -1 )
@@ -2602,6 +2653,24 @@ BOOL InjectDelayedPatches_10()
 				Patch<int32_t>( 0x588905 + 1, 0 );
 			}
 		
+			if ( bHasDebugMenu )
+			{
+				static bool bMinimalHUDEnabled = INIoption == 1;
+				DebugMenuAddVar( "SilentPatch", "Minimal HUD", &bMinimalHUDEnabled, []() {
+					if ( bMinimalHUDEnabled )
+					{
+						Memory::VP::Patch<int32_t>( 0x588905 + 1, 0 );
+					}
+					else
+					{
+						Memory::VP::Patch<int32_t>( 0x588905 + 1, 5 );
+					}
+
+					// Call CHud::ReInitialise
+					auto ReInitialise = (void(*)())0x588880;
+					ReInitialise();
+				} );
+			}
 		}
 
 		// Moonphases
@@ -2690,7 +2759,11 @@ BOOL InjectDelayedPatches_10()
 		if ( bHasDebugMenu )
 		{
 			static const char * const str[] = { "Off", "Default", "On" };
-			DebugMenuEntry *e = DebugMenuAddVar( "SilentPatch", "Lightbeam fix", &CVehicle::ms_lightbeamFixOverride, nullptr, 1, -1, 1, str);
+
+			DebugMenuEntry *e = DebugMenuAddVar( "SilentPatch", "Rotors fix", &CVehicle::ms_rotorFixOverride, nullptr, 1, -1, 1, str);
+			DebugMenuEntrySetWrap(e, true);
+
+			e = DebugMenuAddVar( "SilentPatch", "Lightbeam fix", &CVehicle::ms_lightbeamFixOverride, nullptr, 1, -1, 1, str);
 			DebugMenuEntrySetWrap(e, true);
 		}
 
