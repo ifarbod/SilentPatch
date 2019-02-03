@@ -41,6 +41,7 @@ namespace SVF {
 		// Internal SP use only, formerly "rotor exceptions"
 		// Unreachable from RegisterSpecialVehicleFeature
 		NO_ROTOR_FADE,
+		NO_LIGHTBEAM_BFC_FIX,
 		FORCE_DOUBLE_RWHEELS_OFF,
 		FORCE_DOUBLE_RWHEELS_ON,
 	};
@@ -340,6 +341,20 @@ void ReadRotorFixExceptions(const wchar_t* pPath)
 	}
 }
 
+void ReadLightbeamFixExceptions(const wchar_t* pPath)
+{
+	constexpr size_t SCRATCH_PAD_SIZE = 32767;
+	WideDelimStringReader reader( SCRATCH_PAD_SIZE );
+
+	GetPrivateProfileSectionW( L"LightbeamFixExceptions", reader.GetBuffer(), reader.GetSize(), pPath );
+	while ( const wchar_t* str = reader.GetString() )
+	{
+		int32_t toList = wcstol( str, nullptr, 0 );
+		if ( toList > 0 )
+			SVF::RegisterFeature( toList, SVF::Feature::NO_LIGHTBEAM_BFC_FIX );
+	}
+}
+
 bool CVehicle::HasFirelaLadder() const
 {
 	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::FIRELA_LADDER );
@@ -368,6 +383,23 @@ void CVehicle::SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha)
 		material->color.alpha = RwUInt8(nAlpha);
 		return material;
 	} );
+}
+
+bool CVehicle::IgnoresLightbeamFix() const
+{
+	if ( ms_lightbeamFixOverride != 0 )
+	{
+		return ms_lightbeamFixOverride < 0;
+	}
+	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::NO_LIGHTBEAM_BFC_FIX );
+}
+
+
+void CVehicle::DoHeadLightBeam_LightBeamFixSaveObj(int type, CMatrix& m, bool right)
+{
+	LightbeamFix::SetCurrentVehicle( this );
+	DoHeadLightBeam( type, m, right );
+	LightbeamFix::SetCurrentVehicle( nullptr );
 }
 
 bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)

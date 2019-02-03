@@ -268,6 +268,18 @@ public:
 
 	static void		SetComponentRotation( RwFrame* component, eRotAxis axis, float angle, bool absolute = true );
 	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);
+
+	static inline void	(CVehicle::*orgDoHeadLightBeam)( int type, CMatrix& m, bool right );
+
+	static inline int8_t ms_lightbeamFixOverride = 0; // 0 - normal, 1 - always on, -1 - always off
+	bool				IgnoresLightbeamFix() const;
+
+	void DoHeadLightBeam( int type, CMatrix& m, bool right )
+	{
+		std::invoke( orgDoHeadLightBeam, this, type, m, right );
+	}
+
+	void DoHeadLightBeam_LightBeamFixSaveObj( int type, CMatrix& m, bool right );		
 };
 
 class NOVMT CAutomobile : public CVehicle
@@ -385,6 +397,12 @@ public:
 };
 
 void ReadRotorFixExceptions(const wchar_t* pPath);
+void ReadLightbeamFixExceptions(const wchar_t* pPath);
+
+namespace LightbeamFix
+{
+	void SetCurrentVehicle( CVehicle* vehicle );
+}
 
 static_assert(sizeof(CDoor) == 0x18, "Wrong size: CDoor");
 static_assert(sizeof(CBouncingPanel) == 0x20, "Wrong size: CBouncingPanel");

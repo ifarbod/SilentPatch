@@ -1464,6 +1464,12 @@ namespace VariableResets
 
 namespace LightbeamFix
 {
+	static CVehicle* currentHeadLightBeamVehicle;
+	void SetCurrentVehicle( CVehicle* vehicle )
+	{
+		currentHeadLightBeamVehicle = vehicle;
+	}
+
 	template<RwRenderState State>
 	class RenderStateWrapper
 	{
@@ -1478,10 +1484,21 @@ namespace LightbeamFix
 		}
 		static inline const auto pPushState = &PushState;
 
-		static void PopState( RwRenderState state, void* )
+		static void PopState( RwRenderState state, void* value )
 		{
 			assert( State == state );
-			RwRenderStateSet( state, SavedState );
+
+			void* valueToRestore = SavedState;
+			if constexpr ( State == rwRENDERSTATECULLMODE )
+			{
+				assert( currentHeadLightBeamVehicle != nullptr );
+				if ( currentHeadLightBeamVehicle != nullptr && currentHeadLightBeamVehicle->IgnoresLightbeamFix() )
+				{
+					valueToRestore = value;
+				}
+			}
+
+			RwRenderStateSet( state, valueToRestore );
 
 			// Restore states R* did not restore after changing them
 			if constexpr ( State == rwRENDERSTATEDESTBLEND )
@@ -2349,6 +2366,7 @@ BOOL InjectDelayedPatches_10()
 		const HMODULE modloaderModule = moduleList.Get( L"modloader" );
 
 		ReadRotorFixExceptions(wcModulePath);
+		ReadLightbeamFixExceptions(wcModulePath);
 		const bool bHookDoubleRwheels = ReadDoubleRearWheels(wcModulePath);
 
 		const bool bHasDebugMenu = DebugMenuLoad();
@@ -2666,6 +2684,14 @@ BOOL InjectDelayedPatches_10()
 			Nop( 0x590ADE, 1 );
 			InjectHook( 0x590ADE + 1, DoPCScreenChange_Mod, PATCH_CALL );
 			Patch<const void*>( 0x590042 + 2, &currDisplayedSplash_ForLastSplash );
+		}
+
+		// Lightbeam fix debug menu
+		if ( bHasDebugMenu )
+		{
+			static const char * const str[] = { "Off", "Default", "On" };
+			DebugMenuEntry *e = DebugMenuAddVar( "SilentPatch", "Lightbeam fix", &CVehicle::ms_lightbeamFixOverride, nullptr, 1, -1, 1, str);
+			DebugMenuEntrySetWrap(e, true);
 		}
 
 #ifndef NDEBUG
@@ -3189,6 +3215,11 @@ void Patch_SA_10()
 	{
 		using namespace LightbeamFix;
 
+		ReadCall( 0x6A2EDA, CVehicle::orgDoHeadLightBeam );
+		InjectHook( 0x6A2EDA, &CVehicle::DoHeadLightBeam_LightBeamFixSaveObj );
+		InjectHook( 0x6A2EF2, &CVehicle::DoHeadLightBeam_LightBeamFixSaveObj );
+		InjectHook( 0x6BDE80, &CVehicle::DoHeadLightBeam_LightBeamFixSaveObj );
+
 		Patch( 0x6E0F37 + 2, &RenderStateWrapper<rwRENDERSTATEZWRITEENABLE>::PushStatePPtr );
 		Patch( 0x6E0F63 + 1, &RenderStateWrapper<rwRENDERSTATEZTESTENABLE>::PushStatePPtr );
 		Patch( 0x6E0F6F + 2, &RenderStateWrapper<rwRENDERSTATEVERTEXALPHAENABLE>::PushStatePPtr );
@@ -3207,6 +3238,8 @@ void Patch_SA_10()
 		Patch( 0x6E1406 + 2, &RenderStateWrapper<rwRENDERSTATEDESTBLEND>::PopStatePPtr );
 		Patch( 0x6E1413 + 2, &RenderStateWrapper<rwRENDERSTATEVERTEXALPHAENABLE>::PopStatePPtr );
 		Patch( 0x6E141F + 1, &RenderStateWrapper<rwRENDERSTATECULLMODE>::PopStatePPtr );
+
+		// Debug override registered in delayed patches
 	}
 
 	// PS2 SUN!!!!!!!!!!!!!!!!!
