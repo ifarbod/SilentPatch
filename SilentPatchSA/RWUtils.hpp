@@ -3,6 +3,29 @@
 #include <rwcore.h>
 #include <rpworld.h>
 
+class RwScopedRenderState
+{
+public:
+	RwScopedRenderState( RwRenderState state )
+		: m_state( state )
+	{
+		[[maybe_unused]] RwBool result = RwRenderStateGet( m_state, &m_value );
+		assert( result != FALSE );
+	}
+
+	~RwScopedRenderState()
+	{
+		[[maybe_unused]] RwBool result = RwRenderStateSet( m_state, m_value );
+		assert( result != FALSE );
+	}
+
+private:
+	RwScopedRenderState( const RwScopedRenderState& ) = delete;
+
+	const RwRenderState m_state;
+	void* m_value = nullptr;
+};
+
 template <typename Pred>
 Pred RwFrameForAllChildren(RwFrame* frame, Pred&& callback)
 {

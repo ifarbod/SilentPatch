@@ -66,8 +66,10 @@ void CObject::Render()
 	if ( m_bDoNotRender || !m_pRwObject )
 		return;
 
-	bool						bCallRestore;
+	bool						bCallRestore = false;
 	std::pair<void*,int>		materialRestoreData[16];
+
+	RwScopedRenderState cullState(rwRENDERSTATECULLMODE);
 
 	const int32_t carPartModelIndex = m_wCarPartModelIndex.Get();
 	if ( carPartModelIndex != -1 && m_objectCreatedBy == TEMP_OBJECT && bObjectFlag7 && RwObjectGetType(m_pRwObject) == rpATOMIC )
@@ -84,24 +86,16 @@ void CObject::Render()
 		pData->first = nullptr;
 
 		// Disable backface culling for the part
-#ifdef _DEBUG
-		RwCullMode		oldCullMode;
-		RwRenderStateGet(rwRENDERSTATECULLMODE, &oldCullMode);
-		assert(oldCullMode == rwCULLMODECULLBACK);
-#endif
 		RwRenderStateSet(rwRENDERSTATECULLMODE, reinterpret_cast<void*>(rwCULLMODECULLNONE));
 
 		bCallRestore = true;
 	}
-	else
-		bCallRestore = false;
 
 	CEntity::Render();
 
 	if ( bCallRestore )
 	{
 		ResetEditableMaterials(materialRestoreData);
-		RwRenderStateSet(rwRENDERSTATECULLMODE, reinterpret_cast<void*>(rwCULLMODECULLBACK));
 	}
 }
 

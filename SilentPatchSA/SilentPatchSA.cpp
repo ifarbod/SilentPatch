@@ -339,31 +339,23 @@ static RpAtomic* RenderAtomic(RpAtomic* pAtomic, float fComp)
 
 static RpAtomic* StaticPropellerRender(RpAtomic* pAtomic)
 {
-	int nPushedAlpha;
-
-	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
+	RwScopedRenderState alphaRef(rwRENDERSTATEALPHATESTFUNCTIONREF);
 
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, 0);
 	pAtomic = AtomicDefaultRenderCallBack(pAtomic);
 
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
 	return pAtomic;
 }
 
 static RpAtomic* MovingPropellerRender(RpAtomic* pAtomic)
 {
-	int		nPushedAlpha, nAlphaBlending;
-
-	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
-	RwRenderStateGet(rwRENDERSTATEVERTEXALPHAENABLE, &nAlphaBlending);
+	RwScopedRenderState alphaRef(rwRENDERSTATEALPHATESTFUNCTIONREF);
+	RwScopedRenderState vertexAlpha(rwRENDERSTATEVERTEXALPHAENABLE);
 
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, 0);
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
-
 	pAtomic = AtomicDefaultRenderCallBack(pAtomic);
 
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
-	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
 	return pAtomic;
 }
 
@@ -399,6 +391,9 @@ void RenderWeapon(CPed* pPed)
 
 void RenderWeaponPedsForPC()
 {
+	RwScopedRenderState vertexAlpha(rwRENDERSTATEVERTEXALPHAENABLE);
+	RwScopedRenderState zWrite(rwRENDERSTATEZWRITEENABLE);
+
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
 

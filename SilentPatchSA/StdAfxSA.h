@@ -20,7 +20,7 @@
 #include "MemoryMgr.h"
 #include "MemoryMgr.GTA.h"
 #include "Maths.h"
-#include "rwpred.hpp"
+#include "rwutils.hpp"
 
 #include "TheFLAUtils.h"
 
