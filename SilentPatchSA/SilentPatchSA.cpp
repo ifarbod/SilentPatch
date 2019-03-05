@@ -411,35 +411,6 @@ void RenderWeaponPedsForPC()
 	}
 }
 
-/*void RenderWeaponsList()
-{
-	int		nPushedAlpha, nAlphaFunction;
-	int		nZWrite;
-	int		nAlphaBlending;
-
-	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTIONREF, &nPushedAlpha);
-	RwRenderStateGet(rwRENDERSTATEZWRITEENABLE, &nZWrite);
-	RwRenderStateGet(rwRENDERSTATEVERTEXALPHAENABLE, &nAlphaBlending);
-	RwRenderStateGet(rwRENDERSTATEALPHATESTFUNCTION, &nAlphaFunction);
-
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(255));
-	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(rwALPHATESTFUNCTIONLESS));
-	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
-
-	for ( auto i = ms_weaponPedsForPC.m_lnListHead.m_pNext; i != &ms_weaponPedsForPC.m_lnListTail; i = i->m_pNext )
-	{
-		i->V()->SetupLighting();
-		RenderWeaponHooked(i->V());
-		i->V()->RemoveLighting();
-	}
-
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, reinterpret_cast<void*>(nPushedAlpha));
-	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTION, reinterpret_cast<void*>(nAlphaFunction));
-	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(nZWrite));
-	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(nAlphaBlending));
-}*/
-
 static CAEFLACDecoder* __stdcall DecoderCtor(CAEDataStream* pData)
 {
 	return new CAEFLACDecoder(pData);
