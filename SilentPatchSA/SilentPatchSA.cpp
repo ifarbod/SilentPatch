@@ -5,6 +5,7 @@
 #include <Shlwapi.h>
 #include <ShlObj.h>
 #include <ShellAPI.h>
+#include <cinttypes>
 
 #include "ScriptSA.h"
 #include "GeneralSA.h"
@@ -70,6 +71,60 @@ namespace ModCompat
 		}
 		FreeLibrary( stdStreamModule );
 		return aware;
+	}
+
+	bool LSRPMode = false;
+	void DetectPlayingOnLSRP()
+	{
+		struct IPv4
+		{
+			uint8_t ip[4];
+			uint16_t port;
+
+			bool operator== ( const IPv4& right )
+			{
+				return std::make_tuple( this->ip[0], this->ip[1], this->ip[2], this->ip[3], this->port ) == std::make_tuple( right.ip[0], right.ip[1], right.ip[2], right.ip[3], right.port );
+			}
+		};
+
+		constexpr IPv4 LSRP = { 149, 56, 123, 148, 7777 };
+
+		IPv4 myIP = {};
+
+		// Obtain IP and check if it's LS-RP
+		int numArgs = 0;
+		LPWSTR* cmdLine = CommandLineToArgvW( GetCommandLineW(), &numArgs );
+		if ( cmdLine != nullptr )
+		{
+			for ( auto it = cmdLine + 1, end = cmdLine + numArgs; it != end; ++it )
+			{
+				if ( _wcsicmp( *it, L"-h" ) == 0 )
+				{
+					auto ipIt = std::next( it );
+					if ( ipIt != end )
+					{
+						swscanf_s( *ipIt, L"%" SCNu8 ".%" SCNu8 ".%" SCNu8 ".%" SCNu8, &myIP.ip[0], &myIP.ip[1], &myIP.ip[2], &myIP.ip[3] );
+						it = ipIt;
+					}
+					continue;
+				}
+
+				if ( _wcsicmp( *it, L"-p") == 0 )
+				{
+					auto portIt = std::next( it );
+					if ( portIt != end )
+					{
+						swscanf_s( *portIt, L"%" SCNu16 , &myIP.port );
+						it = portIt;
+					}
+					continue;
+				}
+			}
+
+			LocalFree( cmdLine );
+		}
+
+		LSRPMode = myIP == LSRP;
 	}
 }
 
@@ -2370,6 +2425,11 @@ BOOL InjectDelayedPatches_10()
 		const bool		bSARender = moduleList.Get(L"SARender") != nullptr;
 		const bool		bOutfit = moduleList.Get(L"outfit") != nullptr;
 
+		if ( bSAMP )
+		{
+			ModCompat::DetectPlayingOnLSRP();
+		}
+
 		const HMODULE skygfxModule = moduleList.Get( L"skygfx" );
 		const HMODULE modloaderModule = moduleList.Get( L"modloader" );
 
@@ -2378,6 +2438,13 @@ BOOL InjectDelayedPatches_10()
 		const bool bHookDoubleRwheels = ReadDoubleRearWheels(wcModulePath);
 
 		const bool bHasDebugMenu = DebugMenuLoad();
+
+#ifdef _DEBUG
+		if ( bHasDebugMenu )
+		{
+			DebugMenuAddVar( "SilentPatch", "LS-RP Mode", &ModCompat::LSRPMode, nullptr );
+		}
+#endif
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == 1 )
 		{
@@ -2780,6 +2847,11 @@ BOOL InjectDelayedPatches_11()
 		bool		bSARender = moduleList.Get(L"SARender") != nullptr;
 		const bool	bOutfit = moduleList.Get(L"outfit") != nullptr;
 
+		if ( bSAMP )
+		{
+			ModCompat::DetectPlayingOnLSRP();
+		}
+
 		ReadRotorFixExceptions(wcModulePath);
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SunSizeHack", -1, wcModulePath) == 1 )
@@ -2949,6 +3021,11 @@ BOOL InjectDelayedPatches_Steam()
 		bool		bSAMP = moduleList.Get(L"samp") != nullptr;
 		bool		bSARender = moduleList.Get(L"SARender") != nullptr;
 		const bool	bOutfit = moduleList.Get(L"outfit") != nullptr;
+
+		if ( bSAMP )
+		{
+			ModCompat::DetectPlayingOnLSRP();
+		}
 
 		ReadRotorFixExceptions(wcModulePath);
 
