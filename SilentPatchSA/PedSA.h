@@ -314,7 +314,7 @@ public:
 	void				SetGunFlashAlpha(bool bSecondWeapon);
 	void				Say(uint16_t phrase, uint32_t param2 = 0, float volume = 1.0f, bool param4 = false, bool param5 = false, bool param6 = false);
 
-	void				RenderWeapon(bool bMuzzleFlash, bool bForShadow);
+	void				RenderWeapon(bool bWeapon, bool bMuzzleFlash, bool bForShadow);
 	void				RenderForShadow();
 
 	static void (CPed::*orgGiveWeapon)(uint32_t weapon, uint32_t ammo, bool flag);

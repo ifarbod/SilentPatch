@@ -440,7 +440,7 @@ void RenderVehicleHiDetailAlphaCB_HunterDoor(RpAtomic* pAtomic)
 
 void RenderWeapon(CPed* pPed)
 {
-	pPed->RenderWeapon(false, false);
+	pPed->RenderWeapon(true, false, false);
 	ms_weaponPedsForPC.Insert(pPed);
 }
 
@@ -456,7 +456,7 @@ void RenderWeaponPedsForPC()
 	{
 		CPed* ped = **it;
 		ped->SetupLighting();
-		ped->RenderWeapon(true, false);
+		ped->RenderWeapon(false, true, false);
 		ped->RemoveLighting();
 	}
 }

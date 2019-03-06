@@ -41,7 +41,7 @@ void CPed::ResetGunFlashAlpha()
 	}
 }
 
-void CPed::RenderWeapon(bool bMuzzleFlash, bool bForShadow)
+void CPed::RenderWeapon(bool bWeapon, bool bMuzzleFlash, bool bForShadow)
 {
 	if ( m_pWeaponObject )
 	{
@@ -62,13 +62,19 @@ void CPed::RenderWeapon(bool bMuzzleFlash, bool bForShadow)
 		RwFrameUpdateObjects(pFrame);
 		if ( bForShadow )
 			RpClumpForAllAtomics(reinterpret_cast<RpClump*>(m_pWeaponObject), ShadowCameraRenderCB);
-		else if ( !bMuzzleFlash )
-			RpClumpRender(reinterpret_cast<RpClump*>(m_pWeaponObject));
-		else if ( m_pMuzzleFlashFrame )
+		else
 		{
-			SetGunFlashAlpha(false);
-			RpAtomic* atomic = reinterpret_cast<RpAtomic*>(GetFirstObject(m_pMuzzleFlashFrame));
-			RpAtomicRender( atomic );
+			if ( bWeapon )
+			{
+				RpClumpRender(reinterpret_cast<RpClump*>(m_pWeaponObject));
+			}
+
+			if ( bMuzzleFlash && m_pMuzzleFlashFrame != nullptr )
+			{
+				SetGunFlashAlpha(false);
+				RpAtomic* atomic = reinterpret_cast<RpAtomic*>(GetFirstObject(m_pMuzzleFlashFrame));
+				RpAtomicRender( atomic );
+			}
 		}
 
 		// Dual weapons
@@ -84,13 +90,19 @@ void CPed::RenderWeapon(bool bMuzzleFlash, bool bForShadow)
 			RwFrameUpdateObjects(pFrame);
 			if ( bForShadow )
 				RpClumpForAllAtomics(reinterpret_cast<RpClump*>(m_pWeaponObject), ShadowCameraRenderCB);
-			else if ( !bMuzzleFlash )
-				RpClumpRender(reinterpret_cast<RpClump*>(m_pWeaponObject));
-			else if ( m_pMuzzleFlashFrame )
+			else
 			{
-				SetGunFlashAlpha(true);
-				RpAtomic* atomic = reinterpret_cast<RpAtomic*>(GetFirstObject(m_pMuzzleFlashFrame));
-				RpAtomicRender( atomic );
+				if ( bWeapon )
+				{
+					RpClumpRender(reinterpret_cast<RpClump*>(m_pWeaponObject));
+				}
+
+				if ( bMuzzleFlash && m_pMuzzleFlashFrame != nullptr )
+				{
+					SetGunFlashAlpha(true);
+					RpAtomic* atomic = reinterpret_cast<RpAtomic*>(GetFirstObject(m_pMuzzleFlashFrame));
+					RpAtomicRender( atomic );
+				}
 			}
 		}
 		if ( bMuzzleFlash )
@@ -101,7 +113,7 @@ void CPed::RenderWeapon(bool bMuzzleFlash, bool bForShadow)
 void CPed::RenderForShadow()
 {
 	RpClumpForAllAtomics(reinterpret_cast<RpClump*>(m_pRwObject), ShadowCameraRenderCB);
-	RenderWeapon(false, true);
+	RenderWeapon(true, false, true);
 
 	// Render jetpack
 	auto*	pJetPackTask = pPedIntelligence->GetTaskJetPack();
