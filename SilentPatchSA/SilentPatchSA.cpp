@@ -384,6 +384,11 @@ static struct
 							{ ".m4a", DECODER_QUICKTIME }, { ".mov", DECODER_QUICKTIME },
 							{ ".fla", DECODER_FLAC }, { ".flac", DECODER_FLAC } };
 
+static bool IgnoresWeaponPedsForPCFix()
+{
+	// TODO: Pre-emptively add INI option to save hassle in the future
+	return ModCompat::LSRPMode;
+}
 
 // Regular functions
 static RpAtomic* RenderAtomic(RpAtomic* pAtomic, float fComp)
@@ -440,7 +445,10 @@ void RenderVehicleHiDetailAlphaCB_HunterDoor(RpAtomic* pAtomic)
 
 void RenderWeapon(CPed* pPed)
 {
-	pPed->RenderWeapon(true, false, false);
+	if ( !IgnoresWeaponPedsForPCFix() )
+	{
+		pPed->RenderWeapon(true, false, false);
+	}
 	ms_weaponPedsForPC.Insert(pPed);
 }
 
@@ -452,11 +460,13 @@ void RenderWeaponPedsForPC()
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
 
+	const bool renderWeapon = IgnoresWeaponPedsForPCFix();
+
 	for ( auto it = ms_weaponPedsForPC.Next( nullptr ); it != nullptr; it = ms_weaponPedsForPC.Next( it ) )
 	{
 		CPed* ped = **it;
 		ped->SetupLighting();
-		ped->RenderWeapon(false, true, false);
+		ped->RenderWeapon(renderWeapon, true, false);
 		ped->RemoveLighting();
 	}
 }
