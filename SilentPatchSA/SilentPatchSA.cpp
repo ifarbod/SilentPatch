@@ -1556,6 +1556,34 @@ namespace LightbeamFix
 
 }
 
+namespace TrueInvicibility
+{
+	static bool isEnabled = false;
+	static uintptr_t WillKillJumpBack;
+
+	void __declspec(naked) ComputeWillKillPedHook()
+	{
+		_asm
+		{
+			cmp		dword ptr [ebp+0Ch], WEAPONTYPE_LAST_WEAPONTYPE
+			jl		ComputeWillKillPedHook_DoNotKill
+			cmp		[isEnabled], 0
+			je		ComputeWillKillPedHook_Kill
+			cmp		dword ptr [ebp+0Ch], WEAPONTYPE_UZI_DRIVEBY
+			jne		ComputeWillKillPedHook_Kill
+
+		ComputeWillKillPedHook_DoNotKill:
+			pop     esi
+			pop     ebp
+			pop     ebx
+			retn    0Ch
+
+		ComputeWillKillPedHook_Kill:
+			jmp		[WillKillJumpBack]
+		}
+	}
+}
+
 #ifndef NDEBUG
 
 // ============= QPC spoof for verifying high timer issues =============
@@ -2713,6 +2741,21 @@ BOOL InjectDelayedPatches_10()
 					auto ReInitialise = (void(*)())0x588880;
 					ReInitialise();
 				} );
+			}
+		}
+
+		// True invicibility - not being hurt by Police Maverick bullets anymore
+		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"TrueInvicibility", -1, wcModulePath); INIoption != -1 )
+		{
+			using namespace TrueInvicibility;
+
+			isEnabled = INIoption != 0;
+			WillKillJumpBack = 0x4B3238;
+			InjectHook( 0x4B322E, ComputeWillKillPedHook, PATCH_JUMP );
+
+			if ( bHasDebugMenu )
+			{
+				DebugMenuAddVar( "SilentPatch", "True invicibility", &isEnabled, nullptr );
 			}
 		}
 
