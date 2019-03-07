@@ -680,11 +680,17 @@ void CAutomobile::Fix_SilentPatch()
 		Door[REAR_LEFT_DOOR].SetExtraWheelPositions( 1.0f, 1.0f, 1.0f, 1.0f );
 		Door[REAR_RIGHT_DOOR].SetExtraWheelPositions( 1.0f, 1.0f, 1.0f, 1.0f );
 
-		RwObject* object = GetFirstObject( m_pCarNode[3] );
-		RpAtomicSetFlags( object, 0 );
+		if ( m_pCarNode[3] != nullptr )
+		{
+			RwObject* object = GetFirstObject( m_pCarNode[3] );
+			RpAtomicSetFlags( object, 0 );
+		}
 
-		object = GetFirstObject( m_pCarNode[6] );
-		RpAtomicSetFlags( object, 0 );
+		if ( m_pCarNode[6] != nullptr )
+		{
+			RwObject* object = GetFirstObject( m_pCarNode[6] );
+			RpAtomicSetFlags( object, 0 );
+		}
 	}
 }
 
