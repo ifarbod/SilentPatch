@@ -2893,7 +2893,7 @@ BOOL InjectDelayedPatches_11()
 	MessageBoxW( nullptr, L"You're using a 1.01 executable which is no longer supported by SilentPatch!\n\n"
 				L"Since this EXE is used by only a few people, I recommend downgrading back to 1.0 - you gain full compatibility with mods "
 				L"and any relevant fixes 1.01 brings are backported to 1.0 by SilentPatch anyway.\n\n"
-				L"To downgrade to 1.0, just find a 1.0 EXE and use it. If you are having issues with this, feel free to send me an e-mail!",
+				L"To downgrade to 1.0, find a 1.0 EXE online and replace your current game executable with it.",
 				L"SilentPatch", MB_OK | MB_ICONWARNING );
 #endif
 
