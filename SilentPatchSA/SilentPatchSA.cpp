@@ -126,6 +126,17 @@ namespace ModCompat
 
 		LSRPMode = myIP == LSRP;
 	}
+
+	namespace Utils
+	{
+		template<typename AT>
+		HMODULE GetModuleHandleFromAddress( AT address )
+		{
+			HMODULE result = nullptr;
+			GetModuleHandleEx( GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT|GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, LPCTSTR(address), &result );
+			return result;
+		}
+	}
 }
 
 #pragma warning(disable:4733)
@@ -1495,6 +1506,8 @@ namespace VariableResets
 
 namespace LightbeamFix
 {
+	static bool hookedSuccessfully = false;
+
 	static CVehicle* currentHeadLightBeamVehicle;
 	void SetCurrentVehicle( CVehicle* vehicle )
 	{
@@ -2849,8 +2862,11 @@ BOOL InjectDelayedPatches_10()
 			DebugMenuEntry *e = DebugMenuAddVar( "SilentPatch", "Rotors fix", &CVehicle::ms_rotorFixOverride, nullptr, 1, -1, 1, str);
 			DebugMenuEntrySetWrap(e, true);
 
-			e = DebugMenuAddVar( "SilentPatch", "Lightbeam fix", &CVehicle::ms_lightbeamFixOverride, nullptr, 1, -1, 1, str);
-			DebugMenuEntrySetWrap(e, true);
+			if ( LightbeamFix::hookedSuccessfully )
+			{
+				e = DebugMenuAddVar( "SilentPatch", "Lightbeam fix", &CVehicle::ms_lightbeamFixOverride, nullptr, 1, -1, 1, str);
+				DebugMenuEntrySetWrap(e, true);
+			}
 		}
 
 #ifndef NDEBUG
@@ -3290,6 +3306,8 @@ void Patch_SA_10()
 	InstallMemValidator();
 #endif
 
+	const HINSTANCE hInstance = GetModuleHandle( nullptr );
+
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
 	{
 		const uintptr_t pIsAlreadyRunning = AddressByRegion_10<uintptr_t>(0x74872D);
@@ -3381,6 +3399,16 @@ void Patch_SA_10()
 	//Patch<BYTE>(0x5B3ADD, 4);
 
 	// Lightbeam fix
+	// We need to check for presence of old lightbeam fix - first validate everything old SP did
+	if (	MemEquals( 0x6A2E95, { 0xFF, 0x52, 0x20 } ) && 
+			MemEquals( 0x6E0F63, { 0xA1 } ) &&
+			MemEquals( 0x6E0F7C, { 0x8B, 0x15 } ) &&
+			MemEquals( 0x6E0F95, { 0x8B, 0x0D } ) &&
+			MemEquals( 0x6E0FAF, { 0xA1 } ) &&
+			MemEquals( 0x6E13D5, { 0xA1 } ) &&
+			MemEquals( 0x6E13ED, { 0x8B, 0x15 } ) &&
+			MemEquals( 0x6E141F, { 0xA1 } )	
+		)
 	{
 		using namespace LightbeamFix;
 
@@ -3409,6 +3437,7 @@ void Patch_SA_10()
 		Patch( 0x6E141F + 1, &RenderStateWrapper<rwRENDERSTATECULLMODE>::PopStatePPtr );
 
 		// Debug override registered in delayed patches
+		hookedSuccessfully = true;
 	}
 
 	// PS2 SUN!!!!!!!!!!!!!!!!!
@@ -3883,9 +3912,14 @@ void Patch_SA_10()
 		objSize = *(uint32_t*)( 0x541E1C + 1 ) * 4;
 
 		ReadCall( 0x541DEB, orgClearSimButtonPressCheckers );
-		InjectHook( 0x541DEB, ClearSimButtonPressCheckers );
-		Nop( 0x541E2B, 2 );
-		Nop( 0x541E3C, 2 );
+
+		// Only hook if this call takes to somewhere in gta_sa.exe, else bail out since it's been tampered with
+		if ( hInstance == ModCompat::Utils::GetModuleHandleFromAddress(orgClearSimButtonPressCheckers) )
+		{
+			InjectHook( 0x541DEB, ClearSimButtonPressCheckers );
+			Nop( 0x541E2B, 2 );
+			Nop( 0x541E3C, 2 );
+		}
 	}
 
 
