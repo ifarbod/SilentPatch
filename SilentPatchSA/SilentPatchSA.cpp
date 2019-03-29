@@ -73,63 +73,6 @@ namespace ModCompat
 		return aware;
 	}
 
-	struct IPv4
-	{
-		uint8_t ip[4];
-		uint16_t port;
-
-		friend bool operator == ( const IPv4& left, const IPv4& right )
-		{
-			return std::make_tuple( left.ip[0], left.ip[1], left.ip[2], left.ip[3], left.port ) == std::make_tuple( right.ip[0], right.ip[1], right.ip[2], right.ip[3], right.port );
-		}
-	};
-
-	bool LSRPMode = false;
-	void DetectPlayingOnLSRP()
-	{
-		constexpr IPv4 serversWithLSRPMode[] = {
-			{ 149, 56, 123, 148, 7777 }, // LS-RP
-			{ 198, 27, 95, 178, 7777 }, // AD:RP
-		};
-
-		IPv4 myIP = {};
-
-		// Obtain IP and check if it's LS-RP
-		int numArgs = 0;
-		LPWSTR* cmdLine = CommandLineToArgvW( GetCommandLineW(), &numArgs );
-		if ( cmdLine != nullptr )
-		{
-			for ( auto it = cmdLine + 1, end = cmdLine + numArgs; it != end; ++it )
-			{
-				if ( _wcsicmp( *it, L"-h" ) == 0 )
-				{
-					auto ipIt = std::next( it );
-					if ( ipIt != end )
-					{
-						swscanf_s( *ipIt, L"%" SCNu8 ".%" SCNu8 ".%" SCNu8 ".%" SCNu8, &myIP.ip[0], &myIP.ip[1], &myIP.ip[2], &myIP.ip[3] );
-						it = ipIt;
-					}
-					continue;
-				}
-
-				if ( _wcsicmp( *it, L"-p") == 0 )
-				{
-					auto portIt = std::next( it );
-					if ( portIt != end )
-					{
-						swscanf_s( *portIt, L"%" SCNu16 , &myIP.port );
-						it = portIt;
-					}
-					continue;
-				}
-			}
-
-			LocalFree( cmdLine );
-		}
-
-		LSRPMode = std::find( std::begin(serversWithLSRPMode), std::end(serversWithLSRPMode), myIP ) != std::end(serversWithLSRPMode);
-	}
-
 	namespace Utils
 	{
 		template<typename AT>
@@ -398,11 +341,7 @@ static struct
 							{ ".m4a", DECODER_QUICKTIME }, { ".mov", DECODER_QUICKTIME },
 							{ ".fla", DECODER_FLAC }, { ".flac", DECODER_FLAC } };
 
-static bool IgnoresWeaponPedsForPCFix()
-{
-	// TODO: Pre-emptively add INI option to save hassle in the future
-	return ModCompat::LSRPMode;
-}
+static bool IgnoresWeaponPedsForPCFix();
 
 // Regular functions
 static RpAtomic* RenderAtomic(RpAtomic* pAtomic, float fComp)
@@ -1600,6 +1539,125 @@ namespace TrueInvicibility
 	}
 }
 
+// ============= LS-RP Mode stuff =============
+namespace LSRPMode
+{
+	struct IPv4
+	{
+		uint8_t ip[4];
+		uint16_t port;
+
+		friend bool operator == ( const IPv4& left, const IPv4& right )
+		{
+			return std::make_tuple( left.ip[0], left.ip[1], left.ip[2], left.ip[3] ) == std::make_tuple( right.ip[0], right.ip[1], right.ip[2], right.ip[3] ) &&
+					( left.port == right.port || left.port == 0 || right.port == 0 );
+		}
+	};
+
+	std::vector <IPv4> serversLSRPMode = {
+		{ 149, 56, 123, 148, 7777 }, // LS-RP
+		{ 198, 27, 95, 178, 7777 }, // AD:RP
+	};
+
+	bool ModeForced = false;
+	void DetectPlayingOnLSRP()
+	{
+		IPv4 myIP = {};
+
+		// Obtain IP and check if it's LS-RP
+		int numArgs = 0;
+		LPWSTR* cmdLine = CommandLineToArgvW( GetCommandLineW(), &numArgs );
+		if ( cmdLine != nullptr )
+		{
+			for ( auto it = cmdLine + 1, end = cmdLine + numArgs; it != end; ++it )
+			{
+				if ( _wcsicmp( *it, L"-h" ) == 0 )
+				{
+					auto ipIt = std::next( it );
+					if ( ipIt != end )
+					{
+						swscanf_s( *ipIt, L"%" SCNu8 ".%" SCNu8 ".%" SCNu8 ".%" SCNu8, &myIP.ip[0], &myIP.ip[1], &myIP.ip[2], &myIP.ip[3] );
+						it = ipIt;
+					}
+					continue;
+				}
+
+				if ( _wcsicmp( *it, L"-p") == 0 )
+				{
+					auto portIt = std::next( it );
+					if ( portIt != end )
+					{
+						swscanf_s( *portIt, L"%" SCNu16 , &myIP.port );
+						it = portIt;
+					}
+					continue;
+				}
+			}
+
+			LocalFree( cmdLine );
+		}
+
+		ModeForced = std::find( serversLSRPMode.begin(), serversLSRPMode.end(), myIP ) != serversLSRPMode.end();
+	}
+
+	void ReadServersList(const wchar_t* pPath)
+	{
+		constexpr size_t SCRATCH_PAD_SIZE = 32767;
+		WideDelimStringReader reader( SCRATCH_PAD_SIZE );
+
+		GetPrivateProfileSectionW( L"LSRPModeServers", reader.GetBuffer(), reader.GetSize(), pPath );
+		while ( const wchar_t* str = reader.GetString() )
+		{
+			int ip[4] = {};
+			int port = 0;
+			
+			// IP is mandatory, port is optional
+			int argsRead = swscanf_s( str, L"%d.%d.%d.%d", &ip[0], &ip[1], &ip[2], &ip[3] );
+			if ( argsRead == 4 )
+			{
+				swscanf_s( str, L"%*d.%*d.%*d.%*d:%d", &port );
+
+				IPv4 myIP = {};
+				bool validIP = true;
+
+				for ( size_t i = 0; i < 4; i++ )
+				{
+					if ( ip[i] >= 0 && ip[i] <= UINT8_MAX )
+					{
+						myIP.ip[i] = static_cast<uint8_t>(ip[i]);
+					}
+					else
+					{
+						validIP = false;
+						break;
+					}
+				}
+
+				if ( port >= 0 && port <= UINT16_MAX )
+				{
+					myIP.port = static_cast<uint16_t>(port);
+				}
+				else
+				{
+					validIP = false;
+				}
+
+				if ( validIP )
+				{
+					serversLSRPMode.emplace_back( myIP );
+				}
+			}
+		}
+	}
+}
+
+static bool IgnoresWeaponPedsForPCFix()
+{
+	// TODO: Pre-emptively add INI option to save hassle in the future
+	return LSRPMode::ModeForced;
+}
+
+
 #ifndef NDEBUG
 
 // ============= QPC spoof for verifying high timer issues =============
@@ -2481,7 +2539,8 @@ BOOL InjectDelayedPatches_10()
 
 		if ( bSAMP )
 		{
-			ModCompat::DetectPlayingOnLSRP();
+			LSRPMode::ReadServersList(wcModulePath);
+			LSRPMode::DetectPlayingOnLSRP();
 		}
 
 		const HMODULE skygfxModule = moduleList.Get( L"skygfx" );
@@ -2496,7 +2555,7 @@ BOOL InjectDelayedPatches_10()
 #ifdef _DEBUG
 		if ( bHasDebugMenu )
 		{
-			DebugMenuAddVar( "SilentPatch", "LS-RP Mode", &ModCompat::LSRPMode, nullptr );
+			DebugMenuAddVar( "SilentPatch", "Force LS-RP Mode", &LSRPMode::ModeForced, nullptr );
 		}
 #endif
 
@@ -2921,7 +2980,8 @@ BOOL InjectDelayedPatches_11()
 
 		if ( bSAMP )
 		{
-			ModCompat::DetectPlayingOnLSRP();
+			LSRPMode::ReadServersList(wcModulePath);
+			LSRPMode::DetectPlayingOnLSRP();
 		}
 
 		ReadRotorFixExceptions(wcModulePath);
@@ -3096,7 +3156,8 @@ BOOL InjectDelayedPatches_Steam()
 
 		if ( bSAMP )
 		{
-			ModCompat::DetectPlayingOnLSRP();
+			LSRPMode::ReadServersList(wcModulePath);
+			LSRPMode::DetectPlayingOnLSRP();
 		}
 
 		ReadRotorFixExceptions(wcModulePath);
