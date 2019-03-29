@@ -73,21 +73,24 @@ namespace ModCompat
 		return aware;
 	}
 
+	struct IPv4
+	{
+		uint8_t ip[4];
+		uint16_t port;
+
+		friend bool operator == ( const IPv4& left, const IPv4& right )
+		{
+			return std::make_tuple( left.ip[0], left.ip[1], left.ip[2], left.ip[3], left.port ) == std::make_tuple( right.ip[0], right.ip[1], right.ip[2], right.ip[3], right.port );
+		}
+	};
+
 	bool LSRPMode = false;
 	void DetectPlayingOnLSRP()
 	{
-		struct IPv4
-		{
-			uint8_t ip[4];
-			uint16_t port;
-
-			bool operator== ( const IPv4& right )
-			{
-				return std::make_tuple( this->ip[0], this->ip[1], this->ip[2], this->ip[3], this->port ) == std::make_tuple( right.ip[0], right.ip[1], right.ip[2], right.ip[3], right.port );
-			}
+		constexpr IPv4 serversWithLSRPMode[] = {
+			{ 149, 56, 123, 148, 7777 }, // LS-RP
+			{ 198, 27, 95, 178, 7777 }, // AD:RP
 		};
-
-		constexpr IPv4 LSRP = { 149, 56, 123, 148, 7777 };
 
 		IPv4 myIP = {};
 
@@ -124,7 +127,7 @@ namespace ModCompat
 			LocalFree( cmdLine );
 		}
 
-		LSRPMode = myIP == LSRP;
+		LSRPMode = std::find( std::begin(serversWithLSRPMode), std::end(serversWithLSRPMode), myIP ) != std::end(serversWithLSRPMode);
 	}
 
 	namespace Utils
