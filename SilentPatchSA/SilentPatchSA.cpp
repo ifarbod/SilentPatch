@@ -409,9 +409,11 @@ void RenderWeaponPedsForPC()
 {
 	RwScopedRenderState vertexAlpha(rwRENDERSTATEVERTEXALPHAENABLE);
 	RwScopedRenderState zWrite(rwRENDERSTATEZWRITEENABLE);
+	RwScopedRenderState fogEnable(rwRENDERSTATEFOGENABLE);
 
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
-	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
+	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(TRUE));
+	RwRenderStateSet(rwRENDERSTATEFOGENABLE, reinterpret_cast<void*>(TRUE));
 
 	const bool renderWeapon = IgnoresWeaponPedsForPCFix();
 
