@@ -1360,8 +1360,10 @@ namespace FirelaHook
 	{
 		__asm
 		{
+			push	ecx		// Required in 0x6B1FE4: test cl, cl
 			mov		ecx, esi
 			call	CVehicle::HasFirelaLadder
+			pop		ecx
 			test	al, al
 			jnz		TestFirelaAndFlags_UpdateMovingCollision
 			test	[esi].hFlagsLocal, FLAG_HYDRAULICS_INSTALLED
