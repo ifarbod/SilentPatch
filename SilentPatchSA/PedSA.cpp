@@ -71,6 +71,9 @@ void CPed::RenderWeapon(bool bWeapon, bool bMuzzleFlash, bool bForShadow)
 
 			if ( bMuzzleFlash && m_pMuzzleFlashFrame != nullptr )
 			{
+				RwScopedRenderState zWrite(rwRENDERSTATEZWRITEENABLE);
+				RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
+
 				SetGunFlashAlpha(false);
 				RpAtomic* atomic = reinterpret_cast<RpAtomic*>(GetFirstObject(m_pMuzzleFlashFrame));
 				RpAtomicRender( atomic );
@@ -99,6 +102,9 @@ void CPed::RenderWeapon(bool bWeapon, bool bMuzzleFlash, bool bForShadow)
 
 				if ( bMuzzleFlash && m_pMuzzleFlashFrame != nullptr )
 				{
+					RwScopedRenderState zWrite(rwRENDERSTATEZWRITEENABLE);
+					RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
+
 					SetGunFlashAlpha(true);
 					RpAtomic* atomic = reinterpret_cast<RpAtomic*>(GetFirstObject(m_pMuzzleFlashFrame));
 					RpAtomicRender( atomic );
