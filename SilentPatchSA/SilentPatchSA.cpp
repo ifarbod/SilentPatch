@@ -2588,6 +2588,11 @@ BOOL InjectDelayedPatches_10()
 			// Weapons rendering
 			if ( !bOutfit )
 			{
+				if ( bSAMP )
+				{
+					CPed::orgGetWeaponSkillForRenderWeaponPedsForPC = &CPed::GetWeaponSkillForRenderWeaponPedsForPC_SAMP;
+				}
+
 				InjectHook(0x5E7859, RenderWeapon);
 				InjectHook(0x732F30, RenderWeaponPedsForPC, PATCH_JUMP);
 			}

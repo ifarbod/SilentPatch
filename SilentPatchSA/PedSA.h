@@ -309,7 +309,7 @@ public:
 	bool				IsPlayer() const
 		{ return pedType == 0 || pedType == 1; }
 
-	unsigned char		GetWeaponSkill();
+	uint8_t				GetWeaponSkill();
 	void				ResetGunFlashAlpha();
 	void				SetGunFlashAlpha(bool bSecondWeapon);
 	void				Say(uint16_t phrase, uint32_t param2 = 0, float volume = 1.0f, bool param4 = false, bool param5 = false, bool param6 = false);
@@ -319,6 +319,15 @@ public:
 
 	static void (CPed::*orgGiveWeapon)(uint32_t weapon, uint32_t ammo, bool flag);
 	void				GiveWeapon_SP( uint32_t weapon, uint32_t ammo, bool flag );
+
+	// Extension to accommodate for SA-MP hooking GetWeaponSkill in RenderWeaponPedsForPC dynamically
+	static inline uint8_t (CPed::*orgGetWeaponSkillForRenderWeaponPedsForPC)() = &GetWeaponSkill;
+	uint8_t				GetWeaponSkillForRenderWeaponPedsForPC()
+	{
+		return std::invoke( orgGetWeaponSkillForRenderWeaponPedsForPC, this );
+	}
+
+	uint8_t				GetWeaponSkillForRenderWeaponPedsForPC_SAMP();
 
 	template<uint16_t blackSample>
 	void				Say_SampleBlackList(uint16_t phrase, uint32_t param2 = 0, float volume = 1.0f, bool param4 = false, bool param5 = false, bool param6 = false)

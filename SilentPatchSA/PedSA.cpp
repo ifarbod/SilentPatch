@@ -3,7 +3,7 @@
 #include "VehicleSA.h"
 
 static void* varGetWeaponSkill = AddressByVersion<void*>(0x5E6580, 0x5E6DA0, 0x6039F0);
-WRAPPER unsigned char CPed::GetWeaponSkill() { VARJMP(varGetWeaponSkill); }
+WRAPPER uint8_t CPed::GetWeaponSkill() { VARJMP(varGetWeaponSkill); }
 static void* varSetGunFlashAlpha = AddressByVersion<void*>(0x5DF400, 0x5DFC20, 0x5FC120);
 WRAPPER void CPed::SetGunFlashAlpha(bool bSecondWeapon) { WRAPARG(bSecondWeapon); VARJMP(varSetGunFlashAlpha); }
 
@@ -81,7 +81,7 @@ void CPed::RenderWeapon(bool bWeapon, bool bMuzzleFlash, bool bForShadow)
 		}
 
 		// Dual weapons
-		if ( CWeaponInfo::GetWeaponInfo(weaponSlots[m_bActiveWeapon].m_eWeaponType, GetWeaponSkill())->hexFlags >> 11 & 1 )
+		if ( CWeaponInfo::GetWeaponInfo(weaponSlots[m_bActiveWeapon].m_eWeaponType, GetWeaponSkillForRenderWeaponPedsForPC())->hexFlags >> 11 & 1 )
 		{
 			*RwFrameGetMatrix(pFrame) = RpHAnimHierarchyGetMatrixArray(pAnimHierarchy)[RpHAnimIDGetIndex(pAnimHierarchy, 34)];				
 
@@ -131,4 +131,11 @@ void CPed::GiveWeapon_SP(uint32_t weapon, uint32_t ammo, bool flag)
 {
  	if ( ammo == 0 ) ammo = 1;
 	(this->*(orgGiveWeapon))( weapon, ammo, flag );
+}
+
+uint8_t CPed::GetWeaponSkillForRenderWeaponPedsForPC_SAMP()
+{
+	uint8_t (CPed::*funcCall)();
+	Memory::ReadCall( 0x7330A2, funcCall );
+	return std::invoke( funcCall, this );
 }
