@@ -13,11 +13,14 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Utils">
+      <UniqueIdentifier>{e3c269eb-37ad-4a59-a26c-cb1547484475}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utils">
+      <UniqueIdentifier>{42382fee-b609-4a36-9bef-fa812755d623}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\SilentPatch\MemoryMgr.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\SilentPatch\Timer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -25,9 +28,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\SilentPatch\StdAfx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SilentPatch\Patterns.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\SilentPatch\StoredCar.h">
@@ -42,8 +42,14 @@
     <ClInclude Include="ModelInfoVC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\SilentPatch\MemoryMgr.GTA.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\SilentPatch\Utils\MemoryMgr.GTA.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\Utils\MemoryMgr.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\Utils\Patterns.h">
+      <Filter>Header Files\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -54,9 +60,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SilentPatchVC.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\SilentPatch\Patterns.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\SilentPatch\Common.cpp">
@@ -70,6 +73,9 @@
     </ClCompile>
     <ClCompile Include="ModelInfoVC.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\SilentPatch\Utils\Patterns.cpp">
+      <Filter>Source Files\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

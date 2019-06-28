@@ -17,8 +17,8 @@
 #include <rphanim.h>
 #include <rtpng.h>
 
-#include "MemoryMgr.h"
-#include "MemoryMgr.GTA.h"
+#include "Utils/MemoryMgr.h"
+#include "Utils/MemoryMgr.GTA.h"
 #include "Maths.h"
 #include "rwutils.hpp"
 

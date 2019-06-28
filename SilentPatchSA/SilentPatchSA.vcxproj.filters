@@ -19,6 +19,12 @@
     <Filter Include="Source Files\decoders">
       <UniqueIdentifier>{f4ecbe23-228b-461b-b37f-d718e7ca92ae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Utils">
+      <UniqueIdentifier>{d46aa122-7a45-44f2-a031-ad8e9b946ed2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utils">
+      <UniqueIdentifier>{09c5ceab-2ac8-4111-b2d1-d2c7379cb5c1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SilentPatchSA.cpp">
@@ -57,9 +63,6 @@
     <ClCompile Include="FLACDecoderSA.cpp">
       <Filter>Source Files\decoders</Filter>
     </ClCompile>
-    <ClCompile Include="..\SilentPatch\Patterns.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\SilentPatch\TheFLAUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -72,11 +75,11 @@
     <ClCompile Include="FireManagerSA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\SilentPatch\Utils\Patterns.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\SilentPatch\MemoryMgr.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\SilentPatch\FLAC\callback.h">
       <Filter>Header Files\FLAC</Filter>
     </ClInclude>
@@ -137,13 +140,7 @@
     <ClInclude Include="FLACDecoderSA.h">
       <Filter>Source Files\decoders</Filter>
     </ClInclude>
-    <ClInclude Include="..\SilentPatch\Patterns.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\SilentPatch\resource1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SilentPatch\DelimStringReader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\SilentPatch\TheFLAUtils.h">
@@ -155,20 +152,26 @@
     <ClInclude Include="..\SilentPatch\debugmenu_public.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\SilentPatch\ModuleList.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="PlayerInfoSA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FireManagerSA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\SilentPatch\MemoryMgr.GTA.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="RWUtils.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\Utils\DelimStringReader.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\Utils\MemoryMgr.GTA.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\Utils\MemoryMgr.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\Utils\Patterns.h">
+      <Filter>Header Files\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

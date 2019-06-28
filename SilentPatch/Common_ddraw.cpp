@@ -2,8 +2,8 @@
 
 #include <Shlwapi.h>
 #include <ShlObj.h>
-#include "MemoryMgr.h"
-#include "Patterns.h"
+#include "Utils/MemoryMgr.h"
+#include "Utils/Patterns.h"
 
 #pragma comment(lib, "shlwapi.lib")
 

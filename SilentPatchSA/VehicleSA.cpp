@@ -6,7 +6,7 @@
 #include "VehicleSA.h"
 #include "TimerSA.h"
 #include "PedSA.h"
-#include "DelimStringReader.h"
+#include "Utils/DelimStringReader.h"
 #include "PlayerInfoSA.h"
 
 static constexpr float PHOENIX_FLUTTER_PERIOD	= 70.0f;

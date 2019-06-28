@@ -1,7 +1,7 @@
 #include "Common.h"
 
-#include "MemoryMgr.h"
-#include "Patterns.h"
+#include "Utils/MemoryMgr.h"
+#include "Utils/Patterns.h"
 #include "StoredCar.h"
 
 

@@ -21,9 +21,9 @@
 #include "WaveDecoderSA.h"
 #include "FLACDecoderSA.h"
 
-#include "Patterns.h"
-#include "DelimStringReader.h"
-#include "ModuleList.hpp"
+#include "Utils/Patterns.h"
+#include "Utils/DelimStringReader.h"
+#include "Utils/ModuleList.hpp"
 
 #include "debugmenu_public.h"
 #include "resource.h"

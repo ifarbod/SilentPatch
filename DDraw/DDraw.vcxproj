@@ -168,7 +168,7 @@ copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\dd
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\SilentPatch\Common_ddraw.cpp" />
-    <ClCompile Include="..\SilentPatch\Patterns.cpp" />
+    <ClCompile Include="..\SilentPatch\Utils\Patterns.cpp" />
     <ClCompile Include="dllmain.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -176,8 +176,8 @@ copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\dd
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\SilentPatch\Common_ddraw.h" />
-    <ClInclude Include="..\SilentPatch\MemoryMgr.h" />
-    <ClInclude Include="..\SilentPatch\Patterns.h" />
+    <ClInclude Include="..\SilentPatch\Utils\MemoryMgr.h" />
+    <ClInclude Include="..\SilentPatch\Utils\Patterns.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

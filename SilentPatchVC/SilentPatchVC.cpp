@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 
 #include "Timer.h"
-#include "Patterns.h"
+#include "Utils/Patterns.h"
 #include "Common.h"
 #include "Common_ddraw.h"
 #include "General.h"

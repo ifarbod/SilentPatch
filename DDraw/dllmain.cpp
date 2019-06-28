@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include <Shlwapi.h>
 #include <ShlObj.h>
-#include "MemoryMgr.h"
-#include "Patterns.h"
+#include "Utils/MemoryMgr.h"
+#include "Utils/Patterns.h"
 
 #include "Common_ddraw.h"
 

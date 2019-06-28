@@ -8,7 +8,7 @@
 #include <cassert>
 #include <cstdio>
 
-#include "MemoryMgr.h"
-#include "MemoryMgr.GTA.h"
+#include "Utils/MemoryMgr.h"
+#include "Utils/MemoryMgr.GTA.h"
 
 #define DISABLE_FLA_DONATION_WINDOW		0

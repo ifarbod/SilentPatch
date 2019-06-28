@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "Timer.h"
 
-#include "Patterns.h"
+#include "Utils/Patterns.h"
 
 int&			CTimer::m_snTimeInMilliseconds = **hook::get_pattern<int*>( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08", -20 + 1 );
 
