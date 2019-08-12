@@ -1543,6 +1543,25 @@ namespace TrueInvicibility
 	}
 }
 
+namespace Localization
+{
+	static int8_t forcedUnits = -1; // 0 - metric, 1 - imperial
+
+	bool IsMetric_LocaleBased()
+	{
+		if ( forcedUnits != -1 ) return forcedUnits == 0;
+
+		unsigned int LCData;
+		if ( GetLocaleInfo( LOCALE_USER_DEFAULT, LOCALE_IMEASURE|LOCALE_RETURN_NUMBER, reinterpret_cast<LPTSTR>(&LCData), sizeof(LCData) / sizeof(TCHAR) ) != 0 )
+		{
+			return LCData == 0;
+		}
+
+		// If fails, default to metric. Hopefully never fails though
+		return true;
+	}
+}
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -2940,6 +2959,19 @@ BOOL InjectDelayedPatches_10()
 			}
 		}
 
+		// Locale based metric/imperial system INI/debug menu
+		{
+			using namespace Localization;
+
+			forcedUnits = static_cast<int8_t>(GetPrivateProfileIntW(L"SilentPatch", L"Units", -1, wcModulePath));
+			if ( bHasDebugMenu )
+			{
+				static const char * const str[] = { "Default", "Metric", "Imperial" };
+				DebugMenuEntry *e = DebugMenuAddVar( "SilentPatch", "Forced units", &forcedUnits, nullptr, 1, -1, 1, str );
+				DebugMenuEntrySetWrap(e, true);
+			}			
+		}
+
 #ifndef NDEBUG
 		if ( const int QPCDays = GetPrivateProfileIntW(L"Debug", L"AddDaysToQPC", 0, wcModulePath); QPCDays != 0 )
 		{
@@ -4074,6 +4106,13 @@ void Patch_SA_10()
 	// Don't clean the car BEFORE Pay 'n Spray doors close, as it gets cleaned later again anyway!
 	Nop( 0x44ACDC, 6 );
 
+
+	// Locale based metric/imperial system
+	{
+		using namespace Localization;
+
+		InjectHook( 0x56D220, IsMetric_LocaleBased, PATCH_JUMP );
+	}
 
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
