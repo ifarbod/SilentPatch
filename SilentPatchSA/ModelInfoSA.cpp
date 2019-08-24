@@ -29,6 +29,16 @@ void RemapDirt( CVehicleModelInfo* modelInfo, uint32_t dirtID )
 	}
 }
 
+uint32_t CVehicleModelInfo::GetNumRemaps() const
+{
+	uint32_t count = 0;
+	while ( m_awRemapTxds[count].Get() != -1 && count < _countof(m_awRemapTxds) )
+	{
+		count++;
+	}
+	return count;
+}
+
 void CVehicleModelInfo::Shutdown()
 {
 	CBaseModelInfo::Shutdown();

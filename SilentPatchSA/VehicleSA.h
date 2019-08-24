@@ -183,7 +183,9 @@ protected:
 	BYTE			__pad78[4];
 	uint32_t		m_dwVehicleClass;
 	uint32_t		m_dwVehicleSubClass;
-	BYTE			__pad5[8];
+	FLAUtils::int16 m_remapTxdSlot;
+	FLAUtils::int16 m_remapTxdSlotToLoad;
+	RwTexture*		m_pRemapTexture;
 
 public:
 	CVehicleFlags&	GetVehicleFlags() 
@@ -265,6 +267,8 @@ public:
 
 	bool			IsLawEnforcementVehicle();
 	CPed*			PickRandomPassenger();
+
+	int32_t			GetRemapIndex();
 
 	static void		SetComponentRotation( RwFrame* component, eRotAxis axis, float angle, bool absolute = true );
 	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);

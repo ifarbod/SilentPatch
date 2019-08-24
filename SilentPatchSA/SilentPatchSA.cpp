@@ -4114,6 +4114,10 @@ void Patch_SA_10()
 		InjectHook( 0x56D220, IsMetric_LocaleBased, PATCH_JUMP );
 	}
 
+
+	// Fix paintjobs vanishing after opening/closing garage without rendering the car first
+	InjectHook( 0x6D0B70, &CVehicle::GetRemapIndex, PATCH_JUMP );
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );

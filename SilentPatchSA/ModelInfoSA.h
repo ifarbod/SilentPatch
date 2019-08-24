@@ -304,7 +304,7 @@ public:
 	signed char				m_nTertiaryColor;
 	signed char				m_nQuaternaryColor;
 	short					m_awUpgrades[18];
-	short					m_awRemapTxds[5];
+	FLAUtils::int16			m_awRemapTxds[4];
 	class CAnimBlock*		m_pAnimBlock;
 
 public:
@@ -319,6 +319,8 @@ public:
 	void					FindEditableMaterialList();
 	void					SetCarCustomPlate();
 	void					SetVehicleColour( int32_t color1, int32_t color2, int32_t color3, int32_t color4 );
+
+	uint32_t				GetNumRemaps() const;
 
 };
 

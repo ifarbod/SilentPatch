@@ -483,6 +483,30 @@ CPed* CVehicle::PickRandomPassenger()
 	return nullptr;
 }
 
+int32_t CVehicle::GetRemapIndex()
+{
+	int32_t remapTxd = m_remapTxdSlot.Get();
+	if ( remapTxd == -1 )
+	{
+		// Original code never checked that variable, hence the bug
+		remapTxd = m_remapTxdSlotToLoad.Get();
+	}
+	if ( remapTxd == -1 )
+	{
+		return -1;
+	}
+
+	const CVehicleModelInfo* modelInfo = static_cast<CVehicleModelInfo*>(ms_modelInfoPtrs[ m_nModelIndex.Get() ]);
+	for ( int32_t i = 0, j = modelInfo->GetNumRemaps(); i < j; i++ )
+	{
+		if ( modelInfo->m_awRemapTxds[i].Get() == remapTxd )
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
 void CHeli::Render()
 {
 	double		dRotorsSpeed, dMovingRotorSpeed;
