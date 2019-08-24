@@ -810,9 +810,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		}
 
 		Common::Patches::FixRwcseg_Patterns();
-
-		HMODULE		hDummyHandle;
-		GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCWSTR)&DllMain, &hDummyHandle);
 	}
 	return TRUE;
 }
