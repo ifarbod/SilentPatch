@@ -98,5 +98,10 @@ namespace Common {
 		{
 			DelayedPatches::Func = std::move(func);
 		}
+
+		void III_VC_DelayedCommon( bool /*hasDebugMenu*/, const wchar_t* /*iniPath*/ )
+		{
+		
+		}
 	}
 }

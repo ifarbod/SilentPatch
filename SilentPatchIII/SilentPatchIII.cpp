@@ -7,6 +7,11 @@
 #include "Common_ddraw.h"
 
 #include <memory>
+#include <Shlwapi.h>
+
+#include "debugmenu_public.h"
+
+#pragma comment(lib, "shlwapi.lib")
 
 struct PsGlobalType
 {
@@ -43,6 +48,10 @@ struct RwV2d
     float x;   /**< X value*/
     float y;   /**< Y value */
 };
+
+DebugMenuAPI gDebugMenuAPI;
+
+static HMODULE hDLLModule;
 
 
 static void (*DrawRect)(const CRect&,const CRGBA&);
@@ -424,6 +433,68 @@ namespace KeyboardInputFix
 
 		orgClearSimButtonPressCheckers(pThis);
 	}
+}
+
+namespace Localization
+{
+	static int8_t forcedUnits = -1; // 0 - metric, 1 - imperial
+
+	bool IsMetric_LocaleBased()
+	{
+		if ( forcedUnits != -1 ) return forcedUnits == 0;
+
+		unsigned int LCData;
+		if ( GetLocaleInfo( LOCALE_USER_DEFAULT, LOCALE_IMEASURE|LOCALE_RETURN_NUMBER, reinterpret_cast<LPTSTR>(&LCData), sizeof(LCData) / sizeof(TCHAR) ) != 0 )
+		{
+			return LCData == 0;
+		}
+
+		// If fails, default to metric. Hopefully never fails though
+		return true;
+	}
+
+	static void (__thiscall* orgUpdateCompareFlag_IsMetric)(void* pThis, uint8_t flag);
+	void __fastcall UpdateCompareFlag_IsMetric(void* pThis, void*, uint8_t)
+	{
+		std::invoke( orgUpdateCompareFlag_IsMetric, pThis, IsMetric_LocaleBased() );
+	}
+
+	uint32_t PrefsLanguage_IsMetric()
+	{
+		return IsMetric_LocaleBased();
+	}
+}
+
+void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
+{
+	// Locale based metric/imperial system INI/debug menu
+	{
+		using namespace Localization;
+
+		forcedUnits = static_cast<int8_t>(GetPrivateProfileIntW(L"SilentPatch", L"Units", -1, wcModulePath));
+		if ( bHasDebugMenu )
+		{
+			static const char * const str[] = { "Default", "Metric", "Imperial" };
+			DebugMenuEntry *e = DebugMenuAddVar( "SilentPatch", "Forced units", &forcedUnits, nullptr, 1, -1, 1, str );
+			DebugMenuEntrySetWrap(e, true);
+		}			
+	}
+}
+
+void InjectDelayedPatches_III_Common()
+{
+	std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( GetModuleHandle( nullptr ), ".text" );
+
+	// Obtain a path to the ASI
+	wchar_t			wcModulePath[MAX_PATH];
+	GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
+	PathRenameExtensionW(wcModulePath, L".ini");
+
+	const bool hasDebugMenu = DebugMenuLoad();
+
+	InjectDelayedPatches_III_Common( hasDebugMenu, wcModulePath );
+
+	Common::Patches::III_VC_DelayedCommon( hasDebugMenu, wcModulePath );
 }
 
 
@@ -953,6 +1024,32 @@ void Patch_III_Common()
 		InjectHook( simButtonCheckers, ClearSimButtonPressCheckers );
 		InjectHook( updatePads.get<void>( 10 ), jmpDest, PATCH_JUMP );
 	}
+
+
+	// Locale based metric/imperial system
+	{
+		using namespace Localization;
+
+		void* updateCompareFlag = get_pattern( "89 E9 6A 00 E8 ? ? ? ? 30 C0 83 C4 70 5D 5E 5B C2 04 00", 4 );
+
+		ReadCall( updateCompareFlag, orgUpdateCompareFlag_IsMetric );
+		InjectHook( updateCompareFlag, UpdateCompareFlag_IsMetric );
+
+		// Stats
+		auto constructStatLine = pattern( "FF 24 9D ? ? ? ? 39 D0" ).get_one();
+
+		// push eax
+		// push edx
+		// call IsMetric_LocaleBased
+		// movzx ebx, al
+		// pop edx
+		// pop eax
+		// nop...
+		Patch( constructStatLine.get<void>( -0xF ), { 0x50, 0x52 } );
+		InjectHook( constructStatLine.get<void>( -0xF + 2 ), PrefsLanguage_IsMetric, PATCH_CALL );
+		Patch( constructStatLine.get<void>( -0xF + 7 ), { 0x0F, 0xB6, 0xD8, 0x5A, 0x58 } );
+		Nop( constructStatLine.get<void>( -0xF + 12 ), 3 );
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
@@ -962,6 +1059,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 	if ( fdwReason == DLL_PROCESS_ATTACH )
 	{
+		hDLLModule = hinstDLL;
+
 		RECT			desktop;
 		GetWindowRect(GetDesktopWindow(), &desktop);
 		sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
@@ -978,6 +1077,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			Patch_III_Common();
 			Common::Patches::III_VC_Common();
 			Common::Patches::DDraw_Common();
+
+			Common::Patches::III_VC_SetDelayedPatchesFunc( InjectDelayedPatches_III_Common );
 		}
 
 		Common::Patches::FixRwcseg_Patterns();

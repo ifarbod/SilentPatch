@@ -8,6 +8,11 @@
 #include "ModelInfoVC.h"
 
 #include <memory>
+#include <Shlwapi.h>
+
+#include "debugmenu_public.h"
+
+#pragma comment(lib, "shlwapi.lib")
 
 struct RsGlobalType
 {
@@ -22,6 +27,10 @@ struct RsGlobalType
 	void*			mouse;
 	void*			pad;
 };
+
+DebugMenuAPI gDebugMenuAPI;
+
+static HMODULE		hDLLModule;
 
 static const void*		RosieAudioFix_JumpBack;
 
@@ -296,6 +305,68 @@ namespace KeyboardInputFix
 
 		orgClearSimButtonPressCheckers(pThis);
 	}
+}
+
+namespace Localization
+{
+	static int8_t forcedUnits = -1; // 0 - metric, 1 - imperial
+
+	bool IsMetric_LocaleBased()
+	{
+		if ( forcedUnits != -1 ) return forcedUnits == 0;
+
+		unsigned int LCData;
+		if ( GetLocaleInfo( LOCALE_USER_DEFAULT, LOCALE_IMEASURE|LOCALE_RETURN_NUMBER, reinterpret_cast<LPTSTR>(&LCData), sizeof(LCData) / sizeof(TCHAR) ) != 0 )
+		{
+			return LCData == 0;
+		}
+
+		// If fails, default to metric. Hopefully never fails though
+		return true;
+	}
+
+	static void (__thiscall* orgUpdateCompareFlag_IsMetric)(void* pThis, uint8_t flag);
+	void __fastcall UpdateCompareFlag_IsMetric(void* pThis, void*, uint8_t)
+	{
+		std::invoke( orgUpdateCompareFlag_IsMetric, pThis, IsMetric_LocaleBased() );
+	}
+
+	uint32_t PrefsLanguage_IsMetric()
+	{
+		return IsMetric_LocaleBased();
+	}
+}
+
+void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
+{
+	// Locale based metric/imperial system INI/debug menu
+	{
+		using namespace Localization;
+
+		forcedUnits = static_cast<int8_t>(GetPrivateProfileIntW(L"SilentPatch", L"Units", -1, wcModulePath));
+		if ( bHasDebugMenu )
+		{
+			static const char * const str[] = { "Default", "Metric", "Imperial" };
+			DebugMenuEntry *e = DebugMenuAddVar( "SilentPatch", "Forced units", &forcedUnits, nullptr, 1, -1, 1, str );
+			DebugMenuEntrySetWrap(e, true);
+		}			
+	}
+}
+
+void InjectDelayedPatches_VC_Common()
+{
+	std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( GetModuleHandle( nullptr ), ".text" );
+
+	// Obtain a path to the ASI
+	wchar_t			wcModulePath[MAX_PATH];
+	GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
+	PathRenameExtensionW(wcModulePath, L".ini");
+
+	const bool hasDebugMenu = DebugMenuLoad();
+
+	InjectDelayedPatches_VC_Common( hasDebugMenu, wcModulePath );
+
+	Common::Patches::III_VC_DelayedCommon( hasDebugMenu, wcModulePath );
 }
 
 void Patch_VC_10(const RECT& desktop)
@@ -779,6 +850,24 @@ void Patch_VC_Common()
 		InjectHook( updatePads.get<void>( 9 ), jmpDest, PATCH_JUMP );
 	}
 
+
+	// Locale based metric/imperial system
+	{
+		using namespace Localization;
+
+		void* updateCompareFlag = get_pattern( "89 D9 6A 00 E8 ? ? ? ? 30 C0 83 C4 70 5D 5F 5E 5B C2 04 00", 4 );
+
+		ReadCall( updateCompareFlag, orgUpdateCompareFlag_IsMetric );
+		InjectHook( updateCompareFlag, UpdateCompareFlag_IsMetric );
+
+		// Stats
+		auto constructStatLine = pattern( "85 C0 74 11 83 E8 01 83 F8 03" ).get_one();
+
+		Nop( constructStatLine.get<void>( -11 ), 1 );
+		InjectHook( constructStatLine.get<void>( -11 + 1 ), PrefsLanguage_IsMetric, PATCH_CALL );
+		Nop( constructStatLine.get<void>( -2 ), 2 );
+	}
+
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
@@ -788,6 +877,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 	if ( fdwReason == DLL_PROCESS_ATTACH )
 	{
+		hDLLModule = hinstDLL;
+
 		RECT			desktop;
 		GetWindowRect(GetDesktopWindow(), &desktop);
 		sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
@@ -807,6 +898,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			Patch_VC_Common();
 			Common::Patches::III_VC_Common();
 			Common::Patches::DDraw_Common();
+
+			Common::Patches::III_VC_SetDelayedPatchesFunc( InjectDelayedPatches_VC_Common );
 		}
 
 		Common::Patches::FixRwcseg_Patterns();
