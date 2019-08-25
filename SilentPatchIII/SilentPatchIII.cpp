@@ -465,6 +465,28 @@ namespace Localization
 	}
 }
 
+
+// ============= Call cDMAudio::IsAudioInitialised before adding one shot sounds, like in VC =============
+namespace AudioInitializedFix
+{
+	auto IsAudioInitialised = (bool(*)())Memory::ReadCallFrom( hook::get_pattern( "E8 ? ? ? ? 84 C0 74 6C 0F B7 47 10" ) );
+	void* (*operatorNew)(size_t size);
+
+	void* operatorNew_InitializedCheck( size_t size )
+	{
+		return IsAudioInitialised() ? operatorNew( size ) : nullptr;
+	}
+
+	void (*orgLoadAllAudioScriptObjects)(uint8_t*, uint32_t);
+	void LoadAllAudioScriptObjects_InitializedCheck( uint8_t* buffer, uint32_t a2 )
+	{
+		if ( IsAudioInitialised() )
+		{
+			orgLoadAllAudioScriptObjects( buffer, a2 );
+		}
+	}
+}
+
 void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	// Locale based metric/imperial system INI/debug menu
@@ -1049,6 +1071,46 @@ void Patch_III_Common()
 		InjectHook( constructStatLine.get<void>( -0xF + 2 ), PrefsLanguage_IsMetric, PATCH_CALL );
 		Patch( constructStatLine.get<void>( -0xF + 7 ), { 0x0F, 0xB6, 0xD8, 0x5A, 0x58 } );
 		Nop( constructStatLine.get<void>( -0xF + 12 ), 3 );
+	}
+
+
+	// Add cDMAudio::IsAudioInitialised checks before constructing cAudioScriptObject, like in VC
+	{
+		using namespace AudioInitializedFix;
+
+		auto processCommands300 = pattern( "E8 ? ? ? ? 85 C0 59 74 ? 89 C1 E8 ? ? ? ? D9 05" ).get_one();
+		ReadCall( processCommands300.get<void>( 0 ), operatorNew );
+
+		InjectHook( processCommands300.get<void>( 0 ), operatorNew_InitializedCheck );
+		Patch<int8_t>( processCommands300.get<void>( 8 + 1 ), 0x440B62 - 0x440B24 );
+
+		auto processCommands300_2 = pattern( "6A 14 E8 ? ? ? ? 89 C3 59 85 DB 74" ).get_one();
+		InjectHook( processCommands300_2.get<void>( 2 ), operatorNew_InitializedCheck );
+		Patch<int8_t>( processCommands300_2.get<void>( 0xC + 1 ), 0x440BD7 - 0x440B8B );
+
+		// We need to patch switch cases 0, 3, 4
+		auto bulletInfoUpdate_Switch = *get_pattern<uintptr_t*>( "FF 24 85 ? ? ? ? 6A 14", 3 );
+
+		const uintptr_t bulletInfoUpdate_0 = bulletInfoUpdate_Switch[0];
+		const uintptr_t bulletInfoUpdate_3 = bulletInfoUpdate_Switch[3];
+		const uintptr_t bulletInfoUpdate_4 = bulletInfoUpdate_Switch[4];
+
+		InjectHook( bulletInfoUpdate_0 + 2, operatorNew_InitializedCheck );
+		Patch<int8_t>( bulletInfoUpdate_0 + 0xA + 1, 0x558B79 - 0x558B36 );
+
+		InjectHook( bulletInfoUpdate_3 + 2, operatorNew_InitializedCheck );
+		Patch<int8_t>( bulletInfoUpdate_3 + 0xA + 1, 0x558C19 - 0x558BB1 );
+
+		InjectHook( bulletInfoUpdate_4 + 2, operatorNew_InitializedCheck );
+		Patch<int8_t>( bulletInfoUpdate_4 + 0xA + 1, 0x558C19 - 0x558BE3 );
+
+		auto playlayOneShotScriptObject = pattern( "6A 14 E8 ? ? ? ? 85 C0 59 74 ? 89 C1 E8 ? ? ? ? D9 03 D9 58 04" ).get_one();
+		InjectHook( playlayOneShotScriptObject.get<void>( 2 ), operatorNew_InitializedCheck );
+		Patch<int8_t>( playlayOneShotScriptObject.get<void>( 0xA + 1 ), 0x57C633 - 0x57C601 );
+
+		auto loadAllAudioScriptObjects = get_pattern( "FF B5 78 FF FF FF E8 ? ? ? ? 59 59 8B 45 C8", 6 );
+		ReadCall( loadAllAudioScriptObjects, orgLoadAllAudioScriptObjects );
+		InjectHook( loadAllAudioScriptObjects, LoadAllAudioScriptObjects_InitializedCheck );
 	}
 }
 
