@@ -94,7 +94,7 @@ static void* varRtPNGImageRead = AddressByVersion<void*>(0x7CF9B0, 0x7D02B0, 0x8
 WRAPPER RwImage* RtPNGImageRead(const RwChar* imageName) { WRAPARG(imageName); VARJMP(varRtPNGImageRead); }
 static void* varRwTextureCreate = AddressByVersion<void*>(0x7F37C0, 0x7F40C0, 0x82D780);
 WRAPPER RwTexture* RwTextureCreate(RwRaster* raster) { WRAPARG(raster); VARJMP(varRwTextureCreate); }
-static void* varRwRasterCreate = AddressByVersion<void*>(0x7FB230, 0x7FBB30, 0x8351F0, 0x82FA80, 0x82F950);
+static void* varRwRasterCreate = AddressByVersion<void*>(0x7FB230, 0x7FBB30, 0x8351F0, { "8B 0D ? ? ? ? 56 68 07 04 03 00 8B 54 01 60", -5 });
 WRAPPER RwRaster* RwRasterCreate(RwInt32 width, RwInt32 height, RwInt32 depth, RwInt32 flags) { WRAPARG(width); WRAPARG(height); WRAPARG(depth); WRAPARG(flags); VARJMP(varRwRasterCreate); }
 static void* varRwImageDestroy = AddressByVersion<void*>(0x802740, 0x803040, 0x83C700);
 WRAPPER RwBool RwImageDestroy(RwImage* image) { WRAPARG(image); VARJMP(varRwImageDestroy); }
@@ -305,11 +305,11 @@ static void				(*TheScriptsLoad)();
 static void				(*WipeLocalVariableMemoryForMissionScript)();
 static void				(*DoSunAndMoon)();
 
-auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370, 0x57C480, 0x57C3B0);
+auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370, { "8B 06 8B 50 0C 8B CE FF D2 8A 46 36 24 07 3C 01 76 0D", -7 });
 
 
 // SA variables
-void**					rwengine = *AddressByVersion<void***>(0x58FFC0, 0x53F032, 0x48C194, 0x48B167, 0x48B167);
+void**					rwengine = *AddressByVersion<void***>(0x58FFC0, 0x53F032, 0x48C194, { "8B 48 20 53 56 57 6A 01", -5 + 1 });
 
 unsigned char&			nGameClockDays = **AddressByVersion<unsigned char**>(0x4E841D, 0x4E886D, 0x4F3871);
 unsigned char&			nGameClockMonths = **AddressByVersion<unsigned char**>(0x4E842D, 0x4E887D, 0x4F3861);
@@ -723,7 +723,7 @@ char* GetMyDocumentsPathSA()
 
 		if ( SHGetFolderPathA(nullptr, CSIDL_MYDOCUMENTS, nullptr, SHGFP_TYPE_CURRENT, ppTempBufPtr) == S_OK )
 		{
-			char** const ppUserFilesDir = AddressByVersion<char**>(0x74503F, 0x74586F, 0x77EE50, 0x77902B, 0x778F1B);
+			char** const ppUserFilesDir = AddressByVersion<char**>(0x74503F, 0x74586F, 0x77EE50, { "6A 00 68 80 00 00 02 6A 03 6A 00 6A 01 B9 07 00 00 00", 0x12 + 1 });
 
 			PathAppendA(ppTempBufPtr, *ppUserFilesDir);
 			CreateDirectoryA(ppTempBufPtr, nullptr);
@@ -772,30 +772,31 @@ int32_t Int32Rand()
 	return generator() & INT32_MAX;
 }
 
-void (*FlushSpriteBuffer)() = AddressByVersion<void(*)()>(0x70CF20, 0x70D750, 0x7591E0, 0x753AE0, 0x753A00);
+auto FlushSpriteBuffer = AddressByVersion<void(*)()>(0x70CF20, 0x70D750, 0x7591E0, { "85 C0 0F 8E ? ? ? ? 83 3D", -5 });
 void FlushLensSwitchZ( RwRenderState rwa, void* rwb )
 {
 	FlushSpriteBuffer();
 	RwRenderStateSet( rwa, rwb );
 }
 
-void (*InitSpriteBuffer2D)() = AddressByVersion<void(*)()>(0x70CFD0, 0x70D800, 0x759290, 0x753B90, 0x753AB0);
+auto InitSpriteBuffer2D = AddressByVersion<void(*)()>(0x70CFD0, 0x70D800, 0x759290, { "A1 ? ? ? ? D9 80 ? ? ? ? A1" });
 void InitBufferSwitchZ( RwRenderState rwa, void* rwb )
 {
 	RwRenderStateSet( rwa, rwb );
 	InitSpriteBuffer2D();
 }
 
-static void* const g_fx = *AddressByVersion<void**>(0x4A9649, 0x4AA4EF, 0x4B2BB9, 0x4B0BE4, 0x4B0BC4);
+static void* const g_fx = *AddressByVersion<void**>(0x4A9649, 0x4AA4EF, 0x4B2BB9, { "56 8D 4F 0C E8", 9 + 1 });
 static int32_t GetFxQuality()
 {
 	return *(int32_t*)( (uint8_t*)g_fx + 0x54 );
 }
 
 
-DWORD*				msaaValues = *AddressByVersion<DWORD**>(0x4CCBC5, 0x4CCDB5, 0x4D7462, 0x4D6CE5, 0x4D6CB5);
-RwRaster*&			pMirrorBuffer = **AddressByVersion<RwRaster***>(0x723001, 0x723831, 0x754971, 0x74F3E1, 0x74F311);
-RwRaster*&			pMirrorZBuffer = **AddressByVersion<RwRaster***>(0x72301C, 0x72384C, 0x75498C, 0x74F3FC, 0x74F32C);
+DWORD*				msaaValues = *AddressByVersion<DWORD**>(0x4CCBC5, 0x4CCDB5, 0x4D7462, { "8B 3D ? ? ? ? 57 8B 7B 18", 2 });
+// These patterns have 3 hits, but that's fine as all 3 refer to exact same variables
+RwRaster*&			pMirrorBuffer = **AddressByVersion<RwRaster***>(0x723001, 0x723831, 0x754971, { "A1 ? ? ? ? 3B C6 74 0F 50 E8 ? ? ? ? 83 C4 04 89 35 ? ? ? ? 89 35 ? ? ? ? 89 35 ? ? ? ? 5E C3", -6 + 2 });
+RwRaster*&			pMirrorZBuffer = **AddressByVersion<RwRaster***>(0x72301C, 0x72384C, 0x75498C, { "A1 ? ? ? ? 3B C6 74 0F 50 E8 ? ? ? ? 83 C4 04 89 35 ? ? ? ? 89 35 ? ? ? ? 89 35 ? ? ? ? 5E C3", 1 });
 void CreateMirrorBuffers()
 {
 	if ( pMirrorBuffer == nullptr )
@@ -909,7 +910,7 @@ void UpdateEscalators()
 }
 
 
-static char** pStencilShadowsPad = *AddressByVersion<char***>(0x70FC4F, 0, 0x75E286, 0x758A47, 0x758937);
+static char** pStencilShadowsPad = *AddressByVersion<char***>(0x70FC4F, 0, 0x75E286, { "8B 15 ? ? ? ? D8 65 A8", 2 });
 void StencilShadowAlloc( )
 {
 	static char* pMemory = [] () {;
