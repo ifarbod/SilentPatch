@@ -5358,7 +5358,7 @@ void Patch_SA_NewSteam_Common()
 	// Don't catch WM_SYSKEYDOWN and WM_SYSKEYUP (fixes Alt+F4)
 	{
 		auto patternie = pattern( "8B 75 10 8B ? 14 56" ).count(2); // 0x77C588 and 0x77C5CC in newsteam r2
-		auto defproc = get_pattern( "8B 4D 14 8B 55 10 8B 45 08" );
+		auto defproc = get_pattern( "8B ? 14 8B ? 10 8B ? 08 ? ? 56" );
 
 		patternie.for_each_result( [&]( pattern_match match ) {
 			InjectHook( match.get<int>(0x39), defproc, PATCH_JUMP );
