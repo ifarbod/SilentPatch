@@ -1561,6 +1561,21 @@ namespace Localization
 		// If fails, default to metric. Hopefully never fails though
 		return true;
 	}
+
+	// Only used in "new binary" executables
+	bool* germanGame;
+	bool* frenchGame;
+	bool* nastyGame;
+	void SetUncensoredGame()
+	{
+		*germanGame = false;
+		*frenchGame = false;
+		*nastyGame = true;
+	}
+
+	void EmptyStub()
+	{
+	}
 }
 
 // ============= LS-RP Mode stuff =============
@@ -5498,6 +5513,38 @@ void Patch_SA_NewBinaries_Common()
 
 		InjectHook( findExactWord.get<void>( -5 ), strncpy_Fix );
 		InjectHook( findExactWord.get<void>( 9 ), strncmp_Fix );
+	}
+
+	// No censorships (not set nor loaded from savegame)
+	{
+		using namespace Localization;
+
+		auto loadCensorshipValues = pattern( "0F B6 8E ED 00 00 00 88 0D" ).get_one();
+		void* initialiseLanguage1 = get_pattern( "E8 ? ? ? ? 8B 35 ? ? ? ? FF D6" );
+		auto initialiseLanguage2 = pattern( "E8 ? ? ? ? 83 FB 07" ).get_one();
+
+		germanGame = *loadCensorshipValues.get<bool*>( 7 + 2 );
+		frenchGame = *loadCensorshipValues.get<bool*>( 0x14 + 2 );
+		nastyGame = *loadCensorshipValues.get<bool*>( 0x21 + 1 );
+
+		// Don't load censorship values
+		Nop( loadCensorshipValues.get<bool*>( 7 ), 6 );
+		Nop( loadCensorshipValues.get<bool*>( 0x14 ), 6 );
+		Nop( loadCensorshipValues.get<bool*>( 0x21 ), 5 );
+
+		// Unified censorship levels for all regions
+		InjectHook( initialiseLanguage1, EmptyStub );
+
+		void* setNormalGame;
+		void* setGermanGame;
+		void* setFrenchGame;
+		ReadCall( initialiseLanguage2.get<void>(), setNormalGame );
+		ReadCall( initialiseLanguage2.get<void>( 0x15 ), setGermanGame );
+		ReadCall( initialiseLanguage2.get<void>( 0x2A ), setFrenchGame );
+
+		InjectHook( setNormalGame, SetUncensoredGame, PATCH_JUMP );
+		InjectHook( setGermanGame, SetUncensoredGame, PATCH_JUMP );
+		InjectHook( setFrenchGame, SetUncensoredGame, PATCH_JUMP );
 	}
 }
 
