@@ -877,7 +877,7 @@ void* CollisionData_MallocAndInit( RwUInt32 size, RwUInt32 hint )
 	CColData*	mem = (CColData*)orgMemMgrMalloc( size, hint );
 
 	mem->m_bFlags = 0;
-	mem->m_dwNumShadowTriangles = mem->m_dwNumShadowVertices =0;
+	mem->m_dwNumShadowTriangles = mem->m_dwNumShadowVertices = 0;
 	mem->m_pShadowVertices = mem->m_pShadowTriangles = nullptr;
 
 	return mem;
@@ -914,7 +914,7 @@ static char** pStencilShadowsPad = *AddressByVersion<char***>(0x70FC4F, 0, 0x75E
 void StencilShadowAlloc( )
 {
 	static char* pMemory = [] () {;
-		char* mem = static_cast<char*>( orgNewAlloc( 3 * 0x6000 ) );
+		char* mem = static_cast<char*>( ::operator new( 3 * 0x6000 ) );
 		pStencilShadowsPad[0] = mem;
 		pStencilShadowsPad[1] = mem+0x6000;
 		pStencilShadowsPad[2] = mem+(2*0x6000);
@@ -3679,6 +3679,7 @@ void Patch_SA_10()
 	Patch<DWORD>(&(*(DWORD**)0x438513)[34], 0xE5FC92C3);
 
 	// No DirectPlay dependency
+	// mov eax, 0x900
 	Patch<BYTE>(AddressByRegion_10<DWORD>(0x74754A), 0xB8);
 	Patch<DWORD>(AddressByRegion_10<DWORD>(0x74754B), 0x900);
 
@@ -3698,17 +3699,20 @@ void Patch_SA_10()
 	Nop(0x58BA8F, 6);
 
 	// Fixed lens flare
-	Patch<DWORD>(0x70F45A, 0);
-	Patch<BYTE>(0x6FB621, 0xC3);
+	Patch<DWORD>(0x70F45A, 0); // TODO: Is this needed?
+	Patch<BYTE>(0x6FB621, 0xC3); // nop CSprite::FlushSpriteBuffer
+	// Add CSprite::FlushSpriteBuffer, jmp loc_6FB605 at the bottom of the function
 	Patch<BYTE>(0x6FB600, 0x21);
 	InjectHook(0x6FB622, 0x70CF20, PATCH_CALL);
 	Patch<WORD>(0x6FB627, 0xDCEB);
 
+	// nop / mov eax, offset FlushLensSwitchZ
 	Patch<WORD>(0x6FB476, 0xB990);
 	Patch(0x6FB478, &FlushLensSwitchZ);
 	Patch<WORD>(0x6FB480, 0xD1FF);
 	Nop(0x6FB482, 1);
 
+	// nop / mov ecx, offset InitBufferSwitchZ
 	Patch<WORD>(0x6FAF28, 0xB990);
 	Patch(0x6FAF2A, &InitBufferSwitchZ);
 	Patch<WORD>(0x6FAF32, 0xD1FF);
@@ -3729,7 +3733,9 @@ void Patch_SA_10()
 	InjectHook(0x524071, 0x524139, PATCH_JUMP);
 
 	// Fixed mirrors crash
-	Patch<uint64_t>(0x7271CB, 0xC604C4833474C085);
+	// TODO: Change when short jumps are supported
+	// test eax, eax / je 0727203 / add esp, 4
+	Patch( 0x7271CB, { 0x85, 0xC0, 0x74, 0x34, 0x83, 0xC4, 0x04 } );
 
 	// Mirrors depth fix & bumped quality
 	InjectHook(0x72701D, CreateMirrorBuffers);
@@ -3740,7 +3746,7 @@ void Patch_SA_10()
 
 	Patch<BYTE>(AddressByRegion_10<BYTE*>(0x7F6C9B), 0xEB);
 	Patch<BYTE>(AddressByRegion_10<BYTE*>(0x7F60C6), 0xEB);
-	Patch<WORD>(AddressByRegion_10<BYTE*>(0x7F6683), 0xE990);
+	Patch(AddressByRegion_10<BYTE*>(0x7F6683), { 0x90, 0xE9 });
 
 	ReadCall( 0x57D136, orgGetMaxMultiSamplingLevels );
 	InjectHook(0x57D136, GetMaxMultiSamplingLevels);
@@ -3814,8 +3820,8 @@ void Patch_SA_10()
 	// Don't allocate constant memory for stencil shadows every frame
 	InjectHook(0x711DD5, StencilShadowAlloc, PATCH_CALL);
 	Nop(0x711E0D, 3);
-	Patch<WORD>(0x711DDA, 0x2CEB);
-	Patch<DWORD>(0x711E5F, 0x90C35D5F);	// pop edi, pop ebp, ret
+	Patch(0x711DDA, { 0xEB, 0x2C });
+	Patch(0x711E5F, { 0x5F, 0x5D, 0xC3 });	// pop edi, pop ebp, ret
 
 
 	// "Streaming memory bug" fix
@@ -4416,7 +4422,7 @@ void Patch_SA_11()
 	InjectHook(0x524511, 0x5245D9, PATCH_JUMP);
 
 	// Fixed mirrors crash
-	Patch<uint64_t>(0x7279FB, 0xC604C4833474C085);
+	Patch( 0x7279FB, { 0x85, 0xC0, 0x74, 0x34, 0x83, 0xC4, 0x04 } );
 
 	// Mirrors depth fix & bumped quality
 	InjectHook(0x72784D, CreateMirrorBuffers);
@@ -4427,7 +4433,7 @@ void Patch_SA_11()
 
 	Patch<BYTE>(AddressByRegion_11<BYTE*>(0x7F759B), 0xEB);
 	Patch<BYTE>(AddressByRegion_11<BYTE*>(0x7F69C6), 0xEB);
-	Patch<WORD>(AddressByRegion_11<BYTE*>(0x7F6F83), 0xE990);
+	Patch(AddressByRegion_11<BYTE*>(0x7F6F83), { 0x90, 0xE9 });
 
 	ReadCall( 0x57D916, orgGetMaxMultiSamplingLevels );
 	InjectHook(0x57D916, GetMaxMultiSamplingLevels);
@@ -4728,7 +4734,7 @@ void Patch_SA_Steam()
 	InjectHook(0x534D3E, 0x534DF7, PATCH_JUMP);
 
 	// Fixed mirrors crash
-	Patch<uint64_t>(0x75903A, 0xC604C4833474C085);
+	Patch( 0x75903A, { 0x85, 0xC0, 0x74, 0x34, 0x83, 0xC4, 0x04 } );
 
 	// Mirrors depth fix & bumped quality
 	InjectHook(0x758E91, CreateMirrorBuffers);
@@ -4739,7 +4745,7 @@ void Patch_SA_Steam()
 
 	Patch<BYTE>(0x830C5B, 0xEB);
 	Patch<BYTE>(0x830086, 0xEB);
-	Patch<WORD>(0x830643, 0xE990);
+	Patch(0x830643, { 0x90, 0xE9 });
 
 	ReadCall( 0x592BCF, orgGetMaxMultiSamplingLevels );
 	InjectHook(0x592BCF, GetMaxMultiSamplingLevels);
@@ -4753,7 +4759,7 @@ void Patch_SA_Steam()
 	ReadCall( 0x780206, orgSetMultiSamplingLevels );
 	InjectHook(0x780206, SetMultiSamplingLevels);
 
-	Patch<WORD>(0x58F88C, 0xBA90);
+	Patch(0x58F88C, { 0x90, 0xBA });
 	Patch(0x58F88E, MSAAText);
 
 	// Fixed car collisions - car you're hitting gets proper damage now
@@ -4790,8 +4796,8 @@ void Patch_SA_Steam()
 	// Don't allocate constant memory for stencil shadows every frame
 	InjectHook(0x760795, StencilShadowAlloc, PATCH_CALL);
 	Nop(0x7607CD, 3);
-	Patch<WORD>(0x76079A, 0x2CEB);
-	Patch<DWORD>(0x76082C, 0x90C35D5F);	// pop edi, pop ebp, ret
+	Patch(0x76079A, { 0xEB, 0x2C });
+	Patch(0x76082C, { 0x5F, 0x5D, 0xC3 });	// pop edi, pop ebp, ret
 
 
 	// "Streaming memory bug" fix
@@ -4868,462 +4874,7 @@ void Patch_SA_Steam()
 	InjectHook(0x5EDFD9, 0x5EE0FA, PATCH_JUMP);
 }
 
-void Patch_SA_NewSteam_r1()
-{
-	using namespace Memory::DynBase;
-
-	// Nazi EXE?
-	if ( *(DWORD*)DynBaseAddress(0x49F810) == 0x64EC8B55 )
-	{
-		// Regular
-
-		// No framedelay
-		InjectHook(0x54ECC6, DynBaseAddress(0x54ED0C), PATCH_JUMP);
-		Patch<BYTE>(0x54ED45, 0x4);
-		Nop(0x54ED47, 1);
-
-		// Unlock 1.0/1.01 saves loading 
-		Patch<WORD>(0x5ED3E9, 0xE990);
-
-		// Old .set files working again
-		static const DWORD		dwSetVersion = 6;
-		Patch<const void*>(0x59058A, &dwSetVersion);
-		Patch<BYTE>(0x59086D, 6);
-		Patch<BYTE>(0x53EC4A, 6);
-
-		// Disable re-initialization of DirectInput mouse device by the game
-		Patch<BYTE>(0x58A891, 0xEB);
-		Patch<BYTE>(0x58AA77, 0xEB);
-		Patch<BYTE>(0x58AB59, 0xEB);
-	}
-	else
-	{
-		// Nazi
-
-		// No framedelay
-		InjectHook(0x54EC06, DynBaseAddress(0x54EC4C), PATCH_JUMP);
-		Patch<BYTE>(0x54EC85, 0x4);
-		Nop(0x54EC87, 1);
-
-		// Unlock 1.0/1.01 saves loading 
-		Patch<WORD>(0x5ED349, 0xE990);
-
-		// Old .set files working again
-		static const DWORD		dwSetVersion = 6;
-		Patch<const void*>(0x5904DA, &dwSetVersion);
-		Patch<BYTE>(0x5907BD, 6);
-		Patch<BYTE>(0x53EB9A, 6);
-
-		// Disable re-initialization of DirectInput mouse device by the game
-		Patch<BYTE>(0x58A7D1, 0xEB);
-		Patch<BYTE>(0x58A9B7, 0xEB);
-		Patch<BYTE>(0x58AA99, 0xEB);
-	}
-
-
-	// Unlocked widescreen resolutions
-	//Patch<WORD>(0x779BAD, 0x607D);
-	Patch<WORD>(0x779BB8, 0x557D);
-	Patch<DWORD>(0x7799D8, 0x9090117D);
-	Nop(0x779A45, 2);
-	Nop(0x7799DC, 2);
-
-	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
-	Nop(0x77AB3F, 1);
-	Patch<WORD>(0x77AB40, 0x01B0);
-
-	// Default resolution to native resolution
-	RECT			desktop;
-	GetWindowRect(GetDesktopWindow(), &desktop);
-	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
-
-	Patch<DWORD>(0x77A3EF, desktop.right);
-	Patch<DWORD>(0x77A3F4, desktop.bottom);
-	Patch<const char*>(0x77A44B, aNoDesktopMode);
-
-
-	// Proper aspect ratios
-	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
-	Patch<const void*>(0x73424B, &f169);
-	Patch<const void*>(0x734267, &f54);
-	Patch<const void*>(0x73427A, &f43);
-}
-
-void Patch_SA_NewSteam_r2()
-{
-	using namespace Memory::DynBase;
-
-	// (Hopefully) more precise frame limiter
-	ReadCall( 0x77D55F, RsEventHandler );
-	InjectHook(0x77D55F, NewFrameRender);
-	InjectHook(0x77D4E8, GetTimeSinceLastFrame);
-
-	// No framedelay
-	InjectHook(0x54ECC6, DynBaseAddress(0x54ED0C), PATCH_JUMP);
-	Patch<BYTE>(0x54ED45, 0x4);
-	Nop(0x54ED47, 1);
-
-	// Unlock 1.0/1.01 saves loading 
-	Patch<WORD>(0x5ED349, 0xE990);
-
-	// Old .set files working again
-	static const DWORD		dwSetVersion = 6;
-	Patch<const void*>(0x5904CA, &dwSetVersion);
-	Patch<BYTE>(0x5907AD, 6);
-	Patch<BYTE>(0x53EC4A, 6);
-
-	// Disable re-initialization of DirectInput mouse device by the game
-	Patch<BYTE>(0x58A881, 0xEB);
-	Patch<BYTE>(0x58AA67, 0xEB);
-	Patch<BYTE>(0x58AB49, 0xEB);
-
-	// Unlocked widescreen resolutions
-	//Patch<WORD>(0x779BAD, 0x607D);
-	Patch<WORD>(0x779BC8, 0x697D);
-	Patch<DWORD>(0x7799D8, 0x9090117D);
-	Nop(0x779A56, 2);
-	Nop(0x7799DC, 2);
-
-	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
-	Nop(0x77AB6F, 1);
-	Patch<WORD>(0x77AB70, 0x01B0);
-
-	// Default resolution to native resolution
-	RECT			desktop;
-	GetWindowRect(GetDesktopWindow(), &desktop);
-	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
-
-	Patch<DWORD>(0x77A41F, desktop.right);
-	Patch<DWORD>(0x77A424, desktop.bottom);
-	Patch<const char*>(0x77A47B, aNoDesktopMode);
-
-	// No DirectPlay dependency
-	Patch<BYTE>(0x77B46E, 0xB8);
-	Patch<DWORD>(0x77B46F, 0x900);
-
-	// SHGetFolderPath on User Files
-	InjectHook(0x778FA0, GetMyDocumentsPathSA, PATCH_JUMP);
-
-	// Fixed muzzleflash not showing from last bullet
-	Nop(0x63E8A9, 2);
-
-	// Proper randomizations
-	InjectHook(0x45234C, Int32Rand); // Missing ped paths
-	InjectHook(0x45284C, Int32Rand); // Missing ped paths
-	InjectHook(0x69046F, Int32Rand); // Prostitutes
-
-	// Help boxes showing with big message
-	// Game seems to assume they can show together
-	Nop(0x597EEA, 6);
-
-	// Fixed lens flare
-	Nop(0x7300F8, 5);
-	Patch<BYTE>(0x7300E3, 0x20);
-	InjectHook(0x730104, DynBaseAddress(0x753AE0), PATCH_CALL);
-	Patch<WORD>(0x730109, 0xE1EB);
-
-	Nop(0x72FF17, 4);
-	Patch<BYTE>(0x72FF1B, 0xB8);
-	Patch(0x72FF1C, &FlushLensSwitchZ);
-
-	Patch<DWORD>(0x72F91D, 0xB9909090);
-	Patch(0x72F921, &InitBufferSwitchZ);
-
-	// Y axis sensitivity fix
-	float* sens = *(float**)DynBaseAddress(0x51B987);
-	Patch<const void*>(0x51B993 + 0x2, sens);
-	Patch<const void*>(0x51C68C + 0x2, sens);
-	Patch<const void*>(0x51D73A + 0x2, sens);
-	Patch<const void*>(0x51EA3A + 0x2, sens);
-	Patch<const void*>(0x52FBE1 + 0x2, sens);
-
-	// Don't lock mouse Y axis during fadeins
-	Patch<WORD>(0x51C5CD, 0x29EB);
-	Patch<WORD>(0x51D053, 0xE990);
-	InjectHook(0x531BBE, DynBaseAddress(0x531C6F), PATCH_JUMP);
-
-	// Fixed mirrors crash
-	Patch<uint64_t>(0x753941, 0xC604C4832F74C085);
-
-	// Mirrors depth fix & bumped quality
-	InjectHook(0x7537A0, CreateMirrorBuffers);
-
-	// Fixed MSAA options
-	Patch<BYTE>(0x590F77, 0xEB);
-	Nop(0x590F34, 2);
-
-	Patch<BYTE>(0x82B4EB, 0xEB);
-	Patch<BYTE>(0x82A916, 0xEB);
-	Patch<WORD>(0x82AED3, 0xE990);
-
-	ReadCall( 0x590F8B, orgGetMaxMultiSamplingLevels );
-	InjectHook(0x590F8B, GetMaxMultiSamplingLevels);
-	InjectHook(0x590F36, GetMaxMultiSamplingLevels);
-
-	ReadCall( 0x5881C0, orgChangeMultiSamplingLevels );
-	InjectHook(0x5881C0, ChangeMultiSamplingLevels);
-	InjectHook(0x590FBB, ChangeMultiSamplingLevels);
-	InjectHook(0x591111, ChangeMultiSamplingLevels);
-
-	ReadCall( 0x77A40D, orgSetMultiSamplingLevels );
-	InjectHook(0x77A40D, SetMultiSamplingLevels);
-
-	Patch<WORD>(0x58DDEF, 0xBA90);
-	Patch(0x58DDF1, MSAAText);
-
-	// Fixed car collisions - car you're hitting gets proper damage now
-	Nop(0x5538D0, 2);
-	InjectHook(0x5538D2, FixedCarDamage_Newsteam, PATCH_CALL);
-
-
-	// Car explosion crash with multimonitor
-	// Unitialized collision data breaking stencil shadows
-	ReadCall( 0x41A661, orgMemMgrMalloc );
-	InjectHook(0x41A661, CollisionData_MallocAndInit);
-
-	ReadCall( 0x41A4CC, orgNewAlloc );
-	InjectHook(0x41A4CC, CollisionData_NewAndInit);
-	InjectHook(0x41A5A9, CollisionData_NewAndInit);
-
-
-	// Crash when entering advanced display options on a dual monitor machine after:
-	// - starting game on primary monitor in maximum resolution, exiting,
-	// starting again in maximum resolution on secondary monitor.
-	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
-	// Not in 1.01
-	ReadCall( 0x779B71, orgGetNumVideoModes );
-	InjectHook(0x779B71, GetNumVideoModes_Store);
-	InjectHook(0x779AD1, GetNumVideoModes_Retrieve);
-
-
-	// Fixed escalators crash
-	orgEscalatorsUpdate = (void(*)())DynBaseAddress(0x735B90);
-	InjectHook(0x735BC5, UpdateEscalators, PATCH_JUMP);
-
-	Patch<WORD>(0x734BAE, 0x4E8D);
-	Patch<BYTE>(0x734BB0, 0x84);
-	InjectHook(0x734BB1, &CEscalator::SwitchOffNoRemove, PATCH_CALL);
-	Patch<WORD>(0x734BB6, 0x52EB);
-
-
-	// Don't allocate constant memory for stencil shadows every frame
-	InjectHook(0x75ADA9, StencilShadowAlloc, PATCH_CALL);
-	Nop(0x75ADE1, 3);
-	Patch<WORD>(0x75ADAE, 0x2CEB);
-	Patch<DWORD>(0x75AE35, 0x5D5B5E5F);	// pop edi, pop esi, pop ebx, pop ebp, retn
-	Patch<BYTE>(0x75AE39, 0xC3);
-
-
-	// "Streaming memory bug" fix
-	InjectHook(0x4CF1FB, GTARtAnimInterpolatorSetCurrentAnim);
-
-
-	// Fixed ammo for melee weapons in cheats
-	Patch<BYTE>(0x43AD0B+1, 1); // knife
-	Patch<BYTE>(0x43ADF8+1, 1); // knife
-	Patch<BYTE>(0x43AF9F+1, 1); // chainsaw
-	Patch<BYTE>(0x43B058+1, 1); // chainsaw
-	Patch<BYTE>(0x43B9B8+1, 1); // parachute
-
-	Patch<BYTE>(0x43C492, 0x53); // katana
-	Patch<WORD>(0x43C493, 0x016A);
-
-
-	// Proper aspect ratios
-	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
-	Patch<const void*>(0x73424B, &f169);
-	Patch<const void*>(0x734267, &f54);
-	Patch<const void*>(0x73427A, &f43);
-}
-
-void Patch_SA_NewSteam_r2_lv()
-{
-	using namespace Memory::DynBase;
-
-	// (Hopefully) more precise frame limiter
-	ReadCall( 0x77D44F, RsEventHandler );
-	InjectHook(0x77D44F, NewFrameRender);
-	InjectHook(0x77D3D8, GetTimeSinceLastFrame);
-
-	// No framedelay
-	InjectHook(0x54EC06, DynBaseAddress(0x54EC4C), PATCH_JUMP);
-	Patch<BYTE>(0x54EC85, 0x4);
-	Nop(0x54EC87, 1);
-
-	// Unlock 1.0/1.01 saves loading 
-	Patch<WORD>(0x5ED299, 0xE990);
-
-	// Old .set files working again
-	static const DWORD		dwSetVersion = 6;
-	Patch<const void*>(0x59040A, &dwSetVersion);
-	Patch<BYTE>(0x5906ED, 6);
-	Patch<BYTE>(0x53EB9A, 6);
-
-	// Disable re-initialization of DirectInput mouse device by the game
-	Patch<BYTE>(0x58A7C1, 0xEB);
-	Patch<BYTE>(0x58A9A7, 0xEB);
-	Patch<BYTE>(0x58AA89, 0xEB);
-
-	// Unlocked widescreen resolutions
-	//Patch<WORD>(0x779BAD, 0x607D);
-	Patch<WORD>(0x779AB8, 0x697D);
-	Patch<DWORD>(0x7798C8, 0x9090117D);
-	Nop(0x779946, 2);
-	Nop(0x7798CC, 2);
-
-	// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
-	Nop(0x77AA5F, 1);
-	Patch<WORD>(0x77AA60, 0x01B0);
-
-	// Default resolution to native resolution
-	RECT			desktop;
-	GetWindowRect(GetDesktopWindow(), &desktop);
-	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
-
-	Patch<DWORD>(0x77A30F, desktop.right);
-	Patch<DWORD>(0x77A314, desktop.bottom);
-	Patch<const char*>(0x77A36B, aNoDesktopMode);
-
-	// No DirectPlay dependency
-	Patch<BYTE>(0x77B35E, 0xB8);
-	Patch<DWORD>(0x77B35F, 0x900);
-
-	// SHGetFolderPath on User Files
-	InjectHook(0x778E90, GetMyDocumentsPathSA, PATCH_JUMP);
-
-	// Fixed muzzleflash not showing from last bullet
-	Nop(0x63E789, 2);
-
-	// Proper randomizations
-	InjectHook(0x45234C, Int32Rand); // Missing ped paths
-	InjectHook(0x45284C, Int32Rand); // Missing ped paths
-	InjectHook(0x69034F, Int32Rand); // Prostitutes
-
-	// Help boxes showing with big message
-	// Game seems to assume they can show together
-	Nop(0x597E3A, 6);
-
-	// Fixed lens flare
-	Nop(0x72FFF8, 5);
-	Patch<BYTE>(0x72FFE3, 0x20);
-	InjectHook(0x730004, DynBaseAddress(0x753A00), PATCH_CALL);
-	Patch<WORD>(0x730009, 0xE1EB);
-
-	Nop(0x72FE17, 4);
-	Patch<BYTE>(0x72FE1B, 0xB8);
-	Patch(0x72FE1C, &FlushLensSwitchZ);
-
-	Patch<DWORD>(0x72F81D, 0xB9909090);
-	Patch(0x72F821, &InitBufferSwitchZ);
-
-	// Y axis sensitivity fix
-	float* sens = *(float**)DynBaseAddress(0x51B8D7);
-	Patch<const void*>(0x51B8E3 + 0x2, sens);
-	Patch<const void*>(0x51C5DC + 0x2, sens);
-	Patch<const void*>(0x51D68A + 0x2, sens);
-	Patch<const void*>(0x51E98A + 0x2, sens);
-	Patch<const void*>(0x52FB31 + 0x2, sens);
-
-	// Don't lock mouse Y axis during fadeins
-	Patch<WORD>(0x51C51D, 0x29EB);
-	Patch<WORD>(0x51CFA3, 0xE990);
-	InjectHook(0x531B1E, DynBaseAddress(0x531BCF), PATCH_JUMP);
-
-	// Fixed mirrors crash
-	Patch<uint64_t>(0x753861, 0xC604C4832F74C085);
-
-	// Mirrors depth fix & bumped quality
-	InjectHook(0x7536C0, CreateMirrorBuffers);
-
-	// Fixed MSAA options
-	Patch<BYTE>(0x590EB7, 0xEB);
-	Nop(0x590E74, 2);
-
-	Patch<BYTE>(0x82B3BB, 0xEB);
-	Patch<BYTE>(0x82A7E6, 0xEB);
-	Patch<WORD>(0x82ADA3, 0xE990);
-
-	ReadCall( 0x590ECB, orgGetMaxMultiSamplingLevels );
-	InjectHook(0x590ECB, GetMaxMultiSamplingLevels);
-	InjectHook(0x590E76, GetMaxMultiSamplingLevels);
-
-	ReadCall( 0x588100, orgChangeMultiSamplingLevels );
-	InjectHook(0x588100, ChangeMultiSamplingLevels);
-	InjectHook(0x590EFB, ChangeMultiSamplingLevels);
-	InjectHook(0x591051, ChangeMultiSamplingLevels);
-
-	ReadCall( 0x77A2FD, orgSetMultiSamplingLevels );
-	InjectHook(0x77A2FD, SetMultiSamplingLevels);
-
-	Patch<WORD>(0x58DD2F, 0xBA90);
-	Patch(0x58DD31, MSAAText);
-
-	// Fixed car collisions - car you're hitting gets proper damage now
-	Nop(0x553800, 2);
-	InjectHook(0x553802, FixedCarDamage_Newsteam, PATCH_CALL);
-
-
-	// Car explosion crash with multimonitor
-	// Unitialized collision data breaking stencil shadows
-	ReadCall( 0x41A661, orgMemMgrMalloc );
-	InjectHook(0x41A661, CollisionData_MallocAndInit);
-
-	ReadCall( 0x41A4CC, orgNewAlloc );
-	InjectHook(0x41A4CC, CollisionData_NewAndInit);
-	InjectHook(0x41A5A9, CollisionData_NewAndInit);
-
-
-	// Crash when entering advanced display options on a dual monitor machine after:
-	// - starting game on primary monitor in maximum resolution, exiting,
-	// starting again in maximum resolution on secondary monitor.
-	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
-	// Not in 1.01
-	ReadCall( 0x779A61, orgGetNumVideoModes );
-	InjectHook(0x779A61, GetNumVideoModes_Store);
-	InjectHook(0x7799C1, GetNumVideoModes_Retrieve);
-
-
-	// Fixed escalators crash
-	orgEscalatorsUpdate = (void(*)())DynBaseAddress(0x735A90);
-	InjectHook(0x735AC5, UpdateEscalators, PATCH_JUMP);
-
-	Patch<WORD>(0x734AAE, 0x4E8D);
-	Patch<BYTE>(0x734AB0, 0x84);
-	InjectHook(0x734AB1, &CEscalator::SwitchOffNoRemove, PATCH_CALL);
-	Patch<WORD>(0x734AB6, 0x52EB);
-
-
-	// Don't allocate constant memory for stencil shadows every frame
-	InjectHook(0x75AC99, StencilShadowAlloc, PATCH_CALL);
-	Nop(0x75ACD1, 3);
-	Patch<WORD>(0x75AC9E, 0x2CEB);
-	Patch<DWORD>(0x75AD25, 0x5D5B5E5F);	// pop edi, pop esi, pop ebx, pop ebp, retn
-	Patch<BYTE>(0x75AD29, 0xC3);
-
-
-	// "Streaming memory bug" fix
-	InjectHook(0x4CF1DB, GTARtAnimInterpolatorSetCurrentAnim);
-
-
-	// Fixed ammo for melee weapons in cheats
-	Patch<BYTE>(0x43AD0B+1, 1); // knife
-	Patch<BYTE>(0x43ADF8+1, 1); // knife
-	Patch<BYTE>(0x43AF9F+1, 1); // chainsaw
-	Patch<BYTE>(0x43B058+1, 1); // chainsaw
-	Patch<BYTE>(0x43B9B8+1, 1); // parachute
-
-	Patch<BYTE>(0x43C492, 0x53); // katana
-	Patch<WORD>(0x43C493, 0x016A);
-
-
-	// Proper aspect ratios
-	static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
-	Patch<const void*>(0x73414B, &f169);
-	Patch<const void*>(0x734167, &f54);
-	Patch<const void*>(0x73417A, &f43);
-}
-
-void Patch_SA_NewSteam_Common()
+void Patch_SA_NewBinaries_Common()
 {
 	using namespace Memory;
 	using namespace hook;
@@ -5332,6 +4883,402 @@ void Patch_SA_NewSteam_Common()
 		void* isAlreadyRunning = get_pattern( "85 C0 74 08 33 C0 8B E5 5D C2 10 00", -5 );
 		ReadCall( isAlreadyRunning, IsAlreadyRunning );
 		InjectHook(isAlreadyRunning, InjectDelayedPatches_Newsteam);
+	}
+
+	// (Hopefully) more precise frame limiter
+	{
+		void* rsEventHandler = get_pattern( "83 C4 08 39 3D ? ? ? ? 75 23", -5 );
+		void* getTimeSinceLastFrame = get_pattern( "EB 7F E8 ? ? ? ? 89 45 08", 2 );
+
+		ReadCall( rsEventHandler, RsEventHandler );
+		InjectHook( rsEventHandler, NewFrameRender );
+		InjectHook( getTimeSinceLastFrame, GetTimeSinceLastFrame );
+	}
+
+	// No framedelay
+	{
+		// TODO: Simplify with transactional patching
+		auto framedelay_jmpSrc = pattern( "83 EC 08 E8 ? ? ? ? E8" ).count(1);
+		auto framedelay_jmpDest = pattern( "33 D2 8B C6 F7 F1 A3" ).count(1);
+		auto popEsi = pattern( "83 C4 04 83 7D 08 00 5E" ).count(1);
+
+		if ( framedelay_jmpSrc.size() == 1 && framedelay_jmpDest.size() == 1 && popEsi.size() == 1 )
+		{
+			// TODO: Let this place long or short jump, whatever it prefers
+			InjectHook( framedelay_jmpSrc.get_first<void>( 3 ), framedelay_jmpDest.get_first<void>( 11 ), PATCH_JUMP );
+
+			auto popEsiMatch = popEsi.get_one();
+			Patch<BYTE>( popEsiMatch.get<void>( 3 + 2 ), 0x4);
+			Nop( popEsiMatch.get<void>( 3 + 4 ), 1 );
+		}
+	}
+
+	// Unlock 1.0/1.01 saves loading
+	{
+		auto sizeCheck = pattern( "0F 84 ? ? ? ? 8D 45 FC" ).count(1);
+		if ( sizeCheck.size() == 1 )
+		{
+			Patch( sizeCheck.get_first<void>(), { 0x90, 0xE9 } ); // nop / jmp
+		}
+	}
+
+	// Old .set files working again
+	{
+		void* setFileSave = get_pattern( "C6 45 FD 5F", 0xE + 1 );
+		auto setCheckVersion1 = pattern( "83 7D F8 07" ).count(1);
+		auto setCheckVersion2 = pattern( "83 C4 18 83 7D FC 07" ).count(1);
+
+		if ( setCheckVersion1.size() == 1 && setCheckVersion2.size() == 1 )
+		{
+			static const DWORD dwSetVersion = 6;
+			Patch( setFileSave, &dwSetVersion );
+			Patch<BYTE>( setCheckVersion1.get_first<void>( 3 ), dwSetVersion );
+			Patch<BYTE>( setCheckVersion2.get_first<void>( 3 + 3 ), dwSetVersion );
+		}
+	}
+
+	// Disable re-initialization of DirectInput mouse device by the game
+	{
+		void* reinitMouse1 = get_pattern( "84 C0 ? 0F E8 ? ? ? ? 6A 01 E8", 2 );
+		auto reinitMouse2 = pattern( "84 C0 ? 0E E8 ? ? ? ? 53 E8" ).count(2);
+
+		Patch<BYTE>( reinitMouse1, 0xEB );
+
+		reinitMouse2.for_each_result( []( pattern_match match ) {
+			Patch<BYTE>( match.get<void>( 2 ), 0xEB );
+		});
+
+		void* diInitMouse = get_pattern( "6A 00 83 C1 1C", -3 );
+
+		// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
+		// nop / mov al, 1
+		Patch( diInitMouse, { 0x90, 0xB0, 0x01 } );
+	}
+
+	// Unlocked widescreen resolutions
+	{
+		// Assume anybody could have changed those, so bail out if ANYTHING goes wrong
+		// However, all those patches are independent so try one by one
+		auto wsRes_jmpSrc = pattern( "81 F9 E0 01 00 00 7C").count(1);
+		auto wsRes1_jmpDest = pattern( "8B 45 EC 0F AF C2" ).count(1);
+		auto wsRes2 = pattern( "0F 8C ? ? ? ? 81 7D ? ? ? ? ? 0F 8C" ).count(1);
+		auto wsRes3 = pattern( "7A 4D EB 02" ).count(1);
+
+		if ( wsRes_jmpSrc.size() == 1 && wsRes1_jmpDest.size() == 1 )
+		{
+			auto wsRes_jmpSrcMatch = wsRes_jmpSrc.get_one();
+			auto wsRes1_jmpDestMatch = wsRes1_jmpDest.get_one();
+
+			const uintptr_t jumpSource = reinterpret_cast<uintptr_t>(wsRes_jmpSrcMatch.get<void>( 6 + 2 ));
+			const uintptr_t jumpDestination = reinterpret_cast<uintptr_t>(wsRes1_jmpDestMatch.get<void>() );
+			const ptrdiff_t dist = jumpDestination - jumpSource;
+			// Can only do a short jump
+			if ( INT8_MIN <= dist && dist <= INT8_MAX )
+			{
+				// jnl 00B19C33
+				Patch( wsRes_jmpSrcMatch.get<void>( 6 ), { 0x7D, static_cast<uint8_t>(dist) } );
+			}
+		}
+
+		if ( wsRes2.size() == 1 )
+		{
+			auto wsRes2Match = wsRes2.get_one();
+			Nop( wsRes2Match.get<void>(), 4 );
+			Patch( wsRes2Match.get<void>( 4 ), { 0x7D, 0xD } );
+		}
+
+		if ( wsRes3.size() == 1 )
+		{
+			Nop( wsRes3.get_first<void>(), 2 );
+		}
+	}
+
+	// Default resolution to native resolution
+	{
+		auto resolution = pattern( "BB 20 03 00 00" ).count(1); // Another instance could overwrite it so check first
+
+		if ( resolution.size() == 1 )
+		{
+			void* cannotFindResMessage = get_pattern( "6A 00 68 ? ? ? ? 68 ? ? ? ? 6A 00", 7 + 1 );
+
+			RECT			desktop;
+			GetWindowRect(GetDesktopWindow(), &desktop);
+			sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+
+			auto resolutionMatch = resolution.get_one();
+
+			Patch<LONG>( resolutionMatch.get<void>( 1 ), desktop.right );
+			Patch<LONG>( resolutionMatch.get<void>( 5 + 1 ), desktop.bottom );
+			Patch<const char*>( cannotFindResMessage, aNoDesktopMode );
+		}
+	}
+
+	// No DirectPlay dependency
+	{
+		auto getDXversion = pattern( "50 68 ? ? ? ? A3" ).get_one();
+
+		// mov eax, 0x900
+		Patch<BYTE>( getDXversion.get<void>( -5 ), 0xB8 );
+		Patch<DWORD>( getDXversion.get<void>( -5 + 1 ), 0x900 );
+	}
+
+	// SHGetFolderPath on User Files
+	{
+		void* getDocumentsPath = get_pattern( "8D 45 FC 50 68 19 00 02 00", -6 );
+		InjectHook( getDocumentsPath, GetMyDocumentsPathSA, PATCH_JUMP );
+	}
+
+	// Fixed muzzleflash not showing from last bullet
+	{
+		void* weaponStateCheck = get_pattern( "83 BC 8E A4 05 00 00 01", 8 );
+		Nop( weaponStateCheck, 2 );
+	}
+
+	// Proper randomizations
+	{
+		pattern( "C1 F8 06 99" ).count(2).for_each_result( []( pattern_match match ) {
+			InjectHook( match.get<void>( -5 ), Int32Rand ); // Missing ped paths
+		});
+
+		void* prostitutesRand = get_pattern( "8B F8 32 C0", -5 );
+		InjectHook( prostitutesRand, Int32Rand ); // Prostitutes
+	}
+
+	// Help boxes showing with big message
+	// Game seems to assume they can show together
+	{
+		void* showingBigMessage = get_pattern( "38 1D ? ? ? ? 0F 85 ? ? ? ? 38 1D ? ? ? ? 0F 85 ? ? ? ? 38 1D", 6 );
+		Nop( showingBigMessage, 6 );
+	}
+
+	// Fixed lens flare
+	{
+		auto coronasRenderEpilogue = pattern( "83 C7 3C FF 4D BC" ).get_one();
+		auto flushLensSwitchZ = pattern( "6A 01 6A 06 FF D0 83 C4 08" ).get_one();
+		auto initBufferSwitchZ = pattern( "6A 01 6A 06 FF D1 8B 75 A8" ).get_one();
+
+		// TODO: This will break badly if applied multiple times, think of something!
+		void* flushSpriteBuffer;
+		ReadCall( coronasRenderEpilogue.get<void>( 0xC ), flushSpriteBuffer );
+		Nop( coronasRenderEpilogue.get<void>( 0xC ), 5); // nop CSprite::FlushSpriteBuffer
+
+		// Add CSprite::FlushSpriteBuffer, jmp loc_7300EC at the bottom of the function
+		Patch<BYTE>( coronasRenderEpilogue.get<void>( -0xA + 1 ), 0x20 );
+		InjectHook( coronasRenderEpilogue.get<void>( 0x18 ), flushSpriteBuffer, PATCH_CALL );
+		// TODO: Short jumps
+		Patch( coronasRenderEpilogue.get<void>( 0x18 + 5 ), { 0xEB, 0xE1 });
+
+		// nop / mov eax, offset FlushLensSwitchZ
+		Nop( flushLensSwitchZ.get<void>( -9 ), 4 );
+		Patch<BYTE>( flushLensSwitchZ.get<void>( -9 + 4 ), 0xB8 );
+		Patch( flushLensSwitchZ.get<void>( -9 + 5 ), &FlushLensSwitchZ );
+
+		// nop / mov ecx, offset InitBufferSwitchZ
+		Nop( initBufferSwitchZ.get<void>( -8 ), 3 );
+		Patch<BYTE>( initBufferSwitchZ.get<void>( -8 + 3 ), 0xB9 );
+		Patch( initBufferSwitchZ.get<void>( -8 + 4 ), &InitBufferSwitchZ );
+	}
+
+	// Y axis sensitivity fix
+	{
+		auto horizontalSens = pattern( "D9 05 ? ? ? ? D8 4D 0C D8 C9" ).get_one();
+		float* sens = *horizontalSens.get<float*>( 2 );
+
+		// Build a pattern for finding all instances of fld CCamera::m_fMouseAccelVertical
+		const uint8_t mask[6] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+		uint8_t bytes[6] = { 0xD9, 0x05 };
+
+		float* vertSens = *horizontalSens.get<float*>( 0xE + 2 );
+		memcpy( bytes + 2, &vertSens, sizeof(vertSens) );
+
+		pattern( {bytes, _countof(bytes)}, {mask, _countof(mask)} ).count(4).for_each_result( [sens]( pattern_match match ) {
+			Patch( match.get<void>( 2 ), sens );
+		} );
+
+		void* mulVerticalSens = get_pattern( "D8 0D ? ? ? ? D8 C9 D9 5D F4", 2 );
+		Patch( mulVerticalSens, sens );
+	}
+
+	// Don't lock mouse Y axis during fadeins
+	{
+		void* followPedWithMouse = get_pattern( "D9 5D 08 A0", -7 );
+		void* followPedWithMouse2 = get_pattern( "66 83 3D ? ? ? ? ? 0F 85 ? ? ? ? 80 3D", -6 );
+
+		void* followPedSA = get_pattern( "D9 5D F0 74 14", 3 );
+		void* folowPedSA_dest = get_pattern( "D9 87 AC 00 00 00 D8 45 F0" );
+
+		// TODO: Change when short jumps are supported
+		Patch( followPedWithMouse, { 0xEB, 0x29 } );
+		Patch( followPedWithMouse2, { 0x90, 0xE9 } );
+		InjectHook( followPedSA, folowPedSA_dest, PATCH_JUMP );
+	}
+
+	// Fixed mirrors crash
+	{
+		// TODO: Change when short jumps are supported
+		void* beforeMainRender = get_pattern( "8B 15 ? ? ? ? 83 C4 0C 52", 0xF );
+		Patch( beforeMainRender, { 0x85, 0xC0, 0x74, 0x34, 0x83, 0xC4, 0x04 } );
+	}
+
+	// Mirrors depth fix & bumped quality
+	{
+		void* createBuffers = get_pattern( "7B 0A C7 05 ? ? ? ? 01 00 00 00", 0xC );
+		InjectHook( createBuffers, CreateMirrorBuffers );
+	}
+
+	// Fixed MSAA options
+	{
+		// TODO: Remove wildcards in patterns once transactional patching is implemented
+		auto func1 = pattern( "83 BE C8 00 00 00 04 ? ? E8" ).get_one();
+		void* func2 = get_pattern( "05 A3 ? ? ? ? 59", -1 );
+		void* func3 = get_pattern( "05 A3 ? ? ? ? 8B C7", -1 );
+		void* func4 = get_pattern( "0F 8C ? ? ? ? 8B 44 24 0C", 0x18 );
+
+		Patch<BYTE>( func1.get<void>( 0x4A ), 0xEB ); // jmp
+		Nop( func1.get<void>( 7 ), 2 ); // nop a jmp
+
+		Patch<BYTE>(func2, 0xEB); // jmp
+		Patch<BYTE>(func3, 0xEB); // jmp
+		Patch(func4, { 0x90, 0xE9 }); // jmp
+
+		auto getMaxMultisamplingLevels = pattern( "5F 89 86 C8 00 00 00 8A 45 FF" ).get_one();
+		void* changeMultiSamplingLevels = get_pattern( "8B 8E D0 00 00 00 51", -5 );
+		void* changeMultiSamplingLevels2 = get_pattern( "8B 96 D0 00 00 00 52", -5 );
+		void* setMultiSamplingLevels = get_pattern( "83 C4 04 8B C7 5F 5E 5B 8B E5 5D C3 BB", -5 );
+
+		ReadCall( getMaxMultisamplingLevels.get<void>( -5 ), orgGetMaxMultiSamplingLevels );
+		InjectHook( getMaxMultisamplingLevels.get<void>( -5 ), GetMaxMultiSamplingLevels );
+		InjectHook(func1.get<void>( 7 + 2 ), GetMaxMultiSamplingLevels);
+
+		ReadCall( changeMultiSamplingLevels, orgChangeMultiSamplingLevels );
+		InjectHook( changeMultiSamplingLevels, ChangeMultiSamplingLevels );
+		InjectHook( getMaxMultisamplingLevels.get<void>( -5 + 0x30 ), ChangeMultiSamplingLevels );
+		InjectHook( changeMultiSamplingLevels2, ChangeMultiSamplingLevels );
+
+		ReadCall( setMultiSamplingLevels, orgSetMultiSamplingLevels );
+		InjectHook( setMultiSamplingLevels, SetMultiSamplingLevels );
+
+		auto msaaText = pattern( "48 50 68 ? ? ? ? 53" ).count(1); // Only so newsteam r1 doesn't crash
+		if ( msaaText.size() == 1 )								   // transactional patching will obsolete this
+		{
+			auto msaaTextMatch = msaaText.get_one();
+
+			// nop / mov edx, offset MSAAText
+			Patch( msaaTextMatch.get<void>( -6 ), { 0x90, 0xBA } );
+			Patch( msaaTextMatch.get<void>( -6 + 2 ), MSAAText );
+		}
+	}
+
+	// Fixed car collisions - car you're hitting gets proper damage now
+	{
+		auto fixedCarDamage = pattern( "8B 7D 10 0F B6 47 21" ).get_one();
+
+		Nop( fixedCarDamage.get<void>(), 2 );
+		InjectHook( fixedCarDamage.get<void>( 2 ), FixedCarDamage_Newsteam, PATCH_CALL );
+	}
+
+	// Car explosion crash with multimonitor
+	// Unitialized collision data breaking stencil shadows
+	{
+		void* memMgrAlloc = get_pattern( "E8 ? ? ? ? 66 8B 55 08 8B 4D 10" );
+		void* newAlloc1 = get_pattern( "33 C9 83 C4 04 3B C1 74 36", -5 );
+		void* newAlloc2 = get_pattern( "33 C9 83 C4 04 3B C1 74 37", -5 );
+
+		ReadCall( memMgrAlloc, orgMemMgrMalloc );
+		InjectHook( memMgrAlloc, CollisionData_MallocAndInit );
+
+		ReadCall( newAlloc1, orgNewAlloc );
+		InjectHook( newAlloc1, CollisionData_NewAndInit );
+		InjectHook( newAlloc2, CollisionData_NewAndInit );
+	}
+
+	// Crash when entering advanced display options on a dual monitor machine after:
+	// - starting game on primary monitor in maximum resolution, exiting,
+	// starting again in maximum resolution on secondary monitor.
+	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
+	// Not in 1.01
+	{
+		void* storeVideoModes = get_pattern( "6A 00 8B F8 6A 04", -5 );
+		void* retrieveVideoModes = get_pattern( "57 E8 ? ? ? ? 83 3D", 1 );
+
+		ReadCall( storeVideoModes, orgGetNumVideoModes );
+		InjectHook( storeVideoModes, GetNumVideoModes_Store );
+		InjectHook( retrieveVideoModes, GetNumVideoModes_Retrieve );
+	}
+
+	// Fixed escalators crash
+	{
+		orgEscalatorsUpdate = static_cast<decltype(orgEscalatorsUpdate)>(get_pattern( "80 3D ? ? ? ? ? 74 23 56" ));
+
+		// TODO: Simplify when transactional patching is implemented
+		auto updateEscalators = pattern( "80 3D ? ? ? ? ? 74 22 56" ).count(1);
+		auto removeEscalatorsForEntity = pattern( "80 7E F5 00 74 56" ).count(1);
+
+		if ( updateEscalators.size() == 1 && removeEscalatorsForEntity.size() == 1 )
+		{
+			InjectHook( updateEscalators.get_first(), UpdateEscalators, PATCH_JUMP );
+
+			// lea ecx, [esi-84] / call CEscalator::SwitchOffNoRemove / jmp loc_734C0A
+			auto removeEscalatorsMatch = removeEscalatorsForEntity.get_one();
+
+			// TODO: Change when short jmps are supported
+			Patch( removeEscalatorsMatch.get<void>(), { 0x8D, 0x8E } );
+			Patch<int32_t>( removeEscalatorsMatch.get<void>( 2 ), -0x84 );
+			InjectHook( removeEscalatorsMatch.get<void>( 6 ), &CEscalator::SwitchOffNoRemove, PATCH_CALL );
+			Patch( removeEscalatorsMatch.get<void>( 6 + 5 ), { 0xEB, 0x4F } );
+		}
+	}
+
+	// Don't allocate constant memory for stencil shadows every frame
+	{
+		// TODO: Simplify when transactional patching is implemented
+		auto shadowAlloc = pattern( "83 C4 08 6A 00 68 00 60 00 00" ).count(1);
+		auto shadowFree = pattern( "A2 ? ? ? ? A1 ? ? ? ? 50 E8" ).count(1);
+		if ( shadowAlloc.size() == 1 && shadowFree.size() == 1 )
+		{
+			auto allocMatch = shadowAlloc.get_one();
+
+			InjectHook( allocMatch.get<void>( 3 ), StencilShadowAlloc, PATCH_CALL) ;
+			Patch( allocMatch.get<void>( 3 + 5 ), { 0xEB, 0x2C } );
+			Nop( allocMatch.get<void>( 0x3B ), 3 );
+			Patch( shadowFree.get_first( 5 ), { 0x5F, 0x5E, 0x5B, 0x5D, 0xC3 } ); // pop edi, pop esi, pop ebx, pop ebp, retn
+		}
+	}
+
+	// "Streaming memory bug" fix
+	{
+		void* animInterpolator = get_pattern( "83 C4 1C C7 03 00 30 00 00 5B", -5 );
+		InjectHook(animInterpolator, GTARtAnimInterpolatorSetCurrentAnim);
+	}
+
+	// Fixed ammo for melee weapons in cheats
+	{
+		// TODO: Remove wildcards in patterns once transactional patching is implemented
+		void* knifeAmmo1 = get_pattern( "6A ? 6A 04 6A FF", 1 );
+		void* knifeAmmo2 = get_pattern( "6A 01 6A ? 6A 04 6A 01", 2 + 1 );
+		void* chainsawAmmo1 = get_pattern( "6A ? 6A 09 6A FF", 1 );
+		void* chainsawAmmo2 = get_pattern( "6A ? 6A 09 6A 01", 1 );
+		void* parachuteAmmo = get_pattern( "6A ? 6A 2E 6A FF", 1 );
+		void* katanaAmmo = get_pattern( "83 C4 0C ? ? ? 6A 08 6A FF", 3 );
+
+		Patch<BYTE>(knifeAmmo1, 1); // knife
+		Patch<BYTE>(knifeAmmo2, 1); // knife
+		Patch<BYTE>(chainsawAmmo1, 1); // chainsaw
+		Patch<BYTE>(chainsawAmmo2, 1); // chainsaw
+		Patch<BYTE>(parachuteAmmo, 1); // parachute
+
+		// push ebx / push 1
+		Patch( katanaAmmo, { 0x53, 0x6A, 0x01 } ); // katana
+	}
+
+	// Proper aspect ratios
+	{
+		auto calculateAr = pattern( "74 13 D9 05 ? ? ? ? D9 1D" ).get_one(); // 0x734247; has two matches but both from the same function
+
+		static const float f43 = 4.0f/3.0f, f54 = 5.0f/4.0f, f169 = 16.0f/9.0f;
+		Patch<const void*>(calculateAr.get<void>( 2 + 2 ), &f169);
+		Patch<const void*>(calculateAr.get<void>( 0x1E + 2 ), &f54);
+		Patch<const void*>(calculateAr.get<void>( 0x31 + 2 ), &f43);	
 	}
 
 	// 6 extra directionals on Medium and higher
@@ -5573,10 +5520,10 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		else if ( version == 2 ) Patch_SA_Steam(); // Not supported anymore
 		else
 		{
-			if ( version == 3 ) Patch_SA_NewSteam_r1();
-			else if ( version == 4 ) Patch_SA_NewSteam_r2();
-			else if ( version == 5 ) Patch_SA_NewSteam_r2_lv();
-			Patch_SA_NewSteam_Common();
+			// TODO:
+			// Add r1 low violence check to MemoryMgr.GTA via
+			// if ( *(DWORD*)DynBaseAddress(0x49F810) == 0x64EC8B55 ) { normal } else { low violence } 
+			Patch_SA_NewBinaries_Common();
 		}	
 	}
 	return TRUE;
