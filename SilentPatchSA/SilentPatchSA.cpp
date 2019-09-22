@@ -5546,6 +5546,14 @@ void Patch_SA_NewBinaries_Common()
 		InjectHook( setGermanGame, SetUncensoredGame, PATCH_JUMP );
 		InjectHook( setFrenchGame, SetUncensoredGame, PATCH_JUMP );
 	}
+
+	// Default Steer with Mouse to disabled, like in older executables not based on xbox
+	{
+		// mov _ZN8CVehicle22m_bEnableMouseSteeringE, bl ->
+		// mov _ZN8CVehicle22m_bEnableMouseSteeringE, al
+		void* setDefaultPreferences = get_pattern( "89 86 AD 00 00 00 66 89 86 B1 00 00 00", -0xC );
+		Patch( setDefaultPreferences, { 0x90, 0xA2 } );
+	}
 }
 
 
