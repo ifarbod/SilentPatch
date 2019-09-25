@@ -489,6 +489,9 @@ namespace AudioInitializedFix
 
 void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
+	using namespace Memory;
+	using namespace hook;
+
 	// Locale based metric/imperial system INI/debug menu
 	{
 		using namespace Localization;
@@ -500,6 +503,16 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 			DebugMenuEntry *e = DebugMenuAddVar( "SilentPatch", "Forced units", &forcedUnits, nullptr, 1, -1, 1, str );
 			DebugMenuEntrySetWrap(e, true);
 		}			
+	}
+
+	// Make crane be unable to lift Coach instead of Blista
+	{
+		// There is a possible incompatibility with limit adjusters, so patch it in a delayed hook point and gracefully handle failure
+		auto canPickBlista = pattern( "83 FA 66 74" ).count_hint(1);
+		if ( canPickBlista.size() == 1 )
+		{
+			Patch<int8_t>( canPickBlista.get_first<void>( 2 ), 127 ); // coach
+		}
 	}
 }
 
@@ -544,8 +557,6 @@ void Patch_III_10(const RECT& desktop)
 	Patch<BYTE>(0x432303, 16);
 	Patch<BYTE>(0x479C9A, 16);
 	Patch<BYTE>(0x4FAD35, 16);
-
-	Patch<BYTE>(0x544AA4, 127);
 
 	Patch<WORD>(0x5382BF, 0x0EEB);
 	InjectHook(0x5382EC, HeadlightsFix, PATCH_JUMP);
@@ -692,8 +703,6 @@ void Patch_III_11(const RECT& desktop)
 	Patch<BYTE>(0x479C9A, 16);
 	Patch<BYTE>(0x4FAE15, 16);
 
-	Patch<BYTE>(0x544CE4, 127);
-
 	Patch<WORD>(0x5384FF, 0x0EEB);
 	InjectHook(0x53852C, HeadlightsFix, PATCH_JUMP);
 
@@ -817,8 +826,6 @@ void Patch_III_Steam(const RECT& desktop)
 	Patch<BYTE>(0x432303, 16);
 	Patch<BYTE>(0x479C9A, 16);
 	Patch<BYTE>(0x4FADA5, 16);
-
-	Patch<BYTE>(0x544C94, 127);
 
 	InjectHook(0x4A58F0, ShowRadarTrace, PATCH_JUMP);
 	InjectHook(0x4209A7, SetScaleProperly);
