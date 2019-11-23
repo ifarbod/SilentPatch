@@ -1049,6 +1049,38 @@ namespace CdStreamSync {
 
 static CRITICAL_SECTION CdStreamCritSec;
 
+// WRL-like lock object
+// Balancing lock/unlock is up to the user!
+class SyncLock
+{
+public:
+	SyncLock( CRITICAL_SECTION& critSec )
+		: m_critSec( critSec )
+	{
+		Lock();
+	}
+
+	~SyncLock()
+	{
+		Unlock();
+	}
+
+	void Lock() const { EnterCriticalSection( &m_critSec ); }
+	void Unlock() const { LeaveCriticalSection( &m_critSec ); } 
+
+	CRITICAL_SECTION* Get() const { return &m_critSec; }
+
+private:
+	SyncLock( const SyncLock& ) = delete;
+	SyncLock( SyncLock&& ) = delete;
+	SyncLock& operator=( const SyncLock& ) = delete;
+	SyncLock& operator=( SyncLock&& ) = delete;
+
+	CRITICAL_SECTION& m_critSec;
+};
+
+
+
 // Function pointers for game to use
 static CdStream::Sync (__stdcall *CdStreamInitializeSyncObject)();
 static DWORD (__stdcall *CdStreamSyncOnObject)( CdStream* stream );
@@ -1085,29 +1117,27 @@ namespace Sema
 
 	DWORD __stdcall CdStreamSync( CdStream* stream )
 	{
-		EnterCriticalSection( &CdStreamCritSec );
+		auto lock = SyncLock( CdStreamCritSec );
 		if ( stream->nSectorsToRead != 0 )
 		{
 			stream->bLocked = 1;
-			LeaveCriticalSection( &CdStreamCritSec );
+			lock.Unlock();
 			WaitForSingleObject( stream->sync.semaphore, INFINITE );
-			EnterCriticalSection( &CdStreamCritSec );
+			lock.Lock();
 		}
 		stream->bInUse = 0;
-		LeaveCriticalSection( &CdStreamCritSec );
 		return stream->status;
 	}
 
 	void __stdcall CdStreamThread( CdStream* stream )
 	{
-		EnterCriticalSection( &CdStreamCritSec );
+		auto lock = SyncLock( CdStreamCritSec );
 		stream->nSectorsToRead = 0;
 		if ( stream->bLocked != 0 )
 		{
 			ReleaseSemaphore( stream->sync.semaphore, 1, nullptr );
 		}
 		stream->bInUse = 0;
-		LeaveCriticalSection( &CdStreamCritSec );
 	}
 }
 
@@ -1146,23 +1176,21 @@ namespace CV
 
 	DWORD __stdcall CdStreamSync( CdStream* stream )
 	{
-		EnterCriticalSection( &CdStreamCritSec );
+		auto lock = SyncLock( CdStreamCritSec );
 		while ( stream->nSectorsToRead != 0 )
 		{
-			Funcs::pSleepConditionVariableCS( &stream->sync.cv, &CdStreamCritSec, INFINITE );
+			Funcs::pSleepConditionVariableCS( &stream->sync.cv, lock.Get(), INFINITE );
 		}
 		stream->bInUse = 0;
-		LeaveCriticalSection( &CdStreamCritSec );
 		return stream->status;
 	}
 
 	void __stdcall CdStreamThread( CdStream* stream )
 	{
-		EnterCriticalSection( &CdStreamCritSec );
+		auto lock = SyncLock( CdStreamCritSec );
 		stream->nSectorsToRead = 0;
 		Funcs::pWakeConditionVariable( &stream->sync.cv );
 		stream->bInUse = 0;
-		LeaveCriticalSection( &CdStreamCritSec );
 	}
 }
 
@@ -1184,7 +1212,7 @@ static void CdStreamInitThread()
 		CdStreamThreadOnObject = Sema::CdStreamThread;		
 	}
 
-	InitializeCriticalSectionAndSpinCount( &CdStreamCritSec, 10 );
+	InitializeCriticalSection( &CdStreamCritSec );
 
 	FLAUtils::SetCdStreamWakeFunction( []( CdStream* pStream ) {
 		CdStreamThreadOnObject( pStream );
