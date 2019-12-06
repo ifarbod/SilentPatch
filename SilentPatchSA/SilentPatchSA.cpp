@@ -1230,7 +1230,6 @@ static LARGE_INTEGER UtilsFrequency;
 static BOOL WINAPI AudioUtilsFrequency( PLARGE_INTEGER lpFrequency )
 {
 	::QueryPerformanceFrequency( &UtilsFrequency );
-	UtilsFrequency.QuadPart /= 1000;
 	lpFrequency->QuadPart = UtilsFrequency.QuadPart;
 	return TRUE;
 }
@@ -1253,7 +1252,7 @@ static int64_t AudioUtilsGetCurrentTimeInMs()
 
 	LARGE_INTEGER currentTime;
 	QueryPerformanceCounter( &currentTime );
-	return (currentTime.QuadPart - UtilsStartTime.QuadPart) / UtilsFrequency.QuadPart;
+	return ((currentTime.QuadPart - UtilsStartTime.QuadPart) * 1000) / UtilsFrequency.QuadPart;
 }
 
 // Minimal HUD changes
