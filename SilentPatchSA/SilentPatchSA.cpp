@@ -1605,6 +1605,18 @@ namespace Localization
 	}
 }
 
+
+// Reintroduced corona rotation
+namespace CoronaRotationFix
+{
+	static void (*orgRenderOneXLUSprite_Rotate_Aspect)(float, float, float, float, float, uint8_t, uint8_t, uint8_t, short, float, float, uint8_t);
+	void RenderOneXLUSprite_Rotate_Aspect_SilentPatch( float a1, float a2, float a3, float a4, float a5, uint8_t a6, uint8_t a7, uint8_t a8, short a9, float recipz, float, uint8_t a12 )
+	{
+		orgRenderOneXLUSprite_Rotate_Aspect( a1, a2, a3, a4, a5, a6, a7, a8, a9, recipz, 20.0f * recipz, a12 );
+	}
+};
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -4167,6 +4179,19 @@ void Patch_SA_10()
 	// Fix paintjobs vanishing after opening/closing garage without rendering the car first
 	InjectHook( 0x6D0B70, &CVehicle::GetRemapIndex, PATCH_JUMP );
 
+
+	// Re-introduce corona rotation on PC, like it is in III/VC/SA PS2
+	{
+		using namespace CoronaRotationFix;
+
+		// Remove *= 20.0f from recipz to retrieve the original value for later
+		Nop( 0x6FB277, 6 );
+
+		ReadCall( 0x6FB2E6, orgRenderOneXLUSprite_Rotate_Aspect );
+		InjectHook( 0x6FB2E6, RenderOneXLUSprite_Rotate_Aspect_SilentPatch );
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -5580,6 +5605,21 @@ void Patch_SA_NewBinaries_Common()
 		// mov _ZN8CVehicle22m_bEnableMouseSteeringE, al
 		void* setDefaultPreferences = get_pattern( "89 86 AD 00 00 00 66 89 86 B1 00 00 00", -0xC );
 		Patch( setDefaultPreferences, { 0x90, 0xA2 } );
+	}
+
+
+	// Re-introduce corona rotation on PC, like it is in III/VC/SA PS2
+	{
+		using namespace CoronaRotationFix;
+
+		auto mulRecipz = get_pattern( "D9 5D FC D9 45 FC 89 45 FC D9 1C 24 53", -6 );
+		auto renderOneXLUSprite = get_pattern( "E8 ? ? ? ? 83 C4 30 EB 02 DD D8 8A 47 FA" );
+
+		// Remove *= 20.0f from recipz to retrieve the original value for later
+		Nop( mulRecipz, 6 );
+
+		ReadCall( renderOneXLUSprite, orgRenderOneXLUSprite_Rotate_Aspect );
+		InjectHook( renderOneXLUSprite, RenderOneXLUSprite_Rotate_Aspect_SilentPatch );
 	}
 }
 
