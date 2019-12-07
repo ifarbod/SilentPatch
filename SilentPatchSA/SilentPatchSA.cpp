@@ -1616,6 +1616,18 @@ namespace CoronaRotationFix
 	}
 };
 
+// ============= Static shadow alpha fix =============
+namespace StaticShadowAlphaFix
+{
+	static void (*orgRenderStaticShadows)();
+	static void RenderStaticShadows_StateFix()
+	{
+		RwScopedRenderState state(rwRENDERSTATEALPHATESTFUNCTION);
+
+		RwRenderStateSet( rwRENDERSTATEALPHATESTFUNCTION, (void*)rwALPHATESTFUNCTIONALWAYS );
+		orgRenderStaticShadows();
+	}
+};
 
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
@@ -4192,6 +4204,14 @@ void Patch_SA_10()
 	}
 
 
+	// Fixed static shadows not rendering under fire and pickups
+	{
+		using namespace StaticShadowAlphaFix;
+
+		ReadCall( 0x53E0C3, orgRenderStaticShadows );
+		InjectHook( 0x53E0C3, RenderStaticShadows_StateFix );
+	}
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -5620,6 +5640,16 @@ void Patch_SA_NewBinaries_Common()
 
 		ReadCall( renderOneXLUSprite, orgRenderOneXLUSprite_Rotate_Aspect );
 		InjectHook( renderOneXLUSprite, RenderOneXLUSprite_Rotate_Aspect_SilentPatch );
+	}
+
+
+	// Fixed static shadows not rendering under fire and pickups
+	{
+		using namespace StaticShadowAlphaFix;
+
+		auto renderStaticShadows = get_pattern( "52 E8 ? ? ? ? E8 ? ? ? ? E8", 1 + 5 + 5 );
+		ReadCall( renderStaticShadows, orgRenderStaticShadows );
+		InjectHook( renderStaticShadows, RenderStaticShadows_StateFix );
 	}
 }
 
