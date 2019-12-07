@@ -34,3 +34,14 @@ void** GTARwEngineInstance = []() -> void** {
 	assert(!"Could not locate RwEngineInstance!");
 	return nullptr;
 }();
+
+
+RwBool RwIm2DRenderLine(RwIm2DVertex *vertices, RwInt32 numVertices, RwInt32 vert1, RwInt32 vert2)
+{
+	return GTARWSRCGLOBAL(dOpenDevice).fpIm2DRenderLine( vertices, numVertices, vert1, vert2 );
+}
+
+RwReal RwIm2DGetNearScreenZ()
+{
+	return GTARWSRCGLOBAL(dOpenDevice).zBufferNear;
+}

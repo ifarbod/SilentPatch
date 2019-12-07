@@ -4,6 +4,9 @@
 #include "Utils/Patterns.h"
 #include "StoredCar.h"
 
+#include <rwcore.h>
+
+RwCamera*& Camera = **hook::get_pattern<RwCamera**>( "A1 ? ? ? ? D8 88 ? ? ? ?", 1 );
 
 // ============= handling.cfg name matching fix =============
 namespace HandlingNameLoadFix
@@ -18,6 +21,26 @@ namespace HandlingNameLoadFix
 		return strcmp( str1, *str2 );
 	}
 };
+
+// ============= Corona lines rendering fix =============
+namespace CoronaLinesFix
+{
+	static RwBool RenderLine_SetRecipZ( RwIm2DVertex *vertices, RwInt32 numVertices, RwInt32 vert1, RwInt32 vert2 )
+	{
+		const RwReal nearScreenZ = RwIm2DGetNearScreenZ();
+		const RwReal nearZ = RwCameraGetNearClipPlane( Camera );
+		const RwReal recipZ = 1.0f / nearZ;
+
+		for ( RwInt32 i = 0; i < numVertices; i++ )
+		{
+			RwIm2DVertexSetScreenZ( &vertices[i], nearScreenZ );
+			RwIm2DVertexSetCameraZ( &vertices[i], nearZ );
+			RwIm2DVertexSetRecipCameraZ( &vertices[i], recipZ );
+		}
+
+		return RwIm2DRenderLine( vertices, numVertices, vert1, vert2 );
+	}
+}
 
 // ============= Delayed patches =============
 namespace DelayedPatches
@@ -92,6 +115,17 @@ namespace Common {
 				InjectHook( findExactWord.get<void>( -5 ), strncpy_Fix );
 				InjectHook( findExactWord.get<void>( 0xD ), strncmp_Fix );
 			}
+
+
+			// Fixed corona lines rendering on non-nvidia cards
+			{
+				using namespace CoronaLinesFix;
+	
+				auto renderLine = get_pattern( "E8 ? ? ? ? 83 C4 10 FF 44 24 1C 43" );
+
+				InjectHook( renderLine, RenderLine_SetRecipZ );
+			}
+
 		}
 
 		void III_VC_SetDelayedPatchesFunc( void(*func)() )
