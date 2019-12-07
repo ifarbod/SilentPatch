@@ -35,6 +35,16 @@ void** GTARwEngineInstance = []() -> void** {
 	return nullptr;
 }();
 
+static void* varRwD3D8SetRenderState = Memory::ReadCallFrom( hook::get_pattern( "0F 8C ? ? ? ? 6A 05 6A 19", 10 ) );
+WRAPPER RwBool RwD3D8SetRenderState(RwUInt32 state, RwUInt32 value) { VARJMP(varRwD3D8SetRenderState); }
+
+static RwUInt32* _rwD3D8RenderStates = *static_cast<RwUInt32**>(Memory::ReadCallFrom( hook::get_pattern( "0F 8C ? ? ? ? 6A 05 6A 19", 10 ), 8 + 3 ));
+void RwD3D8GetRenderState(RwUInt32 state, void* value)
+{
+	RwUInt32* valuePtr = static_cast<RwUInt32*>(value);
+	*valuePtr = _rwD3D8RenderStates[ 2 * state ];
+}
+
 
 RwBool RwIm2DRenderLine(RwIm2DVertex *vertices, RwInt32 numVertices, RwInt32 vert1, RwInt32 vert2)
 {

@@ -42,6 +42,22 @@ namespace CoronaLinesFix
 	}
 }
 
+// ============= Static shadow alpha fix =============
+namespace StaticShadowAlphaFix
+{
+	static void (*orgRenderStaticShadows)();
+	static void RenderStaticShadows_StateFix()
+	{
+		RwUInt32 alphaTestVal = 0;
+		RwD3D8GetRenderState( 15, &alphaTestVal ); // D3DRS_ALPHATESTENABLE
+		
+		RwD3D8SetRenderState( 15, FALSE );
+		orgRenderStaticShadows();
+
+		RwD3D8SetRenderState( 15, alphaTestVal );
+	}
+};
+
 // ============= Delayed patches =============
 namespace DelayedPatches
 {
@@ -126,6 +142,22 @@ namespace Common {
 				InjectHook( renderLine, RenderLine_SetRecipZ );
 			}
 
+
+			// Fixed static shadows not rendering under fire and pickups
+			{
+				using namespace StaticShadowAlphaFix;
+
+				// TODO: Offset for III
+#if _GTA_III
+				constexpr ptrdiff_t offset = 0xF;
+#elif _GTA_VC
+				constexpr ptrdiff_t offset = 0x14;
+#endif
+
+				void* renderStaticShadows = ReadCallFrom( get_pattern( "E8 ? ? ? ? A1 ? ? ? ? 85 C0 74 05" ), offset );
+				ReadCall( renderStaticShadows, orgRenderStaticShadows );
+				InjectHook( renderStaticShadows, RenderStaticShadows_StateFix );
+			}
 		}
 
 		void III_VC_SetDelayedPatchesFunc( void(*func)() )

@@ -551,13 +551,6 @@ void Patch_III_10(const RECT& desktop)
 
 	Patch<BYTE>(0x490F83, 1);
 
-	Patch<BYTE>(0x43177D, 16);
-	Patch<BYTE>(0x431DBB, 16);
-	Patch<BYTE>(0x432083, 16);
-	Patch<BYTE>(0x432303, 16);
-	Patch<BYTE>(0x479C9A, 16);
-	Patch<BYTE>(0x4FAD35, 16);
-
 	Patch<WORD>(0x5382BF, 0x0EEB);
 	InjectHook(0x5382EC, HeadlightsFix, PATCH_JUMP);
 
@@ -696,13 +689,6 @@ void Patch_III_11(const RECT& desktop)
 
 	Patch<BYTE>(0x491043, 1);
 
-	Patch<BYTE>(0x43177D, 16);
-	Patch<BYTE>(0x431DBB, 16);
-	Patch<BYTE>(0x432083, 16);
-	Patch<BYTE>(0x432303, 16);
-	Patch<BYTE>(0x479C9A, 16);
-	Patch<BYTE>(0x4FAE15, 16);
-
 	Patch<WORD>(0x5384FF, 0x0EEB);
 	InjectHook(0x53852C, HeadlightsFix, PATCH_JUMP);
 
@@ -819,13 +805,6 @@ void Patch_III_Steam(const RECT& desktop)
 	SubtitlesShadowFix_JumpBack = (void*)0x500DA2;
 
 	Patch<BYTE>(0x490FD3, 1);
-
-	Patch<BYTE>(0x43177D, 16);
-	Patch<BYTE>(0x431DBB, 16);
-	Patch<BYTE>(0x432083, 16);
-	Patch<BYTE>(0x432303, 16);
-	Patch<BYTE>(0x479C9A, 16);
-	Patch<BYTE>(0x4FADA5, 16);
 
 	InjectHook(0x4A58F0, ShowRadarTrace, PATCH_JUMP);
 	InjectHook(0x4209A7, SetScaleProperly);

@@ -379,14 +379,6 @@ void Patch_VC_10(const RECT& desktop)
 	RosieAudioFix_JumpBack = (void*)0x42BFFE;
 	SubtitlesShadowFix_JumpBack = (void*)0x551701;
 
-	Patch<BYTE>(0x43E983, 16);
-	Patch<BYTE>(0x43EC03, 16);
-	Patch<BYTE>(0x43EECB, 16);
-	Patch<BYTE>(0x43F52B, 16);
-	Patch<BYTE>(0x43F842, 16);
-	Patch<BYTE>(0x48EB27, 16);
-	Patch<BYTE>(0x541E7E, 16);
-
 	InjectHook(0x5433BD, FixedRefValue);
 
 	InjectHook(0x42BFF7, RosiesAudioFix, PATCH_JUMP);
@@ -494,14 +486,6 @@ void Patch_VC_11(const RECT& desktop)
 	RosieAudioFix_JumpBack = (void*)0x42BFFE;
 	SubtitlesShadowFix_JumpBack = (void*)0x551721;
 
-	Patch<BYTE>(0x43E983, 16);
-	Patch<BYTE>(0x43EC03, 16);
-	Patch<BYTE>(0x43EECB, 16);
-	Patch<BYTE>(0x43F52B, 16);
-	Patch<BYTE>(0x43F842, 16);
-	Patch<BYTE>(0x48EB37, 16);
-	Patch<BYTE>(0x541E9E, 16);
-
 	InjectHook(0x5433DD, FixedRefValue);
 
 	InjectHook(0x42BFF7, RosiesAudioFix, PATCH_JUMP);
@@ -598,14 +582,6 @@ void Patch_VC_Steam(const RECT& desktop)
 	RsGlobal = *(RsGlobalType**)0x602952;
 	RosieAudioFix_JumpBack = (void*)0x42BFCE;
 	SubtitlesShadowFix_JumpBack = (void*)0x5515F1;
-
-	Patch<BYTE>(0x43E8F3, 16);
-	Patch<BYTE>(0x43EB73, 16);
-	Patch<BYTE>(0x43EE3B, 16);
-	Patch<BYTE>(0x43F49B, 16);
-	Patch<BYTE>(0x43F7B2, 16);
-	Patch<BYTE>(0x48EA37, 16);
-	Patch<BYTE>(0x541D6E, 16);
 
 	InjectHook(0x5432AD, FixedRefValue);
 
