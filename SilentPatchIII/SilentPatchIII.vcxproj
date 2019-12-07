@@ -25,6 +25,11 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Master|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\SilentPatch\RWGTA.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Master|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\SilentPatch\StoredCar.cpp" />
     <ClCompile Include="..\SilentPatch\Timer.cpp" />
     <ClCompile Include="..\SilentPatch\Utils\Patterns.cpp">
@@ -44,6 +49,7 @@
     <ClInclude Include="..\SilentPatch\Common_ddraw.h" />
     <ClInclude Include="..\SilentPatch\debugmenu_public.h" />
     <ClInclude Include="..\SilentPatch\General.h" />
+    <ClInclude Include="..\SilentPatch\RWGTA.h" />
     <ClInclude Include="..\SilentPatch\StdAfx.h" />
     <ClInclude Include="..\SilentPatch\StoredCar.h" />
     <ClInclude Include="..\SilentPatch\Timer.h" />
