@@ -76,7 +76,7 @@
       <Optimization>Disabled</Optimization>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;PATTERNS_USE_HINTS=1;_GTA_SA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9;..\SilentPatch;..\SilentPatchSA;$(DXSDK_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(RWG36SDK)\include\d3d9;..\SilentPatch;..\SilentPatchSA;$(DXSDK_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>StdAfxSA.h</PrecompiledHeaderFile>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
@@ -114,7 +114,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;PATTERNS_USE_HINTS=1;_GTA_SA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9;..\SilentPatch;..\SilentPatchSA;$(DXSDK_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(RWG36SDK)\include\d3d9;..\SilentPatch;..\SilentPatchSA;$(DXSDK_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>StdAfxSA.h</PrecompiledHeaderFile>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
@@ -154,7 +154,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
       <PreprocessorDefinitions>_HAS_EXCEPTIONS=0;PATTERNS_USE_HINTS=1;_GTA_SA;NDEBUG;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalIncludeDirectories>D:\RWSDK\Graphics\rwsdk\include\d3d9;..\SilentPatch;..\SilentPatchSA;$(DXSDK_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(RWG36SDK)\include\d3d9;..\SilentPatch;..\SilentPatchSA;$(DXSDK_DIR)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>StdAfxSA.h</PrecompiledHeaderFile>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
