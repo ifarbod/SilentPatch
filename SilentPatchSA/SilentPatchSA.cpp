@@ -1627,6 +1627,15 @@ namespace StaticShadowAlphaFix
 		RwRenderStateSet( rwRENDERSTATEALPHATESTFUNCTION, (void*)rwALPHATESTFUNCTIONALWAYS );
 		orgRenderStaticShadows();
 	}
+
+	static void (*orgRenderStoredShadows)();
+	static void RenderStoredShadows_StateFix()
+	{
+		RwScopedRenderState state(rwRENDERSTATEALPHATESTFUNCTION);
+
+		RwRenderStateSet( rwRENDERSTATEALPHATESTFUNCTION, (void*)rwALPHATESTFUNCTIONALWAYS );
+		orgRenderStoredShadows();
+	}
 };
 
 // ============= LS-RP Mode stuff =============
@@ -4210,6 +4219,9 @@ void Patch_SA_10()
 
 		ReadCall( 0x53E0C3, orgRenderStaticShadows );
 		InjectHook( 0x53E0C3, RenderStaticShadows_StateFix );
+
+		ReadCall( 0x53E0C8, orgRenderStoredShadows );
+		InjectHook( 0x53E0C8, RenderStoredShadows_StateFix );
 	}
 
 #if FULL_PRECISION_D3D
@@ -5647,9 +5659,12 @@ void Patch_SA_NewBinaries_Common()
 	{
 		using namespace StaticShadowAlphaFix;
 
-		auto renderStaticShadows = get_pattern( "52 E8 ? ? ? ? E8 ? ? ? ? E8", 1 + 5 + 5 );
-		ReadCall( renderStaticShadows, orgRenderStaticShadows );
-		InjectHook( renderStaticShadows, RenderStaticShadows_StateFix );
+		auto renderStaticShadows = pattern( "52 E8 ? ? ? ? E8 ? ? ? ? E8" ).get_one();
+		ReadCall( renderStaticShadows.get<void>( 1 + 5 + 5 ), orgRenderStaticShadows );
+		InjectHook( renderStaticShadows.get<void>( 1 + 5 + 5 ), RenderStaticShadows_StateFix );
+
+		ReadCall( renderStaticShadows.get<void>( 1 + 5 + 5 + 5 ), orgRenderStoredShadows );
+		InjectHook( renderStaticShadows.get<void>( 1 + 5 + 5 + 5 ), RenderStoredShadows_StateFix );
 	}
 }
 

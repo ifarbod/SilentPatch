@@ -56,6 +56,18 @@ namespace StaticShadowAlphaFix
 
 		RwD3D8SetRenderState( 15, alphaTestVal );
 	}
+
+	static void (*orgRenderStoredShadows)();
+	static void RenderStoredShadows_StateFix()
+	{
+		RwUInt32 alphaTestVal = 0;
+		RwD3D8GetRenderState( 15, &alphaTestVal ); // D3DRS_ALPHATESTENABLE
+		
+		RwD3D8SetRenderState( 15, FALSE );
+		orgRenderStoredShadows();
+
+		RwD3D8SetRenderState( 15, alphaTestVal );
+	}
 };
 
 // ============= Delayed patches =============
@@ -147,16 +159,19 @@ namespace Common {
 			{
 				using namespace StaticShadowAlphaFix;
 
-				// TODO: Offset for III
 #if _GTA_III
 				constexpr ptrdiff_t offset = 0xF;
 #elif _GTA_VC
 				constexpr ptrdiff_t offset = 0x14;
 #endif
 
-				void* renderStaticShadows = ReadCallFrom( get_pattern( "E8 ? ? ? ? A1 ? ? ? ? 85 C0 74 05" ), offset );
+				uintptr_t renderStaticShadows = reinterpret_cast<uintptr_t>(ReadCallFrom( get_pattern( "E8 ? ? ? ? A1 ? ? ? ? 85 C0 74 05" ), offset ));
 				ReadCall( renderStaticShadows, orgRenderStaticShadows );
 				InjectHook( renderStaticShadows, RenderStaticShadows_StateFix );
+
+				renderStaticShadows += 5;
+				ReadCall( renderStaticShadows, orgRenderStoredShadows );
+				InjectHook( renderStaticShadows, RenderStoredShadows_StateFix );
 			}
 		}
 
