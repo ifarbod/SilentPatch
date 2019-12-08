@@ -485,7 +485,19 @@ namespace AudioInitializedFix
 			orgLoadAllAudioScriptObjects( buffer, a2 );
 		}
 	}
-}
+};
+
+
+// ============= Corrected FBI Car secondary siren sound =============
+namespace SirenSwitchingFix
+{
+	static bool (__thiscall *orgUsesSirenSwitching)(void* pThis, unsigned int index);
+	static bool __fastcall UsesSirenSwitching_FbiCar( void* pThis, void*, unsigned int index )
+	{
+		// index 17 = FBICAR
+		return index == 17 || orgUsesSirenSwitching( pThis, index );
+	}
+};
 
 void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
@@ -512,6 +524,21 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 		if ( canPickBlista.size() == 1 )
 		{
 			Patch<int8_t>( canPickBlista.get_first<void>( 2 ), 127 ); // coach
+		}
+	}
+
+
+	// Corrected FBI Car secondary siren sound
+	{
+		using namespace SirenSwitchingFix;
+
+		// Other mods might be touching it, so only patch specific vehicles if their code has not been touched at all
+		auto usesSirenSwitching = pattern( "E8 ? ? ? ? 84 C0 74 12 83 C4 08" ).count_hint(1);
+		if ( usesSirenSwitching.size() == 1 )
+		{
+			auto match = usesSirenSwitching.get_one();
+			ReadCall( match.get<void>(), orgUsesSirenSwitching );
+			InjectHook( match.get<void>(), UsesSirenSwitching_FbiCar );
 		}
 	}
 }
