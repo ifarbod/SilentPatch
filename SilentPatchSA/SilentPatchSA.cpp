@@ -297,8 +297,6 @@ const char*				(*GetFrameNodeName)(RwFrame*) = AddressByVersion<const char*(*)(R
 RpHAnimHierarchy*		(*GetAnimHierarchyFromSkinClump)(RpClump*) = AddressByVersion<RpHAnimHierarchy*(*)(RpClump*)>(0x734A40, 0x735270, 0x7671B0);	
 auto					InitializeUtrax = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0x4F3A10, 0x4FFA80);
 
-auto					RenderOneXLUSprite = AddressByVersion<void(*)(float, float, float, float, float, uint8_t, uint8_t, uint8_t, int16_t, float, uint8_t, uint8_t, uint8_t)>(0x70D000, 0x70D830, 0x7592C0);
-
 static void				(__thiscall* SetVolume)(void*,float);	
 static BOOL				(*IsAlreadyRunning)();
 static void				(*TheScriptsLoad)();
@@ -316,8 +314,6 @@ unsigned char&			nGameClockMonths = **AddressByVersion<unsigned char**>(0x4E842D
 void*&					pUserTracksStuff = **AddressByVersion<void***>(0x4D9B7B, 0x4DA06C, 0x4E4A43);
 
 float&					fFarClipZ = **AddressByVersion<float**>(0x70D21F, 0x70DA4F, 0x421AB2);
-RwTexture** const		gpCoronaTexture = *AddressByVersion<RwTexture***>(0x6FAA8C, 0x6FB2BC, 0x5480BF);
-int&					MoonSize = **AddressByVersion<int**>(0x713B0C, 0x71433C, 0x72F0AB);
 
 CZoneInfo*&				pCurrZoneInfo = **AddressByVersion<CZoneInfo***>(0x58ADB1, 0x58B581, 0x407F93);
 CRGBA*					HudColour = *AddressByVersion<CRGBA**>(0x58ADF6, 0x58B5C6, 0x440648);
@@ -613,62 +609,6 @@ bool GetCurrentZoneLockedOrUnlocked_Steam(float fPosX, float fPosY)
 
 	// Outside of map bounds
 	return true;
-}
-
-// By NTAuthority
-void DrawMoonWithPhases(uint8_t moonColor, float* screenPos, float sizeX, float sizeY)
-{
-	static RwTexture*	gpMoonMask = [] () {
-		if ( GetFileAttributesW(L"lunar.png") != INVALID_FILE_ATTRIBUTES )
-		{
-			// load from file
-			return CPNGFile::ReadFromFile("lunar.png");
-		}
-
-		// Load from memory
-		HRSRC		resource = FindResource(hDLLModule, MAKEINTRESOURCE(IDB_LUNAR64), RT_RCDATA);
-		assert( resource != nullptr );
-		void*		pMoonMask = LockResource( LoadResource(hDLLModule, resource) );
-		
-		return CPNGFile::ReadFromMemory(pMoonMask, SizeofResource(hDLLModule, resource));
-	} ();
-	//D3DPERF_BeginEvent(D3DCOLOR_ARGB(0,0,0,0), L"render moon");
-
-	float currentDayFraction = nGameClockDays / 31.0f;
-
-	RwRenderStateSet(rwRENDERSTATETEXTURERASTER, nullptr);
-	RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDSRCALPHA);
-	RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDONE);
-
-	float a10 = 1.0f / fFarClipZ;
-	float size = (MoonSize * 2) + 4.0f;
-
-	RwD3D9SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA);
-
-	RenderOneXLUSprite(screenPos[0], screenPos[1], fFarClipZ, sizeX * size, sizeY * size, 0, 0, 0, 0, a10, 255, 0, 0);
-
-	RwRenderStateSet(rwRENDERSTATETEXTURERASTER, gpMoonMask != nullptr ? RwTextureGetRaster(gpMoonMask) : nullptr );
-	RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDINVSRCCOLOR);
-	RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDINVSRCCOLOR);
-	
-	float maskX = (sizeX * size) * 5.4f * (currentDayFraction - 0.5f) + screenPos[0];
-	float maskY = screenPos[1] + ((sizeY * size) * 0.7f);
-
-	RenderOneXLUSprite(maskX, maskY, fFarClipZ, sizeX * size * 1.7f, sizeY * size * 1.7f, 0, 0, 0, 255, a10, 255, 0, 0);
-
-	RwD3D9SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED);
-
-	RwRenderStateSet(rwRENDERSTATETEXTURERASTER, RwTextureGetRaster(gpCoronaTexture[2]));
-	RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDDESTALPHA);
-	RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDONE);
-	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, 0);
-
-	RenderOneXLUSprite(screenPos[0], screenPos[1], fFarClipZ, sizeX * size, sizeY * size, moonColor, moonColor, static_cast<uint8_t>(moonColor * 0.85f), 255, a10, 255, 0, 0);
-
-	RwRenderStateSet(rwRENDERSTATESRCBLEND, (void*)rwBLENDONE);
-	RwRenderStateSet(rwRENDERSTATEDESTBLEND, (void*)rwBLENDONE);
-
-	//D3DPERF_EndEvent();
 }
 
 CRGBA* CRGBA::BlendGangColour(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
@@ -1256,18 +1196,22 @@ static int64_t AudioUtilsGetCurrentTimeInMs()
 }
 
 // Minimal HUD changes
-static CRGBA* __fastcall SetRGBA_FloatAlpha( CRGBA* rgba, void*, uint8_t red, uint8_t green, uint8_t blue, float alpha )
+namespace MinimalHud
 {
-	rgba->r = red;
-	rgba->g = green;
-	rgba->b = blue;
-	rgba->a = static_cast<uint8_t>(alpha);
-	return rgba;
-}
+	static CRGBA* __fastcall SetRGBA_FloatAlpha( CRGBA* rgba, void*, uint8_t red, uint8_t green, uint8_t blue, float alpha )
+	{
+		rgba->r = red;
+		rgba->g = green;
+		rgba->b = blue;
+		rgba->a = static_cast<uint8_t>(alpha);
+		return rgba;
+	}
 
-static void RenderXLUSprite_FloatAlpha( float arg1, float arg2, float arg3, float arg4, float arg5, uint8_t red, uint8_t green, uint8_t blue, int16_t mult, float arg10, float alpha, uint8_t arg12, uint8_t arg13 )
-{
-	RenderOneXLUSprite( arg1, arg2, arg3, arg4, arg5, red, green, blue, mult, arg10, static_cast<uint8_t>(alpha), arg12, arg13 );
+	static void (*orgRenderOneXLUSprite)(float, float, float, float, float, uint8_t, uint8_t, uint8_t, int16_t, float, uint8_t, uint8_t, uint8_t);
+	static void RenderXLUSprite_FloatAlpha( float arg1, float arg2, float arg3, float arg4, float arg5, uint8_t red, uint8_t green, uint8_t blue, int16_t mult, float arg10, float alpha, uint8_t arg12, uint8_t arg13 )
+	{
+		orgRenderOneXLUSprite( arg1, arg2, arg3, arg4, arg5, red, green, blue, mult, arg10, static_cast<uint8_t>(alpha), arg12, arg13 );
+	}
 }
 
 // 6 directionals on Medium/High/Very High Visual FX
@@ -1667,6 +1611,51 @@ namespace SkinBuildingPipelineFix
 		return !atomicHasSkinPipe ? orgGetExtraVertColourPtr( geometry ) : nullptr;
 	}
 };
+
+// ============= Moonphases fix =============
+namespace MoonphasesFix
+{
+	// TODO: Reintroduce moon phases to Steam/RGL version
+	// Call to RenderOneXLUSprite provides all required data except the moon mask and CClock::ms_nGameClockDays
+	static void (*orgRenderOneXLUSprite)(float, float, float, float, float, uint8_t, uint8_t, uint8_t, int16_t, float, uint8_t, uint8_t, uint8_t);
+
+	// By aap
+	static void RenderOneXLUSprite_MoonPhases( float arg1, float arg2, float arg3, float arg4, float arg5, uint8_t red, uint8_t green, uint8_t blue, int16_t mult, float arg10, uint8_t alpha, uint8_t arg12, uint8_t arg13 )
+	{
+		static RwTexture*	gpMoonMask = [] () {
+			if ( GetFileAttributesW(L"lunar.png") != INVALID_FILE_ATTRIBUTES )
+			{
+				// load from file
+				return CPNGFile::ReadFromFile("lunar.png");
+			}
+
+			// Load from memory
+			HRSRC resource = FindResource(hDLLModule, MAKEINTRESOURCE(IDB_LUNAR64), RT_RCDATA);
+			assert( resource != nullptr );
+
+			void* pMoonMask = LockResource( LoadResource(hDLLModule, resource) );
+		
+			return CPNGFile::ReadFromMemory(pMoonMask, SizeofResource(hDLLModule, resource));
+		} ();
+
+		RwScopedRenderState alphaTest( rwRENDERSTATEALPHATESTFUNCTION );
+
+		if ( gpMoonMask != nullptr )
+		{
+			RwRenderStateSet( rwRENDERSTATETEXTURERASTER, RwTextureGetRaster(gpMoonMask) );
+		}
+
+		RwRenderStateSet( rwRENDERSTATEALPHATESTFUNCTION, (void*)rwALPHATESTFUNCTIONALWAYS );
+		RwRenderStateSet( rwRENDERSTATESRCBLEND, (void*)rwBLENDSRCALPHA );
+		RwRenderStateSet( rwRENDERSTATEDESTBLEND, (void*)rwBLENDZERO );
+		RwD3D9SetRenderState( D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA );
+
+		orgRenderOneXLUSprite( arg1, arg2, arg3, arg4, arg5, red, green, blue, mult, arg10, alpha, arg12, arg13 );
+
+		RwD3D9SetRenderState( D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_ALPHA | D3DCOLORWRITEENABLE_BLUE | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_RED );
+	}
+}
+
 
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
@@ -2293,56 +2282,6 @@ void __declspec(naked) FLACInit_Steam()
 }
 
 
-// Only 1.0/1.01
-static void*	HandleMoonStuffStub_JumpBack = AddressByVersion<void*>(0x713D24, 0x714554, 0x72F17F);
-void __declspec(naked) HandleMoonStuffStub()
-{
-	__asm
-	{
-		mov		eax, [esp + 78h - 64h] // screen x size
-		mov		ecx, [esp + 78h - 68h] // screen y size
-
-		push	ecx
-		push	eax
-
-		lea		ecx, [esp + 80h - 54h] // screen coord vector
-
-		push	ecx
-
-		push	esi
-
-		call	DrawMoonWithPhases
-
-		add		esp, 10h
-
-		jmp		HandleMoonStuffStub_JumpBack
-	}
-}
-
-void __declspec(naked) HandleMoonStuffStub_Steam()
-{
-	__asm
-	{
-		mov		eax, [esp + 70h - 58h] // screen x size
-		mov		ecx, [esp + 70h - 5Ch] // screen y size
-
-		push	ecx
-		push	eax
-
-		lea		ecx, [esp + 78h - 48h] // screen coord vector
-
-		push	ecx
-
-		push	esi
-
-		call	DrawMoonWithPhases
-
-		add		esp, 10h
-
-		jmp		HandleMoonStuffStub_JumpBack
-	}
-}
-
 // 1.0 ONLY BEGINS HERE
 static bool			bDarkVehicleThing;
 static RpLight**	pDirect;
@@ -2920,11 +2859,14 @@ BOOL InjectDelayedPatches_10()
 		// Minimal HUD
 		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"MinimalHud", -1, wcModulePath); INIoption != -1 )
 		{
+			using namespace MinimalHud;
+
 			// Fix original bugs
 			Patch( 0x58950E, { 0x90, 0xFF, 0x74, 0x24, 0x1C } );
 			InjectHook( 0x58951D, &SetRGBA_FloatAlpha );
 
 			Patch( 0x58D88A, { 0x90, 0xFF, 0x74, 0x24, 0x20 + 0x10 } );
+			ReadCall( 0x58D8FD, orgRenderOneXLUSprite );
 			InjectHook( 0x58D8FD, &RenderXLUSprite_FloatAlpha );
 		
 			// Re-enable
@@ -2972,7 +2914,10 @@ BOOL InjectDelayedPatches_10()
 		// Not taking effect with new skygfx since aap has it too now
 		if ( !ModCompat::SkygfxPatchesMoonphases( skygfxModule ) )
 		{
-			InjectHook(0x713ACB, HandleMoonStuffStub, PATCH_JUMP);
+			using namespace MoonphasesFix;
+
+			ReadCall( 0x713B74, orgRenderOneXLUSprite );
+			InjectHook( 0x713C4C, RenderOneXLUSprite_MoonPhases );
 		}
 
 		FLAUtils::Init( moduleList );
@@ -4333,9 +4278,6 @@ void Patch_SA_11()
 	InjectHook(0x4C7972, HunterTest, PATCH_JUMP);
 	InjectHook(0x4C9818, CacheCRC32);
 
-	// Moonphases
-	InjectHook(0x7142FB, HandleMoonStuffStub, PATCH_JUMP);
-
 	// Lightbeam fix
 	// Removed in Build 30 because the fix has been revisited
 	/*
@@ -4677,9 +4619,6 @@ void Patch_SA_Steam()
 	// Bindable NUM5
 	// Only 1.0 and Steam
 	Nop(0x59363B, 2);
-
-	// Moonphases
-	InjectHook(0x72F058, HandleMoonStuffStub_Steam, PATCH_JUMP);
 
 	// Lightbeam fix
 	// Removed in Build 30 because the fix has been revisited
