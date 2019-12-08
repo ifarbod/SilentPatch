@@ -1638,6 +1638,36 @@ namespace StaticShadowAlphaFix
 	}
 };
 
+
+// ============= Disable building pipeline for skinned objects (like parachute) =============
+namespace SkinBuildingPipelineFix
+{
+	static bool atomicHasSkinPipe;
+
+	static uint32_t (*orgGetPipelineID)(RpAtomic*);
+	static uint32_t GetPipelineID_SkinCheck( RpAtomic* atomic )
+	{
+		RxPipeline* pipeline;
+		RpAtomicGetPipeline( atomic, &pipeline );
+		
+		// If skin pipeline, mark it as such
+		if ( pipeline != nullptr && pipeline->pluginId == rwID_SKINPLUGIN )
+		{
+			atomicHasSkinPipe = true;
+			return pipeline->pluginId;
+		}
+
+		atomicHasSkinPipe = false;
+		return orgGetPipelineID( atomic );
+	}
+
+	static void* (*orgGetExtraVertColourPtr)(RpGeometry*);
+	static void* GetExtraVertColourPtr_SkinCheck( RpGeometry* geometry )
+	{
+		return !atomicHasSkinPipe ? orgGetExtraVertColourPtr( geometry ) : nullptr;
+	}
+};
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -4224,6 +4254,19 @@ void Patch_SA_10()
 		InjectHook( 0x53E0C8, RenderStoredShadows_StateFix );
 	}
 
+
+	// Disable building pipeline for skinned objects (like parachute)
+	{
+		using namespace SkinBuildingPipelineFix;
+
+		ReadCall( 0x5D7F46, orgGetPipelineID );
+		InjectHook( 0x5D7F46, GetPipelineID_SkinCheck );
+
+		ReadCall( 0x5D7F60, orgGetExtraVertColourPtr );
+		InjectHook( 0x5D7F60, GetExtraVertColourPtr_SkinCheck );
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -5665,6 +5708,20 @@ void Patch_SA_NewBinaries_Common()
 
 		ReadCall( renderStaticShadows.get<void>( 1 + 5 + 5 + 5 ), orgRenderStoredShadows );
 		InjectHook( renderStaticShadows.get<void>( 1 + 5 + 5 + 5 ), RenderStoredShadows_StateFix );
+	}
+
+
+	// Disable building pipeline for skinned objects (like parachute)
+	{
+		using namespace SkinBuildingPipelineFix;
+
+		auto getPipeID = pattern( "E8 ? ? ? ? 8B 76 18 83 C4 04" ).get_one();
+
+		ReadCall( getPipeID.get<void>(), orgGetPipelineID );
+		InjectHook( getPipeID.get<void>(), GetPipelineID_SkinCheck );
+
+		ReadCall( getPipeID.get<void>( 0x1A ), orgGetExtraVertColourPtr );
+		InjectHook( getPipeID.get<void>( 0x1A ), GetExtraVertColourPtr_SkinCheck );
 	}
 }
 
