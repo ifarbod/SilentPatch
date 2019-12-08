@@ -14,6 +14,22 @@
 
 #pragma comment(lib, "shlwapi.lib")
 
+// ============= Mod compatibility stuff =============
+
+namespace ModCompat
+{
+	namespace Utils
+	{
+		template<typename AT>
+		HMODULE GetModuleHandleFromAddress( AT address )
+		{
+			HMODULE result = nullptr;
+			GetModuleHandleEx( GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT|GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, LPCTSTR(address), &result );
+			return result;
+		}
+	}
+}
+
 struct RsGlobalType
 {
 	const char*		AppName;
@@ -334,6 +350,31 @@ namespace Localization
 	uint32_t PrefsLanguage_IsMetric()
 	{
 		return IsMetric_LocaleBased();
+	}
+}
+
+
+// ============= Corrected FBI Washington sirens sound =============
+namespace SirenSwitchingFix
+{
+	void __declspec(naked) IsFBIRanchOrFBICar()
+	{
+		_asm
+		{
+			mov     dword ptr [esi+1Ch], 1Ch
+
+			// al = 0 - high pitched siren
+			// al = 1 - normal siren
+			cmp     dword ptr [ebp+14h], 90		// fbiranch
+			je      IsFBIRanchOrFBICar_HighPitchSiren
+			cmp     dword ptr [ebp+14h], 17		// fbicar
+			setne   al
+			retn
+
+		IsFBIRanchOrFBICar_HighPitchSiren:
+			xor     al, al
+			retn
+		}
 	}
 }
 
@@ -842,6 +883,43 @@ void Patch_VC_Common()
 		Nop( constructStatLine.get<void>( -11 ), 1 );
 		InjectHook( constructStatLine.get<void>( -11 + 1 ), PrefsLanguage_IsMetric, PATCH_CALL );
 		Nop( constructStatLine.get<void>( -2 ), 2 );
+	}
+
+
+	// Corrected FBI Washington sirens sound
+	// Primary siren lower pitched like in FBI Rancher and secondary siren higher pitched
+	{
+		using namespace SirenSwitchingFix;
+
+		// Other mods might be touching it, so only patch specific vehicles if their code has not been touched at all
+		auto sirenPitch = pattern( "83 F8 17 74 32" ).count_hint(1);
+		if ( sirenPitch.size() == 1 )
+		{
+			auto match = sirenPitch.get_one();
+
+			InjectHook( match.get<void>( 5 ), IsFBIRanchOrFBICar, PATCH_CALL );
+			Patch( match.get<void>( 5 + 5 ), { 0x84, 0xC0 } ); // test al, al
+			Nop( match.get<void>( 5 + 5 + 2 ), 4 );
+
+			// Pitch shift FBI Washington primary siren
+			struct tVehicleSampleData {
+				int m_nAccelerationSampleIndex;
+				char m_bEngineSoundType;
+				int m_nHornSample;
+				int m_nHornFrequency;
+				char m_nSirenOrAlarmSample;
+				int m_nSirenOrAlarmFrequency;
+				char m_bDoorType;
+			};
+
+			tVehicleSampleData* dataTable = *get_pattern<tVehicleSampleData*>( "8B 04 95 ? ? ? ? 89 43 1C", 3 );
+			// Only pitch shift if table hasn't been relocated elsewhere
+			if ( GetModuleHandle( nullptr ) == ModCompat::Utils::GetModuleHandleFromAddress(dataTable) )
+			{
+				// fbicar frequency = fbiranch frequency
+				dataTable[17].m_nSirenOrAlarmFrequency = dataTable[90].m_nSirenOrAlarmFrequency;
+			}
+		}
 	}
 
 }
