@@ -528,6 +528,82 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 	}
 
 
+	// Corrected siren corona placement for emergency vehicles
+	// TODO: INI entry
+	{
+		// Other mods might be touching it, so only patch specific vehicles if their code has not been touched at all
+		{
+			auto firetruckX1 = pattern( "C7 84 24 9C 05 00 00 CD CC 8C 3F" );
+			auto firetruckY1 = pattern( "C7 84 24 A4 05 00 00 9A 99 D9 3F" );
+			auto firetruckZ1 = pattern( "C7 84 24 A8 05 00 00 00 00 00 40" );
+
+			auto firetruckX2 = pattern( "C7 84 24 A8 05 00 00 CD CC 8C BF" );
+			auto firetruckY2 = pattern( "C7 84 24 B0 05 00 00 9A 99 D9 3F" );
+			auto firetruckZ2 = pattern( "C7 84 24 B4 05 00 00 00 00 00 40" );
+
+			if ( firetruckX1.count_hint(1).size() == 1 && firetruckY1.count_hint(1).size() == 1 && firetruckZ1.count_hint(1).size() == 1 &&
+				firetruckX2.count_hint(1).size() == 1 && firetruckY2.count_hint(1).size() == 1 && firetruckZ2.count_hint(1).size() == 1 )
+			{
+				constexpr CVector FIRETRUCK_SIREN_POS(0.95f, 3.2f, 1.4f);
+
+				Patch<float>( firetruckX1.get_first( 7 ), FIRETRUCK_SIREN_POS.x );
+				Patch<float>( firetruckY1.get_first( 7 ), FIRETRUCK_SIREN_POS.y );
+				Patch<float>( firetruckZ1.get_first( 7 ), FIRETRUCK_SIREN_POS.z );
+
+				Patch<float>( firetruckX2.get_first( 7 ), -FIRETRUCK_SIREN_POS.x );
+				Patch<float>( firetruckY2.get_first( 7 ), FIRETRUCK_SIREN_POS.y );
+				Patch<float>( firetruckZ2.get_first( 7 ), FIRETRUCK_SIREN_POS.z );
+			}
+		}
+		{
+			auto ambulanceX1 = pattern( "C7 84 24 84 05 00 00 CD CC 8C 3F" );
+			auto ambulanceY1 = pattern( "C7 84 24 8C 05 00 00 66 66 66 3F" );
+			auto ambulanceZ1 = pattern( "C7 84 24 90 05 00 00 CD CC CC 3F" );
+
+			auto ambulanceX2 = pattern( "C7 84 24 90 05 00 00 CD CC 8C BF" );
+			auto ambulanceY2 = pattern( "C7 84 24 98 05 00 00 66 66 66 3F" );
+			auto ambulanceZ2 = pattern( "C7 84 24 9C 05 00 00 CD CC CC 3F" );
+
+			if ( ambulanceX1.count_hint(1).size() == 1 && ambulanceY1.count_hint(1).size() == 1 && ambulanceZ1.count_hint(1).size() == 1 &&
+				ambulanceX2.count_hint(1).size() == 1 && ambulanceY2.count_hint(1).size() == 1 && ambulanceZ2.count_hint(1).size() == 1 )
+			{
+				constexpr CVector AMBULANCE_SIREN_POS(0.7f, 0.7f, 1.45f);
+
+				Patch<float>( ambulanceX1.get_first( 7 ), AMBULANCE_SIREN_POS.x );
+				Patch<float>( ambulanceY1.get_first( 7 ), AMBULANCE_SIREN_POS.y );
+				Patch<float>( ambulanceZ1.get_first( 7 ), AMBULANCE_SIREN_POS.z );
+
+				Patch<float>( ambulanceX2.get_first( 7 ), -AMBULANCE_SIREN_POS.x );
+				Patch<float>( ambulanceY2.get_first( 7 ), AMBULANCE_SIREN_POS.y );
+				Patch<float>( ambulanceZ2.get_first( 7 ), AMBULANCE_SIREN_POS.z );
+			}
+		}
+		{
+			auto enforcerX1 = pattern( "C7 84 24 6C 05 00 00 CD CC 8C 3F" );
+			auto enforcerY1 = pattern( "C7 84 24 74 05 00 00 CD CC 4C 3F" );
+			auto enforcerZ1 = pattern( "C7 84 24 78 05 00 00 9A 99 99 3F" );
+
+			auto enforcerX2 = pattern( "C7 84 24 78 05 00 00 CD CC 8C BF" );
+			auto enforcerY2 = pattern( "C7 84 24 80 05 00 00 CD CC 4C 3F" );
+			auto enforcerZ2 = pattern( "C7 84 24 84 05 00 00 9A 99 99 3F" );
+
+			if ( enforcerX1.count_hint(1).size() == 1 && enforcerY1.count_hint(1).size() == 1 && enforcerZ1.count_hint(1).size() == 1 &&
+				enforcerX2.count_hint(1).size() == 1 && enforcerY2.count_hint(1).size() == 1 && enforcerZ2.count_hint(1).size() == 1 )
+			{
+				constexpr CVector ENFORCER_SIREN_POS(0.6f, 1.05f, 1.4f);
+
+				Patch<float>( enforcerX1.get_first( 7 ), ENFORCER_SIREN_POS.x );
+				Patch<float>( enforcerY1.get_first( 7 ), ENFORCER_SIREN_POS.y );
+				Patch<float>( enforcerZ1.get_first( 7 ), ENFORCER_SIREN_POS.z );
+
+				Patch<float>( enforcerX2.get_first( 7 ), -ENFORCER_SIREN_POS.x );
+				Patch<float>( enforcerY2.get_first( 7 ), ENFORCER_SIREN_POS.y );
+				Patch<float>( enforcerZ2.get_first( 7 ), ENFORCER_SIREN_POS.z );
+			}
+		}
+	}
+
+
 	// Corrected FBI Car secondary siren sound
 	{
 		using namespace SirenSwitchingFix;
