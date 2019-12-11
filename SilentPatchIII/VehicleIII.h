@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "Maths.h"
 
 enum eVehicleType
 {
@@ -13,12 +14,23 @@ enum eVehicleType
 
 class CVehicle
 {
-private:
-	uint8_t		__pad1[644];
+protected:
+	// TODO: Make this part of CEntity properly
+	void*		__vmt;
+	CMatrix		m_matrix;
+	uint8_t		__pad2[16];
+	uint16_t	m_modelIndex; // TODO: THE FLA
+	uint8_t		__pad1[548];
 	uint32_t	m_dwVehicleClass;
 
 
 public:
+	int32_t GetModelIndex() const
+	{ return m_modelIndex; }
+
+	const CMatrix& GetMatrix() const
+	{ return m_matrix; }
+
 	uint32_t		GetClass() const
 	{ return m_dwVehicleClass; }
 };
