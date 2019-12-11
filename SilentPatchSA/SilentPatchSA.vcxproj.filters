@@ -122,9 +122,6 @@
     <ClInclude Include="LinkListSA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Maths.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="PNGFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -172,6 +169,9 @@
     </ClInclude>
     <ClInclude Include="..\SilentPatch\Utils\Patterns.h">
       <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\Maths.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

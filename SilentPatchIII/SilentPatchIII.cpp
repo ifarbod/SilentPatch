@@ -1,6 +1,6 @@
 #include "StdAfx.h"
 
-#include "General.h"
+#include "Maths.h"
 #include "Timer.h"
 #include "Utils/Patterns.h"
 #include "Common.h"
@@ -39,14 +39,6 @@ struct RsGlobalType
 	void*			keyboard;
 	void*			mouse;
 	void*			pad;
-};
-
-
-
-struct RwV2d
-{
-    float x;   /**< X value*/
-    float y;   /**< Y value */
 };
 
 DebugMenuAPI gDebugMenuAPI;

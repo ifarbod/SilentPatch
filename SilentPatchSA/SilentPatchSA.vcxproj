@@ -224,6 +224,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClInclude Include="..\SilentPatch\FLAC\metadata.h" />
     <ClInclude Include="..\SilentPatch\FLAC\ordinals.h" />
     <ClInclude Include="..\SilentPatch\FLAC\stream_decoder.h" />
+    <ClInclude Include="..\SilentPatch\Maths.h" />
     <ClInclude Include="..\SilentPatch\resource1.h" />
     <ClInclude Include="..\SilentPatch\TheFLAUtils.h" />
     <ClInclude Include="..\SilentPatch\Utils\DelimStringReader.h" />
@@ -235,7 +236,6 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClInclude Include="FLACDecoderSA.h" />
     <ClInclude Include="GeneralSA.h" />
     <ClInclude Include="LinkListSA.h" />
-    <ClInclude Include="Maths.h" />
     <ClInclude Include="ModelInfoSA.h" />
     <ClInclude Include="PedSA.h" />
     <ClInclude Include="PlayerInfoSA.h" />

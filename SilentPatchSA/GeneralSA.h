@@ -11,58 +11,6 @@ public:
     float                           m_heading;
 };
 
-class CRGBA
-{
-public:
-	uint8_t r, g, b, a;
-
-	inline CRGBA() {}
-
-	inline constexpr CRGBA(const CRGBA& in)
-		: r(in.r), g(in.g), b(in.b), a(in.a)
-	{}
-
-	inline constexpr CRGBA(const CRGBA& in, uint8_t alpha)
-		: r(in.r), g(in.g), b(in.b), a(alpha)
-	{}
-
-
-	inline constexpr CRGBA(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255)
-		: r(red), g(green), b(blue), a(alpha)
-	{}
-
-	friend constexpr CRGBA Blend(const CRGBA& From, const CRGBA& To, double BlendVal)
-		{	double InvBlendVal = 1.0 - BlendVal;
-			return CRGBA( uint8_t(To.r * BlendVal + From.r * InvBlendVal),
-			uint8_t(To.g * BlendVal + From.g * InvBlendVal),
-			uint8_t(To.b * BlendVal + From.b * InvBlendVal),
-			uint8_t(To.a * BlendVal + From.a * InvBlendVal)); }
-
-	friend constexpr CRGBA BlendSqr(const CRGBA& From, const CRGBA& To, double BlendVal)
-		{	double InvBlendVal = 1.0 - BlendVal;
-			return CRGBA( uint8_t(sqrt((To.r * To.r) * BlendVal + (From.r * From.r) * InvBlendVal)),
-			uint8_t(sqrt((To.g * To.g) * BlendVal + (From.g * From.g) * InvBlendVal)),
-			uint8_t(sqrt((To.b * To.b) * BlendVal + (From.b * From.b) * InvBlendVal)),
-			uint8_t(sqrt((To.a * To.a) * BlendVal + (From.a * From.a) * InvBlendVal))); }
-
-	// SilentPatch
-	CRGBA*			BlendGangColour(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-	CRGBA*			BlendGangColour_Dynamic(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
-};
-
-class CRect
-{
-public:
-	float x1, y1;
-	float x2, y2;
-
-	inline CRect() {}
-	inline constexpr CRect(float a, float b, float c, float d)
-		: x1(a), y1(b), x2(c), y2(d)
-	{}
-};
-
-
 class CPlaceable
 {
 private:

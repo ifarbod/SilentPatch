@@ -1,6 +1,6 @@
 #pragma once
 
-#include "General.h"
+#include "Maths.h"
 
 #if _GTA_III
 #include "../SilentPatchIII/VehicleIII.h"

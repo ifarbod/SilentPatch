@@ -1,10 +1,10 @@
 #include "StdAfx.h"
 
+#include "Maths.h"
 #include "Timer.h"
 #include "Utils/Patterns.h"
 #include "Common.h"
 #include "Common_ddraw.h"
-#include "General.h"
 #include "ModelInfoVC.h"
 
 #include <memory>

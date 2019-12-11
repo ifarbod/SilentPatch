@@ -611,22 +611,22 @@ bool GetCurrentZoneLockedOrUnlocked_Steam(float fPosX, float fPosY)
 	return true;
 }
 
-CRGBA* CRGBA::BlendGangColour(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+CRGBA* __fastcall BlendGangColour(CRGBA* pThis, void*, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
 	const double colourIntensity = std::min( static_cast<double>(pCurrZoneInfo->ZoneColour.a) / 120.0, 1.0 );
-	*this = CRGBA(BlendSqr( HudColour[3], CRGBA(r, g, b), colourIntensity ), a);
-	return this;
+	*pThis = CRGBA(BlendSqr( HudColour[3], CRGBA(r, g, b), colourIntensity ), a);
+	return pThis;
 }
 
 static bool bColouredZoneNames;
-CRGBA* CRGBA::BlendGangColour_Dynamic(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
+CRGBA* __fastcall BlendGangColour_Dynamic(CRGBA* pThis, void*, uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
 	if ( bColouredZoneNames )
 	{
-		return BlendGangColour(r, g, b, a);
+		return BlendGangColour(pThis, nullptr, r, g, b, a);
 	}
-	*this = CRGBA(HudColour[3], a);
-	return this;
+	*pThis = CRGBA(HudColour[3], a);
+	return pThis;
 }
 
 void SunAndMoonFarClip()
@@ -2719,7 +2719,7 @@ BOOL InjectDelayedPatches_10()
 			Patch<WORD>(0x58ADBE, 0x0E75);
 			Patch<WORD>(0x58ADC5, 0x0775);
 
-			InjectHook(0x58ADE4, &CRGBA::BlendGangColour_Dynamic);
+			InjectHook(0x58ADE4, &BlendGangColour_Dynamic);
 
 			if ( bHasDebugMenu )
 			{
@@ -3154,7 +3154,7 @@ BOOL InjectDelayedPatches_11()
 			Patch<WORD>(0x58B58E, 0x0E75);
 			Patch<WORD>(0x58B595, 0x0775);
 
-			InjectHook(0x58B5B4, &CRGBA::BlendGangColour);
+			InjectHook(0x58B5B4, &BlendGangColour);
 		}
 		else if ( INIoption == 0 )
 		{
@@ -3325,7 +3325,7 @@ BOOL InjectDelayedPatches_Steam()
 			Patch<WORD>(0x598F65, 0x0C75);
 			Patch<WORD>(0x598F6B, 0x0675);
 
-			InjectHook(0x598F87, &CRGBA::BlendGangColour);
+			InjectHook(0x598F87, &BlendGangColour);
 		}
 		else if ( INIoption == 0 )
 		{

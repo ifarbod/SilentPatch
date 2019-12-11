@@ -55,3 +55,6 @@ RwReal RwIm2DGetNearScreenZ()
 {
 	return GTARWSRCGLOBAL(dOpenDevice).zBufferNear;
 }
+
+// Unreachable stub
+RwBool RwMatrixDestroy(RwMatrix* mpMat) { assert(!"Unreachable!"); return TRUE; }

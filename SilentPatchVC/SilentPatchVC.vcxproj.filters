@@ -24,9 +24,6 @@
     <ClInclude Include="..\SilentPatch\Timer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\SilentPatch\General.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\SilentPatch\StdAfx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -55,6 +52,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\SilentPatch\RWGTA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\Maths.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

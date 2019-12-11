@@ -48,7 +48,7 @@
     <ClInclude Include="..\SilentPatch\Common.h" />
     <ClInclude Include="..\SilentPatch\Common_ddraw.h" />
     <ClInclude Include="..\SilentPatch\debugmenu_public.h" />
-    <ClInclude Include="..\SilentPatch\General.h" />
+    <ClInclude Include="..\SilentPatch\Maths.h" />
     <ClInclude Include="..\SilentPatch\RWGTA.h" />
     <ClInclude Include="..\SilentPatch\StdAfx.h" />
     <ClInclude Include="..\SilentPatch\StoredCar.h" />

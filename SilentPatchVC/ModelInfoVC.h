@@ -1,6 +1,5 @@
 #pragma once
 
-#include "General.h"
 #include <rwcore.h>
 #include <rpworld.h>
 
