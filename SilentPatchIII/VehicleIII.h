@@ -12,6 +12,8 @@ enum eVehicleType
 	VEHICLE_PLANE
 };
 
+constexpr uint16_t MI_TAXI = 110;
+
 class CVehicle
 {
 protected:

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "Maths.h"
 
 enum eVehicleType
 {
@@ -12,10 +13,18 @@ enum eVehicleType
 	VEHICLE_BIKE
 };
 
+constexpr uint16_t MI_TAXI = 150;
+
 class CVehicle
 {
-private:
-	uint8_t		__pad1[510];
+protected:
+	// TODO: Make this part of CEntity properly
+	void*		__vmt;
+	CMatrix		m_matrix;
+	uint8_t		__pad4[16];
+	uint16_t	m_modelIndex; // TODO: THE FLA
+
+	uint8_t		__pad1[414];
 	uint8_t		m_BombOnBoard : 3;
 	uint8_t		__pad2[17];
 	class CEntity* m_pBombOwner;
@@ -24,6 +33,12 @@ private:
 
 
 public:
+	int32_t GetModelIndex() const
+		{ return m_modelIndex; }
+
+	const CMatrix& GetMatrix() const
+		{ return m_matrix; }
+
 	uint32_t		GetClass() const
 		{ return m_dwVehicleClass; }
 
@@ -31,6 +46,10 @@ public:
 		{ m_BombOnBoard = bombOnBoard; }
 	void			SetBombOwner( class CEntity* owner )
 		{ m_pBombOwner = owner; }
+};
+
+class CAutomobile : public CVehicle
+{
 };
 
 static_assert(sizeof(CVehicle) == 0x2A0, "Wrong size: CVehicle");

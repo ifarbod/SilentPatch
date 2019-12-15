@@ -493,27 +493,6 @@ namespace SirenSwitchingFix
 };
 
 
-// ============= Corrected siren corona placement for taxi =============
-namespace TaxiCoronaFix
-{
-	CVector& GetTransformedCoronaPos( CVector& out, float offsetZ, const CAutomobile* vehicle )
-	{
-		CVector pos;
-		pos.x = 0.0f;
-		if ( vehicle->GetModelIndex() == 110 ) // TAXI
-		{
-			pos.y = -0.25f;
-			pos.z = 0.9f;
-		}
-		else
-		{
-			pos.y = 0.0f;
-			pos.z = offsetZ;
-		}
-		return out = Multiply3x3( vehicle->GetMatrix(), pos );
-	}
-};
-
 void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -614,18 +593,6 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 				Patch<float>( enforcerX2.get_first( 7 ), -ENFORCER_SIREN_POS.x );
 				Patch<float>( enforcerY2.get_first( 7 ), ENFORCER_SIREN_POS.y );
 				Patch<float>( enforcerZ2.get_first( 7 ), ENFORCER_SIREN_POS.z );
-			}
-		}
-		{
-			using namespace TaxiCoronaFix;
-
-			auto getTaxiLightPos = pattern( "E8 ? ? ? ? D9 84 24 ? ? ? ? D8 84 24 ? ? ? ? 83 C4 0C" );
-
-			if ( getTaxiLightPos.count_hint(1).size() == 1 )
-			{
-				auto match = getTaxiLightPos.get_one();
-				Patch<uint8_t>( match.get<void>( -15 ), 0x55 ); // push eax -> push ebp
-				InjectHook( match.get<void>(), GetTransformedCoronaPos );
 			}
 		}
 	}
