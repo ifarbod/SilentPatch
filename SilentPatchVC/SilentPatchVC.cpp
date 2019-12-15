@@ -380,6 +380,9 @@ namespace SirenSwitchingFix
 
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
+	using namespace Memory;
+	using namespace hook;
+
 	// Locale based metric/imperial system INI/debug menu
 	{
 		using namespace Localization;
@@ -391,6 +394,121 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 			DebugMenuEntry *e = DebugMenuAddVar( "SilentPatch", "Forced units", &forcedUnits, nullptr, 1, -1, 1, str );
 			DebugMenuEntrySetWrap(e, true);
 		}			
+	}
+
+	
+	// Corrected siren corona placement for emergency vehicles
+	// TODO: INI entry
+	{
+		// Other mods might be touching it, so only patch specific vehicles if their code has not been touched at all
+		{
+			auto firetruck1 = pattern( "8D 8C 24 24 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
+			auto firetruck2 = pattern( "8D 8C 24 30 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
+
+			if ( firetruck1.count_hint(1).size() == 1 && firetruck2.count_hint(1).size() == 1 )
+			{
+				static const CVector FIRETRUCK_SIREN_POS(0.95f, 3.2f, 1.4f);
+				static const float FIRETRUCK_SIREN_MINUS_X = -FIRETRUCK_SIREN_POS.x;
+
+				auto match1 = firetruck1.get_one();
+				auto match2 = firetruck2.get_one();
+
+				Patch( match1.get<float*>( 7 + 2 ), &FIRETRUCK_SIREN_POS.z );
+				Patch( match1.get<float*>( 7 + 2 + (6*1) ), &FIRETRUCK_SIREN_POS.y );
+				Patch( match1.get<float*>( 7 + 2 + (6*2) ), &FIRETRUCK_SIREN_POS.x );
+
+				Patch( match2.get<float*>( 7 + 2 ), &FIRETRUCK_SIREN_POS.z );
+				Patch( match2.get<float*>( 7 + 2 + (6*1) ), &FIRETRUCK_SIREN_POS.y );
+				Patch( match2.get<float*>( 7 + 2 + (6*2) ), &FIRETRUCK_SIREN_MINUS_X );
+			}
+		}
+		{
+			auto ambulan1 = pattern( "8D 8C 24 0C 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
+			auto ambulan2 = pattern( "8D 8C 24 18 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
+
+			if ( ambulan1.count_hint(1).size() == 1 && ambulan2.count_hint(1).size() == 1 )
+			{
+				static const CVector AMBULANCE_SIREN_POS(0.7f, 0.7f, 1.45f);
+				static const float AMBULANCE_SIREN_MINUS_X = -AMBULANCE_SIREN_POS.x;
+
+				auto match1 = ambulan1.get_one();
+				auto match2 = ambulan2.get_one();
+
+				Patch( match1.get<float*>( 7 + 2 ), &AMBULANCE_SIREN_POS.z );
+				Patch( match1.get<float*>( 7 + 2 + (6*1) ), &AMBULANCE_SIREN_POS.y );
+				Patch( match1.get<float*>( 7 + 2 + (6*2) ), &AMBULANCE_SIREN_POS.x );
+
+				Patch( match2.get<float*>( 7 + 2 ), &AMBULANCE_SIREN_POS.z );
+				Patch( match2.get<float*>( 7 + 2 + (6*1) ), &AMBULANCE_SIREN_POS.y );
+				Patch( match2.get<float*>( 7 + 2 + (6*2) ), &AMBULANCE_SIREN_MINUS_X );
+			}
+		}
+		{
+			auto police1 = pattern( "8D 8C 24 DC 08 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
+			auto police2 = pattern( "8D 8C 24 E8 08 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
+
+			if ( police1.count_hint(1).size() == 1 && police2.count_hint(1).size() == 1 )
+			{
+				static const CVector POLICE_SIREN_POS(0.55f, -0.4f, 0.95f);
+				static const float POLICE_SIREN_MINUS_X = -POLICE_SIREN_POS.x;
+
+				auto match1 = police1.get_one();
+				auto match2 = police2.get_one();
+
+				Patch( match1.get<float*>( 7 + 2 ), &POLICE_SIREN_POS.z );
+				Patch( match1.get<float*>( 7 + 2 + (6*1) ), &POLICE_SIREN_POS.y );
+				Patch( match1.get<float*>( 7 + 2 + (6*2) ), &POLICE_SIREN_POS.x );
+
+				Patch( match2.get<float*>( 7 + 2 ), &POLICE_SIREN_POS.z );
+				Patch( match2.get<float*>( 7 + 2 + (6*1) ), &POLICE_SIREN_POS.y );
+				Patch( match2.get<float*>( 7 + 2 + (6*2) ), &POLICE_SIREN_MINUS_X );
+			}
+		}
+		{
+			auto enforcer1 = pattern( "8D 8C 24 F4 08 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
+			auto enforcer2 = pattern( "8D 8C 24 00 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
+
+			if ( enforcer1.count_hint(1).size() == 1 && enforcer2.count_hint(1).size() == 1 )
+			{
+				static const CVector ENFORCER_SIREN_POS(0.6f, 1.05f, 1.4f);
+				static const float ENFORCER_SIREN_MINUS_X = -ENFORCER_SIREN_POS.x;
+
+				auto match1 = enforcer1.get_one();
+				auto match2 = enforcer2.get_one();
+
+				Patch( match1.get<float*>( 7 + 2 ), &ENFORCER_SIREN_POS.z );
+				Patch( match1.get<float*>( 7 + 2 + (6*1) ), &ENFORCER_SIREN_POS.y );
+				Patch( match1.get<float*>( 7 + 2 + (6*2) ), &ENFORCER_SIREN_POS.x );
+
+				Patch( match2.get<float*>( 7 + 2 ), &ENFORCER_SIREN_POS.z );
+				Patch( match2.get<float*>( 7 + 2 + (6*1) ), &ENFORCER_SIREN_POS.y );
+				Patch( match2.get<float*>( 7 + 2 + (6*2) ), &ENFORCER_SIREN_MINUS_X );	
+			}
+		}
+		{
+			auto chopper1 = pattern( "C7 44 24 44 00 00 E0 40 50 C7 44 24 4C 00 00 00 00" );	// Front light
+			auto chopper2 = pattern( "C7 44 24 6C 00 00 10 C1 8D 44 24 5C C7 44 24 70 00 00 00 00" );	// Tail light
+
+			if ( chopper2.count_hint(1).size() == 1 )
+			{
+				constexpr CVector CHOPPER_SEARCH_LIGHT_POS(0.0f, 3.0f, -1.0f);	// Same as in III Aircraft (not implemented there yet!)
+
+				auto match = chopper1.get_one();
+
+				Patch( match.get<float>( 4 ), CHOPPER_SEARCH_LIGHT_POS.y );
+				Patch( match.get<float>( 9 + 4 ), CHOPPER_SEARCH_LIGHT_POS.z );
+			}
+
+			if ( chopper2.count_hint(1).size() == 1 )
+			{
+				constexpr CVector CHOPPER_RED_LIGHT_POS(0.0f, -7.5f, 2.5f);	// Same as in III Aircraft
+
+				auto match = chopper2.get_one();
+
+				Patch( match.get<float>( 4 ), CHOPPER_RED_LIGHT_POS.y );
+				Patch( match.get<float>( 12 + 4 ), CHOPPER_RED_LIGHT_POS.z );
+			}
+		}
 	}
 }
 
