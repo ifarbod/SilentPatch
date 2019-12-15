@@ -6,6 +6,7 @@
 #include "Common.h"
 #include "Common_ddraw.h"
 #include "ModelInfoVC.h"
+#include "VehicleVC.h"
 
 #include <memory>
 #include <Shlwapi.h>
@@ -378,6 +379,54 @@ namespace SirenSwitchingFix
 	}
 }
 
+
+// ============= Corrected siren corona placement for FBI cars and Vice Cheetah =============
+namespace FBISirenCoronaFix
+{
+	bool overridePosition;
+	CVector vecOverridePosition;
+
+	// True - don't display siren
+	// False - display siren
+	bool SetUpFBISiren( const CVehicle* vehicle )
+	{
+		const int32_t modelIndex = vehicle->GetModelIndex();
+		if ( modelIndex == MI_FBICAR || modelIndex == MI_FBIRANCH || modelIndex == MI_VICECHEE )
+		{
+			if ( modelIndex == MI_FBICAR || modelIndex == MI_FBIRANCH )
+			{
+				const CVector FBICAR_SIREN_POS = CVector(0.4f, 0.8f, 0.25f);
+				const CVector FBIRANCH_SIREN_POS = CVector(0.5f, 1.12f, 0.5f);
+
+				overridePosition = true;
+				vecOverridePosition = modelIndex == MI_FBICAR ? FBICAR_SIREN_POS : FBIRANCH_SIREN_POS;
+			}
+			else
+			{
+				overridePosition = false;
+			}
+
+			return false;
+		}
+
+		return true;
+	}
+
+	CVector& __fastcall SetUpVector( CVector& out, void*, float X, float Y, float Z )
+	{
+		if ( overridePosition )
+		{
+			out = vecOverridePosition;
+		}
+		else
+		{
+			out = CVector(X, Y, Z);
+		}
+
+		return out;
+	}
+}
+
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -507,6 +556,31 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 
 				Patch( match.get<float>( 4 ), CHOPPER_RED_LIGHT_POS.y );
 				Patch( match.get<float>( 12 + 4 ), CHOPPER_RED_LIGHT_POS.z );
+			}
+		}
+		{
+			using namespace FBISirenCoronaFix;
+
+			auto hasFBISiren = pattern( "83 E9 04 0F 84 87 0A 00 00 83 E9 10" ); // Predicate for showing FBI/Vice Squad siren
+			auto viceCheetah = pattern( "8D 8C 24 CC 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35 ? ? ? ? E8" ); // Siren pos
+
+			if ( viceCheetah.count_hint(1).size() == 1 )
+			{
+				auto match = viceCheetah.get_one();
+
+				if ( hasFBISiren.count_hint(1).size() == 1 )
+				{
+					auto matchSiren = hasFBISiren.get_one();
+
+					Patch<uint8_t>( matchSiren.get<void>(), 0x55 ); // push ebp
+					InjectHook( matchSiren.get<void>( 1 ), SetUpFBISiren, PATCH_CALL );
+					Patch( matchSiren.get<void>( 1 + 5 ), { 0x83, 0xC4, 0x04, 0x84, 0xC0, 0x90 } ); // add esp, 4 / test al, al / nop
+
+					InjectHook( match.get<void>( 0x19 ), SetUpVector );
+				}
+
+				static const float VICE_CHEETAH_SIREN_POS_Z = 0.25f;
+				Patch( match.get<float*>( 7 + 2 ), &VICE_CHEETAH_SIREN_POS_Z );
 			}
 		}
 	}
