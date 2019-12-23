@@ -477,7 +477,7 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 
 			if ( ambulan1.count_hint(1).size() == 1 && ambulan2.count_hint(1).size() == 1 )
 			{
-				static const CVector AMBULANCE_SIREN_POS(0.7f, 0.7f, 1.45f);
+				static const CVector AMBULANCE_SIREN_POS(0.7f, 0.65f, 1.55f);
 				static const float AMBULANCE_SIREN_MINUS_X = -AMBULANCE_SIREN_POS.x;
 
 				auto match1 = ambulan1.get_one();

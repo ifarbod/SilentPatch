@@ -561,7 +561,7 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 			if ( ambulanceX1.count_hint(1).size() == 1 && ambulanceY1.count_hint(1).size() == 1 && ambulanceZ1.count_hint(1).size() == 1 &&
 				ambulanceX2.count_hint(1).size() == 1 && ambulanceY2.count_hint(1).size() == 1 && ambulanceZ2.count_hint(1).size() == 1 )
 			{
-				constexpr CVector AMBULANCE_SIREN_POS(0.7f, 0.7f, 1.45f);
+				constexpr CVector AMBULANCE_SIREN_POS(0.7f, 0.65f, 1.55f);
 
 				Patch<float>( ambulanceX1.get_first( 7 ), AMBULANCE_SIREN_POS.x );
 				Patch<float>( ambulanceY1.get_first( 7 ), AMBULANCE_SIREN_POS.y );
