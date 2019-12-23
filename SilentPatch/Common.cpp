@@ -45,28 +45,23 @@ namespace CoronaLinesFix
 // ============= Static shadow alpha fix =============
 namespace StaticShadowAlphaFix
 {
-	static void (*orgRenderStaticShadows)();
-	static void RenderStaticShadows_StateFix()
-	{
-		RwUInt32 alphaTestVal = 0;
-		RwD3D8GetRenderState( 15, &alphaTestVal ); // D3DRS_ALPHATESTENABLE
-		
-		RwD3D8SetRenderState( 15, FALSE );
-		orgRenderStaticShadows();
+	static RwUInt32 alphaTestVal;
 
-		RwD3D8SetRenderState( 15, alphaTestVal );
+	static RwBool RenderStateSet_StoreAlphaTest( RwRenderState state, void* value )
+	{
+		RwD3D8GetRenderState( 15, &alphaTestVal ); // D3DRS_ALPHATESTENABLE
+		RwD3D8SetRenderState( 15, FALSE );
+
+		return RwRenderStateSet( state, value );
 	}
 
-	static void (*orgRenderStoredShadows)();
-	static void RenderStoredShadows_StateFix()
+	static RwBool RenderStateSet_RestoreAlphaTest( RwRenderState state, void* value )
 	{
-		RwUInt32 alphaTestVal = 0;
-		RwD3D8GetRenderState( 15, &alphaTestVal ); // D3DRS_ALPHATESTENABLE
-		
-		RwD3D8SetRenderState( 15, FALSE );
-		orgRenderStoredShadows();
+		RwBool result = RwRenderStateSet( state, value );
 
 		RwD3D8SetRenderState( 15, alphaTestVal );
+
+		return result;
 	}
 };
 
@@ -185,18 +180,36 @@ namespace Common {
 				using namespace StaticShadowAlphaFix;
 
 #if _GTA_III
-				constexpr ptrdiff_t offset = 0xF;
+				void* disableAlphaTestAndSetState[] = { 
+					get_pattern( "E8 ? ? ? ? 59 59 6A 00 6A 0E E8 ? ? ? ? 31 C0" ),
+					get_pattern( "E8 ? ? ? ? 0F B7 2D ? ? ? ? 31 C0" )
+				};
+
+				void* setStateAndReenableAlphaTest[] = {
+					get_pattern( "E8 ? ? ? ? 59 59 6A 01 6A 08 E8 ? ? ? ? 59 59 83 C4 38" ),
+					get_pattern( "39 44 24 38 0F 8C ? ? ? ? 6A 00 6A 0C", 14 )
+				};
 #elif _GTA_VC
-				constexpr ptrdiff_t offset = 0x14;
+				void* disableAlphaTestAndSetState[] = { 
+					get_pattern( "E8 ? ? ? ? 59 59 6A 00 6A 0E E8 ? ? ? ? 31 C0" ),
+					get_pattern( "6A 01 6A 0C E8 ? ? ? ? 59 59 6A 03", 4 )
+				};
+
+				void* setStateAndReenableAlphaTest[] = {
+					get_pattern( "0F 77 6A 00 6A 0C E8 ? ? ? ? 59", 6 ),
+					get_pattern( "39 44 24 34 0F 8C ? ? ? ? 6A 00 6A 0C", 14 )
+				};
 #endif
 
-				uintptr_t renderStaticShadows = reinterpret_cast<uintptr_t>(ReadCallFrom( get_pattern( "E8 ? ? ? ? A1 ? ? ? ? 85 C0 74 05" ), offset ));
-				ReadCall( renderStaticShadows, orgRenderStaticShadows );
-				InjectHook( renderStaticShadows, RenderStaticShadows_StateFix );
+				for ( auto match : disableAlphaTestAndSetState )
+				{
+					InjectHook( match, RenderStateSet_StoreAlphaTest );
+				}
 
-				renderStaticShadows += 5;
-				ReadCall( renderStaticShadows, orgRenderStoredShadows );
-				InjectHook( renderStaticShadows, RenderStoredShadows_StateFix );
+				for ( auto match : setStateAndReenableAlphaTest )
+				{
+					InjectHook( match, RenderStateSet_RestoreAlphaTest );
+				}
 			}
 
 			// Corrected taxi light placement for Taxi

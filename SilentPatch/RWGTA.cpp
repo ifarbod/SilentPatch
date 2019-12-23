@@ -45,6 +45,11 @@ void RwD3D8GetRenderState(RwUInt32 state, void* value)
 	*valuePtr = _rwD3D8RenderStates[ 2 * state ];
 }
 
+RwBool RwRenderStateSet(RwRenderState state, void *value)
+{
+	return GTARWSRCGLOBAL(dOpenDevice).fpRenderStateSet( state, value );
+}
+
 
 RwBool RwIm2DRenderLine(RwIm2DVertex *vertices, RwInt32 numVertices, RwInt32 vert1, RwInt32 vert2)
 {
