@@ -6,6 +6,7 @@
 #include "Common.h"
 #include "Common_ddraw.h"
 #include "VehicleIII.h"
+#include "ModelInfoIII.h"
 
 #include <memory>
 #include <Shlwapi.h>
@@ -609,6 +610,23 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 			auto match = usesSirenSwitching.get_one();
 			ReadCall( match.get<void>(), orgUsesSirenSwitching );
 			InjectHook( match.get<void>(), UsesSirenSwitching_FbiCar );
+		}
+	}
+
+
+	// Corrected CSimpleModelInfo::SetupBigBuilding minimum draw distance for big buildings without a matching model
+	// Fixes cranes in Portland and bright windows in the city
+	// By aap
+	{
+		auto setupMinDist = pattern( "C7 43 44 00 00 C8 42" ).count_hint(1);
+		if ( setupMinDist.size() == 1 ) // In case of another mod or second instance of SP changing it
+		{
+			auto match = setupMinDist.get_one();
+
+			// mov ecx, ebx
+			// call CSimpleModelInfo::SetNearDistanceForLOD
+			Patch( match.get<void>(), { 0x89, 0xD9 } );
+			InjectHook( match.get<void>( 2 ), &CSimpleModelInfo::SetNearDistanceForLOD_SilentPatch, PATCH_CALL );
 		}
 	}
 }
