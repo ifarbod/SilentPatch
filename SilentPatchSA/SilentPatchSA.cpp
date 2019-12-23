@@ -1403,7 +1403,20 @@ namespace VariableResets
 		}
 	};
 
-	using VarVariant = std::variant<bool*, int*, TimeNextMadDriverChaseCreated_t<float>*>;
+	template<typename T, T val>
+	struct ResetToValue_t
+	{
+		T m_value;
+
+		ResetToValue_t()
+			: m_value(val)
+		{
+		}
+	};
+
+	using ResetToTrue_t = ResetToValue_t<bool, true>;
+
+	using VarVariant = std::variant< bool*, int*, TimeNextMadDriverChaseCreated_t<float>*, ResetToTrue_t* >;
 	std::vector<VarVariant> GameVariablesToReset;
 
 	static void (*orgReInitGameObjectVariables)();
@@ -4158,6 +4171,9 @@ void Patch_SA_10()
 
 		// Non-zero inits still need to be done
 		GameVariablesToReset.emplace_back( *(TimeNextMadDriverChaseCreated_t<float>**)(0x421369 + 2) ); // CCarCtrl::TimeNextMadDriverChaseCreated
+
+		GameVariablesToReset.emplace_back( *(ResetToTrue_t**)(0x4758A4 + 2) ); // CGameLogic::bPenaltyForDeathApplies
+		GameVariablesToReset.emplace_back( *(ResetToTrue_t**)(0x4758C4 + 1) ); // CGameLogic::bPenaltyForArrestApplies
 	}
 
 	// Don't clean the car BEFORE Pay 'n Spray doors close, as it gets cleaned later again anyway!
