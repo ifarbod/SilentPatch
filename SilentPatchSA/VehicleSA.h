@@ -389,7 +389,7 @@ private:
 	uint16_t m_carMods[15];
 	uint8_t m_colour[4];
 	uint8_t m_radioStation;
-	uint8_t m_extra[2];
+	int8_t m_extra[2];
 	uint8_t m_bombType;
 	uint8_t m_remapIndex;
 	uint8_t m_nitro;

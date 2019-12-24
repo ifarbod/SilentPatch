@@ -90,6 +90,19 @@ namespace TaxiCoronaFix
 	}
 };
 
+
+// ============= Reset requested extras if created vehicle has no extras =============
+namespace CompsToUseFix
+{
+	static int8_t* ms_compsUsed = *hook::get_pattern<int8_t*>( "89 E9 88 1D", 4 );
+	static int8_t* ms_compsToUse = *hook::get_pattern<int8_t*>( "0F BE 05 ? ? ? ? 83 C4 28", 3 );
+	static void ResetCompsForNoExtras()
+	{
+		ms_compsUsed[0] = ms_compsUsed[1] = -1;
+		ms_compsToUse[0] = ms_compsToUse[1] = -2;
+	}
+};
+
 // ============= Delayed patches =============
 namespace DelayedPatches
 {
@@ -225,6 +238,16 @@ namespace Common {
 					Patch<uint8_t>( match.get<void>( -15 ), 0x55 ); // push eax -> push ebp
 					InjectHook( match.get<void>(), GetTransformedCoronaPos );
 				}
+			}
+
+
+			// Reset requested extras if created vehicle has no extras
+			{
+				using namespace CompsToUseFix;
+
+				auto resetComps = pattern( "8B 04 24 83 C4 08 5D 5F" ).get_one();
+				InjectHook( resetComps.get<void>( -14 ), ResetCompsForNoExtras, PATCH_CALL );
+				Nop( resetComps.get<void>( -9 ), 9 );
 			}
 		}
 

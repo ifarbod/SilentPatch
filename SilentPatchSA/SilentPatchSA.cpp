@@ -4228,6 +4228,12 @@ void Patch_SA_10()
 	}
 
 
+	// Reset requested extras if created vehicle has no extras
+	// Fixes eg. lightless taxis
+	InjectHook( 0x4C97B1, CVehicleModelInfo::ResetCompsForNoExtras, PATCH_CALL );
+	Nop( 0x4C97B1 + 5, 9 );
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );

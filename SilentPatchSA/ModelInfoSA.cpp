@@ -17,6 +17,9 @@ bool (*CCustomCarPlateMgr::GeneratePlateText)(char* pBuf, int nLen); // Read fro
 
 CBaseModelInfo** const			ms_modelInfoPtrs = *AddressByVersion<CBaseModelInfo***>(0x509CB1, 0x4C0C96, 0x403DB7);
 
+int8_t* CVehicleModelInfo::ms_compsUsed = *AddressByVersion<int8_t**>( 0x4C973B + 2, 0, 0 );
+int8_t* CVehicleModelInfo::ms_compsToUse = *AddressByVersion<int8_t**>( 0x4C8057 + 2, 0, 0 );
+
 
 static RwTexture** const		ms_aDirtTextures = *AddressByVersion<RwTexture***>( 0x5D5DCC + 3, 0, 0x5F259C + 3 );
 void RemapDirt( CVehicleModelInfo* modelInfo, uint32_t dirtID )
@@ -104,6 +107,12 @@ void CVehicleModelInfo::SetCarCustomPlate()
 	m_apPlateMaterials = new PlateMaterialsData;
 	
 	CCustomCarPlateMgr::SetupClump(reinterpret_cast<RpClump*>(pRwObject), m_apPlateMaterials);
+}
+
+void CVehicleModelInfo::ResetCompsForNoExtras()
+{
+	ms_compsUsed[0] = ms_compsUsed[1] = -1;
+	ms_compsToUse[0] = ms_compsToUse[1] = -2;
 }
 
 void CCustomCarPlateMgr::PollPlates( RpClump* clump, PlateMaterialsData* materials )

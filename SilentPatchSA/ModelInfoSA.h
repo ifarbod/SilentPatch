@@ -308,6 +308,11 @@ public:
 	class CAnimBlock*		m_pAnimBlock;
 
 public:
+	static int8_t*			ms_compsUsed;
+	static int8_t*			ms_compsToUse;
+
+	static void				ResetCompsForNoExtras();
+
 	inline const char*		GetCustomCarPlateText()
 		{ return m_plateText[0] ? m_plateText : nullptr; }
 
