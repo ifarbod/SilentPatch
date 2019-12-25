@@ -3,6 +3,7 @@
 #include "Utils/MemoryMgr.h"
 #include "Utils/Patterns.h"
 #include "StoredCar.h"
+#include "SVF.h"
 
 #include <rwcore.h>
 
@@ -72,7 +73,7 @@ namespace TaxiCoronaFix
 	{
 		CVector pos;
 		pos.x = 0.0f;
-		if ( vehicle->GetModelIndex() == MI_TAXI )
+		if ( SVF::ModelHasFeature( vehicle->GetModelIndex(), SVF::Feature::TAXI_LIGHT ) )
 		{
 #if _GTA_III
 			pos.y = -0.25f;

@@ -9,6 +9,16 @@ namespace SVF
 	Feature GetFeatureFromName( const char* featureName )
 	{
 		constexpr std::pair< const char*, Feature > features[] = {
+#if _GTA_III || _GTA_VC
+			{ "TAXI_LIGHT", Feature::TAXI_LIGHT },
+#endif
+
+#if _GTA_VC
+			{ "FBI_RANCHER_SIREN", Feature::FBI_RANCHER_SIREN },
+			{ "FBI_WASHINGTON_SIREN", Feature::FBI_WASHINGTON_SIREN },
+			{ "VICE_CHEETAH_SIREN", Feature::VICE_CHEETAH_SIREN },
+#endif
+
 #if _GTA_SA
 			{ "PHOENIX_FLUTTER", Feature::PHOENIX_FLUTTER },
 			{ "SWEEPER_BRUSHES", Feature::SWEEPER_BRUSHES },
@@ -50,7 +60,14 @@ namespace SVF
 	}
 
 	static std::multimap<int32_t, std::tuple<Feature, int32_t> > specialVehFeatures = {
-#if _GTA_SA
+#if _GTA_III
+		_registerFeatureInternal( 110, Feature::TAXI_LIGHT ),
+#elif _GTA_VC
+		_registerFeatureInternal( 147, Feature::FBI_WASHINGTON_SIREN ),
+		_registerFeatureInternal( 150, Feature::TAXI_LIGHT ),
+		_registerFeatureInternal( 220, Feature::FBI_RANCHER_SIREN ),
+		_registerFeatureInternal( 236, Feature::VICE_CHEETAH_SIREN ),
+#elif _GTA_SA
 		_registerFeatureInternal( 432, Feature::RHINO_WHEELS ),
 		_registerFeatureInternal( 511, Feature::EXTRA_AILERONS1 ),
 		_registerFeatureInternal( 513, Feature::EXTRA_AILERONS2 ),

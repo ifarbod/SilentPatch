@@ -48,6 +48,9 @@
     <ClCompile Include="ModelInfoIII.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\SilentPatch\SVF.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\SilentPatch\Timer.h">
@@ -87,6 +90,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ModelInfoIII.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\SVF.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

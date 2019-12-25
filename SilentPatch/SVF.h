@@ -8,6 +8,16 @@ namespace SVF
 	{
 		NO_FEATURE,
 
+#if _GTA_III || _GTA_VC
+		TAXI_LIGHT, // Corrected light placement for Taxi
+#endif
+
+#if _GTA_VC
+		FBI_RANCHER_SIREN,
+		FBI_WASHINGTON_SIREN,
+		VICE_CHEETAH_SIREN,
+#endif
+
 #if _GTA_SA
 		// Those are fully controlled by SilentPatch
 		PHOENIX_FLUTTER,

@@ -7,6 +7,7 @@
 #include "Common_ddraw.h"
 #include "ModelInfoVC.h"
 #include "VehicleVC.h"
+#include "SVF.h"
 
 #include <memory>
 #include <Shlwapi.h>
@@ -390,16 +391,23 @@ namespace FBISirenCoronaFix
 	// False - display siren
 	bool SetUpFBISiren( const CVehicle* vehicle )
 	{
-		const int32_t modelIndex = vehicle->GetModelIndex();
-		if ( modelIndex == MI_FBICAR || modelIndex == MI_FBIRANCH || modelIndex == MI_VICECHEE )
+		SVF::Feature foundFeature = SVF::Feature::NO_FEATURE;
+		SVF::ForAllModelFeatures( vehicle->GetModelIndex(), [&]( SVF::Feature f ) {
+			if ( f >= SVF::Feature::FBI_RANCHER_SIREN && f <= SVF::Feature::VICE_CHEETAH_SIREN )
+			{
+				foundFeature = f;
+			}
+		} );
+
+		if ( foundFeature != SVF::Feature::NO_FEATURE )
 		{
-			if ( modelIndex == MI_FBICAR || modelIndex == MI_FBIRANCH )
+			if ( foundFeature != SVF::Feature::VICE_CHEETAH_SIREN )
 			{
 				const CVector FBICAR_SIREN_POS = CVector(0.4f, 0.8f, 0.25f);
 				const CVector FBIRANCH_SIREN_POS = CVector(0.5f, 1.12f, 0.5f);
 
 				overridePosition = true;
-				vecOverridePosition = modelIndex == MI_FBICAR ? FBICAR_SIREN_POS : FBIRANCH_SIREN_POS;
+				vecOverridePosition = foundFeature == SVF::Feature::FBI_WASHINGTON_SIREN ? FBICAR_SIREN_POS : FBIRANCH_SIREN_POS;
 			}
 			else
 			{

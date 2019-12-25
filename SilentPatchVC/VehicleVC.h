@@ -13,11 +13,6 @@ enum eVehicleType
 	VEHICLE_BIKE
 };
 
-constexpr uint16_t MI_FBICAR = 147;
-constexpr uint16_t MI_TAXI = 150;
-constexpr uint16_t MI_FBIRANCH = 220;
-constexpr uint16_t MI_VICECHEE = 236;
-
 class CVehicle
 {
 protected:
