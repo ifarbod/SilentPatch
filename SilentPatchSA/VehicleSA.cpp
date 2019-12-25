@@ -1,13 +1,13 @@
 #include "StdAfxSA.h"
 
-#include <functional>
 #include <algorithm>
-#include <map>
 #include "VehicleSA.h"
 #include "TimerSA.h"
 #include "PedSA.h"
 #include "Utils/DelimStringReader.h"
 #include "PlayerInfoSA.h"
+
+#include "SVF.h"
 
 static constexpr float PHOENIX_FLUTTER_PERIOD	= 70.0f;
 static constexpr float PHOENIX_FLUTTER_AMP		= 0.13f;
@@ -16,147 +16,6 @@ static constexpr float SWEEPER_BRUSH_SPEED      = 0.3f;
 static constexpr float PI = 3.14159265358979323846f;
 
 float CAutomobile::ms_engineCompSpeed;
-
-
-namespace SVF {
-	enum class Feature
-	{
-		NO_FEATURE,
-
-		// Those are fully controlled by SilentPatch
-		PHOENIX_FLUTTER,
-		SWEEPER_BRUSHES,
-		NEWSVAN_DISH,
-		EXTRA_AILERONS1, // Like on Beagle
-		EXTRA_AILERONS2, // Like on Stuntplane
-		DOUBLE_TRAILER, // Like on artict3
-
-		// Those are partially controlled by SilentPatch (only affected by minor fixes)
-		VORTEX_EXHAUST,
-		TOWTRUCK_HOOK,
-		TRACTOR_HOOK,
-		RHINO_WHEELS,
-		FIRELA_LADDER,
-
-		// Internal SP use only, formerly "rotor exceptions"
-		// Unreachable from RegisterSpecialVehicleFeature
-		NO_ROTOR_FADE,
-		NO_LIGHTBEAM_BFC_FIX,
-		FORCE_DOUBLE_RWHEELS_OFF,
-		FORCE_DOUBLE_RWHEELS_ON,
-	};
-
-	Feature GetFeatureFromName( const char* featureName )
-	{
-		constexpr std::pair< const char*, Feature > features[] = {
-			{ "PHOENIX_FLUTTER", Feature::PHOENIX_FLUTTER },
-			{ "SWEEPER_BRUSHES", Feature::SWEEPER_BRUSHES },
-			{ "NEWSVAN_DISH", Feature::NEWSVAN_DISH },
-			{ "EXTRA_AILERONS1", Feature::EXTRA_AILERONS1 },
-			{ "EXTRA_AILERONS2", Feature::EXTRA_AILERONS2 },
-			{ "DOUBLE_TRAILER", Feature::DOUBLE_TRAILER },
-			{ "VORTEX_EXHAUST", Feature::VORTEX_EXHAUST },
-			{ "TOWTRUCK_HOOK", Feature::TOWTRUCK_HOOK },
-			{ "TRACTOR_HOOK", Feature::TRACTOR_HOOK },
-			{ "RHINO_WHEELS", Feature::RHINO_WHEELS },
-			{ "FIRELA_LADDER", Feature::FIRELA_LADDER },
-		};
-
-		auto it = std::find_if( std::begin(features), std::end(features), [featureName]( const auto& e ) {
-			return _stricmp( e.first, featureName ) == 0;
-		});
-
-		if ( it == std::end(features) ) return Feature::NO_FEATURE;
-		return it->second;
-	}
-
-	static int32_t nextFeatureCookie = 0;
-	int32_t _getCookie()
-	{
-		return nextFeatureCookie++;
-	}
-
-	static int32_t highestStockCookie = 0;
-	int32_t _getCookieStockID()
-	{
-		return highestStockCookie = _getCookie();
-	}
-
-	auto _registerFeatureInternal( int32_t modelID, Feature feature )
-	{
-		return std::make_pair( modelID, std::make_tuple( feature, _getCookieStockID() ) );
-	}
-
-	static std::multimap<int32_t, std::tuple<Feature, int32_t> > specialVehFeatures = {
-		_registerFeatureInternal( 432, Feature::RHINO_WHEELS ),
-		_registerFeatureInternal( 511, Feature::EXTRA_AILERONS1 ),
-		_registerFeatureInternal( 513, Feature::EXTRA_AILERONS2 ),
-		_registerFeatureInternal( 525, Feature::TOWTRUCK_HOOK ),
-		_registerFeatureInternal( 531, Feature::TRACTOR_HOOK ),
-		_registerFeatureInternal( 539, Feature::VORTEX_EXHAUST ),
-		_registerFeatureInternal( 544, Feature::FIRELA_LADDER ),
-		_registerFeatureInternal( 574, Feature::SWEEPER_BRUSHES ),
-		_registerFeatureInternal( 582, Feature::NEWSVAN_DISH ),
-		_registerFeatureInternal( 591, Feature::DOUBLE_TRAILER ),
-		_registerFeatureInternal( 603, Feature::PHOENIX_FLUTTER ),
-	};
-
-	int32_t RegisterFeature( int32_t modelID, Feature feature )
-	{
-		if ( feature == Feature::NO_FEATURE ) return -1;
-
-		const int32_t cookie = _getCookie();
-		specialVehFeatures.emplace( modelID, std::make_tuple(feature, cookie) );
-		return cookie;
-	}
-
-	void DeleteFeature( int32_t cookie )
-	{
-		for ( auto it = specialVehFeatures.begin(); it != specialVehFeatures.end(); ++it )
-		{
-			if ( std::get<int32_t>(it->second) == cookie )
-			{
-				specialVehFeatures.erase( it );
-				return;
-			}
-		}
-	}
-
-	void DisableStockVehiclesForFeature( Feature feature )
-	{
-		if ( feature == Feature::NO_FEATURE ) return;
-		for ( auto it = specialVehFeatures.begin(); it != specialVehFeatures.end(); )
-		{
-			if ( std::get<Feature>(it->second) == feature && std::get<int32_t>(it->second) <= highestStockCookie )
-			{
-				it = specialVehFeatures.erase( it );
-			}
-			else
-			{
-				++it;
-			}
-		}
-	}
-
-	bool ModelHasFeature( int32_t modelID, Feature feature )
-	{
-		auto results = specialVehFeatures.equal_range( modelID );
-		return std::find_if( results.first, results.second, [feature] ( const auto& e ) {
-			return std::get<Feature>(e.second) == feature;
-		} ) != results.second;
-	}
-
-	template<typename Pred>
-	Pred ForAllModelFeatures( int32_t modelID, Pred&& pred )
-	{
-		auto results = specialVehFeatures.equal_range( modelID );
-		for ( auto it = results.first; it != results.second; ++it )
-		{
-			std::forward<Pred>(pred)(std::get<Feature>(it->second));
-		}
-		return std::forward<Pred>(pred);
-	}
-}
 
 bool ReadDoubleRearWheels(const wchar_t* pPath)
 {
@@ -185,7 +44,7 @@ bool ReadDoubleRearWheels(const wchar_t* pPath)
 		bool value = wcstoul( begin, &end, 0 ) != 0;
 		if ( begin != end )
 		{
-			SVF::RegisterFeature( toList, value ? SVF::Feature::FORCE_DOUBLE_RWHEELS_ON : SVF::Feature::FORCE_DOUBLE_RWHEELS_OFF );
+			SVF::RegisterFeature( toList, value ? SVF::Feature::_INTERNAL_FORCE_DOUBLE_RWHEELS_ON : SVF::Feature::_INTERNAL_FORCE_DOUBLE_RWHEELS_OFF );
 			listedAny = true;
 		}
 	}
@@ -209,12 +68,12 @@ bool __stdcall CheckDoubleRWheelsList( void* modelInfo, uint8_t* handlingData )
 	SVF::ForAllModelFeatures( modelID, [&]( SVF::Feature f ) {
 		if ( foundFeature ) return;
 
-		if ( f == SVF::Feature::FORCE_DOUBLE_RWHEELS_OFF )
+		if ( f == SVF::Feature::_INTERNAL_FORCE_DOUBLE_RWHEELS_OFF )
 		{
 			foundFeature = true;
 			featureStatus = false;
 		}
-		else if ( f == SVF::Feature::FORCE_DOUBLE_RWHEELS_ON )
+		else if ( f == SVF::Feature::_INTERNAL_FORCE_DOUBLE_RWHEELS_ON )
 		{
 			foundFeature = true;
 			featureStatus = true;	
@@ -239,7 +98,7 @@ bool CVehicle::IgnoresRotorFix() const
 	{
 		return ms_rotorFixOverride < 0;
 	}
-	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::NO_ROTOR_FADE );
+	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::_INTERNAL_NO_ROTOR_FADE );
 }
 
 static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0x6D1680, 0x70C0B0);
@@ -341,7 +200,7 @@ void ReadRotorFixExceptions(const wchar_t* pPath)
 	{
 		int32_t toList = wcstol( str, nullptr, 0 );
 		if ( toList > 0 )
-			SVF::RegisterFeature( toList, SVF::Feature::NO_ROTOR_FADE );
+			SVF::RegisterFeature( toList, SVF::Feature::_INTERNAL_NO_ROTOR_FADE );
 	}
 }
 
@@ -355,7 +214,7 @@ void ReadLightbeamFixExceptions(const wchar_t* pPath)
 	{
 		int32_t toList = wcstol( str, nullptr, 0 );
 		if ( toList > 0 )
-			SVF::RegisterFeature( toList, SVF::Feature::NO_LIGHTBEAM_BFC_FIX );
+			SVF::RegisterFeature( toList, SVF::Feature::_INTERNAL_NO_LIGHTBEAM_BFC_FIX );
 	}
 }
 
@@ -395,7 +254,7 @@ bool CVehicle::IgnoresLightbeamFix() const
 	{
 		return ms_lightbeamFixOverride < 0;
 	}
-	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::NO_LIGHTBEAM_BFC_FIX );
+	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::_INTERNAL_NO_LIGHTBEAM_BFC_FIX );
 }
 
 
@@ -854,26 +713,3 @@ CVehicle* CStoredCar::RestoreCar_SilentPatch()
 	return vehicle;
 }
 
-
-// Returns "feature cookie" on success, -1 on failure
-extern "C" {
-	
-__declspec(dllexport) int32_t RegisterSpecialVehicleFeature( int32_t modelID, const char* featureName )
-{
-	if ( featureName == nullptr ) return -1;
-	return SVF::RegisterFeature( modelID, SVF::GetFeatureFromName(featureName) );
-}
-
-__declspec(dllexport) void DeleteSpecialVehicleFeature( int32_t cookie )
-{
-	if ( cookie == -1 ) return;
-	SVF::DeleteFeature( cookie );
-}
-
-__declspec(dllexport) void DisableStockVehiclesForSpecialVehicleFeature( const char* featureName )
-{
-	if ( featureName == nullptr ) return;
-	SVF::DisableStockVehiclesForFeature( SVF::GetFeatureFromName(featureName) );
-}
-
-}

@@ -78,6 +78,9 @@
     <ClCompile Include="..\SilentPatch\Utils\Patterns.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="..\SilentPatch\SVF.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\SilentPatch\FLAC\callback.h">
@@ -171,6 +174,9 @@
       <Filter>Header Files\Utils</Filter>
     </ClInclude>
     <ClInclude Include="..\SilentPatch\Maths.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\SVF.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

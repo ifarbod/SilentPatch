@@ -186,6 +186,11 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\SilentPatch\SVF.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Master|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\SilentPatch\TheFLAUtils.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -226,6 +231,7 @@ copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowvio
     <ClInclude Include="..\SilentPatch\FLAC\stream_decoder.h" />
     <ClInclude Include="..\SilentPatch\Maths.h" />
     <ClInclude Include="..\SilentPatch\resource1.h" />
+    <ClInclude Include="..\SilentPatch\SVF.h" />
     <ClInclude Include="..\SilentPatch\TheFLAUtils.h" />
     <ClInclude Include="..\SilentPatch\Utils\DelimStringReader.h" />
     <ClInclude Include="..\SilentPatch\Utils\MemoryMgr.GTA.h" />
