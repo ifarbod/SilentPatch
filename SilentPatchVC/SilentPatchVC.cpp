@@ -1114,6 +1114,14 @@ void Patch_VC_Common()
 		}
 	}
 
+
+	// Allow extra6 to be picked with component rule 4 (any)
+	{
+		void* extraMult6 = get_pattern( "D8 0D ? ? ? ? D9 7C 24 04 8B 44 24 04 80 4C 24 05 0C D9 6C 24 04 89 44 24 04 DB 5C 24 08 D9 6C 24 04 8B 44 24 08 83 C4 10 5D", 2 );
+
+		static const float MULT_6 = 6.0f;
+		Patch( extraMult6, &MULT_6 );
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
