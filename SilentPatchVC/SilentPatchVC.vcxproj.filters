@@ -92,6 +92,9 @@
     <ClCompile Include="..\SilentPatch\SVF.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="VehicleVC.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\SilentPatch\SilentPatch.rc">

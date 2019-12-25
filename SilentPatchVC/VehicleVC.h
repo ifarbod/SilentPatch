@@ -21,8 +21,12 @@ protected:
 	CMatrix		m_matrix;
 	uint8_t		__pad4[16];
 	uint16_t	m_modelIndex; // TODO: THE FLA
+	void*		m_pFirstReference;
+	int32_t		m_audioEntityId; // TODO: This should really be CPhysical
+	uint8_t		__pad5[320];
+	void*		m_pDriver;
 
-	uint8_t		__pad1[414];
+	uint8_t		__pad1[80];
 	uint8_t		m_BombOnBoard : 3;
 	uint8_t		__pad2[17];
 	class CEntity* m_pBombOwner;
@@ -44,6 +48,8 @@ public:
 		{ m_BombOnBoard = bombOnBoard; }
 	void			SetBombOwner( class CEntity* owner )
 		{ m_pBombOwner = owner; }
+
+	int32_t GetOneShotOwnerID_SilentPatch() const;
 };
 
 class CAutomobile : public CVehicle

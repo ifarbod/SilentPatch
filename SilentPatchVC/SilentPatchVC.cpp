@@ -1130,6 +1130,19 @@ void Patch_VC_Common()
 		static const float MULT_6 = 6.0f;
 		Patch( extraMult6, &MULT_6 );
 	}
+
+	
+	// Make drive-by one shot sounds owned by the driver instead of the car
+	// Fixes incorrect weapon sound being used for drive-by
+	{
+		auto getDriverOneShot = pattern( "FF 35 ? ? ? ? 6A 37 50 E8 ? ? ? ? 83 7E 08 00" ).get_one();
+
+		// nop
+		// mov ecx, ebx
+		// call CVehicle::GetOneShotOwnerID
+		Patch( getDriverOneShot.get<void>( -8 ), { 0x90, 0x89, 0xD9 } );
+		InjectHook( getDriverOneShot.get<void>( -5 ), &CVehicle::GetOneShotOwnerID_SilentPatch, PATCH_CALL );
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
