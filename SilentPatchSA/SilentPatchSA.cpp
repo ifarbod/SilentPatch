@@ -1669,6 +1669,21 @@ namespace MoonphasesFix
 	}
 }
 
+// ============= Disallow moving cam up/down with mouse when looking back/left/right in vehicle =============
+namespace FollowCarMouseCamFix
+{
+	static uint32_t& camLookDirection = **AddressByVersion<uint32_t**>( 0x525526 + 2, 0, 0 );
+	static void* (*orgGetPad)(int);
+	static bool* orgUseMouse3rdPerson;
+
+	static bool useMouseAndLooksForwards;
+	static void* getPadAndSetFlag( int padNum )
+	{
+		useMouseAndLooksForwards = *orgUseMouse3rdPerson && camLookDirection == 3;
+		return orgGetPad( padNum );
+	}
+};
+
 
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
@@ -4236,6 +4251,18 @@ void Patch_SA_10()
 
 	// Allow extra6 to be picked with component rule 4 (any)
 	Patch<uint32_t>( 0x4C8010 + 4, 6 );
+
+
+	// Disallow moving cam up/down with mouse when looking back/left/right in vehicle
+	{
+		using namespace FollowCarMouseCamFix;
+
+		orgUseMouse3rdPerson = *(bool**)(0x525615 + 1);
+		Patch( 0x525615 + 1, &useMouseAndLooksForwards );
+
+		ReadCall( 0x5245E4, orgGetPad );
+		InjectHook( 0x5245E4, getPadAndSetFlag );
+	}
 
 
 #if FULL_PRECISION_D3D
