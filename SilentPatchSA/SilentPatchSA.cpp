@@ -2925,7 +2925,7 @@ BOOL InjectDelayedPatches_10()
 
 		// Moonphases
 		// Not taking effect with new skygfx since aap has it too now
-		if ( !ModCompat::SkygfxPatchesMoonphases( skygfxModule ) )
+		if ( !bSAMP && !ModCompat::SkygfxPatchesMoonphases( skygfxModule ) )
 		{
 			using namespace MoonphasesFix;
 
