@@ -1672,7 +1672,7 @@ namespace MoonphasesFix
 // ============= Disallow moving cam up/down with mouse when looking back/left/right in vehicle =============
 namespace FollowCarMouseCamFix
 {
-	static uint32_t& camLookDirection = **AddressByVersion<uint32_t**>( 0x525526 + 2, 0, 0 );
+	static uint32_t& camLookDirection = **AddressByVersion<uint32_t**>( 0x525526 + 2, Memory::PatternAndOffset("83 3D ? ? ? ? 03 74 06", 2) );
 	static void* (*orgGetPad)(int);
 	static bool* orgUseMouse3rdPerson;
 
@@ -5454,15 +5454,30 @@ void Patch_SA_NewBinaries_Common()
 	}
 
 
-	// Reinit CCarCtrl fields (firetruck and ambulance generation)
+	// Reset variables on New Game
 	{
 		using namespace VariableResets;
 
-		auto timers_init = pattern( "89 45 FC DB 45 FC C6 05 ? ? ? ? 01" ).get_one();
+		{
+			auto reinit1 = get_pattern( "E8 ? ? ? ? E8 ? ? ? ? E8 ? ? ? ? E8 ? ? ? ? 38 1D" );
+			auto reinit2 = get_pattern( "E8 ? ? ? ? 89 1D ? ? ? ? E8 ? ? ? ? 5E" );
 
-		GameVariablesToReset.emplace_back( *timers_init.get<signed int*>(-17 + 2) );
-		GameVariablesToReset.emplace_back( *timers_init.get<signed int*>(-11 + 2) );
-		GameVariablesToReset.emplace_back( *timers_init.get<TimeNextMadDriverChaseCreated_t<float>*>(0x41 + 2) );
+			ReadCall( reinit1, orgReInitGameObjectVariables );
+			InjectHook( reinit1, ReInitGameObjectVariables );
+			InjectHook( reinit2, ReInitGameObjectVariables );
+		}
+
+		// Variables to reset
+		{
+			auto timers_init = pattern( "89 45 FC DB 45 FC C6 05 ? ? ? ? 01" ).get_one();
+
+			GameVariablesToReset.emplace_back( *timers_init.get<signed int*>(-17 + 2) );
+			GameVariablesToReset.emplace_back( *timers_init.get<signed int*>(-11 + 2) );
+			GameVariablesToReset.emplace_back( *timers_init.get<TimeNextMadDriverChaseCreated_t<float>*>(0x41 + 2) );
+		}
+
+		GameVariablesToReset.emplace_back( *get_pattern<ResetToTrue_t*>( "A2 ? ? ? ? E9 ? ? ? ? 6A 01 8B CE", 1 ) ); // CGameLogic::bPenaltyForDeathApplies
+		GameVariablesToReset.emplace_back( *get_pattern<ResetToTrue_t*>( "88 0D ? ? ? ? E9 ? ? ? ? 6A 05", 2 ) ); // CGameLogic::bPenaltyForArrestApplies
 	}
 
 	// FuckCarCompletely not fixing panels
@@ -5714,6 +5729,39 @@ void Patch_SA_NewBinaries_Common()
 
 		ReadCall( getPipeID.get<void>( 0x1A ), orgGetExtraVertColourPtr );
 		InjectHook( getPipeID.get<void>( 0x1A ), GetExtraVertColourPtr_SkinCheck );
+	}
+
+
+	// Reset requested extras if created vehicle has no extras
+	// Fixes eg. lightless taxis
+	{
+		auto resetComps = pattern( "6A 00 68 ? ? ? ? 57 E8 ? ? ? ? 83 C4 0C 8B C7" ).get_one();
+
+		InjectHook( resetComps.get<void>( -9 ), CVehicleModelInfo::ResetCompsForNoExtras, PATCH_CALL );
+		Nop( resetComps.get<void>( -9 + 5 ), 4 );
+	}
+
+
+	// Allow extra6 to be picked with component rule 4 (any)
+	{
+		void* extra6 = get_pattern( "6A 00 E8 ? ? ? ? 83 C4 08 5E", -2 + 1 );
+
+		Patch<int8_t>( extra6, 6 );
+	}
+
+
+	// Disallow moving cam up/down with mouse when looking back/left/right in vehicle
+	{
+		using namespace FollowCarMouseCamFix;
+
+		bool** useMouse3rdPerson = get_pattern<bool*>( "80 3D ? ? ? ? 00 C6 45 1B 00", 2 );
+		auto getPad = get_pattern( "89 45 B8 E8 ? ? ? ? 89 45 FC", 3 );
+
+		orgUseMouse3rdPerson = *useMouse3rdPerson;
+		Patch( useMouse3rdPerson, &useMouseAndLooksForwards );
+
+		ReadCall( getPad, orgGetPad );
+		InjectHook( getPad, getPadAndSetFlag );
 	}
 }
 

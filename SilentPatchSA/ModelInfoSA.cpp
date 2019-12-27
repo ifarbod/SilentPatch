@@ -17,8 +17,8 @@ bool (*CCustomCarPlateMgr::GeneratePlateText)(char* pBuf, int nLen); // Read fro
 
 CBaseModelInfo** const			ms_modelInfoPtrs = *AddressByVersion<CBaseModelInfo***>(0x509CB1, 0x4C0C96, 0x403DB7);
 
-int8_t* CVehicleModelInfo::ms_compsUsed = *AddressByVersion<int8_t**>( 0x4C973B + 2, 0, 0 );
-int8_t* CVehicleModelInfo::ms_compsToUse = *AddressByVersion<int8_t**>( 0x4C8057 + 2, 0, 0 );
+int8_t* CVehicleModelInfo::ms_compsUsed = *AddressByVersion<int8_t**>( 0x4C973B + 2, Memory::PatternAndOffset("8B CE A2 ? ? ? ? E8", 2 + 1) );
+int8_t* CVehicleModelInfo::ms_compsToUse = *AddressByVersion<int8_t**>( 0x4C8057 + 2, Memory::PatternAndOffset("0F BE C0 C6 05 ? ? ? ? FE 5E", 3 + 2) );
 
 
 static RwTexture** const		ms_aDirtTextures = *AddressByVersion<RwTexture***>( 0x5D5DCC + 3, 0, 0x5F259C + 3 );
