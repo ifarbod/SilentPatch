@@ -546,7 +546,7 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 			auto chopper1 = pattern( "C7 44 24 44 00 00 E0 40 50 C7 44 24 4C 00 00 00 00" );	// Front light
 			auto chopper2 = pattern( "C7 44 24 6C 00 00 10 C1 8D 44 24 5C C7 44 24 70 00 00 00 00" );	// Tail light
 
-			if ( chopper2.count_hint(1).size() == 1 )
+			if ( chopper1.count_hint(1).size() == 1 )
 			{
 				constexpr CVector CHOPPER_SEARCH_LIGHT_POS(0.0f, 3.0f, -1.0f);	// Same as in III Aircraft (not implemented there yet!)
 

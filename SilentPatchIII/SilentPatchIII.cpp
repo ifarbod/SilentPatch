@@ -596,6 +596,19 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 				Patch<float>( enforcerZ2.get_first( 7 ), ENFORCER_SIREN_POS.z );
 			}
 		}
+		{
+			auto chopper1 = pattern( "C7 44 24 44 00 00 E0 40 50 C7 44 24 4C 00 00 00 00" );	// Front light
+
+			if ( chopper1.count_hint(1).size() == 1 )
+			{
+				constexpr CVector CHOPPER_SEARCH_LIGHT_POS(0.0f, 3.0f, -1.25f);
+
+				auto match = chopper1.get_one();
+
+				Patch( match.get<float>( 4 ), CHOPPER_SEARCH_LIGHT_POS.y );
+				Patch( match.get<float>( 9 + 4 ), CHOPPER_SEARCH_LIGHT_POS.z );
+			}
+		}
 	}
 
 
