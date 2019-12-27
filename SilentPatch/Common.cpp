@@ -226,21 +226,6 @@ namespace Common {
 				}
 			}
 
-			// Corrected taxi light placement for Taxi
-			// TODO: INI entry
-			{
-				using namespace TaxiCoronaFix;
-
-				auto getTaxiLightPos = pattern( "E8 ? ? ? ? D9 84 24 ? ? ? ? D8 84 24 ? ? ? ? 83 C4 0C FF 35" );
-
-				if ( getTaxiLightPos.count_hint(1).size() == 1 )
-				{
-					auto match = getTaxiLightPos.get_one();
-					Patch<uint8_t>( match.get<void>( -15 ), 0x55 ); // push eax -> push ebp
-					InjectHook( match.get<void>(), GetTransformedCoronaPos );
-				}
-			}
-
 
 			// Reset requested extras if created vehicle has no extras
 			{
@@ -257,9 +242,25 @@ namespace Common {
 			DelayedPatches::Func = std::move(func);
 		}
 
-		void III_VC_DelayedCommon( bool /*hasDebugMenu*/, const wchar_t* /*iniPath*/ )
+		void III_VC_DelayedCommon( bool /*hasDebugMenu*/, const wchar_t* wcModulePath )
 		{
-		
+			using namespace Memory;
+			using namespace hook;
+
+			// Corrected taxi light placement for Taxi
+			if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableVehicleCoronaFixes", -1, wcModulePath) == 1 )
+			{
+				using namespace TaxiCoronaFix;
+
+				auto getTaxiLightPos = pattern( "E8 ? ? ? ? D9 84 24 ? ? ? ? D8 84 24 ? ? ? ? 83 C4 0C FF 35" );
+
+				if ( getTaxiLightPos.count_hint(1).size() == 1 )
+				{
+					auto match = getTaxiLightPos.get_one();
+					Patch<uint8_t>( match.get<void>( -15 ), 0x55 ); // push eax -> push ebp
+					InjectHook( match.get<void>(), GetTransformedCoronaPos );
+				}
+			}
 		}
 	}
 }

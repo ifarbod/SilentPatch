@@ -455,7 +455,7 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 
 	
 	// Corrected siren corona placement for emergency vehicles
-	// TODO: INI entry
+	if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableVehicleCoronaFixes", -1, wcModulePath) == 1 )
 	{
 		// Other mods might be touching it, so only patch specific vehicles if their code has not been touched at all
 		{
