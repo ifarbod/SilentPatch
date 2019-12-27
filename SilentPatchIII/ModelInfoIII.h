@@ -1,6 +1,81 @@
 #pragma once
 
 #include <cstdint>
+#include "Maths.h"
+
+// This really belongs in Maths.h but San Andreas optimized those structured heavily...
+struct CColSphere
+{
+	CVector m_center;
+	float m_radius;
+	uint8_t m_surface;
+	uint8_t m_piece;
+
+	void Set(float radius, const CVector& center, uint8_t surf, uint8_t piece)
+	{
+		m_center = center;
+		m_radius = radius;
+		m_surface = surf;
+		m_piece = piece;
+	}
+
+	void Set(float radius, const CVector& center)
+	{
+		m_center = center;
+		m_radius = radius;
+	}
+
+	constexpr CColSphere( float radius, const CVector& center, uint8_t surf, uint8_t piece )
+		: m_center( center ), m_radius( radius ), m_surface( surf ), m_piece( piece )
+	{
+	}
+};
+
+struct CColBox
+{
+	CVector m_min;
+	CVector m_max;
+	uint8_t m_surface;
+	uint8_t m_piece;
+
+	void Set(const CVector& min, const CVector& max, uint8_t surf, uint8_t piece)
+	{
+		m_min = min;
+		m_max = max;
+		m_surface = surf;
+		m_piece = piece;
+	}
+
+	CVector GetSize() const { return m_max - m_min; }
+
+	constexpr CColBox( const CVector& min, const CVector& max, uint8_t surf, uint8_t piece )
+		: m_min( min ), m_max( max ), m_surface( surf ), m_piece( piece )
+	{
+	}
+};
+
+struct CColModel
+{
+	CColSphere m_boundingSphere;
+	CColBox m_boundingBox;
+	short m_m_numSpheres = 0;
+	short m_numLines = 0;
+	short m_numBoxes = 0;
+	short m_numTriangles = 0;
+	int m_level = 0;
+	bool m_ownsCollisionVolumes = false;
+	CColSphere* m_spheres = nullptr;
+	struct CColLine* m_lines = nullptr;
+	CColBox* m_boxes = nullptr;
+	CVector* m_vertices = nullptr;
+	struct CColTriangle* m_triangles = nullptr;
+	struct CColTrianglePlane* m_trianglePlanes = nullptr;
+
+	constexpr CColModel( const CColSphere& sphere, const CColBox& box )
+		: m_boundingSphere( sphere ), m_boundingBox ( box )
+	{
+	}
+};
 
 class CSimpleModelInfo
 {
