@@ -2790,6 +2790,14 @@ BOOL InjectDelayedPatches_10()
 		{
 			Patch<DWORD>(0x70665C, 0x52909090);
 			InjectHook(0x706662, &CShadowCamera::Update);
+
+			// Disable alpha test for stored shadows
+			{
+				using namespace StaticShadowAlphaFix;
+
+				ReadCall( 0x53E0C8, orgRenderStoredShadows );
+				InjectHook( 0x53E0C8, RenderStoredShadows_StateFix );
+			}
 		}
 
 		// Bigger streamed entity linked lists
@@ -4226,8 +4234,7 @@ void Patch_SA_10()
 		ReadCall( 0x53E0C3, orgRenderStaticShadows );
 		InjectHook( 0x53E0C3, RenderStaticShadows_StateFix );
 
-		ReadCall( 0x53E0C8, orgRenderStoredShadows );
-		InjectHook( 0x53E0C8, RenderStoredShadows_StateFix );
+		// Stored shadows conflict with SSE and are patched only when it's not installed
 	}
 
 
