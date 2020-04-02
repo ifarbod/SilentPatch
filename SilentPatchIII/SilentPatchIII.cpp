@@ -1230,13 +1230,16 @@ void Patch_III_Common()
 
 	// Give chopper/escape a properly sized collision bounding box instead of using ped's
 	{
-		static constexpr CColModel colModelChopper( CColSphere( 8.5f, CVector(0.0f, -1.75f, 0.73f), 0, 0 ), 
-						CColBox( CVector(-2.18f, -8.52f, -0.67f), CVector(-2.18f, 4.58f, 2.125f), 0, 0 ) );
+		auto initHelisPattern = pattern( "C6 40 2C 00 A1" ).count_hint(1);
+		if ( initHelisPattern.size() == 1 )
+		{
+			static constexpr CColModel colModelChopper( CColSphere( 8.5f, CVector(0.0f, -1.75f, 0.73f), 0, 0 ), 
+							CColBox( CVector(-2.18f, -8.52f, -0.67f), CVector(-2.18f, 4.58f, 2.125f), 0, 0 ) );
 
-		auto initHelis = pattern( "C6 40 2C 00 A1" ).get_one();
-
-		Patch( initHelis.get<void>( -7 + 3 ), &colModelChopper );
-		Patch( initHelis.get<void>( 9 + 3 ), &colModelChopper );
+			auto initHelis = initHelisPattern.get_one();
+			Patch( initHelis.get<void>( -7 + 3 ), &colModelChopper );
+			Patch( initHelis.get<void>( 9 + 3 ), &colModelChopper );
+		}
 	}
 }
 
