@@ -1369,20 +1369,36 @@ TestFirelaAndFlags_UpdateMovingCollision:
 namespace HierarchyTypoFix
 {
 	// Allow wheel_lm vs wheel_lm_dummy and miscX vs misc_X typos
+	// Must be sorted by second parameter
 	constexpr std::pair<const char*, const char*> typosAndFixes[] = {
-		{ "wheel_lm_dummy", "wheel_lm" },
+		{ "boat_moving_hi", "boat_moving" },
 		{ "misc_a", "misca" },
 		{ "misc_b", "miscb" },
-		{ "boat_moving_hi", "boat_moving" },
+		{ "transmission_f", "transmision_f" },
+		{ "transmission_r", "transmision_r" },
+		{ "wheel_lm_dummy", "wheel_lm" },
 	};
 	int strcasecmp( const char* dataName, const char* nodeName )
 	{
+		/*assert( std::is_sorted(std::begin(typosAndFixes), std::end(typosAndFixes), [] (const auto& a, const auto& b) {
+			return _stricmp( a.second, b.second ) < 0;
+		}) );*/
+
+		const int origComp = _stricmp( dataName, nodeName );
+		if ( origComp == 0 ) return 0;
+
 		for ( const auto& typo : typosAndFixes )
 		{
-			if ( _stricmp( dataName, typo.first ) == 0 && _stricmp( nodeName, typo.second ) == 0 ) return 0;
+			const int nodeComp = _stricmp( typo.second, nodeName );
+			if ( nodeComp > 0 ) break;
+
+			if ( nodeComp == 0 && _stricmp( typo.first, dataName ) == 0 )
+			{
+				return 0;
+			}
 		}
 
-		return _stricmp( dataName, nodeName );
+		return origComp;
 	}
 
 }
