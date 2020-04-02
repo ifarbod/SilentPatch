@@ -4288,6 +4288,11 @@ void Patch_SA_10()
 	}
 
 
+	// Display stats in kg's as floats (they pass a float and intend to display an integer)
+	Patch<const char*>( 0x55A954 + 1, "%.0fkgs" );
+	Patch<const char*>( 0x5593E4 + 1, "%.0fkgs" );
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
