@@ -3736,13 +3736,11 @@ void Patch_SA_10()
 	// Bilinear filtering with mipmaps for weapon icons
 	Patch<BYTE>(0x58D7DA, rwFILTERMIPLINEAR);
 
-	// Illumination value from timecyc.dat properly using floats
+	// Directional multiplier value from timecyc.dat properly using floats
 	Patch<WORD>(0x5BBFC9, 0x14EB);
 
-	// Illumination defaults to 1.0
-	Patch<DWORD>(0x5BBB04, 0xCC2484C7);
-	Patch<DWORD>(0x5BBB08, 0x00000000);
-	Patch<DWORD>(0x5BBB0C, 0x903F8000);
+	// Directional multiplier defaults to 1.0f
+	Patch( 0x5BBB04, { 0xC7, 0x84, 0x24, 0xCC, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x3F, 0x90 } );
 
 	// All lights get casted at vehicles
 	Patch<BYTE>(0x5D9A88, 8);
