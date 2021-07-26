@@ -81,6 +81,9 @@
     <ClCompile Include="..\SilentPatch\SVF.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\SilentPatch\Desktop.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\SilentPatch\FLAC\callback.h">
@@ -177,6 +180,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\SilentPatch\SVF.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\Desktop.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

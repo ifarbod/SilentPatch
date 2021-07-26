@@ -25,6 +25,8 @@
 #include "Utils/DelimStringReader.h"
 #include "Utils/ModuleList.hpp"
 
+#include "Desktop.h"
+
 #include "debugmenu_public.h"
 #include "resource.h"
 
@@ -3759,13 +3761,15 @@ void Patch_SA_10()
 	Nop( 0x735881 + 11, 3 );
 
 	// Default resolution to native resolution
-	RECT			desktop;
-	GetWindowRect(GetDesktopWindow(), &desktop);
-	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+	const auto [width, height] = GetDesktopResolution();
+	sprintf_s(aNoDesktopMode, "Cannot find %ux%ux32 video mode", width, height);
 
-	Patch<DWORD>(0x746363, desktop.right);
-	Patch<DWORD>(0x746368, desktop.bottom);
-	Patch<const char*>(0x7463C8, aNoDesktopMode);
+	if (width != 0 && height != 0)
+	{
+		Patch<DWORD>(0x746363, width);
+		Patch<DWORD>(0x746368, height);
+		Patch<const char*>(0x7463C8, aNoDesktopMode);
+	}
 
 	// Corrected Map screen 1px issue
 	Patch<float>(0x575DE7, -0.5f);
@@ -4516,13 +4520,15 @@ void Patch_SA_11()
 	Nop( 0x7360B1 + 11, 3 );
 
 	// Default resolution to native resolution
-	RECT			desktop;
-	GetWindowRect(GetDesktopWindow(), &desktop);
-	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+	const auto [width, height] = GetDesktopResolution();
+	sprintf_s(aNoDesktopMode, "Cannot find %ux%ux32 video mode", width, height);
 
-	Patch<DWORD>(0x746BE3, desktop.right);
-	Patch<DWORD>(0x746BE8, desktop.bottom);
-	Patch<const char*>(0x746C48, aNoDesktopMode);
+	if (width != 0 && height != 0)
+	{
+		Patch<DWORD>(0x746BE3, width);
+		Patch<DWORD>(0x746BE8, height);
+		Patch<const char*>(0x746C48, aNoDesktopMode);
+	}
 
 	// Corrected Map screen 1px issue
 	Patch<float>(0x576357, -0.5f);
@@ -4825,13 +4831,15 @@ void Patch_SA_Steam()
 	Nop( 0x768046 + 16, 1 );
 
 	// Default resolution to native resolution
-	RECT			desktop;
-	GetWindowRect(GetDesktopWindow(), &desktop);
-	sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+	const auto [width, height] = GetDesktopResolution();
+	sprintf_s(aNoDesktopMode, "Cannot find %ux%ux32 video mode", width, height);
 
-	Patch<DWORD>(0x780219, desktop.right);
-	Patch<DWORD>(0x78021E, desktop.bottom);
-	Patch<const char*>(0x78027E, aNoDesktopMode);
+	if (width != 0 && height != 0)
+	{
+		Patch<DWORD>(0x780219, width);
+		Patch<DWORD>(0x78021E, height);
+		Patch<const char*>(0x78027E, aNoDesktopMode);
+	}
 
 	// Corrected Map screen 1px issue
 	/*Patch<float>(0x575DE7, -5.0f);

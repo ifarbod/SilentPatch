@@ -30,6 +30,9 @@
     <ClCompile Include="..\SilentPatch\Utils\Patterns.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
+    <ClCompile Include="..\SilentPatch\Desktop.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\SilentPatch\Common_ddraw.h">
@@ -40,6 +43,9 @@
     </ClInclude>
     <ClInclude Include="..\SilentPatch\Utils\Patterns.h">
       <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\SilentPatch\Desktop.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

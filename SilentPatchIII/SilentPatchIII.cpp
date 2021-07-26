@@ -5,6 +5,7 @@
 #include "Utils/Patterns.h"
 #include "Common.h"
 #include "Common_ddraw.h"
+#include "Desktop.h"
 #include "VehicleIII.h"
 #include "ModelInfoIII.h"
 
@@ -661,7 +662,7 @@ void InjectDelayedPatches_III_Common()
 }
 
 
-void Patch_III_10(const RECT& desktop)
+void Patch_III_10(uint32_t width, uint32_t height)
 {
 	using namespace Memory;
 
@@ -796,10 +797,10 @@ void Patch_III_10(const RECT& desktop)
 	}
 #endif
 
-	Common::Patches::DDraw_III_10( desktop, aNoDesktopMode );
+	Common::Patches::DDraw_III_10( width, height, aNoDesktopMode );
 }
 
-void Patch_III_11(const RECT& desktop)
+void Patch_III_11(uint32_t width, uint32_t height)
 {
 	using namespace Memory;
 
@@ -914,10 +915,10 @@ void Patch_III_11(const RECT& desktop)
 	// Fixed crash related to autopilot timing calculations
 	InjectHook(0x4139B2, AutoPilotTimerFix_III, PATCH_JUMP);
 
-	Common::Patches::DDraw_III_11( desktop, aNoDesktopMode );
+	Common::Patches::DDraw_III_11( width, height, aNoDesktopMode );
 }
 
-void Patch_III_Steam(const RECT& desktop)
+void Patch_III_Steam(uint32_t width, uint32_t height)
 {
 	using namespace Memory;
 
@@ -1019,7 +1020,7 @@ void Patch_III_Steam(const RECT& desktop)
 	// Fixed crash related to autopilot timing calculations
 	InjectHook(0x4139B2, AutoPilotTimerFix_III, PATCH_JUMP);
 
-	Common::Patches::DDraw_III_Steam( desktop, aNoDesktopMode );
+	Common::Patches::DDraw_III_Steam( width, height, aNoDesktopMode );
 }
 
 void Patch_III_Common()
@@ -1252,18 +1253,17 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	{
 		hDLLModule = hinstDLL;
 
-		RECT			desktop;
-		GetWindowRect(GetDesktopWindow(), &desktop);
-		sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+		const auto [width, height] = GetDesktopResolution();
+		sprintf_s(aNoDesktopMode, "Cannot find %ux%ux32 video mode", width, height);
 
 		// This scope is mandatory so Protect goes out of scope before rwcseg gets fixed
 		{
 			std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( GetModuleHandle( nullptr ), ".text" );
 
 			const int8_t version = Memory::GetVersion().version;
-			if ( version == 0 ) Patch_III_10(desktop);
-			else if ( version == 1 ) Patch_III_11(desktop);
-			else if ( version == 2 ) Patch_III_Steam(desktop);
+			if ( version == 0 ) Patch_III_10(width, height);
+			else if ( version == 1 ) Patch_III_11(width, height);
+			else if ( version == 2 ) Patch_III_Steam(width, height);
 
 			Patch_III_Common();
 			Common::Patches::III_VC_Common();

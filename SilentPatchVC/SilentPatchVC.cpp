@@ -5,6 +5,7 @@
 #include "Utils/Patterns.h"
 #include "Common.h"
 #include "Common_ddraw.h"
+#include "Desktop.h"
 #include "ModelInfoVC.h"
 #include "VehicleVC.h"
 #include "SVF.h"
@@ -610,7 +611,7 @@ void InjectDelayedPatches_VC_Common()
 	Common::Patches::III_VC_DelayedCommon( hasDebugMenu, wcModulePath );
 }
 
-void Patch_VC_10(const RECT& desktop)
+void Patch_VC_10(uint32_t width, uint32_t height)
 {
 	using namespace Memory;
 
@@ -714,10 +715,10 @@ void Patch_VC_10(const RECT& desktop)
 	}
 #endif
 
-	Common::Patches::DDraw_VC_10( desktop, aNoDesktopMode );
+	Common::Patches::DDraw_VC_10( width, height, aNoDesktopMode );
 }
 
-void Patch_VC_11(const RECT& desktop)
+void Patch_VC_11(uint32_t width, uint32_t height)
 {
 	using namespace Memory;
 
@@ -811,10 +812,10 @@ void Patch_VC_11(const RECT& desktop)
 	// Fixed crash related to autopilot timing calculations
 	InjectHook(0x418FAE, AutoPilotTimerFix_VC, PATCH_JUMP);
 
-	Common::Patches::DDraw_VC_11( desktop, aNoDesktopMode );
+	Common::Patches::DDraw_VC_11( width, height, aNoDesktopMode );
 }
 
-void Patch_VC_Steam(const RECT& desktop)
+void Patch_VC_Steam(uint32_t width, uint32_t height)
 {
 	using namespace Memory;
 
@@ -907,7 +908,7 @@ void Patch_VC_Steam(const RECT& desktop)
 	// Fixed crash related to autopilot timing calculations
 	InjectHook(0x418FAE, AutoPilotTimerFix_VC, PATCH_JUMP);
 
-	Common::Patches::DDraw_VC_Steam( desktop, aNoDesktopMode );
+	Common::Patches::DDraw_VC_Steam( width, height, aNoDesktopMode );
 }
 
 void Patch_VC_JP()
@@ -1154,18 +1155,17 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	{
 		hDLLModule = hinstDLL;
 
-		RECT			desktop;
-		GetWindowRect(GetDesktopWindow(), &desktop);
-		sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
+		const auto [width, height] = GetDesktopResolution();
+		sprintf_s(aNoDesktopMode, "Cannot find %ux%ux32 video mode", width, height);
 
 		// This scope is mandatory so Protect goes out of scope before rwcseg gets fixed
 		{
 			std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( GetModuleHandle( nullptr ), ".text" );
 
 			const int8_t version = Memory::GetVersion().version;
-			if ( version == 0 ) Patch_VC_10(desktop);
-			else if ( version == 1 ) Patch_VC_11(desktop);
-			else if ( version == 2 ) Patch_VC_Steam(desktop);
+			if ( version == 0 ) Patch_VC_10(width, height);
+			else if ( version == 1 ) Patch_VC_11(width, height);
+			else if ( version == 2 ) Patch_VC_Steam(width, height);
 
 			// Y axis sensitivity only
 			else if (*(DWORD*)0x601048 == 0x5E5F5D60) Patch_VC_JP();
