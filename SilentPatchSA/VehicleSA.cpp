@@ -101,6 +101,11 @@ bool CVehicle::IgnoresRotorFix() const
 	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::_INTERNAL_NO_ROTOR_FADE );
 }
 
+bool CVehicle::IsOpenTopCarOrQuadbike() const
+{
+	return IsOpenTopCar() || m_dwVehicleSubClass == VEHICLE_QUAD;
+}
+
 static void*	varVehicleRender = AddressByVersion<void*>(0x6D0E60, 0x6D1680, 0x70C0B0);
 WRAPPER void CVehicle::Render() { VARJMP(varVehicleRender); }
 static void*	varIsLawEnforcementVehicle = AddressByVersion<void*>(0x6D2370, 0x6D2BA0, 0x70D8C0);

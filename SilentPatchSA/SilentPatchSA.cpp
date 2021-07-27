@@ -4295,6 +4295,12 @@ void Patch_SA_10()
 	Patch<const char*>( 0x5593E4 + 1, "%.0fkgs" );
 
 
+	// Add wind animations when driving a Quadbike
+	// By Wesser
+	InjectHook(0x5E69BC, &CVehicle::IsOpenTopCarOrQuadbike, PATCH_CALL);
+	Nop(0x5E69BC + 5, 3);
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -5796,6 +5802,17 @@ void Patch_SA_NewBinaries_Common()
 
 		ReadCall( getPad, orgGetPad );
 		InjectHook( getPad, getPadAndSetFlag );
+	}
+
+
+	// Add wind animations when driving a Quadbike
+	// By Wesser
+	{
+		auto isOpenTopCar = pattern("8B 11 8B 82 9C 00 00 00 FF D0").get_one();
+
+		InjectHook(isOpenTopCar.get<void>(), &CVehicle::IsOpenTopCarOrQuadbike, PATCH_CALL);
+		Nop(isOpenTopCar.get<void>(5), 5);
+
 	}
 }
 

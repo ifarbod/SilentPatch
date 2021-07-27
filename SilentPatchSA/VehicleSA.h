@@ -221,7 +221,7 @@ public:
 	virtual bool IsDoorMissing(unsigned int door);
 	virtual bool IsDoorMissing(eDoors door);
 	// check if car has roof as extra
-	virtual bool IsOpenTopCar();
+	virtual bool IsOpenTopCar() const;
 	// remove ref to this entity
 	virtual void RemoveRefsToVehicle(CEntity* entity);
 	virtual void BlowUpCar(CEntity* damager, unsigned char bHideExplosion);
@@ -278,6 +278,8 @@ public:
 	static inline int8_t ms_lightbeamFixOverride = 0, ms_rotorFixOverride = 0; // 0 - normal, 1 - always on, -1 - always off
 	bool				IgnoresLightbeamFix() const;
 	bool				IgnoresRotorFix() const;
+
+	bool IsOpenTopCarOrQuadbike() const;
 
 	void DoHeadLightBeam( int type, CMatrix& m, bool right )
 	{
