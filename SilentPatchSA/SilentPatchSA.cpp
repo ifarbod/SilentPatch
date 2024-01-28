@@ -1702,6 +1702,76 @@ namespace FollowCarMouseCamFix
 	}
 };
 
+// ======= Tie handlebar movement to the stering animations on Quadbike, fixes odd animation interpolations at low speeds =======
+namespace QuadbikeHandlebarAnims
+{
+	static const float POW_CONSTANT = 0.86f;
+	static const float SLOW_SPEED_THRESHOLD = 0.02f;
+	__declspec(naked) void ProcessRiderAnims_FixInterp()
+	{
+		_asm
+		{
+			xor		edx, edx
+			cmp     [esp+130h-100h], edx // Reverse animation
+			jne		FuncSetToZero
+			cmp     [esp+130h-0F8h], edx // Drive-by animation
+			jne		FuncSetToZero
+			fld     dword ptr [esp+130h-108h]
+			fabs
+			fcomp	[SLOW_SPEED_THRESHOLD]
+			fnstsw  ax
+			test    ah, 5
+			jp		FuncReturn
+
+		FuncSetToZero:
+			mov		[esp+130h-118h], edx
+
+		FuncReturn:
+			fld		[POW_CONSTANT]
+			retn
+		}
+	}
+
+	static uint32_t savedClumpAssociation;
+	__declspec(naked) void SaveDriveByAnim_Steam()
+	{
+		_asm
+		{
+			mov		eax, [ebp-14h]
+			mov		[savedClumpAssociation], eax
+			fdiv    dword ptr [ecx+18h]
+			fstp	[ebp-14h]
+			retn
+		}
+	}
+
+	__declspec(naked) void ProcessRiderAnims_FixInterp_Steam()
+	{
+		_asm
+		{
+			xor		edx, edx
+			cmp		[ebp-28h], edx // Reverse animation
+			jne		FuncSetToZero
+			cmp		[savedClumpAssociation], edx // Drive-by animation
+			jne		FuncSetToZero
+			fld     dword ptr [ebp-24h]
+			fabs
+			fcomp	[SLOW_SPEED_THRESHOLD]
+			fnstsw  ax
+			test    ah, 5
+			jp		FuncReturn
+
+		FuncSetToZero:
+			mov		[ebp-14h], edx
+
+		FuncReturn:
+			fld		[POW_CONSTANT]
+			retn
+		}
+	}
+
+}
+
 
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
@@ -4301,6 +4371,12 @@ void Patch_SA_10()
 	Nop(0x5E69BC + 5, 3);
 
 
+	// Tie handlebar movement to the stering animations on Quadbike, fixes odd animation interpolations at low speeds
+	// By Wesser
+	Nop(0x6B7932, 1);
+	InjectHook(0x6B7932+1, &QuadbikeHandlebarAnims::ProcessRiderAnims_FixInterp, PATCH_CALL);
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -5813,6 +5889,21 @@ void Patch_SA_NewBinaries_Common()
 		InjectHook(isOpenTopCar.get<void>(), &CVehicle::IsOpenTopCarOrQuadbike, PATCH_CALL);
 		Nop(isOpenTopCar.get<void>(5), 5);
 
+	}
+
+
+	// Tie handlebar movement to the stering animations on Quadbike, fixes odd animation interpolations at low speeds
+	// By Wesser
+	{
+		auto processRiderAnims = pattern("DD 05 ? ? ? ? D9 05 ? ? ? ? E8 ? ? ? ? D9 5D F0 80 7D 0B 00").get_one();
+		// Compiler reordered variables compared to the older versions, so they need to be preserved
+		auto saveDriveByAnim = pattern("D8 71 18 D9 5D EC").get_one();
+
+		Nop(processRiderAnims.get<void>(), 1);
+		InjectHook(processRiderAnims.get<void>(1), &QuadbikeHandlebarAnims::ProcessRiderAnims_FixInterp_Steam, PATCH_CALL);
+
+		Nop(saveDriveByAnim.get<void>(), 1);
+		InjectHook(saveDriveByAnim.get<void>(1), &QuadbikeHandlebarAnims::SaveDriveByAnim_Steam, PATCH_CALL);
 	}
 }
 
