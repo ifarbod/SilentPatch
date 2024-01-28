@@ -1789,6 +1789,59 @@ namespace UprightBoatRadioStationChange
 	}
 };
 
+
+// ============= Fix a memory leak when taking photos =============
+namespace CameraMemoryLeakFix
+{
+	__declspec(naked) void psGrabScreen_UnlockAndReleaseSurface()
+	{
+		_asm
+		{
+			// Preserve the function result so we don't need two ASM hooks
+			push	eax
+
+			mov		eax, [esp+34h-2Ch]
+			mov		edx, [eax]
+			push	eax
+			call	dword ptr [edx+38h] // IDirect3DSurface9.UnlockRect
+
+			mov		eax, [esp+34h-2Ch]
+			mov		edx, [eax]
+			push	eax
+			call	dword ptr [edx+8h] // IDirect3DSurface9.Release
+
+			pop		eax
+			pop		ebp
+			add		esp, 2Ch
+			retn
+		}
+	}
+
+	__declspec(naked) void psGrabScreen_UnlockAndReleaseSurface_Steam()
+	{
+		_asm
+		{
+			// Preserve the function result so we don't need two ASM hooks
+			push	eax
+
+			mov		eax, [ebp-4]
+			mov		edx, [eax]
+			push	eax
+			call	dword ptr [edx+38h] // IDirect3DSurface9.UnlockRect
+
+			mov		eax, [ebp-4]
+			mov		edx, [eax]
+			push	eax
+			call	dword ptr [edx+8h] // IDirect3DSurface9.Release
+
+			pop		eax
+			pop		esi
+			mov		esp, ebp
+			pop		ebp
+			retn
+		}
+	}
+}
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -4402,6 +4455,15 @@ void Patch_SA_10()
 	}
 
 
+	// Fix a memory leak when taking photos
+	{
+		using namespace CameraMemoryLeakFix;
+
+		InjectHook(0x7453CE, psGrabScreen_UnlockAndReleaseSurface, HookType::Jump);
+		InjectHook(0x7453D6, psGrabScreen_UnlockAndReleaseSurface, HookType::Jump);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -5939,6 +6001,17 @@ void Patch_SA_NewBinaries_Common()
 
 		auto blendAnimation = get_pattern("E8 ? ? ? ? 83 C4 10 85 C0 0F 85 ? ? ? ? D9 47 48");
 		InterceptCall(blendAnimation, orgAnimManagerBlendAnimation, AnimManagerBlendAnimation_SkipIfBoatDrive);
+	}
+
+
+	// Fix a memory leak when taking photos
+	{
+		using namespace CameraMemoryLeakFix;
+
+		auto psGrabScreen = pattern("8B C6 5E 8B E5 5D C3 33 C0").get_one();
+
+		InjectHook(psGrabScreen.get<void>(2), psGrabScreen_UnlockAndReleaseSurface_Steam, HookType::Jump);
+		InjectHook(psGrabScreen.get<void>(7 + 2), psGrabScreen_UnlockAndReleaseSurface_Steam, HookType::Jump);
 	}
 }
 
