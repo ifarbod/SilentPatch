@@ -1,8 +1,6 @@
 #include "StdAfxSA.h"
 #include "ModelInfoSA.h"
 
-#include <iterator>
-
 static void* BaseModelInfoShutdown = AddressByVersion<void*>(0x4C4D50, 0x4C4DD0, 0x4CF590);
 WRAPPER void CBaseModelInfo::Shutdown() { VARJMP(BaseModelInfoShutdown); }
 
@@ -80,7 +78,7 @@ void CVehicleModelInfo::FindEditableMaterialList()
 	if ( m_numDirtMaterials > IN_PLACE_BUFFER_DIRT_SIZE )
 	{
 		m_dirtMaterials = new RpMaterial* [m_numDirtMaterials];
-		std::copy( editableMaterials.begin(), editableMaterials.end(), stdext::make_checked_array_iterator(m_dirtMaterials, m_numDirtMaterials) );
+		std::copy( editableMaterials.begin(), editableMaterials.end(), m_dirtMaterials );
 	}
 	else
 	{

@@ -2,7 +2,6 @@
 #define __POOLS
 
 #include <cstdint>
-#include <iterator>
 
 template <class T, class U = T>
 class CPool

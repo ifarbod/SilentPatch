@@ -1,7 +1,6 @@
 #include "StdAfxSA.h"
 #include "FLACDecoderSA.h"
 #include <algorithm>
-#include <iterator>
 
 FLAC__StreamDecoderReadStatus CAEFLACDecoder::read_cb(const FLAC__StreamDecoder* decoder, FLAC__byte buffer[], size_t* bytes, void* client_data)
 {
@@ -44,7 +43,7 @@ FLAC__StreamDecoderWriteStatus CAEFLACDecoder::write_cb(const FLAC__StreamDecode
 		pClientData->m_maxBlockSize = pClientData->m_curBlockSize;
 	}
 	
-	auto it = std::copy_n( buffer[0], pClientData->m_curBlockSize, stdext::make_checked_array_iterator(pClientData->m_buffer, pClientData->m_curBlockSize * processedChannels) );
+	auto it = std::copy_n( buffer[0], pClientData->m_curBlockSize, pClientData->m_buffer );
 	if ( processedChannels > 1 )
 	{
 		std::copy_n( buffer[1], pClientData->m_curBlockSize, it );
