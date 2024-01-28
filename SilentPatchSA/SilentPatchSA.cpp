@@ -325,6 +325,8 @@ CRGBA*					HudColour = *AddressByVersion<CRGBA**>(0x58ADF6, 0x58B5C6, 0x440648);
 CLinkListSA<CPed*>&			ms_weaponPedsForPC = **AddressByVersion<CLinkListSA<CPed*>**>(0x53EACA, 0x53EF6A, 0x551101);
 CLinkListSA<AlphaObjectInfo>&	m_alphaList = **AddressByVersion<CLinkListSA<AlphaObjectInfo>**>(0x733A4D, 0x73427D, 0x76DCA3);
 
+uint32_t&				bDrawCrossHair = **AddressByVersion<uint32_t**>(0x58E7BF + 2, {"83 3D ? ? ? ? ? 74 29", 2});
+
 DebugMenuAPI gDebugMenuAPI;
 
 
@@ -1842,6 +1844,18 @@ namespace CameraMemoryLeakFix
 		}
 	}
 }
+
+
+// ============= Fix crosshair issues when sniper rifle is quipped and a photo is taken by a gang member =============
+namespace CameraCrosshairFix
+{
+	CWeaponInfo* (*orgGetWeaponInfo)(eWeaponType, signed char);
+	CWeaponInfo* GetWeaponInfo_OrCamera(eWeaponType weaponType, signed char type)
+	{
+		return orgGetWeaponInfo(bDrawCrossHair != 2 ? weaponType : WEAPONTYPE_CAMERA, type);
+	}
+}
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -4464,6 +4478,15 @@ void Patch_SA_10()
 	}
 
 
+	// Fix crosshair issues when sniper rifle is quipped and a photo is taken by a gang member
+	// By Wesser
+	{
+		using namespace CameraCrosshairFix;
+
+		InterceptCall(0x58E842, orgGetWeaponInfo, GetWeaponInfo_OrCamera);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6012,6 +6035,16 @@ void Patch_SA_NewBinaries_Common()
 
 		InjectHook(psGrabScreen.get<void>(2), psGrabScreen_UnlockAndReleaseSurface_Steam, HookType::Jump);
 		InjectHook(psGrabScreen.get<void>(7 + 2), psGrabScreen_UnlockAndReleaseSurface_Steam, HookType::Jump);
+	}
+
+
+	// Fix crosshair issues when sniper rifle is quipped and a photo is taken by a gang member
+	// By Wesser
+	{
+		using namespace CameraCrosshairFix;
+
+		auto getWeaponInfo = get_pattern("E8 ? ? ? ? 8B 40 0C 83 C4 08 85 C0");
+		InterceptCall(getWeaponInfo, orgGetWeaponInfo, GetWeaponInfo_OrCamera);
 	}
 }
 
