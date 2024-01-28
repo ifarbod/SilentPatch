@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\FLAC">
-      <UniqueIdentifier>{57615a2f-8bc4-461f-b9f6-86d5f8286d7a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\decoders">
       <UniqueIdentifier>{f4ecbe23-228b-461b-b37f-d718e7ca92ae}</UniqueIdentifier>
     </Filter>
@@ -86,24 +83,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\SilentPatch\FLAC\callback.h">
-      <Filter>Header Files\FLAC</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SilentPatch\FLAC\export.h">
-      <Filter>Header Files\FLAC</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SilentPatch\FLAC\format.h">
-      <Filter>Header Files\FLAC</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SilentPatch\FLAC\metadata.h">
-      <Filter>Header Files\FLAC</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SilentPatch\FLAC\ordinals.h">
-      <Filter>Header Files\FLAC</Filter>
-    </ClInclude>
-    <ClInclude Include="..\SilentPatch\FLAC\stream_decoder.h">
-      <Filter>Header Files\FLAC</Filter>
-    </ClInclude>
     <ClInclude Include="StdAfxSA.h">
       <Filter>Header Files</Filter>
     </ClInclude>

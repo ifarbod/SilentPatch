@@ -3,12 +3,6 @@
 #include <algorithm>
 #include <iterator>
 
-#ifdef _DEBUG
-#pragma comment(lib, "libFLAC_static_d.lib")
-#else
-#pragma comment(lib, "libFLAC_static.lib")
-#endif
-
 FLAC__StreamDecoderReadStatus CAEFLACDecoder::read_cb(const FLAC__StreamDecoder* decoder, FLAC__byte buffer[], size_t* bytes, void* client_data)
 {
 	UNREFERENCED_PARAMETER(decoder);

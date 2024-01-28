@@ -1,11 +1,6 @@
 #ifndef __AUDIOHARDWARE
 #define __AUDIOHARDWARE
 
-// libflac
-#define FLAC__NO_DLL
-#include "FLAC\stream_decoder.h"
-#include "FLAC\metadata.h"
-
 // IStream
 #include <Objidl.h>
 
