@@ -48,9 +48,6 @@ void CVehicleModelInfo::Shutdown()
 
 	delete[] m_dirtMaterials;
 	m_dirtMaterials = nullptr;
-
-	delete m_apPlateMaterials;
-	m_apPlateMaterials = nullptr;
 }
 
 void CVehicleModelInfo::FindEditableMaterialList()
@@ -103,10 +100,6 @@ void CVehicleModelInfo::SetCarCustomPlate()
 {
 	m_plateText[0] = '\0';
 	m_nPlateType = -1;
-
-	m_apPlateMaterials = new PlateMaterialsData;
-	
-	CCustomCarPlateMgr::SetupClump(reinterpret_cast<RpClump*>(pRwObject), m_apPlateMaterials);
 }
 
 void CVehicleModelInfo::ResetCompsForNoExtras()
@@ -115,59 +108,7 @@ void CVehicleModelInfo::ResetCompsForNoExtras()
 	ms_compsToUse[0] = ms_compsToUse[1] = -2;
 }
 
-void CCustomCarPlateMgr::PollPlates( RpClump* clump, PlateMaterialsData* materials )
-{
-	std::vector<RpMaterial*> carplates;
-	std::vector<RpMaterial*> carpbacks;
-
-	RpClumpForAllAtomics( clump, [&] ( RpAtomic* atomic ) -> RpAtomic* {
-		RpGeometryForAllMaterials( RpAtomicGetGeometry(atomic), [&] ( RpMaterial* material ) -> RpMaterial* {
-			if ( RwTexture* texture = RpMaterialGetTexture(material) )
-			{
-				if ( const char* texName = RwTextureGetName(texture) )
-				{
-					if ( strcmp( texName, "carplate" ) == 0 )
-					{
-						carplates.push_back( material );
-					}
-					else if ( strcmp( texName, "carpback" ) == 0 )
-					{
-						carpbacks.push_back( material );
-					}
-				}
-			}
-
-			return material;
-		} );
-		return atomic;
-	} );
-
-	materials->m_numPlates = carplates.size();
-	materials->m_numPlatebacks = carpbacks.size();
-
-	if ( materials->m_numPlates > 0 )
-	{
-		materials->m_plates = new RpMaterial* [materials->m_numPlates];
-		std::copy( carplates.begin(), carplates.end(), stdext::make_checked_array_iterator(materials->m_plates, materials->m_numPlates) );
-	}
-
-	if ( materials->m_numPlatebacks > 0 )
-	{
-		materials->m_platebacks = new RpMaterial* [materials->m_numPlatebacks];
-		std::copy( carpbacks.begin(), carpbacks.end(), stdext::make_checked_array_iterator(materials->m_platebacks, materials->m_numPlatebacks) );
-	}
-}
-
-void CCustomCarPlateMgr::SetupClump(RpClump* pClump, PlateMaterialsData* pMatsArray)
-{
-	PollPlates( pClump, pMatsArray );
-}
-
-void CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade(RpClump* pClump, PlateMaterialsData* pMatsArray, signed char nDesign)
+void CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade(RpClump* pClump, void* /*unused*/, signed char nDesign)
 {
 	UNREFERENCED_PARAMETER(nDesign);
-	if ( pMatsArray != nullptr )
-	{
-		PollPlates( pClump, pMatsArray );
-	}
 }

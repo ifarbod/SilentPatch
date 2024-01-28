@@ -260,7 +260,7 @@ public:
 
 	bool			CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo);
 	void			CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo);
-	//void			CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo);
+	void			CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo);
 
 	bool			HasFirelaLadder() const;
 	void*			PlayPedHitSample_GetColModel();

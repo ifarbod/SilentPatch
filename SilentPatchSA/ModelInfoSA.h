@@ -222,27 +222,14 @@ public:
 	virtual void					SetClump(RpClump* pClump);
 };
 
-struct PlateMaterialsData // Added in SilentPatch
-{
-	RpMaterial** m_plates = nullptr;
-	RpMaterial** m_platebacks = nullptr;
-
-	size_t m_numPlates = 0;
-	size_t m_numPlatebacks = 0;
-
-	~PlateMaterialsData()
-	{
-		delete[] m_plates;
-		delete[] m_platebacks;
-	}
-};
-
 class NOVMT CVehicleModelInfo : public CClumpModelInfo
 {
 public:
 	static const size_t		PLATE_TEXT_LEN = 8;
 
-	PlateMaterialsData*		m_apPlateMaterials;		// Changed in SilentPatch
+	// m_pCustomPlateMaterial in the stock game, m_apPlateMaterials in older SilentPatch,
+	// now entirely deprecated. Points to a dummy variable just to satisfy some existing null checks
+	void*					__removedInSilentPatch;
 	char					m_plateText[PLATE_TEXT_LEN];
 	char					field_30;
 	signed char				m_nPlateType;
@@ -344,11 +331,7 @@ public:
 	static signed char		(*GetMapRegionPlateDesign)();
 	static void				(*SetupMaterialPlatebackTexture)(RpMaterial* pMaterial, signed char nDesign);
 
-	static void				SetupClump(RpClump* pClump, PlateMaterialsData* pMatsArray);
-	static void				SetupClumpAfterVehicleUpgrade(RpClump* pClump, PlateMaterialsData* pMatsArray, signed char nDesign);
-
-private:
-	static void				PollPlates( RpClump* clump, PlateMaterialsData* materials );
+	static void				SetupClumpAfterVehicleUpgrade(RpClump* pClump, void* /*unused*/, signed char nDesign);
 };
 
 static_assert(sizeof(CBaseModelInfo) == 0x20, "Wrong size: CBaseModelInfo");

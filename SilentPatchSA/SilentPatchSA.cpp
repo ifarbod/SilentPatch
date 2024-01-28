@@ -919,7 +919,11 @@ CVehicleModelInfo* (__thiscall *orgVehicleModelInfoCtor)(CVehicleModelInfo*);
 CVehicleModelInfo* __fastcall VehicleModelInfoCtor(CVehicleModelInfo* me)
 {
 	orgVehicleModelInfoCtor(me);
-	me->m_apPlateMaterials = nullptr;
+	
+	// Hack to satisfy some null checks
+	static uintptr_t DUMMY;
+	me->__removedInSilentPatch = &DUMMY;
+
 	me->m_dirtMaterials = nullptr;
 	me->m_numDirtMaterials = 0;
 	std::fill( std::begin( me->m_staticDirtMaterials ), std::end( me->m_staticDirtMaterials ), nullptr );
@@ -2947,13 +2951,13 @@ BOOL InjectDelayedPatches_10()
 			// Properly random numberplates
 			DWORD*		pVMT = *(DWORD**)0x4C75FC;
 			Patch(&pVMT[7], &CVehicleModelInfo::Shutdown_Stub);
-			Patch<BYTE>(0x6D0E43, 0xEB);
 			InjectHook(0x4C9660, &CVehicleModelInfo::SetCarCustomPlate);
 			InjectHook(0x6D6A58, &CVehicle::CustomCarPlate_TextureCreate);
 			InjectHook(0x6D651C, &CVehicle::CustomCarPlate_BeforeRenderingStart);
 			InjectHook(0x6FDFE0, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, HookType::Jump);
-			//InjectMethodVP(0x6D0E53, CVehicle::CustomCarPlate_AfterRenderingStop, PATCH_NOTHING);
+			InjectHook(0x6D0E53, &CVehicle::CustomCarPlate_AfterRenderingStop);
 			Nop(0x6D6517, 2);
+			Nop(0x6D0E43, 2);
 		}
 
 		// SSE conflicts
@@ -3383,7 +3387,6 @@ BOOL InjectDelayedPatches_11()
 			// Properly random numberplates
 			DWORD*		pVMT = *(DWORD**)0x4C767C;
 			Patch(&pVMT[7], &CVehicleModelInfo::Shutdown_Stub);
-			Patch<BYTE>(0x6D1663, 0xEB);
 			InjectHook(0x4C984D, &CVehicleModelInfo::SetCarCustomPlate);
 			InjectHook(0x6D7288, &CVehicle::CustomCarPlate_TextureCreate);
 			InjectHook(0x6D6D4C, &CVehicle::CustomCarPlate_BeforeRenderingStart);
@@ -3560,12 +3563,10 @@ BOOL InjectDelayedPatches_Steam()
 			// Properly random numberplates
 			DWORD*		pVMT = *(DWORD**)0x4D1E9A;
 			Patch(&pVMT[7], &CVehicleModelInfo::Shutdown_Stub);
-			Patch<BYTE>(0x70C094, 0xEB);
 			InjectHook(0x4D3F65, &CVehicleModelInfo::SetCarCustomPlate);
 			InjectHook(0x711F28, &CVehicle::CustomCarPlate_TextureCreate);
 			InjectHook(0x71194D, &CVehicle::CustomCarPlate_BeforeRenderingStart);
 			InjectHook(0x736BD0, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, HookType::Jump);
-			//InjectMethodVP(0x6D0E53, CVehicle::CustomCarPlate_AfterRenderingStop, PATCH_NOTHING);
 			Nop(0x711948, 2);
 		}
 

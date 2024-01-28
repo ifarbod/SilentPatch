@@ -297,17 +297,41 @@ bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
 	return true;
 }
 
+static std::vector<std::pair<RpMaterial*, RwTexture*>> originalPlateMaterials;
 void CVehicle::CustomCarPlate_BeforeRenderingStart(CVehicleModelInfo* pModelInfo)
 {
-	for ( size_t i = 0; i < pModelInfo->m_apPlateMaterials->m_numPlates; i++ )
-	{
-		RpMaterialSetTexture(pModelInfo->m_apPlateMaterials->m_plates[i], PlateTexture);
-	}
+	RpClumpForAllAtomics(reinterpret_cast<RpClump*>(m_pRwObject), [&] (RpAtomic* atomic) -> RpAtomic* {
+		RpGeometryForAllMaterials(RpAtomicGetGeometry(atomic), [&] (RpMaterial* material) -> RpMaterial* {
+			if ( RwTexture* texture = RpMaterialGetTexture(material) )
+			{
+				if ( const char* texName = RwTextureGetName(texture) )
+				{
+					if ( strcmp( texName, "carplate" ) == 0 )
+					{
+						originalPlateMaterials.emplace_back(material, texture);
+						RpMaterialSetTexture(material, PlateTexture);
+					}
+					else if ( strcmp( texName, "carpback" ) == 0 )
+					{
+						originalPlateMaterials.emplace_back(material, texture);
+						CCustomCarPlateMgr::SetupMaterialPlatebackTexture(material, PlateDesign);
+					}
+				}
+			}
 
-	for ( size_t i = 0; i < pModelInfo->m_apPlateMaterials->m_numPlatebacks; i++ )
+			return material;
+		} );
+		return atomic;
+	} );
+}
+
+void CVehicle::CustomCarPlate_AfterRenderingStop(CVehicleModelInfo* pModelInfo)
+{
+ 	for (const auto& platesToRestore : originalPlateMaterials)
 	{
-		CCustomCarPlateMgr::SetupMaterialPlatebackTexture(pModelInfo->m_apPlateMaterials->m_platebacks[i], PlateDesign);
+		RpMaterialSetTexture(platesToRestore.first, platesToRestore.second);
 	}
+	originalPlateMaterials.clear();
 }
 
 void CVehicle::SetComponentRotation( RwFrame* component, eRotAxis axis, float angle, bool absolute )
