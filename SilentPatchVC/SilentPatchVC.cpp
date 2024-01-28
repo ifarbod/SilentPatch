@@ -2,7 +2,6 @@
 
 #include "Maths.h"
 #include "Timer.h"
-#include "Utils/Patterns.h"
 #include "Common.h"
 #include "Common_ddraw.h"
 #include "Desktop.h"
@@ -12,6 +11,9 @@
 
 #include <memory>
 #include <Shlwapi.h>
+
+#include "Utils/Patterns.h"
+#include "Utils/ScopedUnprotect.hpp"
 
 #include "debugmenu_public.h"
 
@@ -582,7 +584,7 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 					auto matchSiren = hasFBISiren.get_one();
 
 					Patch<uint8_t>( matchSiren.get<void>(), 0x55 ); // push ebp
-					InjectHook( matchSiren.get<void>( 1 ), SetUpFBISiren, PATCH_CALL );
+					InjectHook( matchSiren.get<void>( 1 ), SetUpFBISiren, HookType::Call );
 					Patch( matchSiren.get<void>( 1 + 5 ), { 0x83, 0xC4, 0x04, 0x84, 0xC0, 0x90 } ); // add esp, 4 / test al, al / nop
 
 					InjectHook( match.get<void>( 0x19 ), SetUpVector );
@@ -623,9 +625,9 @@ void Patch_VC_10(uint32_t width, uint32_t height)
 
 	InjectHook(0x5433BD, FixedRefValue);
 
-	InjectHook(0x42BFF7, RosiesAudioFix, PATCH_JUMP);
+	InjectHook(0x42BFF7, RosiesAudioFix, HookType::Jump);
 
-	InjectHook(0x5516FC, SubtitlesShadowFix, PATCH_JUMP);
+	InjectHook(0x5516FC, SubtitlesShadowFix, HookType::Jump);
 	Patch<BYTE>(0x5517C4, 0xD9);
 	Patch<BYTE>(0x5517DF, 0xD9);
 	Patch<BYTE>(0x551832, 0xD9);
@@ -696,14 +698,14 @@ void Patch_VC_10(uint32_t width, uint32_t height)
 
 
 	// Reinit free resprays flag
-	InjectHook(0x4349BB, GaragesInit_SilentPatch, PATCH_JUMP);
+	InjectHook(0x4349BB, GaragesInit_SilentPatch, HookType::Jump);
 
 	// Fixed ammo for melee weapons in cheats
 	Patch<BYTE>(0x4AED14+1, 1); // katana
 	Patch<BYTE>(0x4AEB74+1, 1); // chainsaw
 
 	// Fixed crash related to autopilot timing calculations
-	InjectHook(0x418FAE, AutoPilotTimerFix_VC, PATCH_JUMP);
+	InjectHook(0x418FAE, AutoPilotTimerFix_VC, HookType::Jump);
 
 
 	// Adblocker
@@ -730,9 +732,9 @@ void Patch_VC_11(uint32_t width, uint32_t height)
 
 	InjectHook(0x5433DD, FixedRefValue);
 
-	InjectHook(0x42BFF7, RosiesAudioFix, PATCH_JUMP);
+	InjectHook(0x42BFF7, RosiesAudioFix, HookType::Jump);
 
-	InjectHook(0x55171C, SubtitlesShadowFix, PATCH_JUMP);
+	InjectHook(0x55171C, SubtitlesShadowFix, HookType::Jump);
 	Patch<BYTE>(0x5517E4, 0xD9);
 	Patch<BYTE>(0x5517FF, 0xD9);
 	Patch<BYTE>(0x551852, 0xD9);
@@ -802,7 +804,7 @@ void Patch_VC_11(uint32_t width, uint32_t height)
 
 
 	// Reinit free resprays flag
-	InjectHook(0x4349BB, GaragesInit_SilentPatch, PATCH_JUMP);
+	InjectHook(0x4349BB, GaragesInit_SilentPatch, HookType::Jump);
 
 
 	// Fixed ammo for melee weapons in cheats
@@ -810,7 +812,7 @@ void Patch_VC_11(uint32_t width, uint32_t height)
 	Patch<BYTE>(0x4AEB94+1, 1); // chainsaw
 
 	// Fixed crash related to autopilot timing calculations
-	InjectHook(0x418FAE, AutoPilotTimerFix_VC, PATCH_JUMP);
+	InjectHook(0x418FAE, AutoPilotTimerFix_VC, HookType::Jump);
 
 	Common::Patches::DDraw_VC_11( width, height, aNoDesktopMode );
 }
@@ -827,9 +829,9 @@ void Patch_VC_Steam(uint32_t width, uint32_t height)
 
 	InjectHook(0x5432AD, FixedRefValue);
 
-	InjectHook(0x42BFC7, RosiesAudioFix, PATCH_JUMP);
+	InjectHook(0x42BFC7, RosiesAudioFix, HookType::Jump);
 
-	InjectHook(0x5515EC, SubtitlesShadowFix, PATCH_JUMP);
+	InjectHook(0x5515EC, SubtitlesShadowFix, HookType::Jump);
 	Patch<BYTE>(0x5516B4, 0xD9);
 	Patch<BYTE>(0x5516CF, 0xD9);
 	Patch<BYTE>(0x551722, 0xD9);
@@ -898,7 +900,7 @@ void Patch_VC_Steam(uint32_t width, uint32_t height)
 
 
 	// Reinit free resprays flag
-	InjectHook(0x43497B, GaragesInit_SilentPatch, PATCH_JUMP);
+	InjectHook(0x43497B, GaragesInit_SilentPatch, HookType::Jump);
 
 
 	// Fixed ammo for melee weapons in cheats
@@ -906,7 +908,7 @@ void Patch_VC_Steam(uint32_t width, uint32_t height)
 	Patch<BYTE>(0x4AEBE4+1, 1); // chainsaw
 
 	// Fixed crash related to autopilot timing calculations
-	InjectHook(0x418FAE, AutoPilotTimerFix_VC, PATCH_JUMP);
+	InjectHook(0x418FAE, AutoPilotTimerFix_VC, HookType::Jump);
 
 	Common::Patches::DDraw_VC_Steam( width, height, aNoDesktopMode );
 }
@@ -934,8 +936,8 @@ void Patch_VC_Common()
 		auto hookPoint = pattern( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08" ).get_one();
 		auto jmpPoint = get_pattern( "DD D8 E9 31 FF FF FF" );
 
-		InjectHook( hookPoint.get<void>( 0x21 ), CTimer::Update_SilentPatch, PATCH_CALL );
-		InjectHook( hookPoint.get<void>( 0x21 + 5 ), jmpPoint, PATCH_JUMP );
+		InjectHook( hookPoint.get<void>( 0x21 ), CTimer::Update_SilentPatch, HookType::Call );
+		InjectHook( hookPoint.get<void>( 0x21 + 5 ), jmpPoint, HookType::Jump );
 	}
 
 	// Alt+F4
@@ -944,7 +946,7 @@ void Patch_VC_Common()
 		auto dest = get_pattern( "53 55 56 FF B4 24 90 00 00 00 FF 15" );
 
 		addr.for_each_result( [&]( pattern_match match ) {
-			InjectHook( match.get<void>( 2 ), dest, PATCH_JUMP );
+			InjectHook( match.get<void>( 2 ), dest, HookType::Jump );
 		});
 	}
 
@@ -978,7 +980,7 @@ void Patch_VC_Common()
 		ReadCall( addr.get<void>( 0x25 ), orgPickNextNodeToChaseCar );
 
 		const uintptr_t funcAddr = (uintptr_t)get_pattern( "8B 9C 24 BC 00 00 00 66 8B B3 A6 01 00 00 66 85 F6", -0xA );
-		InjectHook( funcAddr - 5, PickNextNodeToChaseCarXYZ, PATCH_JUMP ); // For plugin-sdk
+		InjectHook( funcAddr - 5, PickNextNodeToChaseCarXYZ, HookType::Jump ); // For plugin-sdk
 
 		// push PickNextNodeToChaseCarZ instead of 0.0f
 		// mov ecx, [PickNextNodeToChaseCarZ]
@@ -1037,7 +1039,7 @@ void Patch_VC_Common()
 	// Extras working correctly on bikes
 	{
 		auto createInstance = get_pattern( "89 C1 8B 41 04" );
-		InjectHook( createInstance, CreateInstance_BikeFix, PATCH_CALL );
+		InjectHook( createInstance, CreateInstance_BikeFix, HookType::Call );
 	}
 
 
@@ -1065,7 +1067,7 @@ void Patch_VC_Common()
 
 		ReadCall( simButtonCheckers, orgClearSimButtonPressCheckers );
 		InjectHook( simButtonCheckers, ClearSimButtonPressCheckers );
-		InjectHook( updatePads.get<void>( 9 ), jmpDest, PATCH_JUMP );
+		InjectHook( updatePads.get<void>( 9 ), jmpDest, HookType::Jump );
 	}
 
 
@@ -1082,7 +1084,7 @@ void Patch_VC_Common()
 		auto constructStatLine = pattern( "85 C0 74 11 83 E8 01 83 F8 03" ).get_one();
 
 		Nop( constructStatLine.get<void>( -11 ), 1 );
-		InjectHook( constructStatLine.get<void>( -11 + 1 ), PrefsLanguage_IsMetric, PATCH_CALL );
+		InjectHook( constructStatLine.get<void>( -11 + 1 ), PrefsLanguage_IsMetric, HookType::Call );
 		Nop( constructStatLine.get<void>( -2 ), 2 );
 	}
 
@@ -1098,7 +1100,7 @@ void Patch_VC_Common()
 		{
 			auto match = sirenPitch.get_one();
 
-			InjectHook( match.get<void>( 5 ), IsFBIRanchOrFBICar, PATCH_CALL );
+			InjectHook( match.get<void>( 5 ), IsFBIRanchOrFBICar, HookType::Call );
 			Patch( match.get<void>( 5 + 5 ), { 0x84, 0xC0 } ); // test al, al
 			Nop( match.get<void>( 5 + 5 + 2 ), 4 );
 
@@ -1142,7 +1144,7 @@ void Patch_VC_Common()
 		// mov ecx, ebx
 		// call CVehicle::GetOneShotOwnerID
 		Patch( getDriverOneShot.get<void>( -8 ), { 0x90, 0x89, 0xD9 } );
-		InjectHook( getDriverOneShot.get<void>( -5 ), &CVehicle::GetOneShotOwnerID_SilentPatch, PATCH_CALL );
+		InjectHook( getDriverOneShot.get<void>( -5 ), &CVehicle::GetOneShotOwnerID_SilentPatch, HookType::Call );
 	}
 }
 

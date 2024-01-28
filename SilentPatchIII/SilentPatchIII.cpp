@@ -2,7 +2,6 @@
 
 #include "Maths.h"
 #include "Timer.h"
-#include "Utils/Patterns.h"
 #include "Common.h"
 #include "Common_ddraw.h"
 #include "Desktop.h"
@@ -11,6 +10,9 @@
 
 #include <memory>
 #include <Shlwapi.h>
+
+#include "Utils/Patterns.h"
+#include "Utils/ScopedUnprotect.hpp"
 
 #include "debugmenu_public.h"
 
@@ -640,7 +642,7 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 			// mov ecx, ebx
 			// call CSimpleModelInfo::SetNearDistanceForLOD
 			Patch( match.get<void>(), { 0x89, 0xD9 } );
-			InjectHook( match.get<void>( 2 ), &CSimpleModelInfo::SetNearDistanceForLOD_SilentPatch, PATCH_CALL );
+			InjectHook( match.get<void>( 2 ), &CSimpleModelInfo::SetNearDistanceForLOD_SilentPatch, HookType::Call );
 		}
 	}
 }
@@ -681,9 +683,9 @@ void Patch_III_10(uint32_t width, uint32_t height)
 	Patch<BYTE>(0x490F83, 1);
 
 	Patch<WORD>(0x5382BF, 0x0EEB);
-	InjectHook(0x5382EC, HeadlightsFix, PATCH_JUMP);
+	InjectHook(0x5382EC, HeadlightsFix, HookType::Jump);
 
-	InjectHook(0x4A5870, ShowRadarTrace, PATCH_JUMP);
+	InjectHook(0x4A5870, ShowRadarTrace, HookType::Jump);
 	InjectHook(0x4209A7, SetScaleProperly);
 	InjectHook(0x420A1F, SetScaleProperly);
 	InjectHook(0x420AC1, SetScaleProperly);
@@ -693,7 +695,7 @@ void Patch_III_10(uint32_t width, uint32_t height)
 
 	InjectHook(0x4F9E4D, FixedRefValue);
 
-	InjectHook(0x500D27, SubtitlesShadowFix, PATCH_JUMP);
+	InjectHook(0x500D27, SubtitlesShadowFix, HookType::Jump);
 	Patch<WORD>(0x500D4C, 0x05D8);
 	Patch<WORD>(0x500D5F, 0x05D9);
 	Patch<WORD>(0x500D6E, 0x05D9);
@@ -707,7 +709,7 @@ void Patch_III_10(uint32_t width, uint32_t height)
 	Patch<WORD>(0x500D74, 0x9066);
 
 	Patch<BYTE>(0x5623B5, 0x90);
-	InjectHook(0x5623B6, M16StatsFix, PATCH_CALL);
+	InjectHook(0x5623B6, M16StatsFix, HookType::Call);
 
 	InjectHook(0x505F82, AlteredPrintString<0x505F7B,0x505F50>);
 	InjectHook(0x5065DA, AlteredPrintString<0x5065D3,0x5065A8>);
@@ -749,7 +751,7 @@ void Patch_III_10(uint32_t width, uint32_t height)
 	// 1.1 mouse sensitivity not resetting fix
 	Patch<WORD>(0x46BE81, 0x12EB);
 	Nop(0x46BAD6, 4);
-	InjectHook(0x46BADA, III_SensResetFix, PATCH_CALL);
+	InjectHook(0x46BADA, III_SensResetFix, HookType::Call);
 
 	// (Hopefully) more precise frame limiter
 	ReadCall( 0x582EFD, RsEventHandler );
@@ -773,8 +775,8 @@ void Patch_III_10(uint32_t width, uint32_t height)
 
 
 	// Radar blips bounds check
-	InjectHook(0x4A55B2, RadarBoundsCheckCoordBlip, PATCH_JUMP);
-	InjectHook(0x4A5658, RadarBoundsCheckEntityBlip, PATCH_JUMP);
+	InjectHook(0x4A55B2, RadarBoundsCheckCoordBlip, HookType::Jump);
+	InjectHook(0x4A5658, RadarBoundsCheckEntityBlip, HookType::Jump);
 
 
 	// No-CD fix (from CLEO)
@@ -785,7 +787,7 @@ void Patch_III_10(uint32_t width, uint32_t height)
 	Patch<const char*>(0x566A3D, "");
 
 	// Fixed crash related to autopilot timing calculations
-	InjectHook(0x4139B2, AutoPilotTimerFix_III, PATCH_JUMP);
+	InjectHook(0x4139B2, AutoPilotTimerFix_III, HookType::Jump);
 
 
 	// Adblocker
@@ -819,9 +821,9 @@ void Patch_III_11(uint32_t width, uint32_t height)
 	Patch<BYTE>(0x491043, 1);
 
 	Patch<WORD>(0x5384FF, 0x0EEB);
-	InjectHook(0x53852C, HeadlightsFix, PATCH_JUMP);
+	InjectHook(0x53852C, HeadlightsFix, HookType::Jump);
 
-	InjectHook(0x4A5960, ShowRadarTrace, PATCH_JUMP);
+	InjectHook(0x4A5960, ShowRadarTrace, HookType::Jump);
 	InjectHook(0x4209A7, SetScaleProperly);
 	InjectHook(0x420A1F, SetScaleProperly);
 	InjectHook(0x420AC1, SetScaleProperly);
@@ -831,7 +833,7 @@ void Patch_III_11(uint32_t width, uint32_t height)
 
 	InjectHook(0x4F9F2D, FixedRefValue);
 
-	InjectHook(0x500E07, SubtitlesShadowFix, PATCH_JUMP);
+	InjectHook(0x500E07, SubtitlesShadowFix, HookType::Jump);
 	Patch<WORD>(0x500E2C, 0x05D8);
 	Patch<WORD>(0x500E3F, 0x05D9);
 	Patch<WORD>(0x500E4E, 0x05D9);
@@ -845,7 +847,7 @@ void Patch_III_11(uint32_t width, uint32_t height)
 	Patch<WORD>(0x500E54, 0x9066);
 
 	Patch<BYTE>(0x5624E5, 0x90);
-	InjectHook(0x5624E6, M16StatsFix, PATCH_CALL);
+	InjectHook(0x5624E6, M16StatsFix, HookType::Call);
 
 	InjectHook(0x506062, AlteredPrintString<0x50605B,0x506030>);
 	InjectHook(0x5066BA, AlteredPrintString<0x5066B3,0x506688>);
@@ -901,8 +903,8 @@ void Patch_III_11(uint32_t width, uint32_t height)
 
 
 	// Radar blips bounds check
-	InjectHook(0x4A56A2, RadarBoundsCheckCoordBlip, PATCH_JUMP);
-	InjectHook(0x4A5748, RadarBoundsCheckEntityBlip, PATCH_JUMP);
+	InjectHook(0x4A56A2, RadarBoundsCheckCoordBlip, HookType::Jump);
+	InjectHook(0x4A5748, RadarBoundsCheckEntityBlip, HookType::Jump);
 
 
 	// No-CD fix (from CLEO)
@@ -913,7 +915,7 @@ void Patch_III_11(uint32_t width, uint32_t height)
 	Patch<const char*>(0x566B7D, "");
 
 	// Fixed crash related to autopilot timing calculations
-	InjectHook(0x4139B2, AutoPilotTimerFix_III, PATCH_JUMP);
+	InjectHook(0x4139B2, AutoPilotTimerFix_III, HookType::Jump);
 
 	Common::Patches::DDraw_III_11( width, height, aNoDesktopMode );
 }
@@ -935,7 +937,7 @@ void Patch_III_Steam(uint32_t width, uint32_t height)
 
 	Patch<BYTE>(0x490FD3, 1);
 
-	InjectHook(0x4A58F0, ShowRadarTrace, PATCH_JUMP);
+	InjectHook(0x4A58F0, ShowRadarTrace, HookType::Jump);
 	InjectHook(0x4209A7, SetScaleProperly);
 	InjectHook(0x420A1F, SetScaleProperly);
 	InjectHook(0x420AC1, SetScaleProperly);
@@ -945,7 +947,7 @@ void Patch_III_Steam(uint32_t width, uint32_t height)
 
 	InjectHook(0x4F9EBD, FixedRefValue);
 
-	InjectHook(0x500D97, SubtitlesShadowFix, PATCH_JUMP);
+	InjectHook(0x500D97, SubtitlesShadowFix, HookType::Jump);
 	Patch<WORD>(0x500DBC, 0x05D8);
 	Patch<WORD>(0x500DCF, 0x05D9);
 	Patch<WORD>(0x500DDE, 0x05D9);
@@ -959,7 +961,7 @@ void Patch_III_Steam(uint32_t width, uint32_t height)
 	Patch<WORD>(0x500DE4, 0x9066);
 
 	Patch<BYTE>(0x562495, 0x90);
-	InjectHook(0x562496, M16StatsFix, PATCH_CALL);
+	InjectHook(0x562496, M16StatsFix, HookType::Call);
 
 	InjectHook(0x505FF2, AlteredPrintString<0x505FEB,0x505FC0>);
 	InjectHook(0x50664A, AlteredPrintString<0x506643,0x506618>);
@@ -1014,11 +1016,11 @@ void Patch_III_Steam(uint32_t width, uint32_t height)
 
 
 	// Radar blips bounds check
-	InjectHook(0x4A5632, RadarBoundsCheckCoordBlip, PATCH_JUMP);
-	InjectHook(0x4A56D8, RadarBoundsCheckEntityBlip, PATCH_JUMP);
+	InjectHook(0x4A5632, RadarBoundsCheckCoordBlip, HookType::Jump);
+	InjectHook(0x4A56D8, RadarBoundsCheckEntityBlip, HookType::Jump);
 
 	// Fixed crash related to autopilot timing calculations
-	InjectHook(0x4139B2, AutoPilotTimerFix_III, PATCH_JUMP);
+	InjectHook(0x4139B2, AutoPilotTimerFix_III, HookType::Jump);
 
 	Common::Patches::DDraw_III_Steam( width, height, aNoDesktopMode );
 }
@@ -1031,7 +1033,7 @@ void Patch_III_Common()
 	// Purple Nines Glitch fix
 	{
 		auto addr = get_pattern( "0F BF 4C 24 04 8B 44 24 08 C1 E1 04 89 81", -0xC );
-		InjectHook( addr, PurpleNinesGlitchFix, PATCH_JUMP );
+		InjectHook( addr, PurpleNinesGlitchFix, HookType::Jump );
 	}
 
 	// New timers fix
@@ -1039,8 +1041,8 @@ void Patch_III_Common()
 		auto hookPoint = pattern( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08" ).get_one();
 		auto jmpPoint = get_pattern( "DD D8 E9 37 FF FF FF DD D8" );
 
-		InjectHook( hookPoint.get<void>( 0x21 ), CTimer::Update_SilentPatch, PATCH_CALL );
-		InjectHook( hookPoint.get<void>( 0x21 + 5 ), jmpPoint, PATCH_JUMP );
+		InjectHook( hookPoint.get<void>( 0x21 ), CTimer::Update_SilentPatch, HookType::Call );
+		InjectHook( hookPoint.get<void>( 0x21 + 5 ), jmpPoint, HookType::Jump );
 	}
 
 	// Alt+F4
@@ -1049,7 +1051,7 @@ void Patch_III_Common()
 		auto dest = get_pattern( "53 55 56 FF 74 24 68 FF 15" );
 
 		addr.for_each_result( [&]( pattern_match match ) {
-			InjectHook( match.get<void>( 2 ), dest, PATCH_JUMP );
+			InjectHook( match.get<void>( 2 ), dest, HookType::Jump );
 		});
 	}
 
@@ -1104,7 +1106,7 @@ void Patch_III_Common()
 
 		// For NICK007J
 		// Uncomment this to get rid of "treadable hack" in CCarCtrl::PickNextNodeToChaseCar (to mirror VC behaviour)
-		InjectHook( funcAddr + 0x2A, funcAddr + 0x182, PATCH_JUMP );
+		InjectHook( funcAddr + 0x2A, funcAddr + 0x182, HookType::Jump );
 	}
 
 
@@ -1159,7 +1161,7 @@ void Patch_III_Common()
 
 		ReadCall( simButtonCheckers, orgClearSimButtonPressCheckers );
 		InjectHook( simButtonCheckers, ClearSimButtonPressCheckers );
-		InjectHook( updatePads.get<void>( 10 ), jmpDest, PATCH_JUMP );
+		InjectHook( updatePads.get<void>( 10 ), jmpDest, HookType::Jump );
 	}
 
 
@@ -1183,7 +1185,7 @@ void Patch_III_Common()
 		// pop eax
 		// nop...
 		Patch( constructStatLine.get<void>( -0xF ), { 0x50, 0x52 } );
-		InjectHook( constructStatLine.get<void>( -0xF + 2 ), PrefsLanguage_IsMetric, PATCH_CALL );
+		InjectHook( constructStatLine.get<void>( -0xF + 2 ), PrefsLanguage_IsMetric, HookType::Call );
 		Patch( constructStatLine.get<void>( -0xF + 7 ), { 0x0F, 0xB6, 0xD8, 0x5A, 0x58 } );
 		Nop( constructStatLine.get<void>( -0xF + 12 ), 3 );
 	}

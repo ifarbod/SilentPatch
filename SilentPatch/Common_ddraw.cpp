@@ -64,7 +64,7 @@ namespace Common {
 		{
 			using namespace Memory;
 
-			InjectHook(0x580BB0, GetMyDocumentsPath, PATCH_JUMP);
+			InjectHook(0x580BB0, GetMyDocumentsPath, HookType::Jump);
 
 			if (width != 0 && height != 0)
 			{
@@ -86,7 +86,7 @@ namespace Common {
 		{
 			using namespace Memory;
 
-			InjectHook(0x580F00, GetMyDocumentsPath, PATCH_JUMP);
+			InjectHook(0x580F00, GetMyDocumentsPath, HookType::Jump);
 
 			if (width != 0 && height != 0)
 			{
@@ -108,7 +108,7 @@ namespace Common {
 		{
 			using namespace Memory;
 
-			InjectHook(0x580E00, GetMyDocumentsPath, PATCH_JUMP);
+			InjectHook(0x580E00, GetMyDocumentsPath, HookType::Jump);
 
 			if (width != 0 && height != 0)
 			{
@@ -131,10 +131,10 @@ namespace Common {
 		{
 			using namespace Memory;
 
-			InjectHook(0x602240, GetMyDocumentsPath, PATCH_JUMP);
+			InjectHook(0x602240, GetMyDocumentsPath, HookType::Jump);
 
-			InjectHook(0x601A40, GetMyDocumentsPath, PATCH_CALL);
-			InjectHook(0x601A45, 0x601B2F, PATCH_JUMP);
+			InjectHook(0x601A40, GetMyDocumentsPath, HookType::Call);
+			InjectHook(0x601A45, 0x601B2F, HookType::Jump);
 
 			if (width != 0 && height != 0)
 			{
@@ -156,10 +156,10 @@ namespace Common {
 		{
 			using namespace Memory;
 
-			InjectHook(0x602220, GetMyDocumentsPath, PATCH_JUMP);
+			InjectHook(0x602220, GetMyDocumentsPath, HookType::Jump);
 
-			InjectHook(0x601A70, GetMyDocumentsPath, PATCH_CALL);
-			InjectHook(0x601A75, 0x601B5F, PATCH_JUMP);
+			InjectHook(0x601A70, GetMyDocumentsPath, HookType::Call);
+			InjectHook(0x601A75, 0x601B5F, HookType::Jump);
 
 			if (width != 0 && height != 0)
 			{
@@ -182,10 +182,10 @@ namespace Common {
 		{
 			using namespace Memory;
 
-			InjectHook(0x601E60, GetMyDocumentsPath, PATCH_JUMP);
+			InjectHook(0x601E60, GetMyDocumentsPath, HookType::Jump);
 
-			InjectHook(0x6016B0, GetMyDocumentsPath, PATCH_CALL);
-			InjectHook(0x6016B5, 0x60179F, PATCH_JUMP);
+			InjectHook(0x6016B0, GetMyDocumentsPath, HookType::Call);
+			InjectHook(0x6016B5, 0x60179F, HookType::Jump);
 
 			if (width != 0 && height != 0)
 			{

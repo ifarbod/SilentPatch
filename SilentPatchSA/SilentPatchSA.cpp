@@ -24,6 +24,7 @@
 #include "Utils/Patterns.h"
 #include "Utils/DelimStringReader.h"
 #include "Utils/ModuleList.hpp"
+#include "Utils/ScopedUnprotect.hpp"
 
 #include "Desktop.h"
 
@@ -1995,21 +1996,21 @@ void InstallMemValidator()
 	using namespace Memory;
 
 	// TEST: Validate memory
-	InjectHook( 0x824257, malloc_validator, PATCH_JUMP );
-	InjectHook( 0x824269, realloc_validator, PATCH_JUMP );
-	InjectHook( 0x824416, calloc_validator, PATCH_JUMP );
-	InjectHook( 0x82413F, free_validator, PATCH_JUMP );
-	InjectHook( 0x828C4A, _msize_validator, PATCH_JUMP );
+	InjectHook( 0x824257, malloc_validator, HookType::Jump );
+	InjectHook( 0x824269, realloc_validator, HookType::Jump );
+	InjectHook( 0x824416, calloc_validator, HookType::Jump );
+	InjectHook( 0x82413F, free_validator, HookType::Jump );
+	InjectHook( 0x828C4A, _msize_validator, HookType::Jump );
 
-	InjectHook( 0x82119A, _new, PATCH_JUMP );
-	InjectHook( 0x8214BD, _delete, PATCH_JUMP );
+	InjectHook( 0x82119A, _new, HookType::Jump );
+	InjectHook( 0x8214BD, _delete, HookType::Jump );
 
-	InjectHook( 0x72F420, &CDebugMemoryMgr::Malloc, PATCH_JUMP );
-	InjectHook( 0x72F430, &CDebugMemoryMgr::Free, PATCH_JUMP );
-	InjectHook( 0x72F440, &CDebugMemoryMgr::Realloc, PATCH_JUMP );
-	InjectHook( 0x72F460, &CDebugMemoryMgr::Calloc, PATCH_JUMP );
-	InjectHook( 0x72F4C0, &CDebugMemoryMgr::MallocAlign, PATCH_JUMP );
-	InjectHook( 0x72F4F0, &CDebugMemoryMgr::AlignedFree, PATCH_JUMP );
+	InjectHook( 0x72F420, &CDebugMemoryMgr::Malloc, HookType::Jump );
+	InjectHook( 0x72F430, &CDebugMemoryMgr::Free, HookType::Jump );
+	InjectHook( 0x72F440, &CDebugMemoryMgr::Realloc, HookType::Jump );
+	InjectHook( 0x72F460, &CDebugMemoryMgr::Calloc, HookType::Jump );
+	InjectHook( 0x72F4C0, &CDebugMemoryMgr::MallocAlign, HookType::Jump );
+	InjectHook( 0x72F4F0, &CDebugMemoryMgr::AlignedFree, HookType::Jump );
 
 
 	PutStaticValidator( 0xAAE950, 0xB4C310 ); // CStore
@@ -2774,7 +2775,7 @@ BOOL InjectDelayedPatches_10()
 				}
 
 				InjectHook(0x5E7859, RenderWeapon);
-				InjectHook(0x732F30, RenderWeaponPedsForPC, PATCH_JUMP);
+				InjectHook(0x732F30, RenderWeaponPedsForPC, HookType::Jump);
 			}
 		}
 
@@ -2785,7 +2786,7 @@ BOOL InjectDelayedPatches_10()
 			Patch<DWORD>(0x470B0A, 0x8B04508B);
 			Patch<WORD>(0x470B0E, 0x9000);
 			Nop(0x470B10, 1);
-			InjectHook(0x470B05, &CRunningScript::GetDay_GymGlitch, PATCH_CALL);
+			InjectHook(0x470B05, &CRunningScript::GetDay_GymGlitch, HookType::Call);
 
 			// Basketball fix
 			ReadCall( 0x489A70, WipeLocalVariableMemoryForMissionScript );
@@ -2847,15 +2848,15 @@ BOOL InjectDelayedPatches_10()
 		if ( !bHasImVehFt )
 		{
 			// Lights
-			InjectHook(0x4C830C, LightMaterialsFix, PATCH_CALL);
+			InjectHook(0x4C830C, LightMaterialsFix, HookType::Call);
 
 			// Flying components
-			InjectHook(0x59F180, &CObject::Render_Stub, PATCH_JUMP);
+			InjectHook(0x59F180, &CObject::Render_Stub, HookType::Jump);
 
 			// Cars getting dirty
 			// Only 1.0 and Steam
-			InjectHook( 0x5D5DB0, RemapDirt, PATCH_JUMP );
-			InjectHook(0x4C9648, &CVehicleModelInfo::FindEditableMaterialList, PATCH_CALL);
+			InjectHook( 0x5D5DB0, RemapDirt, HookType::Jump );
+			InjectHook(0x4C9648, &CVehicleModelInfo::FindEditableMaterialList, HookType::Call);
 			Patch<DWORD>(0x4C964D, 0x0FEBCE8B);
 		}
 
@@ -2868,7 +2869,7 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x4C9660, &CVehicleModelInfo::SetCarCustomPlate);
 			InjectHook(0x6D6A58, &CVehicle::CustomCarPlate_TextureCreate);
 			InjectHook(0x6D651C, &CVehicle::CustomCarPlate_BeforeRenderingStart);
-			InjectHook(0x6FDFE0, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, PATCH_JUMP);
+			InjectHook(0x6FDFE0, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, HookType::Jump);
 			//InjectMethodVP(0x6D0E53, CVehicle::CustomCarPlate_AfterRenderingStop, PATCH_NOTHING);
 			Nop(0x6D6517, 2);
 		}
@@ -2909,7 +2910,7 @@ BOOL InjectDelayedPatches_10()
 			// call CheckDoubleRWheelsWhitelist
 			// test al, al
 			Patch<uint16_t>( 0x4C9239, 0x5751 );
-			InjectHook( 0x4C9239+2, CheckDoubleRWheelsList, PATCH_CALL );
+			InjectHook( 0x4C9239+2, CheckDoubleRWheelsList, HookType::Call );
 			Patch<uint16_t>( 0x4C9239+7, 0xC084 );
 			Nop( 0x4C9239+9, 1 );
 		}
@@ -2931,7 +2932,7 @@ BOOL InjectDelayedPatches_10()
 			// Handle IMGs bigger than 4GB
 			Nop( 0x4065BB, 3 );
 			Nop( 0x4065C2, 1 );
-			InjectHook( 0x4065C2+1, CdStreamThreadHighSize, PATCH_CALL );
+			InjectHook( 0x4065C2+1, CdStreamThreadHighSize, HookType::Call );
 			Patch<const void*>( 0x406620+2, &pCdStreamSetFilePointer );
 		}
 
@@ -3026,7 +3027,7 @@ BOOL InjectDelayedPatches_10()
 
 			isEnabled = INIoption != 0;
 			WillKillJumpBack = 0x4B3238;
-			InjectHook( 0x4B322E, ComputeWillKillPedHook, PATCH_JUMP );
+			InjectHook( 0x4B322E, ComputeWillKillPedHook, HookType::Jump );
 
 			if ( bHasDebugMenu )
 			{
@@ -3106,7 +3107,7 @@ BOOL InjectDelayedPatches_10()
 				Nop( 0x406910 + 0x16, 2 );
 
 				Patch( 0x4063B5, { 0x56, 0x50 } );
-				InjectHook( 0x4063B5 + 2, CdStreamSync::CdStreamShutdownSyncObject_Stub, PATCH_CALL );
+				InjectHook( 0x4063B5 + 2, CdStreamSync::CdStreamShutdownSyncObject_Stub, HookType::Call );
 			}
 		}
 
@@ -3115,7 +3116,7 @@ BOOL InjectDelayedPatches_10()
 		{
 			// Modulo over CLoadingScreen::m_currDisplayedSplash
 			Nop( 0x590ADE, 1 );
-			InjectHook( 0x590ADE + 1, DoPCScreenChange_Mod, PATCH_CALL );
+			InjectHook( 0x590ADE + 1, DoPCScreenChange_Mod, HookType::Call );
 			Patch<const void*>( 0x590042 + 2, &currDisplayedSplash_ForLastSplash );
 		}
 
@@ -3228,7 +3229,7 @@ BOOL InjectDelayedPatches_11()
 			if ( !bOutfit )
 			{
 				InjectHook(0x5E8079, RenderWeapon);
-				InjectHook(0x733760, RenderWeaponPedsForPC, PATCH_JUMP);
+				InjectHook(0x733760, RenderWeaponPedsForPC, HookType::Jump);
 			}
 		}
 
@@ -3239,7 +3240,7 @@ BOOL InjectDelayedPatches_11()
 			Patch<DWORD>(0x470B8A, 0x8B04508B);
 			Patch<WORD>(0x470B8E, 0x9000);
 			Nop(0x470B90, 1);
-			InjectHook(0x470B85, &CRunningScript::GetDay_GymGlitch, PATCH_CALL);
+			InjectHook(0x470B85, &CRunningScript::GetDay_GymGlitch, HookType::Call);
 
 			// Basketball fix
 			ReadCall( 0x489AF0, WipeLocalVariableMemoryForMissionScript );
@@ -3289,10 +3290,10 @@ BOOL InjectDelayedPatches_11()
 		if ( !bHasImVehFt )
 		{
 			// Lights
-			InjectHook(0x4C838C, LightMaterialsFix, PATCH_CALL);
+			InjectHook(0x4C838C, LightMaterialsFix, HookType::Call);
 
 			// Flying components
-			InjectHook(0x59F950, &CObject::Render_Stub, PATCH_JUMP);
+			InjectHook(0x59F950, &CObject::Render_Stub, HookType::Jump);
 		}
 
 		if ( !bHasImVehFt && !bSAMP )
@@ -3304,7 +3305,7 @@ BOOL InjectDelayedPatches_11()
 			InjectHook(0x4C984D, &CVehicleModelInfo::SetCarCustomPlate);
 			InjectHook(0x6D7288, &CVehicle::CustomCarPlate_TextureCreate);
 			InjectHook(0x6D6D4C, &CVehicle::CustomCarPlate_BeforeRenderingStart);
-			InjectHook(0x6FE810, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, PATCH_JUMP);
+			InjectHook(0x6FE810, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, HookType::Jump);
 			Nop(0x6D6D47, 2);
 		}
 
@@ -3405,7 +3406,7 @@ BOOL InjectDelayedPatches_Steam()
 			if ( !bOutfit )
 			{
 				InjectHook(0x604DD9, RenderWeapon);
-				InjectHook(0x76D170, RenderWeaponPedsForPC, PATCH_JUMP);
+				InjectHook(0x76D170, RenderWeaponPedsForPC, HookType::Jump);
 			}
 		}
 
@@ -3416,7 +3417,7 @@ BOOL InjectDelayedPatches_Steam()
 			Patch<DWORD>(0x476C31, 0x408B088B);
 			Patch<WORD>(0x476C35, 0x9004);
 			Nop(0x476C37, 1);
-			InjectHook(0x476C2C, &CRunningScript::GetDay_GymGlitch, PATCH_CALL);
+			InjectHook(0x476C2C, &CRunningScript::GetDay_GymGlitch, HookType::Call);
 
 			// Basketball fix
 			ReadCall( 0x4907AE, WipeLocalVariableMemoryForMissionScript );
@@ -3460,15 +3461,15 @@ BOOL InjectDelayedPatches_Steam()
 		if ( !bHasImVehFt )
 		{
 			// Lights
-			InjectHook(0x4D2C06, LightMaterialsFix, PATCH_CALL);
+			InjectHook(0x4D2C06, LightMaterialsFix, HookType::Call);
 
 			// Flying components
-			InjectHook(0x5B80E0, &CObject::Render_Stub, PATCH_JUMP);
+			InjectHook(0x5B80E0, &CObject::Render_Stub, HookType::Jump);
 
 			// Cars getting dirty
 			// Only 1.0 and Steam
-			InjectHook( 0x5F2580, RemapDirt, PATCH_JUMP );
-			InjectHook(0x4D3F4D, &CVehicleModelInfo::FindEditableMaterialList, PATCH_CALL);
+			InjectHook( 0x5F2580, RemapDirt, HookType::Jump );
+			InjectHook(0x4D3F4D, &CVehicleModelInfo::FindEditableMaterialList, HookType::Call);
 			Patch<DWORD>(0x4D3F52, 0x0FEBCE8B);
 		}
 
@@ -3481,7 +3482,7 @@ BOOL InjectDelayedPatches_Steam()
 			InjectHook(0x4D3F65, &CVehicleModelInfo::SetCarCustomPlate);
 			InjectHook(0x711F28, &CVehicle::CustomCarPlate_TextureCreate);
 			InjectHook(0x71194D, &CVehicle::CustomCarPlate_BeforeRenderingStart);
-			InjectHook(0x736BD0, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, PATCH_JUMP);
+			InjectHook(0x736BD0, CCustomCarPlateMgr::SetupClumpAfterVehicleUpgrade, HookType::Jump);
 			//InjectMethodVP(0x6D0E53, CVehicle::CustomCarPlate_AfterRenderingStop, PATCH_NOTHING);
 			Nop(0x711948, 2);
 		}
@@ -3565,7 +3566,7 @@ BOOL InjectDelayedPatches_Newsteam()
 
 				auto cdStreamShutdown = pattern( "8B 4C 07 14" ).get_one();
 				Patch( cdStreamShutdown.get<void>(), { 0x56, 0x50 } );
-				InjectHook( cdStreamShutdown.get<void>( 2 ), CdStreamSync::CdStreamShutdownSyncObject_Stub, PATCH_CALL );
+				InjectHook( cdStreamShutdown.get<void>( 2 ), CdStreamSync::CdStreamShutdownSyncObject_Stub, HookType::Call );
 			}
 		}
 
@@ -3613,8 +3614,8 @@ void Patch_SA_10()
 	//Patch<BYTE>(0x5D7265, 0xEB);
 
 	// Heli rotors
-	InjectHook(0x6CAB70, &CPlane::Render_Stub, PATCH_JUMP);
-	InjectHook(0x6C4400, &CHeli::Render_Stub, PATCH_JUMP);
+	InjectHook(0x6CAB70, &CPlane::Render_Stub, HookType::Jump);
+	InjectHook(0x6C4400, &CHeli::Render_Stub, HookType::Jump);
 
 	// Boats
 	/*Patch<BYTE>(0x4C79DF, 0x19);
@@ -3634,15 +3635,15 @@ void Patch_SA_10()
 	Patch<BYTE>(0x6FB9A0, 0);
 
 	// Plane rotors
-	InjectHook(0x4C7981, PlaneAtomicRendererSetup, PATCH_JUMP);
+	InjectHook(0x4C7981, PlaneAtomicRendererSetup, HookType::Jump);
 
 	// DOUBLE_RWHEELS
 	Patch<WORD>(0x4C9290, 0xE281);
 	Patch<int>(0x4C9292, ~(rwMATRIXTYPEMASK|rwMATRIXINTERNALIDENTITY));
 
 	// A fix for DOUBLE_RWHEELS trailers
-	InjectHook(0x4C9223, TrailerDoubleRWheelsFix, PATCH_JUMP);
-	InjectHook(0x4C92F4, TrailerDoubleRWheelsFix2, PATCH_JUMP);
+	InjectHook(0x4C9223, TrailerDoubleRWheelsFix, HookType::Jump);
+	InjectHook(0x4C92F4, TrailerDoubleRWheelsFix2, HookType::Jump);
 
 	// No framedelay
 	Patch<WORD>(0x53E923, 0x43EB);
@@ -3658,15 +3659,15 @@ void Patch_SA_10()
 	Patch<DWORD>(AddressByRegion_10<DWORD>(0x7469A0), 0x9090C030);
 
 	// Hunter interior & static_rotor for helis
-	InjectHook(0x4C78F2, HunterTest, PATCH_JUMP);
+	InjectHook(0x4C78F2, HunterTest, HookType::Jump);
 	InjectHook(0x4C9618, CacheCRC32);
 
 	// Fixed blown up car rendering
 	// ONLY 1.0
 	InjectHook(0x5D993F, DarkVehiclesFix1);
-	InjectHook(0x5D9A74, DarkVehiclesFix2, PATCH_JUMP);
-	InjectHook(0x5D9B44, DarkVehiclesFix3, PATCH_JUMP);
-	InjectHook(0x5D9CB2, DarkVehiclesFix4, PATCH_JUMP);
+	InjectHook(0x5D9A74, DarkVehiclesFix2, HookType::Jump);
+	InjectHook(0x5D9B44, DarkVehiclesFix3, HookType::Jump);
+	InjectHook(0x5D9CB2, DarkVehiclesFix4, HookType::Jump);
 
 	// Bindable NUM5
 	// Only 1.0 and Steam
@@ -3747,7 +3748,7 @@ void Patch_SA_10()
 	InjectHook(0x4D9BB5, 0x4F2FD0);
 
 	// FLAC support
-	InjectHook(0x4F373D, LoadFLAC, PATCH_JUMP);
+	InjectHook(0x4F373D, LoadFLAC, HookType::Jump);
 	InjectHook(0x57BEFE, FLACInit);
 	InjectHook(0x4F3787, CAEWaveDecoderInit);
 
@@ -3779,14 +3780,14 @@ void Patch_SA_10()
 	Patch<DWORD>(0x6A355D, 0x89644824);
 	Patch<DWORD>(0x6A3561, 5);
 	Patch<DWORD>(0x6A3565, 0x54C48300);
-	InjectHook(0x6A3569, &CAutomobile::Fix_SilentPatch, PATCH_JUMP);
+	InjectHook(0x6A3569, &CAutomobile::Fix_SilentPatch, HookType::Jump);
 
 	// Patched CPlane::Fix
 	// Doors don't get reset (they can't get damaged anyway), bouncing panels DO reset
 	// but not on Vortex
 	Patch<BYTE>(0x6CABD0, 0xEB);
 	Patch<DWORD>(0x6CAC05, 0x5E5FCF8B);
-	InjectHook(0x6CAC09, &CPlane::Fix_SilentPatch, PATCH_JUMP);
+	InjectHook(0x6CAC09, &CPlane::Fix_SilentPatch, HookType::Jump);
 
 	// Weapon icon fix (crosshairs mess up rwRENDERSTATEZWRITEENABLE)
 	// Only 1.0 and 1.01, Steam somehow fixed it (not the same way though)
@@ -3796,7 +3797,7 @@ void Patch_SA_10()
 
 	// Zones fix
 	// Only 1.0 and Steam
-	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, PATCH_JUMP);
+	InjectHook(0x572130, GetCurrentZoneLockedOrUnlocked, HookType::Jump);
 
 	// Bilinear filtering for license plates
 	//Patch<BYTE>(0x6FD528, rwFILTERLINEAR);
@@ -3826,7 +3827,7 @@ void Patch_SA_10()
 	// mov ebx, eax
 	// nop
 	Patch<uint8_t>( 0x735881, 0x50 );
-	InjectHook( 0x735881 + 1, GetMaxExtraDirectionals, PATCH_CALL );
+	InjectHook( 0x735881 + 1, GetMaxExtraDirectionals, HookType::Call );
 	Patch( 0x735881 + 6, { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
 	Nop( 0x735881 + 11, 3 );
 
@@ -3858,7 +3859,7 @@ void Patch_SA_10()
 	Patch<DWORD>(AddressByRegion_10<DWORD>(0x74754B), 0x900);
 
 	// SHGetFolderPath on User Files
-	InjectHook(0x744FB0, GetMyDocumentsPathSA, PATCH_JUMP);
+	InjectHook(0x744FB0, GetMyDocumentsPathSA, HookType::Jump);
 
 	// Fixed muzzleflash not showing from last bullet
 	Nop(0x61ECE4, 2);
@@ -3877,7 +3878,7 @@ void Patch_SA_10()
 	Patch<BYTE>(0x6FB621, 0xC3); // nop CSprite::FlushSpriteBuffer
 	// Add CSprite::FlushSpriteBuffer, jmp loc_6FB605 at the bottom of the function
 	Patch<BYTE>(0x6FB600, 0x21);
-	InjectHook(0x6FB622, 0x70CF20, PATCH_CALL);
+	InjectHook(0x6FB622, 0x70CF20, HookType::Call);
 	Patch<WORD>(0x6FB627, 0xDCEB);
 
 	// nop / mov eax, offset FlushLensSwitchZ
@@ -3904,7 +3905,7 @@ void Patch_SA_10()
 	// Don't lock mouse Y axis during fadeins
 	Patch<WORD>(0x50FBB4, 0x27EB);
 	Patch<WORD>(0x510512, 0xE990);
-	InjectHook(0x524071, 0x524139, PATCH_JUMP);
+	InjectHook(0x524071, 0x524139, HookType::Jump);
 
 	// Fixed mirrors crash
 	// TODO: Change when short jumps are supported
@@ -3935,11 +3936,11 @@ void Patch_SA_10()
 	InjectHook(0x746350, SetMultiSamplingLevels);
 
 	Nop(0x57A0FC, 1);
-	InjectHook(0x57A0FD, MSAAText, PATCH_CALL);
+	InjectHook(0x57A0FD, MSAAText, HookType::Call);
 
 	
 	// Fixed car collisions - car you're hitting gets proper damage now
-	InjectHook(0x5428EA, FixedCarDamage, PATCH_CALL);
+	InjectHook(0x5428EA, FixedCarDamage, HookType::Call);
 
 
 	// Car explosion crash with multimonitor
@@ -3992,7 +3993,7 @@ void Patch_SA_10()
 
 
 	// Don't allocate constant memory for stencil shadows every frame
-	InjectHook(0x711DD5, StencilShadowAlloc, PATCH_CALL);
+	InjectHook(0x711DD5, StencilShadowAlloc, HookType::Call);
 	Nop(0x711E0D, 3);
 	Patch(0x711DDA, { 0xEB, 0x2C });
 	Patch(0x711E5F, { 0x5F, 0x5D, 0xC3 });	// pop edi, pop ebp, ret
@@ -4021,7 +4022,7 @@ void Patch_SA_10()
 
 	// AI accuracy issue
 	Nop(0x73B3AE, 1);
-	InjectHook( 0x73B3AE + 1, WeaponRangeMult_VehicleCheck, PATCH_CALL );
+	InjectHook( 0x73B3AE + 1, WeaponRangeMult_VehicleCheck, HookType::Call );
 
 
 	// New timers fix
@@ -4032,7 +4033,7 @@ void Patch_SA_10()
 
 
 	// Don't catch WM_SYSKEYDOWN and WM_SYSKEYUP (fixes Alt+F4)
-	InjectHook( AddressByRegion_10<int>(0x748220), AddressByRegion_10<int>(0x748446), PATCH_JUMP );
+	InjectHook( AddressByRegion_10<int>(0x748220), AddressByRegion_10<int>(0x748446), HookType::Jump );
 	Patch<uint8_t>( AddressByRegion_10<int>(0x7481E3), 0x5C ); // esi -> ebx
 	Patch<uint8_t>( AddressByRegion_10<int>(0x7481EA), 0x53 ); // esi -> ebx
 	Patch<uint8_t>( AddressByRegion_10<int>(0x74820D), 0xFB ); // esi -> ebx
@@ -4040,7 +4041,7 @@ void Patch_SA_10()
 	Patch<int8_t>( AddressByRegion_10<int>(0x748200), 0x4C-0x3C ); // use stack space for new lParam
 	Patch<int8_t>( AddressByRegion_10<int>(0x748214), 0x4C-0x3C ); // use stack space for new lParam
 
-	InjectHook( AddressByRegion_10<int>(0x74826A), AddressByRegion_10<int>(0x748446), PATCH_JUMP );
+	InjectHook( AddressByRegion_10<int>(0x74826A), AddressByRegion_10<int>(0x748446), HookType::Jump );
 	Patch<uint8_t>( AddressByRegion_10<int>(0x74822D), 0x5C ); // esi -> ebx
 	Patch<uint8_t>( AddressByRegion_10<int>(0x748234), 0x53 ); // esi -> ebx
 	Patch<uint8_t>( AddressByRegion_10<int>(0x748257), 0xFB ); // esi -> ebx
@@ -4090,7 +4091,7 @@ void Patch_SA_10()
 
 
 	// Make freeing temp objects more aggressive to fix vending crash
-	InjectHook( 0x5A1840, CObject::TryToFreeUpTempObjects_SilentPatch, PATCH_JUMP );
+	InjectHook( 0x5A1840, CObject::TryToFreeUpTempObjects_SilentPatch, HookType::Jump );
 
 
 	// Remove FILE_FLAG_NO_BUFFERING from CdStreams
@@ -4123,7 +4124,7 @@ void Patch_SA_10()
 	// Also fixed integer division by zero
 	Patch( 0x5B9868 + 2, &pAudioUtilsFrequency );
 	InjectHook( 0x5B9886, AudioUtilsGetStartTime );
-	InjectHook( 0x4D9E80, AudioUtilsGetCurrentTimeInMs, PATCH_JUMP );
+	InjectHook( 0x4D9E80, AudioUtilsGetCurrentTimeInMs, HookType::Jump );
 
 
 	// Car generators placed in interiors visible everywhere
@@ -4151,7 +4152,7 @@ void Patch_SA_10()
 	// TODO: Verify this fix, might be causing crashes atm and too risky to include
 #if 0
 	// Fixed CPlayerInfo assignment operator
-	InjectHook( 0x45DEF0, &CPlayerInfo::operator=, PATCH_JUMP );
+	InjectHook( 0x45DEF0, &CPlayerInfo::operator=, HookType::Jump );
 #endif
 
 
@@ -4224,11 +4225,11 @@ void Patch_SA_10()
 	
 		UpdateMovingCollisionJmp = 0x6B200F;
 		HydraulicControlJmpBack = 0x6B1FBF + 10;
-		InjectHook( 0x6B1FBF, TestFirelaAndFlags, PATCH_JUMP );
+		InjectHook( 0x6B1FBF, TestFirelaAndFlags, HookType::Jump );
 
 		FollowCarCamNoMovement = 0x52551E;
 		FollowCarCamJmpBack = 0x5254F6 + 6;
-		InjectHook( 0x5254F6, CamControlFirela, PATCH_JUMP );
+		InjectHook( 0x5254F6, CamControlFirela, HookType::Jump );
 	}
 
 
@@ -4246,7 +4247,7 @@ void Patch_SA_10()
 
 	// Tug tow bar (misc_b instead of misc_a
 	Nop( 0x6AF2CC, 1 );
-	InjectHook( 0x6AF2CC + 1, &CAutomobile::GetTowBarFrame, PATCH_CALL );
+	InjectHook( 0x6AF2CC + 1, &CAutomobile::GetTowBarFrame, HookType::Call );
 
 
 	// Play passenger's voice lines when killing peds with car, not only when hitting them damages player's vehicle
@@ -4295,12 +4296,12 @@ void Patch_SA_10()
 	{
 		using namespace Localization;
 
-		InjectHook( 0x56D220, IsMetric_LocaleBased, PATCH_JUMP );
+		InjectHook( 0x56D220, IsMetric_LocaleBased, HookType::Jump );
 	}
 
 
 	// Fix paintjobs vanishing after opening/closing garage without rendering the car first
-	InjectHook( 0x6D0B70, &CVehicle::GetRemapIndex, PATCH_JUMP );
+	InjectHook( 0x6D0B70, &CVehicle::GetRemapIndex, HookType::Jump );
 
 
 	// Re-introduce corona rotation on PC, like it is in III/VC/SA PS2
@@ -4340,7 +4341,7 @@ void Patch_SA_10()
 
 	// Reset requested extras if created vehicle has no extras
 	// Fixes eg. lightless taxis
-	InjectHook( 0x4C97B1, CVehicleModelInfo::ResetCompsForNoExtras, PATCH_CALL );
+	InjectHook( 0x4C97B1, CVehicleModelInfo::ResetCompsForNoExtras, HookType::Call );
 	Nop( 0x4C97B1 + 5, 9 );
 
 
@@ -4367,14 +4368,14 @@ void Patch_SA_10()
 
 	// Add wind animations when driving a Quadbike
 	// By Wesser
-	InjectHook(0x5E69BC, &CVehicle::IsOpenTopCarOrQuadbike, PATCH_CALL);
+	InjectHook(0x5E69BC, &CVehicle::IsOpenTopCarOrQuadbike, HookType::Call);
 	Nop(0x5E69BC + 5, 3);
 
 
 	// Tie handlebar movement to the stering animations on Quadbike, fixes odd animation interpolations at low speeds
 	// By Wesser
 	Nop(0x6B7932, 1);
-	InjectHook(0x6B7932+1, &QuadbikeHandlebarAnims::ProcessRiderAnims_FixInterp, PATCH_CALL);
+	InjectHook(0x6B7932+1, &QuadbikeHandlebarAnims::ProcessRiderAnims_FixInterp, HookType::Call);
 
 
 #if FULL_PRECISION_D3D
@@ -4405,8 +4406,8 @@ void Patch_SA_11()
 	CAEDataStream::SetStructType(true);
 
 	// Heli rotors
-	InjectHook(0x6CB390, &CPlane::Render_Stub, PATCH_JUMP);
-	InjectHook(0x6C4C20, &CHeli::Render_Stub, PATCH_JUMP);
+	InjectHook(0x6CB390, &CPlane::Render_Stub, HookType::Jump);
+	InjectHook(0x6C4C20, &CHeli::Render_Stub, HookType::Jump);
 
 	// RefFix
 	static const float						fRefZVal = 1.0f;
@@ -4416,15 +4417,15 @@ void Patch_SA_11()
 	Patch<BYTE>(0x6FC1D0, 0);
 
 	// Plane rotors
-	InjectHook(0x4C7A01, PlaneAtomicRendererSetup, PATCH_JUMP);
+	InjectHook(0x4C7A01, PlaneAtomicRendererSetup, HookType::Jump);
 
 	// DOUBLE_RWHEELS
 	Patch<WORD>(0x4C9490, 0xE281);
 	Patch<int>(0x4C9492, ~(rwMATRIXTYPEMASK|rwMATRIXINTERNALIDENTITY));
 
 	// A fix for DOUBLE_RWHEELS trailers
-	InjectHook(0x4C9423, TrailerDoubleRWheelsFix, PATCH_JUMP);
-	InjectHook(0x4C94F4, TrailerDoubleRWheelsFix2, PATCH_JUMP);
+	InjectHook(0x4C9423, TrailerDoubleRWheelsFix, HookType::Jump);
+	InjectHook(0x4C94F4, TrailerDoubleRWheelsFix2, HookType::Jump);
 
 	// No framedelay
 	Patch<WORD>(0x53EDC3, 0x43EB);
@@ -4440,7 +4441,7 @@ void Patch_SA_11()
 	Patch<DWORD>(AddressByRegion_11<DWORD>(0x747270), 0x9090C030);
 
 	// Hunter interior & static_rotor for helis
-	InjectHook(0x4C7972, HunterTest, PATCH_JUMP);
+	InjectHook(0x4C7972, HunterTest, HookType::Jump);
 	InjectHook(0x4C9818, CacheCRC32);
 
 	// Lightbeam fix
@@ -4460,7 +4461,7 @@ void Patch_SA_11()
 	Patch<BYTE>(0x6E1C5D, 0x18);
 	Patch<BYTE>(0x6E180B, 0xC8-0x7C);
 
-	InjectHook(0x6A3717, ResetAlphaFuncRefAfterRender, PATCH_JUMP);
+	InjectHook(0x6A3717, ResetAlphaFuncRefAfterRender, HookType::Jump);
 	*/
 
 	// PS2 SUN!!!!!!!!!!!!!!!!!
@@ -4498,7 +4499,7 @@ void Patch_SA_11()
 	InjectHook(0x57C566, FLACInit);
 	if ( *(BYTE*)0x4F3A50 == 0x6A )
 	{
-		InjectHook(0x4F3A50 + 0x14D, LoadFLAC_11, PATCH_JUMP);
+		InjectHook(0x4F3A50 + 0x14D, LoadFLAC_11, HookType::Jump);
 		InjectHook(0x4F3A50 + 0x197, CAEWaveDecoderInit);
 
 		Patch<WORD>(0x4F3A50 + 0x17A, 0x18EB);
@@ -4510,8 +4511,8 @@ void Patch_SA_11()
 	else
 	{
 		// securom'd EXE
-		InjectHook(0x5B6B7B, LoadFLAC_11, PATCH_JUMP);
-		InjectHook(0x5B6BFB, CAEWaveDecoderInit, PATCH_JUMP);
+		InjectHook(0x5B6B7B, LoadFLAC_11, HookType::Jump);
+		InjectHook(0x5B6BFB, CAEWaveDecoderInit, HookType::Jump);
 		Patch<WORD>(0x5B6BCB, 0x26EB);
 
 		if ( *(DWORD*)0x14E4954 == 0x05C70A75 )
@@ -4546,14 +4547,14 @@ void Patch_SA_11()
 	Patch<DWORD>(0x6A3D7D, 0x89644824);
 	Patch<DWORD>(0x6A3D81, 5);
 	Patch<DWORD>(0x6A3D85, 0x54C48300);
-	InjectHook(0x6A3D89, &CAutomobile::Fix_SilentPatch, PATCH_JUMP);
+	InjectHook(0x6A3D89, &CAutomobile::Fix_SilentPatch, HookType::Jump);
 
 	// Patched CPlane::Fix
 	// Doors don't get reset (they can't get damaged anyway), bouncing panels DO reset
 	// but not on Vortex
 	Patch<BYTE>(0x6CB3F0, 0xEB);
 	Patch<DWORD>(0x6CB425, 0x5E5FCF8B);
-	InjectHook(0x6CB429, &CPlane::Fix_SilentPatch, PATCH_JUMP);
+	InjectHook(0x6CB429, &CPlane::Fix_SilentPatch, HookType::Jump);
 
 	// Weapon icon fix (crosshairs mess up rwRENDERSTATEZWRITEENABLE)
 	// Only 1.0 and 1.01, Steam somehow fixed it (not the same way though)
@@ -4597,7 +4598,7 @@ void Patch_SA_11()
 	// mov ebx, eax
 	// nop
 	Patch<uint8_t>( 0x7360B1, 0x50 );
-	InjectHook( 0x7360B1 + 1, GetMaxExtraDirectionals, PATCH_CALL );
+	InjectHook( 0x7360B1 + 1, GetMaxExtraDirectionals, HookType::Call );
 	Patch( 0x7360B1 + 6, { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
 	Nop( 0x7360B1 + 11, 3 );
 
@@ -4628,7 +4629,7 @@ void Patch_SA_11()
 	Patch<DWORD>(AddressByRegion_11<DWORD>(0x747E1B), 0x900);
 
 	// SHGetFolderPath on User Files
-	InjectHook(0x7457E0, GetMyDocumentsPathSA, PATCH_JUMP);
+	InjectHook(0x7457E0, GetMyDocumentsPathSA, HookType::Jump);
 
 	// Fixed muzzleflash not showing from last bullet
 	Nop(0x61F504, 2);
@@ -4646,7 +4647,7 @@ void Patch_SA_11()
 	Patch<DWORD>(0x70FC8A, 0);
 	Patch<BYTE>(0x6FBE51, 0xC3);
 	Patch<BYTE>(0x6FBE30, 0x21);
-	InjectHook(0x6FBE52, 0x70D750, PATCH_CALL);
+	InjectHook(0x6FBE52, 0x70D750, HookType::Call);
 	Patch<WORD>(0x6FBE57, 0xDCEB);
 
 	Patch<WORD>(0x6FBCA6, 0xB990);
@@ -4670,7 +4671,7 @@ void Patch_SA_11()
 	// Don't lock mouse Y axis during fadeins
 	Patch<WORD>(0x510054, 0x27EB);
 	Patch<WORD>(0x5109B2, 0xE990);
-	InjectHook(0x524511, 0x5245D9, PATCH_JUMP);
+	InjectHook(0x524511, 0x5245D9, HookType::Jump);
 
 	// Fixed mirrors crash
 	Patch( 0x7279FB, { 0x85, 0xC0, 0x74, 0x34, 0x83, 0xC4, 0x04 } );
@@ -4699,10 +4700,10 @@ void Patch_SA_11()
 	InjectHook(0x746BD0, SetMultiSamplingLevels);
 
 	Nop(0x57A66C, 1);
-	InjectHook(0x57A66D, MSAAText, PATCH_CALL);
+	InjectHook(0x57A66D, MSAAText, HookType::Call);
 
 	// Fixed car collisions - car you're hitting gets proper damage now
-	InjectHook(0x542D8A, FixedCarDamage, PATCH_CALL);
+	InjectHook(0x542D8A, FixedCarDamage, HookType::Call);
 
 
 	// Car explosion crash with multimonitor
@@ -4745,8 +4746,8 @@ void Patch_SA_Steam()
 	CAEDataStream::SetStructType(false);
 
 	// Heli rotors
-	InjectHook(0x700620, &CPlane::Render_Stub, PATCH_JUMP);
-	InjectHook(0x6F9550, &CHeli::Render_Stub, PATCH_JUMP);
+	InjectHook(0x700620, &CPlane::Render_Stub, HookType::Jump);
+	InjectHook(0x6F9550, &CHeli::Render_Stub, HookType::Jump);
 
 	// RefFix
 	static const float						fRefZVal = 1.0f;
@@ -4756,15 +4757,15 @@ void Patch_SA_Steam()
 	Patch<BYTE>(0x73401A, 0);
 
 	// Plane rotors
-	InjectHook(0x4D2270, PlaneAtomicRendererSetup, PATCH_JUMP);
+	InjectHook(0x4D2270, PlaneAtomicRendererSetup, HookType::Jump);
 
 	// DOUBLE_RWHEELS
 	Patch<WORD>(0x4D3B9D, 0x6781);
 	Patch<int>(0x4D3BA0, ~(rwMATRIXTYPEMASK|rwMATRIXINTERNALIDENTITY));
 
 	// A fix for DOUBLE_RWHEELS trailers
-	InjectHook(0x4D3B47, TrailerDoubleRWheelsFix_Steam, PATCH_JUMP);
-	InjectHook(0x4D3C1A, TrailerDoubleRWheelsFix2_Steam, PATCH_JUMP);
+	InjectHook(0x4D3B47, TrailerDoubleRWheelsFix_Steam, HookType::Jump);
+	InjectHook(0x4D3C1A, TrailerDoubleRWheelsFix2_Steam, HookType::Jump);
 
 	// No framedelay
 	Patch<WORD>(0x551113, 0x46EB);
@@ -4780,7 +4781,7 @@ void Patch_SA_Steam()
 	Patch<DWORD>(0x7807D0, 0x9090C030);
 
 	// Hunter interior & static_rotor for helis
-	InjectHook(0x4D21E1, HunterTest, PATCH_JUMP);
+	InjectHook(0x4D21E1, HunterTest, HookType::Jump);
 	InjectHook(0x4D3F1D, CacheCRC32);
 
 	// Bindable NUM5
@@ -4806,7 +4807,7 @@ void Patch_SA_Steam()
 	Patch<BYTE>(0x71D27F, 0xD0-0x9C);
 	//InjectHook(0x6A2EDA, CullTest);
 
-	InjectHook(0x6CFF69, ResetAlphaFuncRefAfterRender_Steam, PATCH_JUMP);
+	InjectHook(0x6CFF69, ResetAlphaFuncRefAfterRender_Steam, HookType::Jump);
 	*/
 
 	// PS2 SUN!!!!!!!!!!!!!!!!!
@@ -4829,7 +4830,7 @@ void Patch_SA_Steam()
 	InjectHook(0x4E4A8B, 0x4FF2B0);
 
 	// FLAC support
-	InjectHook(0x4FFC39, LoadFLAC_Steam, PATCH_JUMP);
+	InjectHook(0x4FFC39, LoadFLAC_Steam, HookType::Jump);
 	InjectHook(0x591814, FLACInit_Steam);
 	InjectHook(0x4FFC83, CAEWaveDecoderInit);
 
@@ -4860,17 +4861,17 @@ void Patch_SA_Steam()
 	Patch<DWORD>(0x6D0651, 0x89644824);
 	Patch<DWORD>(0x6D0655, 5);
 	Patch<DWORD>(0x6D0659, 0x54C48300);
-	InjectHook(0x6D065D, &CAutomobile::Fix_SilentPatch, PATCH_JUMP);
+	InjectHook(0x6D065D, &CAutomobile::Fix_SilentPatch, HookType::Jump);
 
 	// Patched CPlane::Fix
 	// Doors don't get reset (they can't get damaged anyway), bouncing panels DO reset
 	// but not on Vortex
 	Patch<BYTE>(0x700681, 0xEB);
 	Patch<DWORD>(0x7006B6, 0x5E5FCF8B);
-	InjectHook(0x7006BA, &CPlane::Fix_SilentPatch, PATCH_JUMP);
+	InjectHook(0x7006BA, &CPlane::Fix_SilentPatch, HookType::Jump);
 
 	// Zones fix
-	InjectHook(0x587080, GetCurrentZoneLockedOrUnlocked_Steam, PATCH_JUMP);
+	InjectHook(0x587080, GetCurrentZoneLockedOrUnlocked_Steam, HookType::Jump);
 
 	// CGarages::RespraysAreFree resetting on new game
 	Patch<WORD>(0x44CB55, 0xC766);
@@ -4908,7 +4909,7 @@ void Patch_SA_Steam()
 	// mov ebx, eax
 	// nop
 	Patch( 0x768046, { 0xFF, 0x35 } );
-	InjectHook( 0x768046 + 6, GetMaxExtraDirectionals, PATCH_CALL );
+	InjectHook( 0x768046 + 6, GetMaxExtraDirectionals, HookType::Call );
 	Patch( 0x768046 + 11, { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
 	Nop( 0x768046 + 16, 1 );
 
@@ -4943,7 +4944,7 @@ void Patch_SA_Steam()
 	Patch<DWORD>(0x781457, 0x900);
 
 	// SHGetFolderPath on User Files
-	InjectHook(0x77EDC0, GetMyDocumentsPathSA, PATCH_JUMP);
+	InjectHook(0x77EDC0, GetMyDocumentsPathSA, HookType::Jump);
 
 	// Fixed muzzleflash not showing from last bullet
 	Nop(0x61F504, 2);
@@ -4960,7 +4961,7 @@ void Patch_SA_Steam()
 	// Fixed lens flare
 	Nop(0x733C65, 5);
 	Patch<BYTE>(0x733C4E, 0x26);
-	InjectHook(0x733C75, 0x7591E0, PATCH_CALL);
+	InjectHook(0x733C75, 0x7591E0, HookType::Call);
 	Patch<WORD>(0x733C7A, 0xDBEB);
 
 	Nop(0x733A5A, 4);
@@ -4981,7 +4982,7 @@ void Patch_SA_Steam()
 	// Don't lock mouse Y axis during fadeins
 	Patch<WORD>(0x51E192, 0x2BEB);
 	Patch<WORD>(0x51ED38, 0xE990);
-	InjectHook(0x534D3E, 0x534DF7, PATCH_JUMP);
+	InjectHook(0x534D3E, 0x534DF7, HookType::Jump);
 
 	// Fixed mirrors crash
 	Patch( 0x75903A, { 0x85, 0xC0, 0x74, 0x34, 0x83, 0xC4, 0x04 } );
@@ -5014,7 +5015,7 @@ void Patch_SA_Steam()
 
 	// Fixed car collisions - car you're hitting gets proper damage now
 	Nop(0x555AB8, 2);
-	InjectHook(0x555AC0, FixedCarDamage_Steam, PATCH_CALL);
+	InjectHook(0x555AC0, FixedCarDamage_Steam, HookType::Call);
 
 
 	// Car explosion crash with multimonitor
@@ -5044,7 +5045,7 @@ void Patch_SA_Steam()
 
 
 	// Don't allocate constant memory for stencil shadows every frame
-	InjectHook(0x760795, StencilShadowAlloc, PATCH_CALL);
+	InjectHook(0x760795, StencilShadowAlloc, HookType::Call);
 	Nop(0x7607CD, 3);
 	Patch(0x76079A, { 0xEB, 0x2C });
 	Patch(0x76082C, { 0x5F, 0x5D, 0xC3 });	// pop edi, pop ebp, ret
@@ -5067,11 +5068,11 @@ void Patch_SA_Steam()
 
 	// AI accuracy issue
 	Nop(0x7738F5, 1);
-	InjectHook( 0x7738F5+1, WeaponRangeMult_VehicleCheck, PATCH_CALL );
+	InjectHook( 0x7738F5+1, WeaponRangeMult_VehicleCheck, HookType::Call );
 
 
 	// Don't catch WM_SYSKEYDOWN and WM_SYSKEYUP (fixes Alt+F4)
-	InjectHook( 0x7821E5, 0x7823FE, PATCH_JUMP );
+	InjectHook( 0x7821E5, 0x7823FE, HookType::Jump );
 	Patch<uint8_t>( 0x7821A7 + 1, 0x5C ); // esi -> ebx
 	Patch<uint8_t>( 0x7821AF, 0x53 ); // esi -> ebx
 	Patch<uint8_t>( 0x7821D1 + 1, 0xFB ); // esi -> ebx
@@ -5079,7 +5080,7 @@ void Patch_SA_Steam()
 	Patch<int8_t>( 0x7821C2 + 3, 0x4C-0x2C ); // use stack space for new lParam
 	Patch<int8_t>( 0x7821D6 + 3, 0x4C-0x2C ); // use stack space for new lParam
 
-	InjectHook( 0x78222F, 0x7823FE, PATCH_JUMP );
+	InjectHook( 0x78222F, 0x7823FE, HookType::Jump );
 	Patch<uint8_t>( 0x7821F1 + 1, 0x5C ); // esi -> ebx
 	Patch<uint8_t>( 0x7821F9, 0x53 ); // esi -> ebx
 	Patch<uint8_t>( 0x78221B + 1, 0xFB ); // esi -> ebx
@@ -5121,7 +5122,7 @@ void Patch_SA_Steam()
 	Nop(0x406D00, 7);
 
 	// Unlock 1.0/1.01 saves loading
-	InjectHook(0x5EDFD9, 0x5EE0FA, PATCH_JUMP);
+	InjectHook(0x5EDFD9, 0x5EE0FA, HookType::Jump);
 }
 
 void Patch_SA_NewBinaries_Common()
@@ -5155,7 +5156,7 @@ void Patch_SA_NewBinaries_Common()
 		if ( framedelay_jmpSrc.size() == 1 && framedelay_jmpDest.size() == 1 && popEsi.size() == 1 )
 		{
 			// TODO: Let this place long or short jump, whatever it prefers
-			InjectHook( framedelay_jmpSrc.get_first<void>( 3 ), framedelay_jmpDest.get_first<void>( 11 ), PATCH_JUMP );
+			InjectHook( framedelay_jmpSrc.get_first<void>( 3 ), framedelay_jmpDest.get_first<void>( 11 ), HookType::Jump );
 
 			auto popEsiMatch = popEsi.get_one();
 			Patch<BYTE>( popEsiMatch.get<void>( 3 + 2 ), 0x4);
@@ -5275,7 +5276,7 @@ void Patch_SA_NewBinaries_Common()
 	// SHGetFolderPath on User Files
 	{
 		void* getDocumentsPath = get_pattern( "8D 45 FC 50 68 19 00 02 00", -6 );
-		InjectHook( getDocumentsPath, GetMyDocumentsPathSA, PATCH_JUMP );
+		InjectHook( getDocumentsPath, GetMyDocumentsPathSA, HookType::Jump );
 	}
 
 	// Fixed muzzleflash not showing from last bullet
@@ -5314,7 +5315,7 @@ void Patch_SA_NewBinaries_Common()
 
 		// Add CSprite::FlushSpriteBuffer, jmp loc_7300EC at the bottom of the function
 		Patch<BYTE>( coronasRenderEpilogue.get<void>( -0xA + 1 ), 0x20 );
-		InjectHook( coronasRenderEpilogue.get<void>( 0x18 ), flushSpriteBuffer, PATCH_CALL );
+		InjectHook( coronasRenderEpilogue.get<void>( 0x18 ), flushSpriteBuffer, HookType::Call );
 		// TODO: Short jumps
 		Patch( coronasRenderEpilogue.get<void>( 0x18 + 5 ), { 0xEB, 0xE1 });
 
@@ -5360,7 +5361,7 @@ void Patch_SA_NewBinaries_Common()
 		// TODO: Change when short jumps are supported
 		Patch( followPedWithMouse, { 0xEB, 0x29 } );
 		Patch( followPedWithMouse2, { 0x90, 0xE9 } );
-		InjectHook( followPedSA, folowPedSA_dest, PATCH_JUMP );
+		InjectHook( followPedSA, folowPedSA_dest, HookType::Jump );
 	}
 
 	// Fixed mirrors crash
@@ -5424,7 +5425,7 @@ void Patch_SA_NewBinaries_Common()
 		auto fixedCarDamage = pattern( "8B 7D 10 0F B6 47 21" ).get_one();
 
 		Nop( fixedCarDamage.get<void>(), 2 );
-		InjectHook( fixedCarDamage.get<void>( 2 ), FixedCarDamage_Newsteam, PATCH_CALL );
+		InjectHook( fixedCarDamage.get<void>( 2 ), FixedCarDamage_Newsteam, HookType::Call );
 	}
 
 	// Car explosion crash with multimonitor
@@ -5466,7 +5467,7 @@ void Patch_SA_NewBinaries_Common()
 
 		if ( updateEscalators.size() == 1 && removeEscalatorsForEntity.size() == 1 )
 		{
-			InjectHook( updateEscalators.get_first(), UpdateEscalators, PATCH_JUMP );
+			InjectHook( updateEscalators.get_first(), UpdateEscalators, HookType::Jump );
 
 			// lea ecx, [esi-84] / call CEscalator::SwitchOffNoRemove / jmp loc_734C0A
 			auto removeEscalatorsMatch = removeEscalatorsForEntity.get_one();
@@ -5474,7 +5475,7 @@ void Patch_SA_NewBinaries_Common()
 			// TODO: Change when short jmps are supported
 			Patch( removeEscalatorsMatch.get<void>(), { 0x8D, 0x8E } );
 			Patch<int32_t>( removeEscalatorsMatch.get<void>( 2 ), -0x84 );
-			InjectHook( removeEscalatorsMatch.get<void>( 6 ), &CEscalator::SwitchOffNoRemove, PATCH_CALL );
+			InjectHook( removeEscalatorsMatch.get<void>( 6 ), &CEscalator::SwitchOffNoRemove, HookType::Call );
 			Patch( removeEscalatorsMatch.get<void>( 6 + 5 ), { 0xEB, 0x4F } );
 		}
 	}
@@ -5488,7 +5489,7 @@ void Patch_SA_NewBinaries_Common()
 		{
 			auto allocMatch = shadowAlloc.get_one();
 
-			InjectHook( allocMatch.get<void>( 3 ), StencilShadowAlloc, PATCH_CALL) ;
+			InjectHook( allocMatch.get<void>( 3 ), StencilShadowAlloc, HookType::Call) ;
 			Patch( allocMatch.get<void>( 3 + 5 ), { 0xEB, 0x2C } );
 			Nop( allocMatch.get<void>( 0x3B ), 3 );
 			Patch( shadowFree.get_first( 5 ), { 0x5F, 0x5E, 0x5B, 0x5D, 0xC3 } ); // pop edi, pop esi, pop ebx, pop ebp, retn
@@ -5541,7 +5542,7 @@ void Patch_SA_NewBinaries_Common()
 		auto maxdirs_addr = pattern( "83 3D ? ? ? ? 00 8D 5E 05 74 05 BB 06 00 00 00" ).get_one();
 
 		Patch( maxdirs_addr.get<void>(), { 0xFF, 0x35 } );
-		InjectHook( maxdirs_addr.get<void>(6), GetMaxExtraDirectionals, PATCH_CALL );
+		InjectHook( maxdirs_addr.get<void>(6), GetMaxExtraDirectionals, HookType::Call );
 		Patch( maxdirs_addr.get<void>(11), { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
 		Nop( maxdirs_addr.get<void>(16), 1 );
 	}
@@ -5550,7 +5551,7 @@ void Patch_SA_NewBinaries_Common()
 	{
 		auto match = pattern( "8B 82 8C 05 00 00 85 C0 74 09" ).get_one(); // 0x76DEA7 in newsteam r1
 		Nop(match.get<int>(0), 1);
-		InjectHook( match.get<int>(1), WeaponRangeMult_VehicleCheck, PATCH_CALL );
+		InjectHook( match.get<int>(1), WeaponRangeMult_VehicleCheck, HookType::Call );
 	}
 
 	// Don't catch WM_SYSKEYDOWN and WM_SYSKEYUP (fixes Alt+F4)
@@ -5559,7 +5560,7 @@ void Patch_SA_NewBinaries_Common()
 		auto defproc = get_pattern( "8B ? 14 8B ? 10 8B ? 08 ? ? 56" );
 
 		patternie.for_each_result( [&]( pattern_match match ) {
-			InjectHook( match.get<int>(0x39), defproc, PATCH_JUMP );
+			InjectHook( match.get<int>(0x39), defproc, HookType::Jump );
 			Patch<uint8_t>( match.get<int>(1), 0x5D ); // esi -> ebx
 			Patch<uint8_t>( match.get<int>(6), 0x53 ); // esi -> ebx
 			Patch<uint8_t>( match.get<int>(0x26 + 1), 0xFB ); // esi -> ebx
@@ -5631,7 +5632,7 @@ void Patch_SA_NewBinaries_Common()
 
 
 	// Make freeing temp objects more aggressive to fix vending crash
-	InjectHook( get_pattern( "57 8B 78 08 89 45 FC 85 FF 74 5B", -9 ), CObject::TryToFreeUpTempObjects_SilentPatch, PATCH_JUMP );
+	InjectHook( get_pattern( "57 8B 78 08 89 45 FC 85 FF 74 5B", -9 ), CObject::TryToFreeUpTempObjects_SilentPatch, HookType::Jump );
 
 
 	// Remove FILE_FLAG_NO_BUFFERING from CdStreams
@@ -5663,7 +5664,7 @@ void Patch_SA_NewBinaries_Common()
 
 		Patch( staticInitialize.get<void>( 2 ), &pAudioUtilsFrequency );
 		InjectHook( staticInitialize.get<void>( 0x1E ), AudioUtilsGetStartTime );
-		InjectHook( get_pattern( "50 FF 15 ? ? ? ? DF 6D F8", -9 ), AudioUtilsGetCurrentTimeInMs, PATCH_JUMP );
+		InjectHook( get_pattern( "50 FF 15 ? ? ? ? DF 6D F8", -9 ), AudioUtilsGetCurrentTimeInMs, HookType::Jump );
 	}
 
 
@@ -5792,9 +5793,9 @@ void Patch_SA_NewBinaries_Common()
 		ReadCall( initialiseLanguage2.get<void>( 0x15 ), setGermanGame );
 		ReadCall( initialiseLanguage2.get<void>( 0x2A ), setFrenchGame );
 
-		InjectHook( setNormalGame, SetUncensoredGame, PATCH_JUMP );
-		InjectHook( setGermanGame, SetUncensoredGame, PATCH_JUMP );
-		InjectHook( setFrenchGame, SetUncensoredGame, PATCH_JUMP );
+		InjectHook( setNormalGame, SetUncensoredGame, HookType::Jump );
+		InjectHook( setGermanGame, SetUncensoredGame, HookType::Jump );
+		InjectHook( setFrenchGame, SetUncensoredGame, HookType::Jump );
 	}
 
 	// Default Steer with Mouse to disabled, like in older executables not based on xbox
@@ -5853,7 +5854,7 @@ void Patch_SA_NewBinaries_Common()
 	{
 		auto resetComps = pattern( "6A 00 68 ? ? ? ? 57 E8 ? ? ? ? 83 C4 0C 8B C7" ).get_one();
 
-		InjectHook( resetComps.get<void>( -9 ), CVehicleModelInfo::ResetCompsForNoExtras, PATCH_CALL );
+		InjectHook( resetComps.get<void>( -9 ), CVehicleModelInfo::ResetCompsForNoExtras, HookType::Call );
 		Nop( resetComps.get<void>( -9 + 5 ), 4 );
 	}
 
@@ -5886,7 +5887,7 @@ void Patch_SA_NewBinaries_Common()
 	{
 		auto isOpenTopCar = pattern("8B 11 8B 82 9C 00 00 00 FF D0").get_one();
 
-		InjectHook(isOpenTopCar.get<void>(), &CVehicle::IsOpenTopCarOrQuadbike, PATCH_CALL);
+		InjectHook(isOpenTopCar.get<void>(), &CVehicle::IsOpenTopCarOrQuadbike, HookType::Call);
 		Nop(isOpenTopCar.get<void>(5), 5);
 
 	}
@@ -5900,10 +5901,10 @@ void Patch_SA_NewBinaries_Common()
 		auto saveDriveByAnim = pattern("D8 71 18 D9 5D EC").get_one();
 
 		Nop(processRiderAnims.get<void>(), 1);
-		InjectHook(processRiderAnims.get<void>(1), &QuadbikeHandlebarAnims::ProcessRiderAnims_FixInterp_Steam, PATCH_CALL);
+		InjectHook(processRiderAnims.get<void>(1), &QuadbikeHandlebarAnims::ProcessRiderAnims_FixInterp_Steam, HookType::Call);
 
 		Nop(saveDriveByAnim.get<void>(), 1);
-		InjectHook(saveDriveByAnim.get<void>(1), &QuadbikeHandlebarAnims::SaveDriveByAnim_Steam, PATCH_CALL);
+		InjectHook(saveDriveByAnim.get<void>(1), &QuadbikeHandlebarAnims::SaveDriveByAnim_Steam, HookType::Call);
 	}
 }
 

@@ -8,6 +8,7 @@
 #include <ShlObj.h>
 #include "Utils/MemoryMgr.h"
 #include "Utils/Patterns.h"
+#include "Utils/ScopedUnprotect.hpp"
 
 #include "Common_ddraw.h"
 #include "Desktop.h"
@@ -197,7 +198,7 @@ static bool PatchIAT_ByPointers()
 {
 	pOrgSystemParametersInfoA = SystemParametersInfoA;
 	memcpy( orgCode, pOrgSystemParametersInfoA, sizeof(orgCode) );
-	Memory::VP::InjectHook( pOrgSystemParametersInfoA, SystemParametersInfoA_OverwritingHook, PATCH_JUMP );
+	Memory::VP::InjectHook( pOrgSystemParametersInfoA, SystemParametersInfoA_OverwritingHook, Memory::HookType::Jump );
 	return true;
 }
 

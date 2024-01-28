@@ -232,7 +232,7 @@ namespace Common {
 				using namespace CompsToUseFix;
 
 				auto resetComps = pattern( "8B 04 24 83 C4 08 5D 5F" ).get_one();
-				InjectHook( resetComps.get<void>( -14 ), ResetCompsForNoExtras, PATCH_CALL );
+				InjectHook( resetComps.get<void>( -14 ), ResetCompsForNoExtras, HookType::Call );
 				Nop( resetComps.get<void>( -9 ), 9 );
 			}
 		}
