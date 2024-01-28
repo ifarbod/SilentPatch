@@ -299,6 +299,7 @@ void					(*GTAdelete)(void*) = AddressByVersion<void(*)(void*)>(0x82413F, 0x824E
 const char*				(*GetFrameNodeName)(RwFrame*) = AddressByVersion<const char*(*)(RwFrame*)>(0x72FB30, 0x730360, 0x769C20);
 RpHAnimHierarchy*		(*GetAnimHierarchyFromSkinClump)(RpClump*) = AddressByVersion<RpHAnimHierarchy*(*)(RpClump*)>(0x734A40, 0x735270, 0x7671B0);	
 auto					InitializeUtrax = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0x4F3A10, 0x4FFA80);
+auto					RpAnimBlendClumpGetAssociation = AddressByVersion<void*(*)(RpClump*, uint32_t)>(0x4D68B0, { "8B 0D ? ? ? ? 8B 14 01 8B 02 85 C0 74 11 8B 4D 0C", -6 });
 
 static void				(__thiscall* SetVolume)(void*,float);	
 static BOOL				(*IsAlreadyRunning)();
@@ -1773,6 +1774,20 @@ namespace QuadbikeHandlebarAnims
 
 }
 
+
+// ======= Disable the radio station change anim on boats where CJ stands upright =======
+namespace UprightBoatRadioStationChange
+{
+	static void* (*orgAnimManagerBlendAnimation)(RpClump*, uint32_t, uint32_t, float);
+	void* AnimManagerBlendAnimation_SkipIfBoatDrive(RpClump* clump, uint32_t assocGroupId, uint32_t animationId, float rate)
+	{
+		if (RpAnimBlendClumpGetAssociation(clump, 81) != nullptr) // ANIM_STD_BOAT_DRIVE
+		{
+			return nullptr;
+		}
+		return orgAnimManagerBlendAnimation(clump, assocGroupId, animationId, rate);
+	}
+};
 
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
@@ -4378,6 +4393,15 @@ void Patch_SA_10()
 	InjectHook(0x6B7932+1, &QuadbikeHandlebarAnims::ProcessRiderAnims_FixInterp, HookType::Call);
 
 
+	// Disable the radio station change anim on boats where CJ stands upright
+	// By Wesser
+	{
+		using namespace UprightBoatRadioStationChange;
+
+		InterceptCall(0x6DF4F4, orgAnimManagerBlendAnimation, AnimManagerBlendAnimation_SkipIfBoatDrive);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -5905,6 +5929,16 @@ void Patch_SA_NewBinaries_Common()
 
 		Nop(saveDriveByAnim.get<void>(), 1);
 		InjectHook(saveDriveByAnim.get<void>(1), &QuadbikeHandlebarAnims::SaveDriveByAnim_Steam, HookType::Call);
+	}
+
+
+	// Disable the radio station change anim on boats where CJ stands upright
+	// By Wesser
+	{
+		using namespace UprightBoatRadioStationChange;
+
+		auto blendAnimation = get_pattern("E8 ? ? ? ? 83 C4 10 85 C0 0F 85 ? ? ? ? D9 47 48");
+		InterceptCall(blendAnimation, orgAnimManagerBlendAnimation, AnimManagerBlendAnimation_SkipIfBoatDrive);
 	}
 }
 
