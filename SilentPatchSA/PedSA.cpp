@@ -126,3 +126,15 @@ uint8_t CPed::GetWeaponSkillForRenderWeaponPedsForPC_SAMP()
 	Memory::ReadCall( 0x7330A2, funcCall );
 	return std::invoke( funcCall, this );
 }
+
+bool CTaskComplexSequence::Contains(int taskID) const
+{
+	for (CTask* task : m_taskSequence)
+	{
+		if (task->GetTaskType() == taskID)
+		{
+			return true;
+		}
+	}
+	return false;
+}

@@ -1860,6 +1860,38 @@ namespace CameraCrosshairFix
 	}
 }
 
+
+// ============= Cancel the Drive By task of biker cops when losing the wanted level =============
+namespace BikerCopsDriveByFix
+{
+	static void (*orgJoinCarWithRoadSystem)(CVehicle* vehicle);
+	void JoinCarWithRoadSystem_AbortDriveByTask(CVehicle* vehicle)
+	{
+		orgJoinCarWithRoadSystem(vehicle);
+
+		CPed* driver = vehicle->GetDriver();
+		if (driver != nullptr)
+		{
+			CPedIntelligence* driverIntelligence = driver->GetPedIntelligencePtr();
+			if (driverIntelligence != nullptr)
+			{
+				// If the driver has a sequence, it's the fourth one
+				CTask* primaryTask = driverIntelligence->m_taskManager.m_primaryTasks[3];
+				if (primaryTask != nullptr && primaryTask->GetTaskType() == 244) // TASK_COMPLEX_SEQUENCE
+				{
+					// If the sequence contains a TASK_SIMPLE_GANG_DRIVEBY, abort it
+					CTaskComplexSequence* taskSequence = reinterpret_cast<CTaskComplexSequence*>(primaryTask);
+					if (taskSequence->Contains(1022))
+					{
+						taskSequence->MakeAbortable(driver, 1, nullptr);
+					}
+				}
+			}
+		}
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -4488,6 +4520,14 @@ void Patch_SA_10()
 	}
 
 
+	// Cancel the Drive By task of biker cops when losing the wanted level
+	{
+		using namespace BikerCopsDriveByFix;
+
+		InterceptCall(0x41C00E, orgJoinCarWithRoadSystem, JoinCarWithRoadSystem_AbortDriveByTask);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6046,6 +6086,15 @@ void Patch_SA_NewBinaries_Common()
 
 		auto getWeaponInfo = get_pattern("E8 ? ? ? ? 8B 40 0C 83 C4 08 85 C0");
 		InterceptCall(getWeaponInfo, orgGetWeaponInfo, GetWeaponInfo_OrCamera);
+	}
+
+
+	// Cancel the Drive By task of biker cops when losing the wanted level
+	{
+		using namespace BikerCopsDriveByFix;
+
+		auto backToCruisingIfNoWantedLevel = get_pattern("56 E8 ? ? ? ? 80 A6 ? ? ? ? ? 83 C4 04", 1);
+		InterceptCall(backToCruisingIfNoWantedLevel, orgJoinCarWithRoadSystem, JoinCarWithRoadSystem_AbortDriveByTask);
 	}
 }
 

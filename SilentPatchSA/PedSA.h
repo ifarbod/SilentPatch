@@ -4,16 +4,77 @@
 #include "GeneralSA.h"
 
 class CEntryExit;
+class CEvent;
+class CPed;
+
+// This structure is very incomplete, but it is good enough for now
+class __declspec(novtable) CTask
+{
+public:
+	virtual ~CTask();
+	virtual CTask* Clone() const = 0;
+	virtual CTask* GetSubTask() const = 0;
+	virtual bool IsSimpleTask() const = 0;
+	virtual int GetTaskType() const = 0;
+	virtual void StopTimer(const CEvent*) { }
+	virtual bool MakeAbortable(CPed*, int, const CEvent*) = 0;
+
+public:
+	CTask* m_parentTask;
+};
+static_assert(sizeof(CTask) == 0x8, "Wrong size: CTask");
+
+class __declspec(novtable) CTaskSimple : public CTask
+{
+public:
+	virtual bool IsSimpleTask() const override { return true; }
+	virtual bool SetPedPosition(CPed*) { return false; }
+};
+
+class __declspec(novtable) CTaskComplex : public CTask
+{
+public:
+	virtual bool IsSimpleTask() const override { return false; }
+	virtual void SetSubTask(CTask*);
+	virtual CTask* CreateNextSubTask(CPed*) = 0;
+	virtual CTask* CreateFirstSubTask(CPed*) = 0;
+	virtual CTask* ControlSubTask(CPed*) = 0;
+};
 
 // Stub
-class CTaskSimpleJetPack
+class __declspec(novtable) CTaskSimpleJetPack : public CTaskSimple
 {
 public:
 	void			RenderJetPack(class CPed* pPed);
 };
 
+class __declspec(novtable) CTaskComplexSequence : public CTaskComplex
+{
+public:
+	bool Contains(int taskID) const;
+
+public:
+	std::byte __pad1[8];
+	CTask* m_taskSequence[8];
+	std::byte __pad2[16];
+};
+static_assert(sizeof(CTaskComplexSequence) == 0x40, "Wrong size: CTaskComplexSequence");
+
+class CTaskManager
+{
+public:
+	CTask* m_primaryTasks[5];
+	CTask* m_secondaryTasks[6];
+	CPed* m_pPed;
+};
+static_assert(sizeof(CTaskManager) == 0x30, "Wrong size: CTaskManager");
+
 class CPedIntelligence
 {
+public:
+	CPed* m_pPed;
+	CTaskManager m_taskManager;
+
 public:
 	class CTaskSimpleJetPack*	GetTaskJetPack() const;
 };
