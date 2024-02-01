@@ -399,15 +399,17 @@ namespace FBISirenCoronaFix
 			if ( f >= SVF::Feature::FBI_RANCHER_SIREN && f <= SVF::Feature::VICE_CHEETAH_SIREN )
 			{
 				foundFeature = f;
+				return false;
 			}
+			return true;
 		} );
 
 		if ( foundFeature != SVF::Feature::NO_FEATURE )
 		{
 			if ( foundFeature != SVF::Feature::VICE_CHEETAH_SIREN )
 			{
-				const CVector FBICAR_SIREN_POS = CVector(0.4f, 0.8f, 0.25f);
-				const CVector FBIRANCH_SIREN_POS = CVector(0.5f, 1.12f, 0.5f);
+				constexpr CVector FBICAR_SIREN_POS(0.4f, 0.8f, 0.25f);
+				constexpr CVector FBIRANCH_SIREN_POS(0.5f, 1.12f, 0.5f);
 
 				overridePosition = true;
 				vecOverridePosition = foundFeature == SVF::Feature::FBI_WASHINGTON_SIREN ? FBICAR_SIREN_POS : FBIRANCH_SIREN_POS;

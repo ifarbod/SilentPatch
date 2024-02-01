@@ -127,12 +127,15 @@ namespace SVF
 		} ) != results.second;
 	}
 
-	std::function<void(Feature)> ForAllModelFeatures( int32_t modelID, std::function<void(Feature)> pred )
+	std::function<bool(Feature)> ForAllModelFeatures( int32_t modelID, std::function<bool(Feature)> pred )
 	{
 		auto results = specialVehFeatures.equal_range( modelID );
 		for ( auto it = results.first; it != results.second; ++it )
 		{
-			pred(std::get<Feature>(it->second));
+			if (!pred(std::get<Feature>(it->second)))
+			{
+				break;
+			}
 		}
 		return std::move(pred);
 	}

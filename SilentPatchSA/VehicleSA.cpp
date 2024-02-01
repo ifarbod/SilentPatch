@@ -66,18 +66,19 @@ bool __stdcall CheckDoubleRWheelsList( void* modelInfo, uint8_t* handlingData )
 	bool foundFeature = false;
 	bool featureStatus = false;
 	SVF::ForAllModelFeatures( modelID, [&]( SVF::Feature f ) {
-		if ( foundFeature ) return;
-
 		if ( f == SVF::Feature::_INTERNAL_FORCE_DOUBLE_RWHEELS_OFF )
 		{
 			foundFeature = true;
 			featureStatus = false;
+			return false;
 		}
-		else if ( f == SVF::Feature::_INTERNAL_FORCE_DOUBLE_RWHEELS_ON )
+		if ( f == SVF::Feature::_INTERNAL_FORCE_DOUBLE_RWHEELS_ON )
 		{
 			foundFeature = true;
 			featureStatus = true;	
+			return false;
 		}
+		return true;
 	} );
 	if ( !foundFeature )
 	{

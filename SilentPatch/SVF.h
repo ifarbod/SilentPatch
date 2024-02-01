@@ -47,5 +47,5 @@ namespace SVF
 	void DeleteFeature( int32_t cookie );
 	void DisableStockVehiclesForFeature( Feature feature );
 	bool ModelHasFeature( int32_t modelID, Feature feature );
-	std::function<void(Feature)> ForAllModelFeatures( int32_t modelID, std::function<void(Feature)> pred );
+	std::function<bool(Feature)> ForAllModelFeatures( int32_t modelID, std::function<bool(Feature)> pred );
 };
