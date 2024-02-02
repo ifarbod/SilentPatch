@@ -85,6 +85,21 @@ namespace ModCompat
 			GetModuleHandleEx( GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT|GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, LPCTSTR(address), &result );
 			return result;
 		}
+
+		// Resolves a re-route if it comes from a no-CD executable
+		uintptr_t GetFunctionAddrIfRerouted(uintptr_t address)
+		{
+			if (*reinterpret_cast<const uint8_t*>(address) == 0xE9)
+			{
+				uintptr_t jumpDestination;
+				Memory::ReadCall(address, jumpDestination);
+				if (GetModuleHandleFromAddress(address) == GetModuleHandleFromAddress(jumpDestination))
+				{
+					return jumpDestination;
+				}
+			}
+			return address;
+		}
 	}
 }
 
@@ -3180,15 +3195,7 @@ BOOL InjectDelayedPatches_10()
 				InjectHook( 0x406C78, CdStreamSync::CdStreamInitThread );
 
 				{
-					uintptr_t address;
-					if ( *(uint8_t*)0x406460 == 0xE9 )
-					{
-						ReadCall( 0x406460, address );
-					}
-					else
-					{
-						address = 0x406460;
-					}
+					const uintptr_t address = ModCompat::Utils::GetFunctionAddrIfRerouted(0x406460);
 
 					const uintptr_t waitForSingleObject = address + 0x1D;
 					const uint8_t orgCode[] = { 0x8B, 0x46, 0x04, 0x85, 0xC0, 0x74, 0x10, 0xC6, 0x46, 0x0D, 0x01 };
@@ -4060,29 +4067,10 @@ void Patch_SA_10()
 
 	// Car explosion crash with multimonitor
 	// Unitialized collision data breaking stencil shadows
+	VP::InterceptCall(ModCompat::Utils::GetFunctionAddrIfRerouted(0x40F870) + 0x63, orgMemMgrMalloc, CollisionData_MallocAndInit);
 	{
-		uintptr_t pHoodlumCompat;
-		if ( *(uint8_t*)0x40F870 == 0xE9 )
-			ReadCall( 0x40F870, pHoodlumCompat );
-		else
-			pHoodlumCompat = 0x40F870;
-
-		const uintptr_t pMemMgrMalloc = pHoodlumCompat + 0x63;
-		ReadCall( pMemMgrMalloc, orgMemMgrMalloc );
-		VP::InjectHook(pMemMgrMalloc, CollisionData_MallocAndInit);
-	}
-	{
-		uintptr_t pHoodlumCompat, pHoodlumCompat2;
-		if ( *(uint8_t*)0x40F740 == 0xE9 )
-		{
-			ReadCall( 0x40F740, pHoodlumCompat );
-			ReadCall( 0x40F810, pHoodlumCompat2 );
-		}
-		else
-		{
-			pHoodlumCompat = 0x40F740;
-			pHoodlumCompat2 = 0x40F810;
-		}
+		const uintptr_t pHoodlumCompat = ModCompat::Utils::GetFunctionAddrIfRerouted(0x40F740);
+		const uintptr_t pHoodlumCompat2 = ModCompat::Utils::GetFunctionAddrIfRerouted(0x40F810);
 
 		const uintptr_t pNewAlloc = pHoodlumCompat + 0xC;
 		ReadCall( pNewAlloc, orgNewAlloc );
@@ -4524,7 +4512,23 @@ void Patch_SA_10()
 	{
 		using namespace BikerCopsDriveByFix;
 
-		InterceptCall(0x41C00E, orgJoinCarWithRoadSystem, JoinCarWithRoadSystem_AbortDriveByTask);
+		// ModCompat::Utils::GetFunctionAddrIfRerouted won't work here, as the decrypted function is still
+		// slightly obfuscated compared to the compact EXE deobfuscation
+		bool HoodlumPatched = false;
+		if (*reinterpret_cast<const uint8_t*>(0x41BFA0) == 0xE9)
+		{
+			uintptr_t backToCruisingIfNoWantedLevel_Obfuscated;
+			ReadCall(0x41BFA0, backToCruisingIfNoWantedLevel_Obfuscated);
+			if (ModCompat::Utils::GetModuleHandleFromAddress(backToCruisingIfNoWantedLevel_Obfuscated) == hInstance)
+			{
+				VP::InterceptCall(backToCruisingIfNoWantedLevel_Obfuscated + 0x86, orgJoinCarWithRoadSystem, JoinCarWithRoadSystem_AbortDriveByTask);
+				HoodlumPatched = true;
+			}
+		}
+		if (!HoodlumPatched)
+		{
+			InterceptCall(0x41C00E, orgJoinCarWithRoadSystem, JoinCarWithRoadSystem_AbortDriveByTask);
+		}
 	}
 
 
