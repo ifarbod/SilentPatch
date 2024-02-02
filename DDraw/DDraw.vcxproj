@@ -154,9 +154,9 @@ copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto Vice City\dd
       <OptimizeReferences>true</OptimizeReferences>
       <ModuleDefinitionFile>ddraw.def</ModuleDefinitionFile>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>false</GenerateDebugInformation>
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <LargeAddressAware>true</LargeAddressAware>
+      <AdditionalOptions>/pdbaltpath:%_PDB% %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>
       <Command>copy /y "$(TargetPath)" "D:\Steam\steamapps\common\Grand Theft Auto 3\ddraw.dll"
