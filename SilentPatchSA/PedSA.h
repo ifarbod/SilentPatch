@@ -390,12 +390,13 @@ public:
 
 	uint8_t				GetWeaponSkillForRenderWeaponPedsForPC_SAMP();
 
+	static inline void (CPed::*orgSay)(uint16_t phrase, uint32_t param2, float volume, bool param4, bool param5, bool param6);
 	template<uint16_t blackSample>
 	void				Say_SampleBlackList(uint16_t phrase, uint32_t param2 = 0, float volume = 1.0f, bool param4 = false, bool param5 = false, bool param6 = false)
 	{
 		if ( !(phrase == blackSample) )
 		{
-			Say( phrase, param2, volume, param4, param5, param6 );
+			std::invoke(orgSay, this, phrase, param2, volume, param4, param5, param6);
 		}
 	}
 };

@@ -8,6 +8,7 @@
 #include "VehicleIII.h"
 #include "ModelInfoIII.h"
 
+#include <array>
 #include <memory>
 #include <Shlwapi.h>
 
@@ -360,11 +361,19 @@ void __declspec(naked) AutoPilotTimerFix_III()
 	}
 }
 
-static void (__thiscall *orgGiveWeapon)( void* ped, unsigned int weapon, unsigned int ammo );
-static void __fastcall GiveWeapon_SP( void* ped, void*, unsigned int weapon, unsigned int ammo )
+namespace ZeroAmmoFix
 {
-	if ( ammo == 0 ) ammo = 1;
-	orgGiveWeapon( ped, weapon, ammo );
+
+template<std::size_t Index>
+static void (__fastcall *orgGiveWeapon)(void* ped, void*, unsigned int weapon, unsigned int ammo);
+
+template<std::size_t Index>
+static void __fastcall GiveWeapon_SP(void* ped, void*, unsigned int weapon, unsigned int ammo)
+{
+	orgGiveWeapon<Index>(ped, nullptr, weapon, std::max(1u, ammo));
+}
+HOOK_EACH_FUNC(GiveWeapon, orgGiveWeapon, GiveWeapon_SP);
+
 }
 
 
@@ -1128,12 +1137,13 @@ void Patch_III_Common()
 
 	// Fixed ammo from SCM
 	{
-		auto give_weapon = get_pattern( "6B C0 4F 51 8B 34", 0x13 );
-		ReadCall( give_weapon, orgGiveWeapon );
-		InjectHook( give_weapon, GiveWeapon_SP );
+		using namespace ZeroAmmoFix;
 
-		give_weapon = get_pattern( "89 C7 A1 ? ? ? ? 55 89 F9 50", 11 );
-		InjectHook( give_weapon, GiveWeapon_SP );
+		std::array<void*, 2> give_weapon = {
+			get_pattern( "6B C0 4F 51 8B 34", 0x13 ),
+			get_pattern( "89 C7 A1 ? ? ? ? 55 89 F9 50", 11 ),
+		};
+		HookEach_GiveWeapon(give_weapon, InterceptCall);
 	}
 
 

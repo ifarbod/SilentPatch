@@ -273,20 +273,26 @@ public:
 	static void		SetComponentRotation( RwFrame* component, eRotAxis axis, float angle, bool absolute = true );
 	static void		SetComponentAtomicAlpha(RpAtomic* pAtomic, int nAlpha);
 
-	static inline void	(CVehicle::*orgDoHeadLightBeam)( int type, CMatrix& m, bool right );
-
 	static inline int8_t ms_lightbeamFixOverride = 0, ms_rotorFixOverride = 0; // 0 - normal, 1 - always on, -1 - always off
 	bool				IgnoresLightbeamFix() const;
 	bool				IgnoresRotorFix() const;
 
 	bool IsOpenTopCarOrQuadbike() const;
 
-	void DoHeadLightBeam( int type, CMatrix& m, bool right )
+private:
+	template<std::size_t Index>
+	static void (CVehicle::*orgDoHeadLightBeam)(int type, CMatrix& m, bool right);
+
+	template<std::size_t Index>
+	void DoHeadLightBeam_LightBeamFixSaveObj(int type, CMatrix& m, bool right)
 	{
-		std::invoke( orgDoHeadLightBeam, this, type, m, right );
+		LightbeamFix::SetCurrentVehicle(this);
+		std::invoke(orgDoHeadLightBeam<Index>, this, type, m, right);
+		LightbeamFix::SetCurrentVehicle(nullptr);
 	}
 
-	void DoHeadLightBeam_LightBeamFixSaveObj( int type, CMatrix& m, bool right );		
+public:
+	HOOK_EACH_FUNC(DoHeadLightBeam, orgDoHeadLightBeam, &DoHeadLightBeam_LightBeamFixSaveObj);
 };
 
 class NOVMT CAutomobile : public CVehicle
@@ -309,18 +315,27 @@ public:
 	BYTE			__pad3[44];	
 
 public:
-	inline void		PreRender_Stub()
-	{ CAutomobile::PreRender(); }
+	template<std::size_t Index>
+	static void (CAutomobile::*orgAutomobilePreRender)();
 
-	virtual void	PreRender() override;
+	template<std::size_t Index>
+	void		PreRender_SilentPatch()
+	{
+		BeforePreRender();
+		std::invoke(orgAutomobilePreRender<Index>, this);
+		AfterPreRender();
+	}
+
+	HOOK_EACH_FUNC_CTR(PreRender, 1, orgAutomobilePreRender, &PreRender_SilentPatch);
 
 	void		Fix_SilentPatch();
 	RwFrame*	GetTowBarFrame() const;
 
-	static void (CAutomobile::*orgAutomobilePreRender)();
 	static float ms_engineCompSpeed;
 
 private:
+	void		BeforePreRender();
+	void		AfterPreRender();
 	void		ResetFrames();
 	void		ProcessPhoenixBlower( int32_t modelID );
 	void		ProcessSweeper();
@@ -397,10 +412,21 @@ private:
 	uint8_t m_nitro;
 	int8_t m_angleX, m_angleY, m_angleZ;
 
-public:
+private:
+	template<std::size_t Index>
 	static CVehicle* (CStoredCar::*orgRestoreCar)();
+	
+	template<std::size_t Index>
+	CVehicle* RestoreCar_SilentPatch()
+	{
+		return RestoreCar_LoadBombOwnership(std::invoke(orgRestoreCar<Index>, this));
+	}
 
-	CVehicle* RestoreCar_SilentPatch();
+public:
+	HOOK_EACH_FUNC(RestoreCar, orgRestoreCar, &RestoreCar_SilentPatch);
+
+private:
+	CVehicle* RestoreCar_LoadBombOwnership(CVehicle* vehicle);
 };
 
 void ReadRotorFixExceptions(const wchar_t* pPath);

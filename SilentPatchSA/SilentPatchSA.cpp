@@ -1,6 +1,7 @@
 #include "StdAfxSA.h"
 #include <limits>
 #include <algorithm>
+#include <array>
 #include <d3d9.h>
 #include <Shlwapi.h>
 #include <ShlObj.h>
@@ -319,7 +320,6 @@ auto					RpAnimBlendClumpGetAssociation = AddressByVersion<void*(*)(RpClump*, ui
 static void				(__thiscall* SetVolume)(void*,float);	
 static BOOL				(*IsAlreadyRunning)();
 static void				(*TheScriptsLoad)();
-static void				(*WipeLocalVariableMemoryForMissionScript)();
 static void				(*DoSunAndMoon)();
 
 auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D370, { "8B 06 8B 50 0C 8B CE FF D2 8A 46 36 24 07 3C 01 76 0D", -7 });
@@ -453,6 +453,9 @@ static CAEWaveDecoder* __stdcall CAEWaveDecoderInit(CAEDataStream* pStream)
 	return new CAEWaveDecoder(pStream);
 }
 
+namespace ScriptFixes
+{
+
 static void BasketballFix(unsigned char* pBuf, int nSize)
 {
 	for ( int i = 0, hits = 0; i < nSize && hits < 7; i++, pBuf++ )
@@ -568,9 +571,8 @@ void TheScriptsLoad_BasketballFix()
 	QuadrupleStuntBonus();
 }
 
-void StartNewMission_SCMFixes()
+static void StartNewMission_SCMFixes()
 {
-	WipeLocalVariableMemoryForMissionScript();
 	InitializeScriptGlobals();
 
 	const int missionID = ScriptParams[0];
@@ -593,6 +595,20 @@ void StartNewMission_SCMFixes()
 	// ZERO5 - Beefy Baron fix
 	else if ( missionID == 10 )
 		SupplyLinesFix( true );
+
+}
+
+template<std::size_t Index>
+static void (*orgWipeLocalVariableMemoryForMissionScript)();
+
+template<std::size_t Index>
+static void WipeLocalVariableMemoryForMissionScript_ApplyFixes()
+{
+	orgWipeLocalVariableMemoryForMissionScript<Index>();
+	StartNewMission_SCMFixes();
+}
+
+HOOK_EACH_FUNC(SCMFixes, orgWipeLocalVariableMemoryForMissionScript, WipeLocalVariableMemoryForMissionScript_ApplyFixes)
 
 }
 
@@ -792,30 +808,41 @@ void CreateMirrorBuffers()
 	}
 }
 
-RwUInt32 (*orgGetMaxMultiSamplingLevels)();
-RwUInt32 GetMaxMultiSamplingLevels()
+namespace MSAAFixes
 {
-	RwUInt32 maxSamples = orgGetMaxMultiSamplingLevels();
+
+static RwUInt32 GetMaxMultiSamplingLevels_BitScan(RwUInt32 maxSamples)
+{
 	RwUInt32 option;
 	_BitScanForward( (DWORD*)&option, maxSamples );
 	return option + 1;
 }
 
-static void (*orgChangeMultiSamplingLevels)(RwUInt32);
-void ChangeMultiSamplingLevels( RwUInt32 level )
-{
-	orgChangeMultiSamplingLevels( 1 << (level - 1) );
-}
+template<typename std::size_t Index>
+static RwUInt32 (*orgGetMaxMultiSamplingLevels)();
 
-static void (*orgSetMultiSamplingLevels)(RwUInt32);
-void SetMultiSamplingLevels( RwUInt32 level )
+template<typename std::size_t Index>
+static RwUInt32 GetMaxMultiSamplingLevels()
 {
-	orgSetMultiSamplingLevels( 1 << (level - 1) );
+	return GetMaxMultiSamplingLevels_BitScan(orgGetMaxMultiSamplingLevels<Index>());
 }
+HOOK_EACH_FUNC(GetMaxMultiSamplingLevels, orgGetMaxMultiSamplingLevels, GetMaxMultiSamplingLevels);
+
+template<typename std::size_t Index>
+static void (*orgSetOrChangeMultiSamplingLevels)(RwUInt32);
+
+template<typename std::size_t Index>
+static void SetOrChangeMultiSamplingLevels(RwUInt32 level)
+{
+	orgSetOrChangeMultiSamplingLevels<Index>( 1 << (level - 1) );
+}
+HOOK_EACH_FUNC(SetOrChangeMultiSamplingLevels, orgSetOrChangeMultiSamplingLevels, SetOrChangeMultiSamplingLevels);
 
 void MSAAText( char* buffer, const char*, DWORD level )
 {
 	sprintf_s( buffer, 100, "%ux", 1 << level );
+}
+
 }
 
 
@@ -831,9 +858,11 @@ RwInt32 GetNumVideoModes_Retrieve()
 	return numSavedVideoModes;
 }
 
+namespace UnitializedCollisionDataFix
+{
 
 static void* (*orgMemMgrMalloc)(RwUInt32, RwUInt32);
-void* CollisionData_MallocAndInit( RwUInt32 size, RwUInt32 hint )
+static void* CollisionData_MallocAndInit( RwUInt32 size, RwUInt32 hint )
 {
 	CColData*	mem = (CColData*)orgMemMgrMalloc( size, hint );
 
@@ -844,16 +873,21 @@ void* CollisionData_MallocAndInit( RwUInt32 size, RwUInt32 hint )
 	return mem;
 }
 
+template<std::size_t Index>
 static void* (*orgNewAlloc)(size_t);
-void* CollisionData_NewAndInit( size_t size )
+
+template<std::size_t Index>
+static void* CollisionData_NewAndInit(size_t size)
 {
-	CColData*	mem = (CColData*)orgNewAlloc( size );
+	CColData*	mem = (CColData*)orgNewAlloc<Index>(size);
 
 	mem->m_bFlags = 0;
 
 	return mem;
 }
+HOOK_EACH_FUNC(CollisionDataNew, orgNewAlloc, CollisionData_NewAndInit);
 
+}
 
 static void (*orgEscalatorsUpdate)();
 void UpdateEscalators()
@@ -1460,20 +1494,27 @@ namespace VariableResets
 	using VarVariant = std::variant< bool*, int*, TimeNextMadDriverChaseCreated_t<float>*, ResetToTrue_t* >;
 	std::vector<VarVariant> GameVariablesToReset;
 
-	static void (*orgReInitGameObjectVariables)();
-	void ReInitGameObjectVariables()
+	static void ReInitOurVariables()
 	{
-		// First reinit "our" variables in case stock ones rely on those during resetting
 		for ( const auto& var : GameVariablesToReset )
 		{
 			std::visit( []( auto&& v ) {
 				*v = {};
-			}, var );
+				}, var );
 		}
-
-		orgReInitGameObjectVariables();
 	}
 
+	template<std::size_t Index>
+	static void (*orgReInitGameObjectVariables)();
+
+	template<std::size_t Index>
+	void ReInitGameObjectVariables()
+	{
+		// First reinit "our" variables in case stock ones rely on those during resetting
+		ReInitOurVariables();
+		orgReInitGameObjectVariables<Index>();
+	}
+	HOOK_EACH_FUNC(ReInitGameObjectVariables, orgReInitGameObjectVariables, ReInitGameObjectVariables);
 }
 
 namespace LightbeamFix
@@ -2914,6 +2955,8 @@ BOOL InjectDelayedPatches_10()
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == 1 )
 		{
+			using namespace ScriptFixes;
+
 			// Gym glitch fix
 			Patch<WORD>(0x470B03, 0xCD8B);
 			Patch<DWORD>(0x470B0A, 0x8B04508B);
@@ -2922,12 +2965,10 @@ BOOL InjectDelayedPatches_10()
 			InjectHook(0x470B05, &CRunningScript::GetDay_GymGlitch, HookType::Call);
 
 			// Basketball fix
-			ReadCall( 0x489A70, WipeLocalVariableMemoryForMissionScript );
-			ReadCall( 0x5D18F0, TheScriptsLoad );
-			InjectHook(0x5D18F0, TheScriptsLoad_BasketballFix);
-			// Fixed for Hoodlum
-			InjectHook(0x489A70, StartNewMission_SCMFixes);
-			InjectHook(0x4899F0, StartNewMission_SCMFixes);
+			InterceptCall( 0x5D18F0, TheScriptsLoad, TheScriptsLoad_BasketballFix );
+			
+			std::array<uintptr_t, 2> wipeLocalVars = { 0x489A70, 0x4899F0 };
+			HookEach_SCMFixes(wipeLocalVars, InterceptCall);
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", -1, wcModulePath) == 1 )
@@ -3360,6 +3401,8 @@ BOOL InjectDelayedPatches_11()
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == 1 )
 		{
+			using namespace ScriptFixes;
+
 			// Gym glitch fix
 			Patch<WORD>(0x470B83, 0xCD8B);
 			Patch<DWORD>(0x470B8A, 0x8B04508B);
@@ -3368,12 +3411,10 @@ BOOL InjectDelayedPatches_11()
 			InjectHook(0x470B85, &CRunningScript::GetDay_GymGlitch, HookType::Call);
 
 			// Basketball fix
-			ReadCall( 0x489AF0, WipeLocalVariableMemoryForMissionScript );
-			ReadCall( 0x5D20D0, TheScriptsLoad );
-			InjectHook(0x5D20D0, TheScriptsLoad_BasketballFix);
-			// Fixed for Hoodlum
-			InjectHook(0x489A70, StartNewMission_SCMFixes);
-			InjectHook(0x489AF0, StartNewMission_SCMFixes);
+			InterceptCall( 0x5D20D0, TheScriptsLoad, TheScriptsLoad_BasketballFix );
+
+			std::array<uintptr_t, 2> wipeLocalVars = { 0x489A70, 0x489AF0 };
+			HookEach_SCMFixes(wipeLocalVars, InterceptCall);
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SkipIntroSplashes", -1, wcModulePath) == 1 )
@@ -3536,6 +3577,8 @@ BOOL InjectDelayedPatches_Steam()
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableScriptFixes", -1, wcModulePath) == 1 )
 		{
+			using namespace ScriptFixes;
+
 			// Gym glitch fix
 			Patch<WORD>(0x476C2A, 0xCD8B);
 			Patch<DWORD>(0x476C31, 0x408B088B);
@@ -3544,12 +3587,10 @@ BOOL InjectDelayedPatches_Steam()
 			InjectHook(0x476C2C, &CRunningScript::GetDay_GymGlitch, HookType::Call);
 
 			// Basketball fix
-			ReadCall( 0x4907AE, WipeLocalVariableMemoryForMissionScript );
-			ReadCall( 0x5EE017, TheScriptsLoad );
-			InjectHook(0x5EE017, TheScriptsLoad_BasketballFix);
-			// Fixed for Hoodlum
-			InjectHook(0x4907AE, StartNewMission_SCMFixes);
-			InjectHook(0x49072E, StartNewMission_SCMFixes);
+			InterceptCall( 0x5EE017, TheScriptsLoad, TheScriptsLoad_BasketballFix );
+
+			std::array<uintptr_t, 2> wipeLocalVars = { 0x4907AE, 0x49072E };
+			HookEach_SCMFixes(wipeLocalVars, InterceptCall);
 		}
 
 		if ( GetPrivateProfileIntW(L"SilentPatch", L"SmallSteamTexts", -1, wcModulePath) == 0 )
@@ -3815,10 +3856,8 @@ void Patch_SA_10()
 	{
 		using namespace LightbeamFix;
 
-		ReadCall( 0x6A2EDA, CVehicle::orgDoHeadLightBeam );
-		InjectHook( 0x6A2EDA, &CVehicle::DoHeadLightBeam_LightBeamFixSaveObj );
-		InjectHook( 0x6A2EF2, &CVehicle::DoHeadLightBeam_LightBeamFixSaveObj );
-		InjectHook( 0x6BDE80, &CVehicle::DoHeadLightBeam_LightBeamFixSaveObj );
+		std::array<uintptr_t, 3> doHeadLightBeam = { 0x6A2EDA, 0x6A2EF2, 0x6BDE80 };
+		CVehicle::HookEach_DoHeadLightBeam(doHeadLightBeam, InterceptCall);
 
 		Patch( 0x6E0F37 + 2, &RenderStateWrapper<rwRENDERSTATEZWRITEENABLE>::PushStatePPtr );
 		Patch( 0x6E0F63 + 1, &RenderStateWrapper<rwRENDERSTATEZTESTENABLE>::PushStatePPtr );
@@ -4038,28 +4077,25 @@ void Patch_SA_10()
 	InjectHook(0x72701D, CreateMirrorBuffers);
 
 	// Fixed MSAA options
-	Patch<BYTE>(0x57D126, 0xEB);
-	Nop(0x57D0E8, 2);
+	{
+		using namespace MSAAFixes;
 
-	Patch<BYTE>(AddressByRegion_10<BYTE*>(0x7F6C9B), 0xEB);
-	Patch<BYTE>(AddressByRegion_10<BYTE*>(0x7F60C6), 0xEB);
-	Patch(AddressByRegion_10<BYTE*>(0x7F6683), { 0x90, 0xE9 });
+		Patch<BYTE>(0x57D126, 0xEB);
+		Nop(0x57D0E8, 2);
 
-	ReadCall( 0x57D136, orgGetMaxMultiSamplingLevels );
-	InjectHook(0x57D136, GetMaxMultiSamplingLevels);
-	InjectHook(0x57D0EA, GetMaxMultiSamplingLevels);
+		Patch<BYTE>(AddressByRegion_10<BYTE*>(0x7F6C9B), 0xEB);
+		Patch<BYTE>(AddressByRegion_10<BYTE*>(0x7F60C6), 0xEB);
+		Patch(AddressByRegion_10<BYTE*>(0x7F6683), { 0x90, 0xE9 });
 
-	ReadCall( 0x5744FD, orgChangeMultiSamplingLevels );
-	InjectHook(0x5744FD, ChangeMultiSamplingLevels);
-	InjectHook(0x57D162, ChangeMultiSamplingLevels);
-	InjectHook(0x57D2A6, ChangeMultiSamplingLevels);
+		std::array<uintptr_t, 2> getMaxMultiSamplingLevels = { 0x57D136, 0x57D0EA };
+		HookEach_GetMaxMultiSamplingLevels(getMaxMultiSamplingLevels, InterceptCall);
 
-	ReadCall( 0x746350, orgSetMultiSamplingLevels );
-	InjectHook(0x746350, SetMultiSamplingLevels);
+		std::array<uintptr_t, 4> setOrChangeMultiSamplingLevels = { 0x5744FD, 0x57D162, 0x57D2A6, 0x746350 };
+		HookEach_SetOrChangeMultiSamplingLevels(setOrChangeMultiSamplingLevels, InterceptCall);
 
-	Nop(0x57A0FC, 1);
-	InjectHook(0x57A0FD, MSAAText, HookType::Call);
-
+		Nop(0x57A0FC, 1);
+		InjectHook(0x57A0FD, MSAAText, HookType::Call);
+	}
 	
 	// Fixed car collisions - car you're hitting gets proper damage now
 	InjectHook(0x5428EA, FixedCarDamage, HookType::Call);
@@ -4067,15 +4103,16 @@ void Patch_SA_10()
 
 	// Car explosion crash with multimonitor
 	// Unitialized collision data breaking stencil shadows
-	VP::InterceptCall(ModCompat::Utils::GetFunctionAddrIfRerouted(0x40F870) + 0x63, orgMemMgrMalloc, CollisionData_MallocAndInit);
 	{
-		const uintptr_t pHoodlumCompat = ModCompat::Utils::GetFunctionAddrIfRerouted(0x40F740);
-		const uintptr_t pHoodlumCompat2 = ModCompat::Utils::GetFunctionAddrIfRerouted(0x40F810);
+		using namespace UnitializedCollisionDataFix;
 
-		const uintptr_t pNewAlloc = pHoodlumCompat + 0xC;
-		ReadCall( pNewAlloc, orgNewAlloc );
-		VP::InjectHook(pHoodlumCompat + 0xC, CollisionData_NewAndInit);
-		VP::InjectHook(pHoodlumCompat2 + 0xD, CollisionData_NewAndInit);
+		VP::InterceptCall(ModCompat::Utils::GetFunctionAddrIfRerouted(0x40F870) + 0x63, orgMemMgrMalloc, CollisionData_MallocAndInit);
+
+		std::array<uintptr_t, 2> newAndInit = {
+			ModCompat::Utils::GetFunctionAddrIfRerouted(0x40F740) + 0xC,
+			ModCompat::Utils::GetFunctionAddrIfRerouted(0x40F810) + 0xD,
+		};
+		HookEach_CollisionDataNew(newAndInit, InterceptCall);
 	}
 
 
@@ -4173,14 +4210,14 @@ void Patch_SA_10()
 
 
 	// Animated Phoenix hood scoop
-	auto* automobilePreRender = (*(decltype(CAutomobile::orgAutomobilePreRender)**)(0x6B0AD2 + 2)) + 17;
-	CAutomobile::orgAutomobilePreRender = *automobilePreRender;
-	Patch(automobilePreRender, &CAutomobile::PreRender_Stub);
+	{
+		auto* automobilePreRender = (*(decltype(CAutomobile::orgAutomobilePreRender<0>)**)(0x6B0AD2 + 2)) + 17;
+		CAutomobile::orgAutomobilePreRender<0> = *automobilePreRender;
+		Patch(automobilePreRender, &CAutomobile::PreRender_SilentPatch<0>);
 
-	InjectHook(0x6C7E7A, &CAutomobile::PreRender_Stub);
-	InjectHook(0x6CEAEC, &CAutomobile::PreRender_Stub);
-	InjectHook(0x6CFADC, &CAutomobile::PreRender_Stub);
-
+		std::array<uintptr_t, 3> preRender = { 0x6C7E7A, 0x6CEAEC, 0x6CFADC };
+		CAutomobile::HookEach_PreRender(preRender, InterceptCall);
+	}
 
 	// Extra animations for planes
 	auto* planePreRender = (*(decltype(CPlane::orgPlanePreRender)**)(0x6C8E5A + 2)) + 17;
@@ -4236,9 +4273,11 @@ void Patch_SA_10()
 
 	// Fixed bomb ownership/bombs saving for bikes
 	{
-		ReadCall( 0x44856A, CStoredCar::orgRestoreCar );
-		InjectHook( 0x44856A, &CStoredCar::RestoreCar_SilentPatch );
-		InjectHook( 0x4485DB, &CStoredCar::RestoreCar_SilentPatch );
+		std::array<uintptr_t, 2> restoreCar = {
+			ModCompat::Utils::GetFunctionAddrIfRerouted(0x448550) + 0x1A,
+			ModCompat::Utils::GetFunctionAddrIfRerouted(0x4485C0) + 0x1B,
+		};
+		CStoredCar::HookEach_RestoreCar(restoreCar, VP::InterceptCall);
 	}
 
 
@@ -4354,19 +4393,18 @@ void Patch_SA_10()
 
 
 	// Play passenger's voice lines when killing peds with car, not only when hitting them damages player's vehicle
-	ReadCall( 0x5F05CA, CEntity::orgGetColModel );
-	InjectHook( 0x5F05CA, &CVehicle::PlayPedHitSample_GetColModel );
+	InterceptCall(0x5F05CA, CEntity::orgGetColModel, &CVehicle::PlayPedHitSample_GetColModel);
+
 	// Prevent samples from playing where they used to, so passengers don't comment on gently pushing peds
-	InjectHook( 0x6A8298, &CPed::Say_SampleBlackList<CONTEXT_GLOBAL_CAR_HIT_PED> );
+	InterceptCall(0x6A8298, CPed::orgSay, &CPed::Say_SampleBlackList<CONTEXT_GLOBAL_CAR_HIT_PED>);
 
 
 	// Reset variables on New Game
 	{
 		using namespace VariableResets;
 
-		ReadCall( 0x53C6DB, orgReInitGameObjectVariables );
-		InjectHook( 0x53C6DB, ReInitGameObjectVariables );
-		InjectHook( 0x53C76D, ReInitGameObjectVariables );
+		std::array<uintptr_t, 2> reInitGameObjectVariables = { 0x53C6DB, 0x53C76D };
+		HookEach_ReInitGameObjectVariables(reInitGameObjectVariables, InterceptCall);
 
 		// Variables to reset
 		GameVariablesToReset.emplace_back( *(bool**)(0x63E8D8+1) ); // CPlayerPed::bHasDisplayedPlayerQuitEnterCarHelpText
@@ -4834,27 +4872,25 @@ void Patch_SA_11()
 	InjectHook(0x72784D, CreateMirrorBuffers);
 
 	// Fixed MSAA options
-	Patch<BYTE>(0x57D906, 0xEB);
-	Nop(0x57D8C8, 2);
+	{
+		using namespace MSAAFixes;
 
-	Patch<BYTE>(AddressByRegion_11<BYTE*>(0x7F759B), 0xEB);
-	Patch<BYTE>(AddressByRegion_11<BYTE*>(0x7F69C6), 0xEB);
-	Patch(AddressByRegion_11<BYTE*>(0x7F6F83), { 0x90, 0xE9 });
+		Patch<BYTE>(0x57D906, 0xEB);
+		Nop(0x57D8C8, 2);
 
-	ReadCall( 0x57D916, orgGetMaxMultiSamplingLevels );
-	InjectHook(0x57D916, GetMaxMultiSamplingLevels);
-	InjectHook(0x57D8CA, GetMaxMultiSamplingLevels);
+		Patch<BYTE>(AddressByRegion_11<BYTE*>(0x7F759B), 0xEB);
+		Patch<BYTE>(AddressByRegion_11<BYTE*>(0x7F69C6), 0xEB);
+		Patch(AddressByRegion_11<BYTE*>(0x7F6F83), { 0x90, 0xE9 });
 
-	ReadCall( 0x574A6D, orgChangeMultiSamplingLevels );
-	InjectHook(0x574A6D, ChangeMultiSamplingLevels);
-	InjectHook(0x57D942, ChangeMultiSamplingLevels);
-	InjectHook(0x57DA86, ChangeMultiSamplingLevels);
+		std::array<uintptr_t, 2> getMaxMultiSamplingLevels = { 0x57D916, 0x57D8CA };
+		HookEach_GetMaxMultiSamplingLevels(getMaxMultiSamplingLevels, InterceptCall);
 
-	ReadCall( 0x746BD0, orgSetMultiSamplingLevels );
-	InjectHook(0x746BD0, SetMultiSamplingLevels);
+		std::array<uintptr_t, 4> setOrChangeMultiSamplingLevels = { 0x574A6D, 0x57D942, 0x57DA86, 0x746BD0 };
+		HookEach_SetOrChangeMultiSamplingLevels(setOrChangeMultiSamplingLevels, InterceptCall);
 
-	Nop(0x57A66C, 1);
-	InjectHook(0x57A66D, MSAAText, HookType::Call);
+		Nop(0x57A66C, 1);
+		InjectHook(0x57A66D, MSAAText, HookType::Call);
+	}
 
 	// Fixed car collisions - car you're hitting gets proper damage now
 	InjectHook(0x542D8A, FixedCarDamage, HookType::Call);
@@ -5145,27 +5181,25 @@ void Patch_SA_Steam()
 	InjectHook(0x758E91, CreateMirrorBuffers);
 
 	// Fixed MSAA options
-	Patch<BYTE>(0x592BBB, 0xEB);
-	Nop(0x592B7F, 2);
+	{
+		using namespace MSAAFixes;
 
-	Patch<BYTE>(0x830C5B, 0xEB);
-	Patch<BYTE>(0x830086, 0xEB);
-	Patch(0x830643, { 0x90, 0xE9 });
+		Patch<BYTE>(0x592BBB, 0xEB);
+		Nop(0x592B7F, 2);
 
-	ReadCall( 0x592BCF, orgGetMaxMultiSamplingLevels );
-	InjectHook(0x592BCF, GetMaxMultiSamplingLevels);
-	InjectHook(0x592B81, GetMaxMultiSamplingLevels);
+		Patch<BYTE>(0x830C5B, 0xEB);
+		Patch<BYTE>(0x830086, 0xEB);
+		Patch(0x830643, { 0x90, 0xE9 });
 
-	ReadCall( 0x5897CD, orgChangeMultiSamplingLevels );
-	InjectHook(0x5897CD, ChangeMultiSamplingLevels);
-	InjectHook(0x592BFB, ChangeMultiSamplingLevels);
-	InjectHook(0x592D2E, ChangeMultiSamplingLevels);
+		std::array<uintptr_t, 2> getMaxMultiSamplingLevels = { 0x592BCF, 0x592B81 };
+		HookEach_GetMaxMultiSamplingLevels(getMaxMultiSamplingLevels, InterceptCall);
 
-	ReadCall( 0x780206, orgSetMultiSamplingLevels );
-	InjectHook(0x780206, SetMultiSamplingLevels);
+		std::array<uintptr_t, 4> setOrChangeMultiSamplingLevels = { 0x5897CD, 0x592BFB, 0x592D2E, 0x780206 };
+		HookEach_SetOrChangeMultiSamplingLevels(setOrChangeMultiSamplingLevels, InterceptCall);
 
-	Patch(0x58F88C, { 0x90, 0xBA });
-	Patch(0x58F88E, MSAAText);
+		Patch(0x58F88C, { 0x90, 0xBA });
+		Patch(0x58F88E, MSAAText);
+	}
 
 	// Fixed car collisions - car you're hitting gets proper damage now
 	Nop(0x555AB8, 2);
@@ -5174,12 +5208,14 @@ void Patch_SA_Steam()
 
 	// Car explosion crash with multimonitor
 	// Unitialized collision data breaking stencil shadows
-	ReadCall( 0x41A216, orgMemMgrMalloc );
-	InjectHook(0x41A216, CollisionData_MallocAndInit);
+	{
+		using namespace UnitializedCollisionDataFix;
 
-	ReadCall( 0x41A07C, orgNewAlloc );
-	InjectHook(0x41A07C, CollisionData_NewAndInit);
-	InjectHook(0x41A159, CollisionData_NewAndInit);
+		InterceptCall(0x41A216, orgMemMgrMalloc, CollisionData_MallocAndInit);
+
+		std::array<uintptr_t, 2> newAndInit = { 0x41A07C, 0x41A159 };
+		HookEach_CollisionDataNew(newAndInit, InterceptCall);
+	}
 
 
 	// Crash when entering advanced display options on a dual monitor machine after:
@@ -5533,6 +5569,8 @@ void Patch_SA_NewBinaries_Common()
 
 	// Fixed MSAA options
 	{
+		using namespace MSAAFixes;
+
 		// TODO: Remove wildcards in patterns once transactional patching is implemented
 		auto func1 = pattern( "83 BE C8 00 00 00 04 ? ? E8" ).get_one();
 		void* func2 = get_pattern( "05 A3 ? ? ? ? 59", -1 );
@@ -5551,17 +5589,19 @@ void Patch_SA_NewBinaries_Common()
 		void* changeMultiSamplingLevels2 = get_pattern( "8B 96 D0 00 00 00 52", -5 );
 		void* setMultiSamplingLevels = get_pattern( "83 C4 04 8B C7 5F 5E 5B 8B E5 5D C3 BB", -5 );
 
-		ReadCall( getMaxMultisamplingLevels.get<void>( -5 ), orgGetMaxMultiSamplingLevels );
-		InjectHook( getMaxMultisamplingLevels.get<void>( -5 ), GetMaxMultiSamplingLevels );
-		InjectHook(func1.get<void>( 7 + 2 ), GetMaxMultiSamplingLevels);
+		std::array<void*, 2> getMaxMultiSamplingLevels = {
+			getMaxMultisamplingLevels.get<void>( -5 ),
+			func1.get<void>( 7 + 2 ),
+		};
+		HookEach_GetMaxMultiSamplingLevels(getMaxMultiSamplingLevels, InterceptCall);
 
-		ReadCall( changeMultiSamplingLevels, orgChangeMultiSamplingLevels );
-		InjectHook( changeMultiSamplingLevels, ChangeMultiSamplingLevels );
-		InjectHook( getMaxMultisamplingLevels.get<void>( -5 + 0x30 ), ChangeMultiSamplingLevels );
-		InjectHook( changeMultiSamplingLevels2, ChangeMultiSamplingLevels );
-
-		ReadCall( setMultiSamplingLevels, orgSetMultiSamplingLevels );
-		InjectHook( setMultiSamplingLevels, SetMultiSamplingLevels );
+		std::array<void*, 4> setOrChangeMultiSamplingLevels = {
+			changeMultiSamplingLevels,
+			getMaxMultisamplingLevels.get<void>( -5 + 0x30 ),
+			changeMultiSamplingLevels2,
+			setMultiSamplingLevels
+		};
+		HookEach_SetOrChangeMultiSamplingLevels(setOrChangeMultiSamplingLevels, InterceptCall);
 
 		auto msaaText = pattern( "48 50 68 ? ? ? ? 53" ).count(1); // Only so newsteam r1 doesn't crash
 		if ( msaaText.size() == 1 )								   // transactional patching will obsolete this
@@ -5585,16 +5625,16 @@ void Patch_SA_NewBinaries_Common()
 	// Car explosion crash with multimonitor
 	// Unitialized collision data breaking stencil shadows
 	{
+		using namespace UnitializedCollisionDataFix;
+
 		void* memMgrAlloc = get_pattern( "E8 ? ? ? ? 66 8B 55 08 8B 4D 10" );
-		void* newAlloc1 = get_pattern( "33 C9 83 C4 04 3B C1 74 36", -5 );
-		void* newAlloc2 = get_pattern( "33 C9 83 C4 04 3B C1 74 37", -5 );
+		std::array<void*, 2> newAlloc = {
+			get_pattern( "33 C9 83 C4 04 3B C1 74 36", -5 ),
+			get_pattern( "33 C9 83 C4 04 3B C1 74 37", -5 ),
+		};
 
-		ReadCall( memMgrAlloc, orgMemMgrMalloc );
-		InjectHook( memMgrAlloc, CollisionData_MallocAndInit );
-
-		ReadCall( newAlloc1, orgNewAlloc );
-		InjectHook( newAlloc1, CollisionData_NewAndInit );
-		InjectHook( newAlloc2, CollisionData_NewAndInit );
+		InterceptCall(memMgrAlloc, orgMemMgrMalloc, CollisionData_MallocAndInit);
+		HookEach_CollisionDataNew(newAlloc, InterceptCall);
 	}
 
 	// Crash when entering advanced display options on a dual monitor machine after:
@@ -5730,12 +5770,11 @@ void Patch_SA_NewBinaries_Common()
 		using namespace VariableResets;
 
 		{
-			auto reinit1 = get_pattern( "E8 ? ? ? ? E8 ? ? ? ? E8 ? ? ? ? E8 ? ? ? ? 38 1D" );
-			auto reinit2 = get_pattern( "E8 ? ? ? ? 89 1D ? ? ? ? E8 ? ? ? ? 5E" );
-
-			ReadCall( reinit1, orgReInitGameObjectVariables );
-			InjectHook( reinit1, ReInitGameObjectVariables );
-			InjectHook( reinit2, ReInitGameObjectVariables );
+			std::array<void*, 2> reInitGameObjectVariables = {
+				get_pattern( "E8 ? ? ? ? E8 ? ? ? ? E8 ? ? ? ? E8 ? ? ? ? 38 1D" ),
+				get_pattern( "E8 ? ? ? ? 89 1D ? ? ? ? E8 ? ? ? ? 5E" )
+			};
+			HookEach_ReInitGameObjectVariables(reInitGameObjectVariables, InterceptCall);
 		}
 
 		// Variables to reset
@@ -5828,12 +5867,11 @@ void Patch_SA_NewBinaries_Common()
 
 	// Fixed bomb ownership/bombs saving for bikes
 	{
-		auto restoreForHideout = get_pattern( "8D 4E EE E8", 3 );
-		auto restoreImpoundGarage = get_pattern( "8D 4F EE E8", 3 );
-
-		ReadCall( restoreForHideout, CStoredCar::orgRestoreCar );
-		InjectHook( restoreForHideout, &CStoredCar::RestoreCar_SilentPatch );
-		InjectHook( restoreImpoundGarage, &CStoredCar::RestoreCar_SilentPatch );
+		std::array<void*, 2> restoreCar = {
+			get_pattern( "8D 4E EE E8", 3 ),
+			get_pattern( "8D 4F EE E8", 3 )
+		};
+		CStoredCar::HookEach_RestoreCar(restoreCar, InterceptCall);
 	}
 
 

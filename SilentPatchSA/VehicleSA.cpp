@@ -114,9 +114,7 @@ WRAPPER bool CVehicle::IsLawEnforcementVehicle() { VARJMP(varIsLawEnforcementVeh
 
 auto GetFrameHierarchyId = AddressByVersion<int32_t(*)(RwFrame*)>(0x732A20, 0x733250, 0x76CC30);
 
-void (CAutomobile::*CAutomobile::orgAutomobilePreRender)();
 void (CPlane::*CPlane::orgPlanePreRender)();
-CVehicle* (CStoredCar::*CStoredCar::orgRestoreCar)();
 
 static int32_t random(int32_t from, int32_t to)
 {
@@ -261,14 +259,6 @@ bool CVehicle::IgnoresLightbeamFix() const
 		return ms_lightbeamFixOverride < 0;
 	}
 	return SVF::ModelHasFeature( m_nModelIndex.Get(), SVF::Feature::_INTERNAL_NO_LIGHTBEAM_BFC_FIX );
-}
-
-
-void CVehicle::DoHeadLightBeam_LightBeamFixSaveObj(int type, CMatrix& m, bool right)
-{
-	LightbeamFix::SetCurrentVehicle( this );
-	DoHeadLightBeam( type, m, right );
-	LightbeamFix::SetCurrentVehicle( nullptr );
 }
 
 bool CVehicle::CustomCarPlate_TextureCreate(CVehicleModelInfo* pModelInfo)
@@ -551,13 +541,14 @@ RwFrame* CAutomobile::GetTowBarFrame() const
 	return towBar;
 }
 
-void CAutomobile::PreRender()
+void CAutomobile::BeforePreRender()
 {
 	// For rotating engine components
 	ms_engineCompSpeed = m_nVehicleFlags.bEngineOn ? CTimer::m_fTimeStep : 0.0f;
+}
 
-	(this->*(orgAutomobilePreRender))();
-
+void CAutomobile::AfterPreRender()
+{
 	const int32_t extID = m_nModelIndex.Get();
 	if ( SVF::ModelHasFeature( extID, SVF::Feature::PHOENIX_FLUTTER ) )
 	{
@@ -725,21 +716,19 @@ bool CTrailer::GetTowBarPos(CVector& posnOut, bool defaultPos, CVehicle* trailer
 	return GetTowBarPos_GTA(posnOut, defaultPos, trailer);
 }
 
-CVehicle* CStoredCar::RestoreCar_SilentPatch()
+CVehicle* CStoredCar::RestoreCar_LoadBombOwnership(CVehicle* vehicle)
 {
-	CVehicle* vehicle = (this->*(orgRestoreCar))();
-	if ( vehicle == nullptr ) return nullptr;
-
-	if ( m_bombType != 0 )
+	if (vehicle != nullptr)
 	{
-		// Fixup bomb stuff
-		if ( vehicle->GetClass() == VEHICLE_AUTOMOBILE || vehicle->GetClass() == VEHICLE_BIKE )
+		if (m_bombType != 0)
 		{
-			vehicle->SetBombOnBoard( m_bombType );
-			vehicle->SetBombOwner( FindPlayerPed() );
+			// Fixup bomb stuff
+			if (vehicle->GetClass() == VEHICLE_AUTOMOBILE || vehicle->GetClass() == VEHICLE_BIKE)
+			{
+				vehicle->SetBombOnBoard(m_bombType);
+				vehicle->SetBombOwner(FindPlayerPed());
+			}
 		}
 	}
-
 	return vehicle;
 }
-

@@ -9,6 +9,7 @@
 #include "VehicleVC.h"
 #include "SVF.h"
 
+#include <array>
 #include <memory>
 #include <Shlwapi.h>
 
@@ -255,11 +256,19 @@ void __declspec(naked) AutoPilotTimerFix_VC()
 	}
 }
 
-static void (__thiscall *orgGiveWeapon)( void* ped, unsigned int weapon, unsigned int ammo, bool flag );
-static void __fastcall GiveWeapon_SP( void* ped, void*, unsigned int weapon, unsigned int ammo, bool flag )
+namespace ZeroAmmoFix
 {
-	if ( ammo == 0 ) ammo = 1;
-	orgGiveWeapon( ped, weapon, ammo, flag );
+
+template<std::size_t Index>
+static void (__fastcall *orgGiveWeapon)(void* ped, void*, unsigned int weapon, unsigned int ammo);
+
+template<std::size_t Index>
+static void __fastcall GiveWeapon_SP(void* ped, void*, unsigned int weapon, unsigned int ammo)
+{
+	orgGiveWeapon<Index>(ped, nullptr, weapon, std::max(1u, ammo));
+}
+HOOK_EACH_FUNC(GiveWeapon, orgGiveWeapon, GiveWeapon_SP);
+
 }
 
 
@@ -1029,12 +1038,13 @@ void Patch_VC_Common()
 
 	// Fixed ammo from SCM
 	{
-		auto give_weapon = get_pattern( "6B C0 2E 6A 01 56 8B 3C", 0x15 );
-		ReadCall( give_weapon, orgGiveWeapon );
-		InjectHook( give_weapon, GiveWeapon_SP );
+		using namespace ZeroAmmoFix;
 
-		give_weapon = get_pattern( "89 F9 6A 01 55 50 E8", 6 );
-		InjectHook( give_weapon, GiveWeapon_SP );
+		std::array<void*, 2> give_weapon = {
+			get_pattern( "6B C0 2E 6A 01 56 8B 3C", 0x15 ),
+			get_pattern( "89 F9 6A 01 55 50 E8", 6 ),
+		};
+		HookEach_GiveWeapon(give_weapon, InterceptCall);
 	}
 
 
