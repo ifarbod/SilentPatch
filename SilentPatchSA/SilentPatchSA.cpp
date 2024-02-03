@@ -1493,6 +1493,7 @@ namespace VariableResets
 
 	using VarVariant = std::variant< bool*, int*, TimeNextMadDriverChaseCreated_t<float>*, ResetToTrue_t* >;
 	std::vector<VarVariant> GameVariablesToReset;
+	std::vector<std::string> PickupDefs, CarGeneratorDefs, StuntJumpDefs;
 
 	static void ReInitOurVariables()
 	{
@@ -1501,6 +1502,54 @@ namespace VariableResets
 			std::visit( []( auto&& v ) {
 				*v = {};
 				}, var );
+		}
+	}
+
+	static std::string_view TrimWhitespace(std::string_view line)
+	{
+		const size_t first = line.find_first_not_of(' ');
+		if (std::string_view::npos != first)
+		{
+			const size_t last = line.find_last_not_of(' ');
+			line = line.substr(first, (last - first + 1));
+		}
+		return line;
+	}
+
+	static void (*orgLoadPickup)(const char* line);
+	static void LoadPickup_SaveLine(const char* line)
+	{
+		orgLoadPickup(line);
+		PickupDefs.emplace_back(TrimWhitespace(line));
+	}
+
+	static void (*orgLoadCarGenerator)(const char* line, int originScene);
+	static void LoadCarGenerator_SaveLine(const char* line, int originScene)
+	{
+		orgLoadCarGenerator(line, originScene);
+		CarGeneratorDefs.emplace_back(TrimWhitespace(line));
+	}
+
+	static void (*orgLoadStuntJump)(const char* line);
+	static void LoadStuntJump_SaveLine(const char* line)
+	{
+		orgLoadStuntJump(line);
+		StuntJumpDefs.emplace_back(TrimWhitespace(line));
+	}
+
+	static void ReloadObjectDefinitionsAfterReinit()
+	{
+		for (const auto& pickup : PickupDefs)
+		{
+			orgLoadPickup(pickup.c_str());
+		}
+		for (const auto& carGenerator : CarGeneratorDefs)
+		{
+			orgLoadCarGenerator(carGenerator.c_str(), 0);
+		}
+		for (const auto& stuntJump : StuntJumpDefs)
+		{
+			orgLoadStuntJump(stuntJump.c_str());
 		}
 	}
 
@@ -1513,6 +1562,9 @@ namespace VariableResets
 		// First reinit "our" variables in case stock ones rely on those during resetting
 		ReInitOurVariables();
 		orgReInitGameObjectVariables<Index>();
+
+		// Then after the normal restart, re-instate pickups, car generators and stunt jumps from text IPLs as they have been 
+		ReloadObjectDefinitionsAfterReinit();
 	}
 	HOOK_EACH_FUNC(ReInitGameObjectVariables, orgReInitGameObjectVariables, ReInitGameObjectVariables);
 }
@@ -4406,6 +4458,10 @@ void Patch_SA_10()
 		std::array<uintptr_t, 2> reInitGameObjectVariables = { 0x53C6DB, 0x53C76D };
 		HookEach_ReInitGameObjectVariables(reInitGameObjectVariables, InterceptCall);
 
+		InterceptCall(0x5B89E4, orgLoadPickup, LoadPickup_SaveLine);
+		InterceptCall(0x5B89EE, orgLoadCarGenerator, LoadCarGenerator_SaveLine);
+		InterceptCall(0x5B89F9, orgLoadStuntJump, LoadStuntJump_SaveLine);
+
 		// Variables to reset
 		GameVariablesToReset.emplace_back( *(bool**)(0x63E8D8+1) ); // CPlayerPed::bHasDisplayedPlayerQuitEnterCarHelpText
 		GameVariablesToReset.emplace_back( *(bool**)(0x44AC97+1) ); // CGarages::RespraysAreFree
@@ -5770,11 +5826,19 @@ void Patch_SA_NewBinaries_Common()
 		using namespace VariableResets;
 
 		{
+			auto loadPickup = get_pattern("E8 ? ? ? ? EB 1B 6A 00");
+			auto loadCarGenerator = get_pattern("E8 ? ? ? ? 83 C4 08 EB 11");
+			auto loadStuntJump = get_pattern("50 E8 ? ? ? ? EB 06", 1);
+
 			std::array<void*, 2> reInitGameObjectVariables = {
 				get_pattern( "E8 ? ? ? ? E8 ? ? ? ? E8 ? ? ? ? E8 ? ? ? ? 38 1D" ),
 				get_pattern( "E8 ? ? ? ? 89 1D ? ? ? ? E8 ? ? ? ? 5E" )
 			};
 			HookEach_ReInitGameObjectVariables(reInitGameObjectVariables, InterceptCall);
+
+			InterceptCall(loadPickup, orgLoadPickup, LoadPickup_SaveLine);
+			InterceptCall(loadCarGenerator, orgLoadCarGenerator, LoadCarGenerator_SaveLine);
+			InterceptCall(loadStuntJump, orgLoadStuntJump, LoadStuntJump_SaveLine);
 		}
 
 		// Variables to reset
