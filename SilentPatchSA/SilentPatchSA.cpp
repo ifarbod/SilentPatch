@@ -2000,6 +2000,23 @@ namespace BikerCopsDriveByFix
 }
 
 
+// ============= Fix miscolored racing checkpoints if no other marker was drawn before them =============
+namespace RacingCheckpointsRender
+{
+	static RpClump* (*orgRpClumpRender)(RpClump* clump);
+	static RpClump* RpClumpRender_SetLitFlag(RpClump* clump)
+	{
+		RpClumpForAllAtomics(clump, [](RpAtomic* atomic)
+			{
+				RpGeometry* geometry = RpAtomicGetGeometry(atomic);
+				RpGeometrySetFlags(geometry, RpGeometryGetFlags(geometry) | rpGEOMETRYMODULATEMATERIALCOLOR);
+				return atomic;
+			});
+		return orgRpClumpRender(clump);
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -4626,6 +4643,14 @@ void Patch_SA_10()
 	}
 
 
+	// Fix miscolored racing checkpoints if no other marker was drawn before them
+	{
+		using namespace RacingCheckpointsRender;
+
+		InterceptCall(0x721520, orgRpClumpRender, RpClumpRender_SetLitFlag);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6201,6 +6226,15 @@ void Patch_SA_NewBinaries_Common()
 
 		auto backToCruisingIfNoWantedLevel = get_pattern("56 E8 ? ? ? ? 80 A6 ? ? ? ? ? 83 C4 04", 1);
 		InterceptCall(backToCruisingIfNoWantedLevel, orgJoinCarWithRoadSystem, JoinCarWithRoadSystem_AbortDriveByTask);
+	}
+
+
+	// Fix miscolored racing checkpoints if no other marker was drawn before them
+	{
+		using namespace RacingCheckpointsRender;
+
+		auto clumpRender = get_pattern("E8 ? ? ? ? DD 05 ? ? ? ? 83 C4 14");
+		InterceptCall(clumpRender, orgRpClumpRender, RpClumpRender_SetLitFlag);
 	}
 }
 
