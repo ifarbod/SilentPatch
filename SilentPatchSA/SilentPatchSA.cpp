@@ -2016,6 +2016,75 @@ namespace RacingCheckpointsRender
 	}
 }
 
+// ============= Correct an improperly decrypted CPlayerPedData::operator= that broke gang recruiting after activating replays =============
+namespace PlayerPedDataAssignment
+{
+	__declspec(naked) void AssignmentOp_Hoodlum()
+	{
+		_asm
+		{
+			xor     edx, [ecx+34h]
+			and     edx, 1
+			xor     [eax+34h], edx
+			mov     esi, [eax+34h]
+			mov     edx, [ecx+34h]
+			xor     edx, esi
+			and     edx, 2
+			xor     edx, esi
+			mov     [eax+34h], edx
+			mov     esi, [ecx+34h]
+			xor     esi, edx
+			and     esi, 4
+			xor     esi, edx
+			mov     [eax+34h], esi
+			mov     edx, [ecx+34h]
+			xor     edx, esi
+			and     edx, 8
+			xor     edx, esi
+			mov     [eax+34h], edx
+			mov     esi, [ecx+34h]
+			xor     esi, edx
+			and     esi, 10h
+			xor     esi, edx
+			mov     [eax+34h], esi
+			mov     edx, [ecx+34h]
+			xor     edx, esi
+			and     edx, 20h
+			xor     edx, esi
+			mov     [eax+34h], edx
+			mov     esi, [ecx+34h]
+			xor     esi, edx
+			and     esi, 40h
+			xor     esi, edx
+			mov     [eax+34h], esi
+			mov     edx, [ecx+34h]
+			xor     edx, esi
+			and     edx, 80h
+			xor     edx, esi
+			mov     [eax+34h], edx
+			mov     esi, [ecx+34h]
+			xor     esi, edx
+			and     esi, 100h
+			xor     esi, edx
+			mov     [eax+34h], esi
+			mov     edx, [ecx+34h]
+			retn
+		}
+	}
+
+	__declspec(naked) void AssignmentOp_Compact()
+	{
+		_asm
+		{
+			call	AssignmentOp_Hoodlum
+			xor     edx, esi
+			and     edx, 200h
+			retn
+		}
+	}
+}
+
+
 
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
@@ -4648,6 +4717,27 @@ void Patch_SA_10()
 		using namespace RacingCheckpointsRender;
 
 		InterceptCall(0x721520, orgRpClumpRender, RpClumpRender_SetLitFlag);
+	}
+
+
+	// Correct an improperly decrypted CPlayerPedData::operator= that broke gang recruiting after activating replays
+	// Only broken in the HOODLUM EXE and the compact EXE that carried over the bug
+	// By Wesser
+	{
+		using namespace PlayerPedDataAssignment;
+
+		uintptr_t placeToPatch = ModCompat::Utils::GetFunctionAddrIfRerouted(0x45C4B0) + 0x5D;
+
+		// If we're overwriting actual meaningful instructions and not NOPs, use a different wrapper
+		if (MemEquals(placeToPatch, { 0x90, 0x90, 0x90, 0x90, 0x90 }))
+		{
+			InjectHook(placeToPatch, AssignmentOp_Hoodlum, HookType::Call);
+		}
+		else
+		{
+			InjectHook(placeToPatch, AssignmentOp_Compact, HookType::Call);
+			Nop(placeToPatch + 5, 3);
+		}
 	}
 
 
