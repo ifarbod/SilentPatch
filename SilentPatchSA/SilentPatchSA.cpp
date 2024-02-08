@@ -4161,7 +4161,9 @@ void Patch_SA_10()
 	InjectHook(0x744FB0, GetMyDocumentsPathSA, HookType::Jump);
 
 	// Fixed muzzleflash not showing from last bullet
-	Nop(0x61ECE4, 2);
+	// nop \ test al, al \ jz
+	Nop(0x61ECDC, 6);
+	Patch(0x61ECE2, { 0x84, 0xC0, 0x74 });
 
 	// Proper randomizations
 	InjectHook(0x44E82E, Int32Rand); // Missing ped paths
@@ -5010,7 +5012,9 @@ void Patch_SA_11()
 	InjectHook(0x7457E0, GetMyDocumentsPathSA, HookType::Jump);
 
 	// Fixed muzzleflash not showing from last bullet
-	Nop(0x61F504, 2);
+	// nop \ test al, al \ jz
+	Nop(0x61F4FC, 6);
+	Patch(0x61F502, { 0x84, 0xC0, 0x74 });
 
 	// Proper randomizations
 	InjectHook(0x44E8AE, Int32Rand); // Missing ped paths
@@ -5323,7 +5327,7 @@ void Patch_SA_Steam()
 	InjectHook(0x77EDC0, GetMyDocumentsPathSA, HookType::Jump);
 
 	// Fixed muzzleflash not showing from last bullet
-	Nop(0x61F504, 2);
+	// REMOVED - the fix pointed at some unrelated instruction anyway? I think it never worked
 
 	// Proper randomizations
 	InjectHook(0x452CCF, Int32Rand); // Missing ped paths
@@ -5657,8 +5661,9 @@ void Patch_SA_NewBinaries_Common()
 
 	// Fixed muzzleflash not showing from last bullet
 	{
-		void* weaponStateCheck = get_pattern( "83 BC 8E A4 05 00 00 01", 8 );
-		Nop( weaponStateCheck, 2 );
+		auto weaponStateCheck = pattern("83 BC 8E A4 05 00 00 01").get_one();
+		Nop(weaponStateCheck.get<void>(-16), 22);
+		Patch(weaponStateCheck.get<void>(6), { 0x84, 0xC0, 0x74 });
 	}
 
 	// Proper randomizations
