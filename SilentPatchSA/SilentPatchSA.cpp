@@ -4741,6 +4741,21 @@ void Patch_SA_10()
 	}
 
 
+	// Delay destroying of cigarettes/bottles held by NPCs so it does not potentially corrupt the moving list
+
+	// CWorld::Process processes all entries in the moving list, calling ProcessControl on them.
+	// CPlayerPed::ProcessControl handles the gang recruitment which in turn can result in homies dropping cigarettes or bottles.
+	// When this happens, they are destroyed -immediately-. If those props are in the moving list right after the PlayerPed,
+	// this corrupts a pre-cached node->next pointer and references an already freed entity.
+	// To fix this, queue the entity for a delayed destruction instead of destroying immediately,
+	// and let it destroy itself in CWorld::Process later.
+
+	// or [esi+1Ch], 800h // bRemoveFromWorld
+	// (The entity reference is already cleared for us, no need to do it)
+	// jmp 5E03EC
+	Patch(0x5E03D4, { 0x81, 0x4E, 0x1C, 0x00, 0x08, 0x00, 0x00, 0xEB, 0x0F });
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6325,6 +6340,24 @@ void Patch_SA_NewBinaries_Common()
 
 		auto clumpRender = get_pattern("E8 ? ? ? ? DD 05 ? ? ? ? 83 C4 14");
 		InterceptCall(clumpRender, orgRpClumpRender, RpClumpRender_SetLitFlag);
+	}
+
+
+	// Delay destroying of cigarettes/bottles held by NPCs so it does not potentially corrupt the moving list
+	{
+		// CWorld::Process processes all entries in the moving list, calling ProcessControl on them.
+		// CPlayerPed::ProcessControl handles the gang recruitment which in turn can result in homies dropping cigarettes or bottles.
+		// When this happens, they are destroyed -immediately-. If those props are in the moving list right after the PlayerPed,
+		// this corrupts a pre-cached node->next pointer and references an already freed entity.
+		// To fix this, queue the entity for a delayed destruction instead of destroying immediately,
+		// and let it destroy itself in CWorld::Process later.
+
+		// or [esi+1Ch], 800h // bRemoveFromWorld
+		// (The entity reference is already cleared for us, no need to do it)
+		// jmp 5E03EC
+		auto dropEntity = get_pattern("74 1C 8B 16 8B 42 20", 2);
+
+		Patch(dropEntity, { 0x81, 0x4E, 0x1C, 0x00, 0x08, 0x00, 0x00, 0xEB, 0x13 });
 	}
 }
 
