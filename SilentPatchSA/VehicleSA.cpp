@@ -362,6 +362,13 @@ CPed* CVehicle::PickRandomPassenger()
 	return nullptr;
 }
 
+bool CVehicle::CanThisVehicleBeImpounded() const
+{
+	const bool bIsBike = m_dwVehicleClass == VEHICLE_BIKE;
+	const bool bIsCar = m_dwVehicleClass == VEHICLE_AUTOMOBILE && m_dwVehicleSubClass != VEHICLE_HELI && m_dwVehicleSubClass != VEHICLE_PLANE && m_dwVehicleSubClass != VEHICLE_TRAILER;
+	return bIsCar || bIsBike;
+}
+
 int32_t CVehicle::GetRemapIndex()
 {
 	int32_t remapTxd = m_remapTxdSlot.Get();

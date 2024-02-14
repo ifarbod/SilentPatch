@@ -267,6 +267,7 @@ public:
 
 	bool			IsLawEnforcementVehicle();
 	CPed*			PickRandomPassenger();
+	bool			CanThisVehicleBeImpounded() const;
 
 	int32_t			GetRemapIndex();
 

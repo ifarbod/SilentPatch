@@ -2117,6 +2117,22 @@ namespace GetCorrectPedModel_Lapdm1
 }
 
 
+// ============= Only allow impounding cars and bikes (and their subclasses), as impounding helicopters, planes, boats makes no sense =============
+namespace RestrictImpoundVehicleTypes
+{
+	template<std::size_t Index>
+	static bool (*orgIsThisVehicleInteresting)(CVehicle* vehicle);
+
+	template<std::size_t Index>
+	static bool IsThisVehicleInteresting_AndCanBeImpounded(CVehicle* vehicle)
+	{
+		return vehicle->CanThisVehicleBeImpounded() && orgIsThisVehicleInteresting<Index>(vehicle);
+	}
+
+	HOOK_EACH_FUNC(ShouldImpound, orgIsThisVehicleInteresting, IsThisVehicleInteresting_AndCanBeImpounded)
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -4796,6 +4812,14 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
+	// Only allow impounding cars and bikes (and their subclasses), as impounding helicopters, planes, boats makes no sense
+	{
+		using namespace RestrictImpoundVehicleTypes;
+	
+		std::array<uint32_t, 2> isThisVehicleInteresting = { 0x566794, 0x56A378 };
+		HookEach_ShouldImpound(isThisVehicleInteresting, InterceptCall);
+	}
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6416,6 +6440,19 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		{
 			Patch(jumpTablePtr+4, &BikerCop_Steam);
 		}
+	}
+
+
+	// Only allow impounding cars and bikes (and their subclasses), as impounding helicopters, planes, boats makes no sense
+	{
+		using namespace RestrictImpoundVehicleTypes;
+
+		auto isThisVehicleInteresting_pattern = pattern("56 E8 ? ? ? ? 83 C4 04 84 C0 74 09 56 E8 ? ? ? ? 83 C4 04 56").count(2);
+		std::array<void*, 2> isThisVehicleInteresting = {
+			isThisVehicleInteresting_pattern.get(0).get<void>(1),
+			isThisVehicleInteresting_pattern.get(1).get<void>(1),
+		};
+		HookEach_ShouldImpound(isThisVehicleInteresting, InterceptCall);
 	}
 }
 
