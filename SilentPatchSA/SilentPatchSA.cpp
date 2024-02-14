@@ -2085,6 +2085,37 @@ namespace PlayerPedDataAssignment
 }
 
 
+// ============= Spawn lapdm1 (biker cop) correctly if the script requests one with PEDTYPE_COP =============
+namespace GetCorrectPedModel_Lapdm1
+{
+	__declspec(naked) void BikerCop_Retail()
+	{
+		_asm
+		{
+			cmp		dword ptr [esp+4], 6
+			jnz		BikerCop_Return
+			mov		dword ptr [eax], 1
+
+		BikerCop_Return:
+			retn	8
+		}
+	}
+
+	__declspec(naked) void BikerCop_Steam()
+	{
+		_asm
+		{
+			cmp		dword ptr [ebp+8], 6
+			jnz		BikerCop_Return
+			mov		dword ptr [eax], 1
+
+		BikerCop_Return:
+			pop		ebp
+			retn	8
+		}
+	}
+}
+
 
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
@@ -3880,15 +3911,13 @@ BOOL InjectDelayedPatches_Newsteam()
 static char		aNoDesktopMode[64];
 
 
-void Patch_SA_10()
+void Patch_SA_10(HINSTANCE hInstance)
 {
 	using namespace Memory;
 
 #if MEM_VALIDATORS
 	InstallMemValidator();
 #endif
-
-	const HINSTANCE hInstance = GetModuleHandle( nullptr );
 
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
 	{
@@ -4758,6 +4787,15 @@ void Patch_SA_10()
 	Patch(0x5E03D4, { 0x81, 0x4E, 0x1C, 0x00, 0x08, 0x00, 0x00, 0xEB, 0x0F });
 
 
+	// Spawn lapdm1 (biker cop) correctly if the script requests one with PEDTYPE_COP
+	// By Wesser
+	{
+		using namespace GetCorrectPedModel_Lapdm1;
+
+		Patch(0x464FC8, &BikerCop_Retail);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -5505,7 +5543,7 @@ void Patch_SA_Steam()
 	InjectHook(0x5EDFD9, 0x5EE0FA, HookType::Jump);
 }
 
-void Patch_SA_NewBinaries_Common()
+void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 {
 	using namespace Memory;
 	using namespace hook;
@@ -6364,6 +6402,21 @@ void Patch_SA_NewBinaries_Common()
 
 		Patch(dropEntity, { 0x81, 0x4E, 0x1C, 0x00, 0x08, 0x00, 0x00, 0xEB, 0x13 });
 	}
+
+
+	// Spawn lapdm1 (biker cop) correctly if the script requests one with PEDTYPE_COP
+	// By Wesser
+	{
+		using namespace GetCorrectPedModel_Lapdm1;
+
+		auto jumpTablePtr = *get_pattern<void**>("FF 24 8D ? ? ? ? 83 7D 08 06", 3);
+
+		// Only patch if someone else hasn't relocated it
+		if (ModCompat::Utils::GetModuleHandleFromAddress(jumpTablePtr) == hInstance)
+		{
+			Patch(jumpTablePtr+4, &BikerCop_Steam);
+		}
+	}
 }
 
 
@@ -6380,7 +6433,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 		ScopedUnprotect::Section Protect2( hInstance, ".rdata" );
 
 		const int8_t version = Memory::GetVersion().version;
-		if ( version == 0 ) Patch_SA_10();
+		if ( version == 0 ) Patch_SA_10(hInstance);
 		else if ( version == 1 ) Patch_SA_11(); // Not supported anymore
 		else if ( version == 2 ) Patch_SA_Steam(); // Not supported anymore
 		else
@@ -6388,7 +6441,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			// TODO:
 			// Add r1 low violence check to MemoryMgr.GTA via
 			// if ( *(DWORD*)DynBaseAddress(0x49F810) == 0x64EC8B55 ) { normal } else { low violence } 
-			Patch_SA_NewBinaries_Common();
+			Patch_SA_NewBinaries_Common(hInstance);
 		}	
 	}
 	return TRUE;
