@@ -316,6 +316,9 @@ const char*				(*GetFrameNodeName)(RwFrame*) = AddressByVersion<const char*(*)(R
 RpHAnimHierarchy*		(*GetAnimHierarchyFromSkinClump)(RpClump*) = AddressByVersion<RpHAnimHierarchy*(*)(RpClump*)>(0x734A40, 0x735270, 0x7671B0);	
 auto					InitializeUtrax = AddressByVersion<void(__thiscall*)(void*)>(0x4F35B0, 0x4F3A10, 0x4FFA80);
 auto					RpAnimBlendClumpGetAssociation = AddressByVersion<void*(*)(RpClump*, uint32_t)>(0x4D68B0, { "8B 0D ? ? ? ? 8B 14 01 8B 02 85 C0 74 11 8B 4D 0C", -6 });
+auto					GetAnimationBlockIndex = AddressByVersion<int32_t(*)(const char* animBlock)>(0x4D3990, { "83 C4 04 85 C0 75 05", -0xC });
+auto					RequestModel = AddressByVersion<void(*)(int modelID, int priority)>(0x4087E0, { "57 8D 3C 9B", -0x8 });
+auto					LoadAllRequestedModels = AddressByVersion<void(*)(bool bBlock)>(0x40EA10, { "A1 ? ? ? ? 03 C0", -0x20 });
 
 static void				(__thiscall* SetVolume)(void*,float);	
 static BOOL				(*IsAlreadyRunning)();
@@ -2130,6 +2133,38 @@ namespace RestrictImpoundVehicleTypes
 	}
 
 	HOOK_EACH_FUNC(ShouldImpound, orgIsThisVehicleInteresting, IsThisVehicleInteresting_AndCanBeImpounded)
+}
+
+
+// ============= Fix PlayerPed replay crashes =============
+// 1. Crash when starting a mocap cutscene after playing a replay wearing different clothes to the ones CJ has currently
+// 2. Crash when playing back a replay with a different motion group anim (fat/muscular/normal) than the current one
+namespace ReplayPlayerPedCrashFixes
+{
+	static void (*orgRestoreStuffFromMem)();
+	static void RestoreStuffFromMem_RebuildPlayer()
+	{
+		orgRestoreStuffFromMem();
+		CClothes::RebuildPlayer(FindPlayerPed(), false);
+	}
+
+	static void LoadAllMotionGroupAnims()
+	{
+		// FLA compatibility
+		static const int32_t animGroupIDOffset = *AddressByVersion<int32_t*>(0x5A814C + 2, { "81 C7 ? ? ? ? 57 E8 ? ? ? ? 83 C4 0C", 2 });
+
+		RequestModel(GetAnimationBlockIndex("fat") + animGroupIDOffset, 18);
+		RequestModel(GetAnimationBlockIndex("muscular") + animGroupIDOffset, 18);
+
+		LoadAllRequestedModels(true);
+	}
+
+	static void (*orgRebuildPlayer)(CPlayerPed*, bool);
+	static void RebuildPlayer_LoadAllMotionGroupAnims(CPlayerPed* ped, bool bForReplay)
+	{
+		orgRebuildPlayer(ped, bForReplay);
+		LoadAllMotionGroupAnims();
+	}
 }
 
 
@@ -4820,6 +4855,33 @@ void Patch_SA_10(HINSTANCE hInstance)
 		HookEach_ShouldImpound(isThisVehicleInteresting, InterceptCall);
 	}
 
+
+	// Fix PlayerPed replay crashes
+	// 1. Crash when starting a mocap cutscene after playing a replay wearing different clothes to the ones CJ has currently
+	// 2. Crash when playing back a replay with a different motion group anim (fat/muscular/normal) than the current one
+	{
+		using namespace ReplayPlayerPedCrashFixes;
+
+		InterceptCall(0x45F060, orgRestoreStuffFromMem, RestoreStuffFromMem_RebuildPlayer);
+
+		bool HoodlumPatched = false;
+		if (*reinterpret_cast<const uint8_t*>(0x45CEA0) == 0xE9)
+		{
+			uintptr_t DealWithNewPedPacket_Obfuscated;
+			ReadCall(0x45CEA0, DealWithNewPedPacket_Obfuscated);
+			if (ModCompat::Utils::GetModuleHandleFromAddress(DealWithNewPedPacket_Obfuscated) == hInstance)
+			{
+				InterceptCall(DealWithNewPedPacket_Obfuscated + 0xF8, orgRebuildPlayer, RebuildPlayer_LoadAllMotionGroupAnims);
+				HoodlumPatched = true;
+			}
+		}
+
+		if (!HoodlumPatched)
+		{
+			InterceptCall(0x45CF87, orgRebuildPlayer, RebuildPlayer_LoadAllMotionGroupAnims);
+		}
+	}
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6453,6 +6515,20 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 			isThisVehicleInteresting_pattern.get(1).get<void>(1),
 		};
 		HookEach_ShouldImpound(isThisVehicleInteresting, InterceptCall);
+	}
+
+
+	// Fix PlayerPed replay crashes
+	// 1. Crash when starting a mocap cutscene after playing a replay wearing different clothes to the ones CJ has currently
+	// 2. Crash when playing back a replay with a different motion group anim (fat/muscular/normal) than the current one
+	{
+		using namespace ReplayPlayerPedCrashFixes;
+
+		auto restoreStuffFromMem = get_pattern("E8 ? ? ? ? 80 3D ? ? ? ? ? C6 05 ? ? ? ? ? 74 3A D9 05");
+		auto rebuildPlayer = get_pattern("E8 ? ? ? ? 6A 01 56 E8 ? ? ? ? 83 C4 10 EB 53", 8);
+
+		InterceptCall(restoreStuffFromMem, orgRestoreStuffFromMem, RestoreStuffFromMem_RebuildPlayer);
+		InterceptCall(rebuildPlayer, orgRebuildPlayer, RebuildPlayer_LoadAllMotionGroupAnims);
 	}
 }
 

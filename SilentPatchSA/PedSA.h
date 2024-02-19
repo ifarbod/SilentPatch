@@ -421,5 +421,11 @@ public:
 static_assert(sizeof(CPed) == 0x79C, "Wrong size: CPed");
 static_assert(sizeof(CPlayerPed) == 0x7A4, "Wrong size: CPlayerPed");
 
+class CClothes
+{
+public:
+	static void (*RebuildPlayer)(CPlayerPed* ped, bool bForReplay);
+};
+
 
 #endif
