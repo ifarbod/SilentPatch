@@ -528,10 +528,25 @@ static void SweetsGirlFix()
 		*(uint16_t*)(ScriptSpace+ScriptFileSize+2680) = 0x0029;
 }
 
+static hook::pattern MakeScriptPattern(bool isMission, std::string_view bytes)
+{
+	uintptr_t begin, end;
+	if (isMission)
+	{
+		begin = uintptr_t(ScriptSpace) + ScriptFileSize;
+		end = begin + ScriptMissionSize;
+	}
+	else
+	{
+		begin = uintptr_t(ScriptSpace);
+		end = begin + ScriptFileSize;
+	}
+	return hook::make_range_pattern(begin, end, bytes).count_hint(100);
+}
+
 static void MountainCloudBoysFix()
 {
-	auto pattern = hook::make_range_pattern( uintptr_t(ScriptSpace+ScriptFileSize), uintptr_t(ScriptSpace+ScriptFileSize+ScriptMissionSize), 
-										"D6 00 04 00 39 00 03 EF 00 04 02 4D 00 01 90 F2 FF FF D6 00 04 01" ).count_hint(1);
+	auto pattern = MakeScriptPattern(true, "D6 00 04 00 39 00 03 EF 00 04 02 4D 00 01 90 F2 FF FF D6 00 04 01");
 	if ( pattern.size() == 1 ) // Faulty code lies under offset 3367 - replace it if it matches
 	{
 		const uint8_t bNewCode[22] = {
@@ -544,18 +559,59 @@ static void MountainCloudBoysFix()
 
 static void SupplyLinesFix( bool isBeefyBaron )
 {
-	auto pattern = hook::make_range_pattern( uintptr_t(ScriptSpace+ScriptFileSize), uintptr_t(ScriptSpace+ScriptFileSize+ScriptMissionSize),
-		isBeefyBaron ? "B8 9E 3A 44" : "B8 1E 2F 44" ).count_hint(1);
+	auto pattern = MakeScriptPattern(true, isBeefyBaron ? "B8 9E 3A 44" : "B8 1E 2F 44");
 	if ( pattern.size() == 1 ) // 700.48 -> 10.0 (teleports car with CJ under the building instead)
 	{
 		*pattern.get(0).get<float>() = 10.0f;
 	}
 }
 
+static void DrivingSchoolConesFix()
+{
+	auto pattern = MakeScriptPattern(true, "04 00 02 20 03 04 00 D6 00 04 00 1A 00 04 2E 02 20 03 4D 00 01 60 75 FF FF BE 00 08 01 07 24 03 20 03 2E 80 08 00 02 20 03 04 01");
+	if (pattern.size() == 1) // Only destroy as many cones as were created
+	{
+		const uint8_t gotoSkipAssignment[] = { 0x02, 0x00, 0x01, 0x8B, 0x75, 0xFF, 0xFF };
+		memcpy(pattern.get(0).get<void>(0), gotoSkipAssignment, sizeof(gotoSkipAssignment));
+
+		const uint8_t cmpVal[] = { 0x18, 0x00, 0x02, 0x20, 0x03, 0x04, 0x00 }; // trafficcone_counter > 0
+		memcpy(pattern.get(0).get<void>(11), cmpVal, sizeof(cmpVal));
+
+		// trafficcone_counter-- \ DELETE_OBJECT trafficcones[trafficcone_counter]
+		const uint8_t subValDeleteObject[] = { 0x0C, 0x00, 0x02, 0x20, 0x03, 0x04, 0x01, 0x08, 0x01, 0x07, 0x24, 0x03, 0x20, 0x03, 0x2E, 0x80 };
+		memcpy(pattern.get(0).get<void>(0x1B), subValDeleteObject, sizeof(subValDeleteObject));
+
+		// Also set trafficcone_counter to 0 so the first destruction doesn't happen
+		int32_t* trafficcone_counter = reinterpret_cast<int32_t*>(ScriptSpace+800);
+		*trafficcone_counter = 0;
+	}
+}
+
+static void BikeSchoolConesFix()
+{
+	auto pattern = MakeScriptPattern(true, "04 00 02 20 03 04 00 D6 00 04 00 1A 00 04 2E 02 20 03 4D 00 01 F8 AD FF FF 08 01 07 24 03 20 03 2E 80 08 00 02 20 03 04 01");
+	if (pattern.size() == 1) // Only destroy as many cones as were created
+	{
+		const uint8_t gotoSkipAssignment[] = { 0x02, 0x00, 0x01, 0x21, 0xAE, 0xFF, 0xFF };
+		memcpy(pattern.get(0).get<void>(0), gotoSkipAssignment, sizeof(gotoSkipAssignment));
+
+		const uint8_t cmpVal[] = { 0x18, 0x00, 0x02, 0x20, 0x03, 0x04, 0x00 }; // trafficcone_counter > 0
+		memcpy(pattern.get(0).get<void>(11), cmpVal, sizeof(cmpVal));
+
+		// trafficcone_counter-- \ DELETE_OBJECT trafficcones[trafficcone_counter]
+		const uint8_t subValDeleteObject[] = { 0x0C, 0x00, 0x02, 0x20, 0x03, 0x04, 0x01, 0x08, 0x01, 0x07, 0x24, 0x03, 0x20, 0x03, 0x2E, 0x80 };
+		memcpy(pattern.get(0).get<void>(0x19), subValDeleteObject, sizeof(subValDeleteObject));
+
+		// Also set trafficcone_counter to 0 so the first destruction doesn't happen
+		int32_t* trafficcone_counter = reinterpret_cast<int32_t*>(ScriptSpace+800);
+		*trafficcone_counter = 0;
+	}
+}
+
 static void QuadrupleStuntBonus()
 {
 	// IF HEIGHT_FLOAT_HJ > 4.0 -> IF HEIGHT_INT_HJ > 4
-	auto pattern = hook::make_range_pattern( uintptr_t(ScriptSpace), uintptr_t(ScriptSpace+ScriptFileSize), "20 00 02 60 14 06 00 00 80 40" ).count_hint(1);
+	auto pattern = MakeScriptPattern(false, "20 00 02 60 14 06 00 00 80 40");
 	if ( pattern.size() == 1 )
 	{
 		const uint8_t newCode[10] = {
@@ -592,6 +648,14 @@ static void StartNewMission_SCMFixes()
 	// WUZI1 - Mountain Cloud Boys fix
 	else if ( missionID == 53 )
 		MountainCloudBoysFix();
+	// DSKOOL - Driving School cones fix
+	// By Wesser
+	else if ( missionID == 71 )
+		DrivingSchoolConesFix();
+	// BSKOOL - Bike School cones fix
+	// By Wesser
+	else if ( missionID == 120 )
+		BikeSchoolConesFix();
 	// ZERO2 - Supply Lines fix
 	else if ( missionID == 73 )
 		SupplyLinesFix( false );
