@@ -608,6 +608,77 @@ static void BikeSchoolConesFix()
 	}
 }
 
+static void AirRaidFix()
+{
+	// Give the player back their weapon from the 8th slot instead of stealing it,
+	// but do it properly and load the model before giving the wepaon.
+	// 1.01 PC script saves and restores the weapon, but forgets to load the model.
+	auto save_weapon_gosub_place = MakeScriptPattern(true, "BD 01 03 65 01 06 00 03 48 01 04 00");
+	auto free_space_after_mission = MakeScriptPattern(true, "EF 04 0E 06 43 41 53 49 4E 4F EF 04 0E 0A 4F 4E 5F 4C 4F 4F 4B 45 52 53 D8 00 51 00");
+	if (save_weapon_gosub_place.size() == 1 && free_space_after_mission.size() == 1)
+	{
+		using namespace Memory;
+
+		// "Assemble" the script bytecode because it's more readable this way
+		uintptr_t afterMissionSpace = free_space_after_mission.get(0).get_uintptr(28);
+
+		auto assembleCommand = [](uintptr_t& mem, std::initializer_list<uint8_t> bytes)
+			{
+				uint8_t* buf = reinterpret_cast<uint8_t*>(mem);
+				std::copy(bytes.begin(), bytes.end(), buf);
+				mem += bytes.size();
+			};
+
+		auto assembleMissionOffset = [](uintptr_t& mem, uintptr_t dest)
+			{
+				const int32_t offset = (uintptr_t(ScriptSpace) + ScriptFileSize) - dest;
+				memcpy(reinterpret_cast<uint8_t*>(mem), &offset, sizeof(offset));
+				mem += sizeof(offset);
+			};
+
+		auto assembleInt32 = [](uintptr_t& mem, int32_t val)
+			{
+				memcpy(reinterpret_cast<uint8_t*>(mem), &val, sizeof(val));
+				mem += sizeof(val);
+			};
+
+		// Store the weapon
+		{
+			// GOSUB zero1_store_weapon
+			uintptr_t missionInitSpace = save_weapon_gosub_place.get(0).get_uintptr(5);
+			assembleCommand(missionInitSpace, { 0x50, 0x00, 0x01 });
+			assembleMissionOffset(missionInitSpace, afterMissionSpace);
+
+			// zero1_store_weapon:
+			assembleCommand(afterMissionSpace, { 0x06, 0x00, 0x03, 0x48, 0x01, 0x04, 0x00 }); // index_zero1 = 0
+			assembleCommand(afterMissionSpace, { 0xB8, 0x04, 0x02, 0x0C, 0x00, 0x04, 0x08, 0x03, 0x72, 0x01, 0x03, 0x73, 0x01, 0x03, 0x74, 0x01}); // GET_CHAR_WEAPON_IN_SLOT scplayer 8 weapontype_zero1 ammo_zero1 model_for_weapon_zero1
+			assembleCommand(afterMissionSpace, { 0x51, 0x00 }); // RETURN
+		}
+
+		// Restore the weapon
+		{
+			uintptr_t missionCleanupGosub = uintptr_t(ScriptSpace) + ScriptFileSize + 0x1E;
+			const int32_t originalMissionCleanup = *reinterpret_cast<int32_t*>(missionCleanupGosub);
+			assembleMissionOffset(missionCleanupGosub, afterMissionSpace);
+
+			assembleCommand(afterMissionSpace, { 0x12, 0x81 }); // NOT HAS_DEATHARREST_BEEN_EXECUTED
+			assembleCommand(afterMissionSpace, { 0x4D, 0x00, 0x01 }); // GOTO_IF_FALSE originalMissionCleanup
+			// We can jupm directly back to the original mission cleanup to simplify code generation
+			assembleInt32(afterMissionSpace, originalMissionCleanup);
+
+			// The original fix from 1.01/2.0 PC versions only added GIVE_WEAPON_TO_CHAR, without loading the model
+			// We fix it properly by ensuring the model is loaded before giving the weapon
+			assembleCommand(afterMissionSpace, { 0x47, 0x02, 0x03, 0x74, 0x01 }); // REQUEST_MODEL model_for_weapon_zero1
+			assembleCommand(afterMissionSpace, { 0x8B, 0x03 }); // LOAD_ALL_MODELS_NOW
+			assembleCommand(afterMissionSpace, { 0xB2, 0x01, 0x02, 0x0C, 0x00, 0x03, 0x72, 0x01, 0x03, 0x73, 0x01 });  // GIVE_WEAPON_TO_CHAR scplayer weapontype_zero1 ammo_zero1
+			assembleCommand(afterMissionSpace, { 0x49, 0x02, 0x03, 0x74, 0x01 }); // MARK_MODEL_AS_NO_LONGER_NEEDED model_for_weapon_zero1
+			
+			assembleCommand(afterMissionSpace, { 0x02, 0x00, 0x01 }); // GOTO originalMissionCleanup
+			assembleInt32(afterMissionSpace, originalMissionCleanup);
+		}
+	}
+}
+
 static void QuadrupleStuntBonus()
 {
 	// IF HEIGHT_FLOAT_HJ > 4.0 -> IF HEIGHT_INT_HJ > 4
@@ -635,34 +706,46 @@ static void StartNewMission_SCMFixes()
 	InitializeScriptGlobals();
 
 	const int missionID = ScriptParams[0];
-
-	// INITIAL - Basketball fix, Quadruple Stunt Bonus
-	if ( missionID == 0 )
+	switch (missionID)
 	{
+	// INITIAL - Basketball fix, Quadruple Stunt Bonus
+	case 0:
 		BasketballFix(ScriptSpace+ScriptFileSize, ScriptMissionSize);
 		QuadrupleStuntBonus();
-	}
+		break;
 	// HOODS5 - Sweet's Girl fix
-	else if ( missionID == 18 )
+	case 18:
 		SweetsGirlFix();
+		break;
 	// WUZI1 - Mountain Cloud Boys fix
-	else if ( missionID == 53 )
+	case 53:
 		MountainCloudBoysFix();
+		break;
 	// DSKOOL - Driving School cones fix
 	// By Wesser
-	else if ( missionID == 71 )
+	case 71:
 		DrivingSchoolConesFix();
+		break;
 	// BSKOOL - Bike School cones fix
 	// By Wesser
-	else if ( missionID == 120 )
+	case 120:
 		BikeSchoolConesFix();
+		break;
+	// ZERO1 - Air Raid fix
+	case 72:
+		AirRaidFix();
+		break;
 	// ZERO2 - Supply Lines fix
-	else if ( missionID == 73 )
+	case 73:
 		SupplyLinesFix( false );
+		break;
 	// ZERO5 - Beefy Baron fix
-	else if ( missionID == 10 )
+	case 10:
 		SupplyLinesFix( true );
-
+		break;
+	default:
+		break;
+	}
 }
 
 template<std::size_t Index>
