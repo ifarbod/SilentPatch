@@ -2315,6 +2315,64 @@ namespace ReplayPlayerPedCrashFixes
 }
 
 
+// ============= Fix planes spawning in places where they crash easily =============
+// CPlane::FindPlaneCreationCoors passes the XY position to CCollision::CheckCameraCollisionBuildings,
+// while the function accepts the sector numbers
+namespace FindPlaneCreationCoorsFix
+{
+	static std::pair<int, int> GetSectorNumbersFromPosition(int posX, int posY)
+	{
+		// FLA compatibility
+		// This function is used only for 1.0 as new binaries use a divisor and not a multiplier,
+		// so it's fine to reference addresses directly!
+		const float& SectorMultX = **(float**)(0x41ACED + 2);
+		const float& SectorAddX = **(float**)(0x41ACF6 + 2);
+		const float& SectorMultY = **(float**)(0x41AD3C + 2);
+		const float& SectorAddY = **(float**)(0x41AD42 + 2);
+
+		const int SectorX = static_cast<int>(posX * SectorMultX + SectorAddX);
+		const int SectorY = static_cast<int>(posY * SectorMultY + SectorAddY);
+		return {SectorX, SectorY};
+	}
+
+	static std::pair<int, int> GetSectorNumbersFromPosition_Steam(int posX, int posY)
+	{
+		// FLA compatibility (in case FLA ever supports the new binaries)
+		static const struct {
+			const double& SectorDivX;
+			const double& SectorAddX;
+			const double& SectorDivY;
+			const double& SectorAddY;
+		} SectorRefs = []() -> decltype(SectorRefs) {
+			auto sectorDatas = hook::pattern("DC 35 ? ? ? ? DC 05 ? ? ? ? 83 EC 08 D9 5D EC").get_one();
+
+			const double* SectorDivX = *sectorDatas.get<double*>(2);
+			const double* SectorAddX = *sectorDatas.get<double*>(6 + 2);
+			const double* SectorDivY = *sectorDatas.get<double*>(0x2B + 2);
+			const double* SectorAddY = *sectorDatas.get<double*>(0x40 + 2);
+			return {*SectorDivX, *SectorAddX, *SectorDivY, *SectorAddY};
+		}();
+
+		const int SectorX = static_cast<int>(posX / SectorRefs.SectorDivX + SectorRefs.SectorAddX);
+		const int SectorY = static_cast<int>(posY / SectorRefs.SectorDivY + SectorRefs.SectorAddY);
+		return {SectorX, SectorY};
+	}
+
+	static bool (*orgCheckCameraCollisionBuildings)(int sectorX, int sectorY, void*, void*, void*, void*);
+	static bool CheckCameraCollisionBuildings_FixParams(int posX, int posY, void* a3, void* a4, void* a5, void* a6)
+	{
+		auto [sectorX, sectorY] = GetSectorNumbersFromPosition(posX, posY);
+		return orgCheckCameraCollisionBuildings(sectorX, sectorY, a3, a4, a5, a6);
+	}
+
+	static bool CheckCameraCollisionBuildings_FixParams_Steam(int posX, int posY, void* a3, void* a4, void* a5, void* a6)
+	{
+		auto [sectorX, sectorY] = GetSectorNumbersFromPosition_Steam(posX, posY);
+		return orgCheckCameraCollisionBuildings(sectorX, sectorY, a3, a4, a5, a6);
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -5029,6 +5087,14 @@ void Patch_SA_10(HINSTANCE hInstance)
 		}
 	}
 
+
+	// Fix planes spawning in places where they crash easily
+	{
+		using namespace FindPlaneCreationCoorsFix;
+
+		InterceptCall(0x6CD2B8, orgCheckCameraCollisionBuildings, CheckCameraCollisionBuildings_FixParams);
+	}
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6676,6 +6742,15 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		InterceptCall(restoreStuffFromMem, orgRestoreStuffFromMem, RestoreStuffFromMem_RebuildPlayer);
 		InterceptCall(rebuildPlayer, orgRebuildPlayer, RebuildPlayer_LoadAllMotionGroupAnims);
+	}
+
+
+	// Fix planes spawning in places where they crash easily
+	{
+		using namespace FindPlaneCreationCoorsFix;
+
+		auto findPlaneCreationCoors = get_pattern("E8 ? ? ? ? 83 C4 18 84 C0 74 09");
+		InterceptCall(findPlaneCreationCoors, orgCheckCameraCollisionBuildings, CheckCameraCollisionBuildings_FixParams_Steam);
 	}
 }
 
