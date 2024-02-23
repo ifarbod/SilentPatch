@@ -2373,6 +2373,51 @@ namespace FindPlaneCreationCoorsFix
 }
 
 
+// ============= Allow hovering on the Jetpack with Keyboard + Mouse controls =============
+// Does not modify any other controls, only hovering
+namespace JetpackKeyboardControlsHover
+{
+	static void (__thiscall *orgGetLookBehindForCar)(void*);
+
+	static void* ProcessControlInput_DontHover;
+	static void* ProcessControlInput_Hover;
+
+	__declspec(naked) void ProcessControlInput_HoverWithKeyboard()
+	{
+		_asm
+		{
+			mov		ecx, ebp
+			call	orgGetLookBehindForCar
+			test	al, al
+			jnz		Hovering
+			mov		ecx, ebp
+			mov		byte ptr [esi+0Dh], 0
+			jmp		ProcessControlInput_DontHover
+
+		Hovering:
+			jmp		ProcessControlInput_Hover
+		}
+	}
+
+	__declspec(naked) void ProcessControlInput_HoverWithKeyboard_Steam()
+	{
+		_asm
+		{
+			mov		ecx, ebx
+			call	orgGetLookBehindForCar
+			test	al, al
+			jnz		Hovering
+			mov		ecx, ebx
+			mov		byte ptr [edi+0Dh], 0
+			jmp		ProcessControlInput_DontHover
+
+			Hovering:
+			jmp		ProcessControlInput_Hover
+		}
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -5095,6 +5140,20 @@ void Patch_SA_10(HINSTANCE hInstance)
 		InterceptCall(0x6CD2B8, orgCheckCameraCollisionBuildings, CheckCameraCollisionBuildings_FixParams);
 	}
 
+
+	// Allow hovering on the Jetpack with Keyboard + Mouse controls
+	// Does not modify any other controls, only hovering
+	{
+		using namespace JetpackKeyboardControlsHover;
+
+		ProcessControlInput_DontHover = (void*)0x67ED33;
+		ProcessControlInput_Hover = (void*)0x67EDAF;
+	
+		Nop(0x67ED2D, 1);
+		InjectHook(0x67ED2D + 1, &ProcessControlInput_HoverWithKeyboard, HookType::Jump);
+		ReadCall(0x67EDA6, orgGetLookBehindForCar);
+	}
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6751,6 +6810,23 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		auto findPlaneCreationCoors = get_pattern("E8 ? ? ? ? 83 C4 18 84 C0 74 09");
 		InterceptCall(findPlaneCreationCoors, orgCheckCameraCollisionBuildings, CheckCameraCollisionBuildings_FixParams_Steam);
+	}
+
+
+	// Allow hovering on the Jetpack with Keyboard + Mouse controls
+	// Does not modify any other controls, only hovering
+	{
+		using namespace JetpackKeyboardControlsHover;
+
+		auto processControl_CheckHover = pattern("0F 85 ? ? ? ? 8B CB C6 47 0D 00").get_one();
+		auto processControl_DoHover = pattern("E8 ? ? ? ? 84 C0 74 10 D9 EE").get_one();
+
+		ProcessControlInput_DontHover = processControl_CheckHover.get<void>(12);
+		ProcessControlInput_Hover = processControl_DoHover.get<void>(9);
+
+		Nop(processControl_CheckHover.get<void>(6), 1);
+		InjectHook(processControl_CheckHover.get<void>(6 + 1), &ProcessControlInput_HoverWithKeyboard_Steam, HookType::Jump);
+		ReadCall(processControl_DoHover.get<void>(), orgGetLookBehindForCar);
 	}
 }
 
