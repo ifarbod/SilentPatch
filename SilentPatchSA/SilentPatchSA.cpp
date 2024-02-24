@@ -320,6 +320,8 @@ auto					GetAnimationBlockIndex = AddressByVersion<int32_t(*)(const char* animBl
 auto					RequestModel = AddressByVersion<void(*)(int modelID, int priority)>(0x4087E0, { "57 8D 3C 9B", -0x8 });
 auto					LoadAllRequestedModels = AddressByVersion<void(*)(bool bBlock)>(0x40EA10, { "A1 ? ? ? ? 03 C0", -0x20 });
 
+auto					IsPlayerOnAMission = AddressByVersion<bool(*)()>(0x464D50, {"85 C0 74 0C 83 B8 ? ? ? ? ? 75 03 B0 01 C3", -5});
+
 static void				(__thiscall* SetVolume)(void*,float);	
 static BOOL				(*IsAlreadyRunning)();
 static void				(*TheScriptsLoad)();
@@ -2413,6 +2415,53 @@ namespace JetpackKeyboardControlsHover
 
 			Hovering:
 			jmp		ProcessControlInput_Hover
+		}
+	}
+}
+
+
+// ============= During riots, don't target the player group during missions =============
+// Fixes recruited homies panicking during Los Desperados and other riot-time missions
+namespace RiotDontTargetPlayerGroupDuringMissions
+{
+	static void* SkipTargetting;
+	static void* DontSkipTargetting;
+
+	__declspec(naked) void CheckIfInPlayerGroupAndOnAMission()
+	{
+		_asm
+		{
+			cmp     byte ptr [ebp+2D0h], 1
+			jne		NotInGroup
+			call	IsPlayerOnAMission
+			test	al, al
+			jz		NotOnAMission
+			jmp		SkipTargetting
+
+		NotOnAMission:
+			cmp     byte ptr [ebp+2D0h], 1
+
+		NotInGroup:
+			jmp		DontSkipTargetting
+		}
+	}
+
+	__declspec(naked) void CheckIfInPlayerGroupAndOnAMission_Steam()
+	{
+		_asm
+		{
+			cmp     byte ptr [ebx+2D0h], 1
+			jne		NotInGroup
+			call	IsPlayerOnAMission
+			test	al, al
+			jz		NotOnAMission
+			jmp		SkipTargetting
+
+		NotOnAMission:
+			cmp     byte ptr [ebx+2D0h], 1
+
+		NotInGroup:
+			jmp		DontSkipTargetting
 		}
 	}
 }
@@ -5154,6 +5203,17 @@ void Patch_SA_10(HINSTANCE hInstance)
 		ReadCall(0x67EDA6, orgGetLookBehindForCar);
 	}
 
+
+	// During riots, don't target the player group during missions
+	// Fixes recruited homies panicking during Los Desperados and other riot-time missions
+	{
+		using namespace RiotDontTargetPlayerGroupDuringMissions;
+	
+		DontSkipTargetting = (void*)0x6CD54C;
+		SkipTargetting = (void*)0x6CD7F4;
+		InjectHook(0x6CD545, CheckIfInPlayerGroupAndOnAMission, HookType::Jump);
+	}
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6827,6 +6887,20 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		Nop(processControl_CheckHover.get<void>(6), 1);
 		InjectHook(processControl_CheckHover.get<void>(6 + 1), &ProcessControlInput_HoverWithKeyboard_Steam, HookType::Jump);
 		ReadCall(processControl_DoHover.get<void>(), orgGetLookBehindForCar);
+	}
+
+
+	// During riots, don't target the player group during missions
+	// Fixes recruited homies panicking during Los Desperados and other riot-time missions
+	{
+		using namespace RiotDontTargetPlayerGroupDuringMissions;
+
+		auto targettingCheck = pattern("80 BB D0 02 00 00 01").get_one();
+		auto skipTargetting = get_pattern("A1 ? ? ? ? A3 ? ? ? ? C7 05 ? ? ? ? ? ? ? ? 8B 4D F4");
+
+		DontSkipTargetting = targettingCheck.get<void>(7);
+		SkipTargetting = skipTargetting;
+		InjectHook(targettingCheck.get<void>(), CheckIfInPlayerGroupAndOnAMission_Steam, HookType::Jump);
 	}
 }
 
