@@ -1885,29 +1885,17 @@ namespace StaticShadowAlphaFix
 // ============= Disable building pipeline for skinned objects (like parachute) =============
 namespace SkinBuildingPipelineFix
 {
-	static bool atomicHasSkinPipe;
-
-	static uint32_t (*orgGetPipelineID)(RpAtomic*);
-	static uint32_t GetPipelineID_SkinCheck( RpAtomic* atomic )
+	static RpAtomic* (*orgCustomBuildingDNPipeline_CustomPipeAtomicSetup)(RpAtomic* atomic);
+	static RpAtomic* CustomBuildingDNPipeline_CustomPipeAtomicSetup_Skinned(RpAtomic* atomic)
 	{
 		RxPipeline* pipeline;
-		RpAtomicGetPipeline( atomic, &pipeline );
-		
-		// If skin pipeline, mark it as such
-		if ( pipeline != nullptr && pipeline->pluginId == rwID_SKINPLUGIN )
+		RpAtomicGetPipeline(atomic, &pipeline);
+		if (pipeline != nullptr && pipeline->pluginId == rwID_SKINPLUGIN)
 		{
-			atomicHasSkinPipe = true;
-			return pipeline->pluginId;
+			return atomic;
 		}
 
-		atomicHasSkinPipe = false;
-		return orgGetPipelineID( atomic );
-	}
-
-	static void* (*orgGetExtraVertColourPtr)(RpGeometry*);
-	static void* GetExtraVertColourPtr_SkinCheck( RpGeometry* geometry )
-	{
-		return !atomicHasSkinPipe ? orgGetExtraVertColourPtr( geometry ) : nullptr;
+		return orgCustomBuildingDNPipeline_CustomPipeAtomicSetup(atomic);
 	}
 };
 
@@ -4995,11 +4983,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 	{
 		using namespace SkinBuildingPipelineFix;
 
-		ReadCall( 0x5D7F46, orgGetPipelineID );
-		InjectHook( 0x5D7F46, GetPipelineID_SkinCheck );
-
-		ReadCall( 0x5D7F60, orgGetExtraVertColourPtr );
-		InjectHook( 0x5D7F60, GetExtraVertColourPtr_SkinCheck );
+		InterceptCall(0x5D7F1E, orgCustomBuildingDNPipeline_CustomPipeAtomicSetup, CustomBuildingDNPipeline_CustomPipeAtomicSetup_Skinned);
 	}
 
 
@@ -6686,13 +6670,9 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	{
 		using namespace SkinBuildingPipelineFix;
 
-		auto getPipeID = pattern( "E8 ? ? ? ? 8B 76 18 83 C4 04" ).get_one();
+		auto setupAtomic = get_pattern("74 0D 57 E8 ? ? ? ? 83 C4 04 5F 5E 5D C3", 3);
 
-		ReadCall( getPipeID.get<void>(), orgGetPipelineID );
-		InjectHook( getPipeID.get<void>(), GetPipelineID_SkinCheck );
-
-		ReadCall( getPipeID.get<void>( 0x1A ), orgGetExtraVertColourPtr );
-		InjectHook( getPipeID.get<void>( 0x1A ), GetExtraVertColourPtr_SkinCheck );
+		InterceptCall(setupAtomic, orgCustomBuildingDNPipeline_CustomPipeAtomicSetup, CustomBuildingDNPipeline_CustomPipeAtomicSetup_Skinned);
 	}
 
 
