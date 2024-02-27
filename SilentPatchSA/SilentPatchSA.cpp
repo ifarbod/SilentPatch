@@ -5198,6 +5198,14 @@ void Patch_SA_10(HINSTANCE hInstance)
 		InjectHook(0x6CD545, CheckIfInPlayerGroupAndOnAMission, HookType::Jump);
 	}
 
+
+	// Rescale light switching randomness in CVehicle::GetVehicleLightsStatus for PC the randomness range
+	// The original randomness was 50000 out of 65535, which is impossible to hit with PC's 32767 range
+	{
+		static const float LightStatusRandomnessThreshold = 1.0f / 25000.0f;
+		Patch<const void*>(0x6D5612 + 2, &LightStatusRandomnessThreshold);
+	}
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6881,6 +6889,16 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		DontSkipTargetting = targettingCheck.get<void>(7);
 		SkipTargetting = skipTargetting;
 		InjectHook(targettingCheck.get<void>(), CheckIfInPlayerGroupAndOnAMission_Steam, HookType::Jump);
+	}
+
+
+	// Rescale light switching randomness in CVehicle::GetVehicleLightsStatus for PC the randomness range
+	// The original randomness was 50000 out of 65535, which is impossible to hit with PC's 32767 range
+	{
+		auto getVehicleLightsStatus = get_pattern("DC 35 ? ? ? ? D9 05 ? ? ? ? D8 D9", 2);
+
+		static const double LightStatusRandomnessThreshold = 25000.0;
+		Patch<const void*>(getVehicleLightsStatus, &LightStatusRandomnessThreshold);
 	}
 }
 

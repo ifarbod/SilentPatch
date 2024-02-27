@@ -235,6 +235,25 @@ namespace Common {
 				InjectHook( resetComps.get<void>( -14 ), ResetCompsForNoExtras, HookType::Call );
 				Nop( resetComps.get<void>( -9 ), 9 );
 			}
+
+
+			// Rescale light switching randomness in CAutomobile::PreRender/CBike::PreRender for PC the randomness range
+			// The original randomness was 50000 out of 65535, which is impossible to hit with PC's 32767 range
+			{
+				// GTA III expects 2 matches, VC expects 4 due to the addition of CBike::PreRender
+#if _GTA_III
+				constexpr uint32_t expected = 2;
+#else
+				constexpr uint32_t expected = 4;
+#endif
+				auto matches = pattern("D8 0D ? ? ? ? D8 1D ? ? ? ? DF E0 80 E4 05 80 FC 01").count(expected);
+
+				matches.for_each_result([](pattern_match match)
+				{
+					static const float LightStatusRandomnessThreshold = 1.0f / 25000.0f;
+					Patch<const void*>(match.get<void>(2), &LightStatusRandomnessThreshold);
+				});
+			}
 		}
 
 		void III_VC_SetDelayedPatchesFunc( void(*func)() )
