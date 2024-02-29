@@ -449,6 +449,31 @@ namespace FBISirenCoronaFix
 	}
 }
 
+
+// ============= Fixed vehicles exploding twice if the driver leaves the car while it's exploding =============
+namespace RemoveDriverStatusFix
+{
+	__declspec(naked) void RemoveDriver_SetStatus()
+	{
+		// if (m_nStatus != STATUS_WRECKED)
+		//   m_nStatus = STATUS_ABANDONED;
+		_asm
+		{
+			mov		cl, [ebx+50h]
+			mov		al, cl
+			and		cl, 0F8h
+			cmp		cl, 28h
+			je		DontSetStatus
+			and     al, 7
+			or      al, 20h
+
+		DontSetStatus:
+			retn
+		}
+	}
+}
+
+
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -1157,6 +1182,27 @@ void Patch_VC_Common()
 		// call CVehicle::GetOneShotOwnerID
 		Patch( getDriverOneShot.get<void>( -8 ), { 0x90, 0x89, 0xD9 } );
 		InjectHook( getDriverOneShot.get<void>( -5 ), &CVehicle::GetOneShotOwnerID_SilentPatch, HookType::Call );
+	}
+
+
+	// Fixed vehicles exploding twice if the driver leaves the car while it's exploding
+	{
+		using namespace RemoveDriverStatusFix;
+
+		auto removeDriver = pattern("8A 43 50 24 07 0C 20 88 43 50 E8").get_one();
+		auto processCommands1 = get_pattern("88 42 50 8B 33");
+		auto processCommands2 = get_pattern("88 42 50 8B AE");
+		auto removeThisPed = get_pattern("88 42 50 8B 85");
+		auto pedSetOutCar = get_pattern("0C 20 88 47 50 8B 85", 2);
+
+		Nop(removeDriver.get<void>(), 2);
+		InjectHook(removeDriver.get<void>(2), RemoveDriver_SetStatus, HookType::Call);
+
+		// CVehicle::RemoveDriver already sets the status to STATUS_ABANDONED, these are redundant
+		Nop(processCommands1, 3);
+		Nop(processCommands2, 3);
+		Nop(removeThisPed, 3);
+		Nop(pedSetOutCar, 3);
 	}
 }
 

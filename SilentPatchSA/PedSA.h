@@ -6,6 +6,7 @@
 class CEntryExit;
 class CEvent;
 class CPed;
+class CVehicle;
 
 // This structure is very incomplete, but it is good enough for now
 class __declspec(novtable) CTask
@@ -33,6 +34,9 @@ public:
 
 class __declspec(novtable) CTaskComplex : public CTask
 {
+private:
+	CTask* m_pSubTask;
+
 public:
 	virtual bool IsSimpleTask() const override { return false; }
 	virtual void SetSubTask(CTask*);
@@ -54,11 +58,19 @@ public:
 	bool Contains(int taskID) const;
 
 public:
-	std::byte __pad1[8];
+	std::byte __pad1[4];
 	CTask* m_taskSequence[8];
 	std::byte __pad2[16];
 };
 static_assert(sizeof(CTaskComplexSequence) == 0x40, "Wrong size: CTaskComplexSequence");
+
+class __declspec(novtable) CTaskComplexCarSlowBeDraggedOut : public CTaskComplex
+{
+public:
+	CVehicle* m_pVehicle;
+	int	m_status;
+};
+static_assert(sizeof(CTaskComplexCarSlowBeDraggedOut) == 0x14, "Wrong size: CTaskComplexCarSlowBeDraggedOut");
 
 class CTaskManager
 {
@@ -214,9 +226,6 @@ public:
 	unsigned int bTestForShotInVehicle :1;
 	unsigned int bUsedForReplay : 1; // This ped is controlled by replay and should be removed when replay is done.
 };
-
-class CVehicle;
-class CPed;
 
 class CPlayerPedData
 {

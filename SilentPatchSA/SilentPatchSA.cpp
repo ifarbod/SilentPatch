@@ -2455,6 +2455,39 @@ namespace RiotDontTargetPlayerGroupDuringMissions
 }
 
 
+// ============= Fixed vehicles exploding twice if the driver leaves the car while it's exploding =============
+namespace RemoveDriverStatusFix
+{
+	__declspec(naked) void RemoveDriver_SetStatus()
+	{
+		// if (m_nStatus != STATUS_WRECKED)
+		//   m_nStatus = STATUS_ABANDONED;
+		_asm
+		{
+			mov		bl, [edi+36h]
+			mov		al, bl
+			and		bl, 0F8h
+			cmp		bl, 28h
+			je		DontSetStatus
+			and     al, 7
+			or      al, 20h
+
+		DontSetStatus:
+			retn
+		}
+	}
+
+	static void (__thiscall *orgPrepareVehicleForPedExit)(CTaskComplexCarSlowBeDraggedOut* task, CPed* ped);
+	static void __fastcall PrepareVehicleForPedExit_WreckedCheck(CTaskComplexCarSlowBeDraggedOut* task, void*, CPed* ped)
+	{
+		if (task->m_pVehicle->GetStatus() != STATUS_WRECKED)
+		{
+			orgPrepareVehicleForPedExit(task, ped);
+		}
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -5206,6 +5239,21 @@ void Patch_SA_10(HINSTANCE hInstance)
 		Patch<const void*>(0x6D5612 + 2, &LightStatusRandomnessThreshold);
 	}
 
+
+	// Fixed vehicles exploding twice if the driver leaves the car while it's exploding
+	{
+		using namespace RemoveDriverStatusFix;
+
+		Nop(0x6D1955, 2);
+		InjectHook(0x6D1955 + 2, RemoveDriver_SetStatus, HookType::Call);
+
+		InterceptCall(0x64C8CE, orgPrepareVehicleForPedExit, PrepareVehicleForPedExit_WreckedCheck);
+
+		// CVehicle::RemoveDriver already sets the status to STATUS_ABANDONED, these are redundant
+		Nop(0x48628D, 3);
+		Nop(0x647E21, 3);
+	}
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6899,6 +6947,26 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		static const double LightStatusRandomnessThreshold = 25000.0;
 		Patch<const void*>(getVehicleLightsStatus, &LightStatusRandomnessThreshold);
+	}
+
+
+	// Fixed vehicles exploding twice if the driver leaves the car while it's exploding
+	{
+		using namespace RemoveDriverStatusFix;
+
+		auto removeDriver = pattern("8A 47 36 24 07 0C 20 80 7D 08 00").get_one();
+		auto removeThisPed = get_pattern("80 C9 20 88 48 36 8B 96", 3);
+		auto taskSimpleCarSetPedOut = get_pattern("80 C9 20 88 48 36 8B 86", 3);
+		auto prepareVehicleForPedExit = get_pattern("57 E8 ? ? ? ? 57 8B CE E8 ? ? ? ? 57", 1);
+
+		Nop(removeDriver.get<void>(), 2);
+		InjectHook(removeDriver.get<void>(2), RemoveDriver_SetStatus, HookType::Call);
+
+		InterceptCall(prepareVehicleForPedExit, orgPrepareVehicleForPedExit, PrepareVehicleForPedExit_WreckedCheck);
+
+		// CVehicle::RemoveDriver already sets the status to STATUS_ABANDONED, these are redundant
+		Nop(removeThisPed, 3);
+		Nop(taskSimpleCarSetPedOut, 3);
 	}
 }
 
