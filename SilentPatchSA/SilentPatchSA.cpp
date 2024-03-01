@@ -2488,6 +2488,18 @@ namespace RemoveDriverStatusFix
 }
 
 
+// ============= Fixed shooting stars rendering black =============
+namespace ShootingStarsFix
+{
+	static void* (*orgRwIm3DTransform)(RwIm3DVertex* pVerts, RwUInt32 numVerts, RwMatrix* ltm, RwUInt32 flags);
+	static void* RwIm3DTransform_UnsetTexture(RwIm3DVertex* pVerts, RwUInt32 numVerts, RwMatrix* ltm, RwUInt32 flags)
+	{
+		RwRenderStateSet(rwRENDERSTATETEXTURERASTER, nullptr);
+		return orgRwIm3DTransform(pVerts, numVerts, ltm, flags);
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -5254,6 +5266,14 @@ void Patch_SA_10(HINSTANCE hInstance)
 		Nop(0x647E21, 3);
 	}
 
+
+	// Fixed falling stars rendering black
+	{
+		using namespace ShootingStarsFix;
+
+		InterceptCall(0x714610, orgRwIm3DTransform, RwIm3DTransform_UnsetTexture);
+	}
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6967,6 +6987,16 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		// CVehicle::RemoveDriver already sets the status to STATUS_ABANDONED, these are redundant
 		Nop(removeThisPed, 3);
 		Nop(taskSimpleCarSetPedOut, 3);
+	}
+
+
+	// Fixed falling stars rendering black
+	{
+		using namespace ShootingStarsFix;
+
+		auto rwIm3dTransform = get_pattern("E8 ? ? ? ? 83 C4 10 85 C0 74 16 6A 02 68 ? ? ? ? 6A 02");
+
+		InterceptCall(rwIm3dTransform, orgRwIm3DTransform, RwIm3DTransform_UnsetTexture);
 	}
 }
 
