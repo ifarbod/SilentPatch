@@ -2500,6 +2500,18 @@ namespace ShootingStarsFix
 }
 
 
+// ============= Enable directional lights on flying car components =============
+namespace LitFlyingComponents
+{
+	static void (*orgWorldAdd)(CEntity*);
+	static void WorldAdd_SetLightObjectFlag(CEntity* entity)
+	{
+		entity->bLightObject = true;
+		orgWorldAdd(entity);
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -5274,6 +5286,14 @@ void Patch_SA_10(HINSTANCE hInstance)
 		InterceptCall(0x714610, orgRwIm3DTransform, RwIm3DTransform_UnsetTexture);
 	}
 
+
+	// Enable directional lights on flying car components
+	{
+		using namespace LitFlyingComponents;
+
+		InterceptCall(0x6A8BBE, orgWorldAdd, WorldAdd_SetLightObjectFlag);
+	}
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6997,6 +7017,16 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		auto rwIm3dTransform = get_pattern("E8 ? ? ? ? 83 C4 10 85 C0 74 16 6A 02 68 ? ? ? ? 6A 02");
 
 		InterceptCall(rwIm3dTransform, orgRwIm3DTransform, RwIm3DTransform_UnsetTexture);
+	}
+
+
+	// Enable directional lights on flying car components
+	{
+		using namespace LitFlyingComponents;
+
+		auto worldAdd = get_pattern("53 E8 ? ? ? ? 8B 4D F4 83 C4 04 5F 5E 8B C3", 1);
+
+		InterceptCall(worldAdd, orgWorldAdd, WorldAdd_SetLightObjectFlag);
 	}
 }
 
