@@ -135,6 +135,24 @@ public:
 	}
 };
 
+class CDamageManager
+{
+private:
+	float		WheelDamageEffect;
+	uint8_t		EngineStatus;
+	uint8_t		Wheel[4];
+	uint8_t		Door[6];
+	uint32_t	Lights;
+	uint32_t	Panels;
+
+public:
+	uint32_t	GetWheelStatus(int wheelID) const
+	{
+		return Wheel[wheelID];
+	}
+};
+static_assert(sizeof(CDamageManager) == 0x18, "Wrong size: CDamageManager");
+
 enum eRotAxis
 {
 	ROT_AXIS_X = 0,
@@ -299,7 +317,7 @@ public:
 class NOVMT CAutomobile : public CVehicle
 {
 public:
-	BYTE			paddd[24];
+	CDamageManager	m_DamageManager;
 	CDoor			Door[NUM_DOORS];
 	RwFrame*		m_pCarNode[25];
 	CBouncingPanel	m_aBouncingPanel[3];
@@ -327,7 +345,20 @@ public:
 		AfterPreRender();
 	}
 
-	HOOK_EACH_FUNC_CTR(PreRender, 1, orgAutomobilePreRender, &PreRender_SilentPatch);
+	HOOK_EACH_FUNC(PreRender, orgAutomobilePreRender, &PreRender_SilentPatch);
+
+	void HideDestroyedWheels_SilentPatch(void (CAutomobile::*spawnFlyingComponentCB)(int, unsigned int), int nodeID, unsigned int modelID);
+
+	template<std::size_t Index>
+	static void (CAutomobile::*orgSpawnFlyingComponent)(int, unsigned int);
+
+	template<std::size_t Index>
+	void		SpawnFlyingComponent_HideWheels(int nodeID, unsigned int modelID)
+	{
+		HideDestroyedWheels_SilentPatch(orgSpawnFlyingComponent<Index>, nodeID, modelID);
+	}
+
+	HOOK_EACH_FUNC(SpawnFlyingComponent, orgSpawnFlyingComponent, &SpawnFlyingComponent_HideWheels);
 
 	void		Fix_SilentPatch();
 	RwFrame*	GetTowBarFrame() const;

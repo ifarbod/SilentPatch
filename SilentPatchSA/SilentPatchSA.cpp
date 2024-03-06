@@ -5294,6 +5294,24 @@ void Patch_SA_10(HINSTANCE hInstance)
 		InterceptCall(0x6A8BBE, orgWorldAdd, WorldAdd_SetLightObjectFlag);
 	}
 
+
+	// Fix the logic behind exploding cars losing wheels
+	// Right now, they lose one wheel at random according to the damage manager, but they always lose the front left wheel visually.
+	// This change matches the visuals to the physics
+	// Also make it possible for the rear right wheel to be randomly picked
+	{
+		std::array<uint32_t, 4> spawnFlyingComponent = { 0x6B38CA, 0x6B3CCB, 0x6C6EBE, 0x6CCEF9 };
+		CAutomobile::HookEach_SpawnFlyingComponent(spawnFlyingComponent, InterceptCall);
+
+		Nop(0x6B38E4, 5);
+		Nop(0x6B3CF1, 5);
+		Nop(0x6C6ED8, 5);
+		Nop(0x6CCF17, 5);
+
+		static const float fRandomness = -4.0f;
+		Patch(0x6C25F5 + 2, &fRandomness);
+	}
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -7028,6 +7046,36 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		InterceptCall(worldAdd, orgWorldAdd, WorldAdd_SetLightObjectFlag);
 	}
+
+
+	// Fix the logic behind exploding cars losing wheels
+	// Right now, they lose one wheel at random according to the damage manager, but they always lose the front left wheel visually.
+	// This change matches the visuals to the physics
+	// Also make it possible for the rear right wheel to be randomly picked
+	{
+		auto automobileBlowUp = pattern("E8 ? ? ? ? 8B 8E ? ? ? ? 8D 45 08").get_one();
+		auto automobileBlowUpCutscene = pattern("E8 ? ? ? ? 80 7D 10 00 C7 45").get_one();
+		auto heliBlowUp = pattern("E8 ? ? ? ? 8B 86 ? ? ? ? 8D 55 08").get_one();
+		auto planeBlowUp = pattern("E8 ? ? ? ? 8B 86 ? ? ? ? 85 C0 74 24").get_one();
+		auto wheelDetachRandomness = get_pattern("DC 0D ? ? ? ? E8 ? ? ? ? 8B CE", 2);
+
+		std::array<void*, 4> spawnFlyingComponent = {
+			automobileBlowUp.get<void>(),
+			automobileBlowUpCutscene.get<void>(),
+			heliBlowUp.get<void>(),
+			planeBlowUp.get<void>(),
+		};
+		CAutomobile::HookEach_SpawnFlyingComponent(spawnFlyingComponent, InterceptCall);
+
+		Nop(automobileBlowUp.get<void>(0x1C), 5);
+		Nop(automobileBlowUpCutscene.get<void>(0x22), 5);
+		Nop(heliBlowUp.get<void>(0x1C), 5);
+		Nop(planeBlowUp.get<void>(0x20), 5);
+
+		static const double fRandomness = -4.0;
+		Patch(wheelDetachRandomness, &fRandomness);
+	}
+
 }
 
 

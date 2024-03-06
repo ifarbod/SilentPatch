@@ -573,6 +573,69 @@ void CAutomobile::AfterPreRender()
 	}
 }
 
+void CAutomobile::HideDestroyedWheels_SilentPatch(void (CAutomobile::*spawnFlyingComponentCB)(int, unsigned int), int nodeID, unsigned int modelID)
+{
+	auto hideWheel = [this](int nodeID)
+		{
+			bool bHasWheel = false;
+
+			RwFrame* wheelNode = m_pCarNode[nodeID];
+			if (wheelNode != nullptr)
+			{
+				RwFrameForAllObjects(wheelNode, [&bHasWheel](RwObject* object)
+					{
+						if ((rwObjectGetFlags(object) & rpATOMICRENDER) != 0)
+						{
+							rwObjectSetFlags(object, 0);
+							bHasWheel = true;
+						}
+						return object;
+					});
+			}
+			return bHasWheel;
+		};
+
+
+	if (m_DamageManager.GetWheelStatus(0) == 2)
+	{
+		if (hideWheel(5))
+		{
+			std::invoke(spawnFlyingComponentCB, this, 5, modelID);
+		}
+	}
+	if (m_DamageManager.GetWheelStatus(2) == 2)
+	{
+		if (hideWheel(2))
+		{
+			std::invoke(spawnFlyingComponentCB, this, 2, modelID);
+		}
+	}
+
+	// For rear wheels, also hide and spawn the middle wheel (if it exists)
+	if (m_DamageManager.GetWheelStatus(1) == 2)
+	{
+		if (hideWheel(6))
+		{
+			std::invoke(spawnFlyingComponentCB, this, 6, modelID);
+		}
+		if (hideWheel(7))
+		{
+			std::invoke(spawnFlyingComponentCB, this, 7, modelID);
+		}
+	}
+	if (m_DamageManager.GetWheelStatus(3) == 2)
+	{
+		if (hideWheel(3))
+		{
+			std::invoke(spawnFlyingComponentCB, this, 3, modelID);
+		}
+		if (hideWheel(4))
+		{
+			std::invoke(spawnFlyingComponentCB, this, 4, modelID);
+		}
+	}
+}
+
 void CAutomobile::Fix_SilentPatch()
 {
 	ResetFrames();
