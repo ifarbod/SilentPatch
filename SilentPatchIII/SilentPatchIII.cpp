@@ -1301,6 +1301,16 @@ void Patch_III_Common()
 		Nop(processCommands4, 3);
 		Nop(pedSetOutCar, 3);
 	}
+
+
+	// Fixed an inverted condition in CCarCtrl::PickNextNodeRandomly
+	// leading to cars being unable to turn right from one way roads
+	// By Nick007J
+	{
+		auto pickNodeRandomly = get_pattern("3B 44 24 24 74 09", 4);
+
+		Patch<uint8_t>(pickNodeRandomly, 0x75);
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
