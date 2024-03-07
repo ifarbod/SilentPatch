@@ -530,6 +530,19 @@ namespace RemoveDriverStatusFix
 }
 
 
+// ============= Apply bilinear filtering on the player skin =============
+namespace SkinTextureFilter
+{
+	static RwTexture* (*orgRwTextureCreate)(RwRaster* raster);
+	static RwTexture* RwTextureCreate_SetLinearFilter(RwRaster* raster)
+	{
+		RwTexture* texture = orgRwTextureCreate(raster);
+		RwTextureSetFilterMode(texture, rwFILTERLINEAR);
+		return texture;
+	}
+}
+
+
 void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -1308,8 +1321,16 @@ void Patch_III_Common()
 	// By Nick007J
 	{
 		auto pickNodeRandomly = get_pattern("3B 44 24 24 74 09", 4);
-
 		Patch<uint8_t>(pickNodeRandomly, 0x75);
+	}
+
+
+	// Apply bilinear filtering on the player skin
+	{
+		using namespace SkinTextureFilter;
+
+		auto getSkinTexture = get_pattern("E8 ? ? ? ? 89 C3 59 55");
+		InterceptCall(getSkinTexture, orgRwTextureCreate, RwTextureCreate_SetLinearFilter);
 	}
 }
 
