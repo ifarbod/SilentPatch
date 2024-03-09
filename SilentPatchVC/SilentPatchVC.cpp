@@ -260,12 +260,12 @@ namespace ZeroAmmoFix
 {
 
 template<std::size_t Index>
-static void (__fastcall *orgGiveWeapon)(void* ped, void*, unsigned int weapon, unsigned int ammo);
+static void (__fastcall *orgGiveWeapon)(void* ped, void*, unsigned int weapon, unsigned int ammo, bool flag);
 
 template<std::size_t Index>
-static void __fastcall GiveWeapon_SP(void* ped, void*, unsigned int weapon, unsigned int ammo)
+static void __fastcall GiveWeapon_SP(void* ped, void*, unsigned int weapon, unsigned int ammo, bool flag)
 {
-	orgGiveWeapon<Index>(ped, nullptr, weapon, std::max(1u, ammo));
+	orgGiveWeapon<Index>(ped, nullptr, weapon, std::max(1u, ammo), flag);
 }
 HOOK_EACH_FUNC(GiveWeapon, orgGiveWeapon, GiveWeapon_SP);
 
