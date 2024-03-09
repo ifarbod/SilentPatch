@@ -10,6 +10,7 @@
 
 #include "Utils/MemoryMgr.h"
 #include "Utils/MemoryMgr.GTA.h"
+#include "Utils/Patterns.h"
 
 // Move this to ModUtils when it matures a bit more
 #define HOOK_EACH_FUNC_CTR(name, ctr, origFunc, hook) \

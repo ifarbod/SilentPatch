@@ -18,6 +18,10 @@ namespace SVF
 		VICE_CHEETAH_SIREN,
 #endif
 
+#if _GTA_III || _GTA_VC
+		_INTERNAL_NO_SPECULARITY_ON_EXTRAS, // Band-aid fix for leather roofs being reflective now that envmaps are applied on them
+#endif
+
 #if _GTA_SA
 		// Those are fully controlled by SilentPatch
 		PHOENIX_FLUTTER,

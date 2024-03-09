@@ -12,6 +12,7 @@
 #include <memory>
 #include <Shlwapi.h>
 
+#include "Utils/ModuleList.hpp"
 #include "Utils/Patterns.h"
 #include "Utils/ScopedUnprotect.hpp"
 
@@ -547,6 +548,18 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 {
 	using namespace Memory;
 	using namespace hook;
+
+	const ModuleList moduleList;
+
+	const HMODULE skygfxModule = moduleList.Get(L"skygfx");
+	if (skygfxModule != nullptr)
+	{
+		auto attachCarPipe = reinterpret_cast<void(*)(RwObject*)>(GetProcAddress(skygfxModule, "AttachCarPipeToRwObject"));
+		if (attachCarPipe != nullptr)
+		{
+			CVehicleModelInfo::AttachCarPipeToRwObject = attachCarPipe;
+		}
+	}
 
 	// Locale based metric/imperial system INI/debug menu
 	{
@@ -1331,6 +1344,14 @@ void Patch_III_Common()
 
 		auto getSkinTexture = get_pattern("E8 ? ? ? ? 89 C3 59 55");
 		InterceptCall(getSkinTexture, orgRwTextureCreate, RwTextureCreate_SetLinearFilter);
+	}
+
+
+	// Apply the environment mapping on extra components
+	{
+		auto setEnvironmentMap = get_pattern("C7 83 D8 01 00 00 00 00 00 00 E8", 10);
+	
+		InterceptCall(setEnvironmentMap, CVehicleModelInfo::orgSetEnvironmentMap, &CVehicleModelInfo::SetEnvironmentMap_ExtraComps);
 	}
 }
 

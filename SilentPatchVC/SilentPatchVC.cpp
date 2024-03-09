@@ -8,11 +8,13 @@
 #include "ModelInfoVC.h"
 #include "VehicleVC.h"
 #include "SVF.h"
+#include "RWUtils.hpp"
 
 #include <array>
 #include <memory>
 #include <Shlwapi.h>
 
+#include "Utils/ModuleList.hpp"
 #include "Utils/Patterns.h"
 #include "Utils/ScopedUnprotect.hpp"
 
@@ -60,6 +62,10 @@ static void (*PrintString)(float,float,const wchar_t*);
 
 static RsGlobalType*	RsGlobal;
 static const void*		SubtitlesShadowFix_JumpBack;
+
+// This is actually CBaseModelInfo, but we currently don't have it defined
+CVehicleModelInfo**& ms_modelInfoPtrs = *hook::get_pattern<CVehicleModelInfo**>("8B 15 ? ? ? ? 8D 04 24", 2);
+int32_t& numModelInfos = *hook::get_pattern<int32_t>("81 FD ? ? ? ? 7C B7", 2);
 
 inline float GetWidthMult()
 {
@@ -474,10 +480,77 @@ namespace RemoveDriverStatusFix
 }
 
 
+// ============= Apply the environment mapping on extra components =============
+namespace EnvMapsOnExtras
+{
+	static void RemoveSpecularityFromAtomic(RpAtomic* atomic)
+	{
+		RpGeometry* geometry = RpAtomicGetGeometry(atomic);
+		if (geometry != nullptr)
+		{
+			RpGeometryForAllMaterials(geometry, [](RpMaterial* material)
+				{
+					bool bRemoveSpecularity = false;
+
+					// Only remove specularity from the body materials, keep glass intact.
+					// This is only done on a best-effort basis, as mods can fine-tune it better
+					// and just remove the model from the exceptions list
+					RwTexture* texture = RpMaterialGetTexture(material);
+					if (texture != nullptr)
+					{
+						if (strstr(RwTextureGetName(texture), "glass") == nullptr && strstr(RwTextureGetMaskName(texture), "glass") == nullptr)
+						{
+							bRemoveSpecularity = true;
+						}
+					}
+
+					if (bRemoveSpecularity)
+					{
+						RpMaterialGetSurfaceProperties(material)->specular = 0.0f;
+					}
+					return material;
+				});
+		}
+	}
+
+	static RpClump* (*orgRpClumpForAllAtomics)(RpClump* clump, RpAtomicCallBack callback, void* data);
+	static RpClump* RpClumpForAllAtomics_ExtraComps(CVehicleModelInfo* modelInfo, RpAtomicCallBack callback, void* data)
+	{
+		RpClump* result = orgRpClumpForAllAtomics(modelInfo->m_clump, callback, data);
+
+		const int32_t modelID = std::distance(ms_modelInfoPtrs, std::find(ms_modelInfoPtrs, ms_modelInfoPtrs+numModelInfos, modelInfo));
+		const bool bRemoveSpecularity = ExtraCompSpecularity::SpecularityExcluded(modelID);
+		for (int32_t i = 0; i < modelInfo->m_numComps; i++)
+		{
+			if (bRemoveSpecularity)
+			{
+				RemoveSpecularityFromAtomic(modelInfo->m_comps[i]);
+			}
+
+			callback(modelInfo->m_comps[i], data);
+			CVehicleModelInfo::AttachCarPipeToRwObject(reinterpret_cast<RwObject*>(modelInfo->m_comps[i]));
+		}
+		return result;
+	}
+}
+
+
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
 	using namespace hook;
+
+	const ModuleList moduleList;
+
+	const HMODULE skygfxModule = moduleList.Get(L"skygfx");
+	if (skygfxModule != nullptr)
+	{
+		auto attachCarPipe = reinterpret_cast<void(*)(RwObject*)>(GetProcAddress(skygfxModule, "AttachCarPipeToRwObject"));
+		if (attachCarPipe != nullptr)
+		{
+			CVehicleModelInfo::AttachCarPipeToRwObject = attachCarPipe;
+		}
+	}
 
 	// Locale based metric/imperial system INI/debug menu
 	{
@@ -1203,6 +1276,18 @@ void Patch_VC_Common()
 		Nop(processCommands2, 3);
 		Nop(removeThisPed, 3);
 		Nop(pedSetOutCar, 3);
+	}
+
+
+	// Apply the environment mapping on extra components
+	{
+		using namespace EnvMapsOnExtras;
+
+		auto forAllAtomics = pattern("50 E8 ? ? ? ? 66 8B 4B 44").get_one();
+
+		// push eax -> push ebx
+		Patch<uint8_t>(forAllAtomics.get<void>(), 0x53);
+		InterceptCall(forAllAtomics.get<void>(1), orgRpClumpForAllAtomics, RpClumpForAllAtomics_ExtraComps);
 	}
 }
 

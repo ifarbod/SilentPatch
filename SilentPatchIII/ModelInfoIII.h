@@ -3,6 +3,9 @@
 #include <cstdint>
 #include "Maths.h"
 
+#include <rwcore.h>
+#include <rpworld.h>
+
 // This really belongs in Maths.h but San Andreas optimized those structured heavily...
 struct CColSphere
 {
@@ -91,3 +94,23 @@ public:
 };
 
 static_assert(sizeof(CSimpleModelInfo) == 0x4C, "Wrong size: CSimpleModelInfo");
+
+class CVehicleModelInfo
+{
+private:
+	std::byte	__pad[472];
+	RwTexture*	m_envMap;
+	RpAtomic*	m_comps[6];
+	int32_t		m_numComps;
+
+public:
+	static RpAtomic* (*SetEnvironmentMapCB)(RpAtomic* atomic, void* data);
+
+	static inline void (CVehicleModelInfo::*orgSetEnvironmentMap)();
+	void SetEnvironmentMap_ExtraComps();
+
+	// For SkyGfx interop
+	static void AttachCarPipeToRwObject_Default(RwObject*) { }
+	static inline void (*AttachCarPipeToRwObject)(RwObject* object) = &AttachCarPipeToRwObject_Default;
+};
+static_assert(sizeof(CVehicleModelInfo) == 0x1F8, "Wrong size: CVehicleModelInfo");

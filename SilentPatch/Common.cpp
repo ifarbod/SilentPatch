@@ -5,6 +5,8 @@
 #include "StoredCar.h"
 #include "SVF.h"
 
+#include "Utils/DelimStringReader.h"
+
 #include <rwcore.h>
 
 RwCamera*& Camera = **hook::get_pattern<RwCamera**>( "A1 ? ? ? ? D8 88 ? ? ? ?", 1 );
@@ -103,6 +105,30 @@ namespace CompsToUseFix
 		ms_compsToUse[0] = ms_compsToUse[1] = -2;
 	}
 };
+
+
+// ============= Extra component specularity exceptions =============
+namespace ExtraCompSpecularity
+{
+	void ReadExtraCompSpecularityExceptions(const wchar_t* pPath)
+	{
+		constexpr size_t SCRATCH_PAD_SIZE = 32767;
+		WideDelimStringReader reader(SCRATCH_PAD_SIZE);
+
+		GetPrivateProfileSectionW(L"ExtraCompSpecularityExceptions", reader.GetBuffer(), reader.GetSize(), pPath);
+		while (const wchar_t* str = reader.GetString())
+		{
+			int32_t toList = wcstol(str, nullptr, 0);
+			if ( toList > 0 )
+				SVF::RegisterFeature(toList, SVF::Feature::_INTERNAL_NO_SPECULARITY_ON_EXTRAS);
+		}
+	}
+
+	bool SpecularityExcluded(int32_t modelID)
+	{
+		return SVF::ModelHasFeature(modelID, SVF::Feature::_INTERNAL_NO_SPECULARITY_ON_EXTRAS);
+	}
+}
 
 // ============= Delayed patches =============
 namespace DelayedPatches
@@ -265,6 +291,8 @@ namespace Common {
 		{
 			using namespace Memory;
 			using namespace hook;
+
+			ExtraCompSpecularity::ReadExtraCompSpecularityExceptions(wcModulePath);
 
 			// Corrected taxi light placement for Taxi
 			if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableVehicleCoronaFixes", -1, wcModulePath) == 1 )

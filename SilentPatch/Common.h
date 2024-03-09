@@ -1,5 +1,12 @@
 #pragma once
 
+#include <cstdint>
+
+namespace ExtraCompSpecularity
+{
+	void ReadExtraCompSpecularityExceptions(const wchar_t* pPath);
+	bool SpecularityExcluded(int32_t modelID);
+}
 namespace Common
 {
 	namespace Patches
