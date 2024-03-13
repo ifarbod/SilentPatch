@@ -1585,6 +1585,8 @@ namespace HierarchyTypoFix
 		{ "boat_moving_hi", "boat_moving" },
 		{ "misc_a", "misca" },
 		{ "misc_b", "miscb" },
+		{ "taillights", "tailights" },
+		{ "taillights2", "tailights2" },
 		{ "transmission_f", "transmision_f" },
 		{ "transmission_r", "transmision_r" },
 		{ "wheel_lm_dummy", "wheel_lm" },
