@@ -544,6 +544,35 @@ namespace SkinTextureFilter
 }
 
 
+// ============= Fix the evasive dive miscalculating the angle, resulting in peds diving towards the vehicle =============
+namespace EvasiveDiveFix
+{
+	static float CalculateAngle(float x, float y)
+	{
+		float angle = static_cast<float>(CGeneral::GetRadianAngleBetweenPoints(x, y, 0.0f, 0.0f) - M_PI_2);
+		if ((rand() & 1) != 0)
+		{
+			angle += static_cast<float>(M_PI);
+		}
+		return CGeneral::LimitRadianAngle(angle);
+	}
+
+	__declspec(naked) void CalculateAngle_Hook()
+	{
+		_asm
+		{
+			push    dword ptr [esi+7Ch]
+			push	dword ptr [esi+78h]
+			call	CalculateAngle
+			add		esp, 8
+
+			mov     ecx, ebp
+			retn
+		}
+	}
+}
+
+
 void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -1352,6 +1381,17 @@ void Patch_III_Common()
 		auto setEnvironmentMap = get_pattern("C7 83 D8 01 00 00 00 00 00 00 E8", 10);
 	
 		InterceptCall(setEnvironmentMap, CVehicleModelInfo::orgSetEnvironmentMap, &CVehicleModelInfo::SetEnvironmentMap_ExtraComps);
+	}
+
+
+	// Fix the evasive dive miscalculating the angle, resulting in peds diving towards the vehicle
+	{
+		using namespace EvasiveDiveFix;
+
+		auto setEvasiveDive = pattern("D9 44 24 10 89 E9 D9 9D ? ? ? ? E8 ? ? ? ? 89 E9 E8 ? ? ? ? 89 E9 E8 ? ? ? ? C7 85").get_one();
+
+		Nop(setEvasiveDive.get<void>(), 1);
+		InjectHook(setEvasiveDive.get<void>(1), &CalculateAngle_Hook, HookType::Call);
 	}
 }
 

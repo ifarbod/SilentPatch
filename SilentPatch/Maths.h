@@ -1,10 +1,12 @@
-#ifndef __MATHS__H
-#define __MATHS__H
+#pragma once
+
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #include <rwcore.h>
 
-constexpr double RAD_TO_DEG (180.0/3.1415926535897932385);
-constexpr double DEG_TO_RAD (3.1415926535897932385/180.0);
+constexpr double RAD_TO_DEG (180.0/M_PI);
+constexpr double DEG_TO_RAD (M_PI/180.0);
 
 class CRGBA
 {
@@ -515,4 +517,56 @@ inline CVector& CVector::FromMultiply3X3(const CMatrix& mat, const CVector& vec)
 	return *this = Multiply3x3(mat, vec);
 }
 
-#endif
+class CGeneral
+{
+public:
+	static float GetRadianAngleBetweenPoints(float x1, float y1, float x2, float y2)
+	{
+		float x = x2 - x1;
+		float y = y2 - y1;
+
+		if (y == 0.0f)
+		{
+			y = 0.0001f;
+		}
+
+		if (x > 0.0f)
+		{
+			if (y > 0.0f)
+			{
+				return static_cast<float>(M_PI - std::atan2(x / y, 1.0f));
+			}
+			else
+			{
+				return -std::atan2(x / y, 1.0f);
+			}
+		}
+		else
+		{
+			if (y > 0.0f)
+			{
+				return -static_cast<float>(M_PI + std::atan2(x / y, 1.0f));
+			}
+			else
+			{
+				return -std::atan2(x / y, 1.0f);
+			}
+		}
+	}
+
+	static float LimitRadianAngle(float angle)
+	{
+		while (angle >= M_PI)
+		{
+			angle -= static_cast<float>(2.0f * M_PI);
+		}
+
+		while (angle < -M_PI)
+		{
+			angle += static_cast<float>(2.0f * M_PI);
+		}
+
+		return angle;
+	}
+
+};
