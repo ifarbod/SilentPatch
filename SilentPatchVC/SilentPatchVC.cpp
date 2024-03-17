@@ -1289,6 +1289,14 @@ void Patch_VC_Common()
 		Patch<uint8_t>(forAllAtomics.get<void>(), 0x53);
 		InterceptCall(forAllAtomics.get<void>(1), orgRpClumpForAllAtomics, RpClumpForAllAtomics_ExtraComps);
 	}
+
+
+	// Fix probabilities in CVehicle::InflictDamage incorrectly assuming a random range from 0 to 100.000
+	{
+		auto probability = get_pattern("66 81 7B 5A ? ? 73 50", 4);
+
+		Patch<uint16_t>(probability, 35000u / 2u);
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)

@@ -1393,6 +1393,16 @@ void Patch_III_Common()
 		Nop(setEvasiveDive.get<void>(), 1);
 		InjectHook(setEvasiveDive.get<void>(1), &CalculateAngle_Hook, HookType::Call);
 	}
+
+
+	// Fix probabilities in CVehicle::InflictDamage incorrectly assuming a random range from 0 to 100.000
+	{
+		auto probability_do_nothing = get_pattern("66 81 7E 5A ? ? 73 50", 4);
+		auto probability_flee = get_pattern("0F B7 46 5A 3D ? ? ? ? 0F 8E", 4 + 1);
+
+		Patch<uint16_t>(probability_do_nothing, 35000u * 32767u / 100000u);
+		Patch<uint32_t>(probability_flee, 75000u * 32767u / 100000u);
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
