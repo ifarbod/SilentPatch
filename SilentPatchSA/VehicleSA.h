@@ -5,6 +5,8 @@
 #include "ModelInfoSA.h"
 #include "PedSA.h"
 
+#include "Utils/HookEach.hpp"
+
 enum eVehicleType
 {
     VEHICLE_AUTOMOBILE,

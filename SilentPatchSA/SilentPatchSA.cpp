@@ -26,6 +26,7 @@
 #include "Utils/DelimStringReader.h"
 #include "Utils/ModuleList.hpp"
 #include "Utils/ScopedUnprotect.hpp"
+#include "Utils/HookEach.hpp"
 
 #include "Desktop.h"
 
@@ -2511,6 +2512,24 @@ namespace LitFlyingComponents
 		entity->bLightObject = true;
 		orgWorldAdd(entity);
 	}
+}
+
+
+// ============= Make script randomness 16-bit, like on PS2 =============
+namespace Rand16bit
+{
+	template<std::size_t Index>
+	static int (*orgRand)();
+
+	template<std::size_t Index>
+	static int rand16bit()
+	{
+		const int bottomBits = orgRand<Index>();
+		const int topBit = (orgRand<Index>() & 1) << 15;
+		return bottomBits | topBit;
+	}
+
+	HOOK_EACH_FUNC(Rand, orgRand, rand16bit);
 }
 
 
@@ -5314,6 +5333,17 @@ void Patch_SA_10(HINSTANCE hInstance)
 		Patch(0x6C25F5 + 2, &fRandomness);
 	}
 
+
+	// Make script randomness 16-bit, like on PS2
+	{
+		using namespace Rand16bit;
+
+		std::array<uintptr_t, 2> rands = { 0x4674FE, 0x467533 };
+
+		HookEach_Rand(rands, InterceptCall);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -7078,6 +7108,18 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		Patch(wheelDetachRandomness, &fRandomness);
 	}
 
+
+	// Make script randomness 16-bit, like on PS2
+	{
+		using namespace Rand16bit;
+
+		std::array<void*, 2> rands = {
+			get_pattern("E8 ? ? ? ? 89 45 08 DB 45 08 32 C0"),
+			get_pattern("E8 ? ? ? ? 89 06 32 C0"),
+		};
+
+		HookEach_Rand(rands, InterceptCall);
+	}
 }
 
 

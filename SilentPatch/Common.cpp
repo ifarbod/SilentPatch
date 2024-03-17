@@ -2,10 +2,13 @@
 
 #include "Utils/MemoryMgr.h"
 #include "Utils/Patterns.h"
+#include "Utils/HookEach.hpp"
 #include "StoredCar.h"
 #include "SVF.h"
 
 #include "Utils/DelimStringReader.h"
+
+#include <array>
 
 #include <rwcore.h>
 
@@ -129,6 +132,25 @@ namespace ExtraCompSpecularity
 		return SVF::ModelHasFeature(modelID, SVF::Feature::_INTERNAL_NO_SPECULARITY_ON_EXTRAS);
 	}
 }
+
+
+// ============= Make script randomness 16-bit, like on PS2 =============
+namespace Rand16bit
+{
+	template<std::size_t Index>
+	static int (*orgRand)();
+
+	template<std::size_t Index>
+	static int rand16bit()
+	{
+		const int bottomBits = orgRand<Index>();
+		const int topBit = (orgRand<Index>() & 1) << 15;
+		return bottomBits | topBit;
+	}
+
+	HOOK_EACH_FUNC(Rand, orgRand, rand16bit);
+}
+
 
 // ============= Delayed patches =============
 namespace DelayedPatches
@@ -279,6 +301,19 @@ namespace Common {
 					static const float LightStatusRandomnessThreshold = 1.0f / 25000.0f;
 					Patch<const void*>(match.get<void>(2), &LightStatusRandomnessThreshold);
 				});
+			}
+
+
+			// Make script randomness 16-bit, like on PS2
+			{
+				using namespace Rand16bit;
+
+				std::array<void*, 2> rands = {
+					get_pattern("E8 ? ? ? ? 0F B7 C0 89 06"),
+					get_pattern("E8 ? ? ? ? 25 FF FF 00 00 89 84 24 ? ? ? ? 30 C0"),
+				};
+
+				HookEach_Rand(rands, InterceptCall);
 			}
 		}
 

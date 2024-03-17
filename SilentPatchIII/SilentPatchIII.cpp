@@ -15,6 +15,7 @@
 #include "Utils/ModuleList.hpp"
 #include "Utils/Patterns.h"
 #include "Utils/ScopedUnprotect.hpp"
+#include "Utils/HookEach.hpp"
 
 #include "debugmenu_public.h"
 
