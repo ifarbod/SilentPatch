@@ -574,6 +574,48 @@ namespace EvasiveDiveFix
 }
 
 
+// ============= Null terminate read lines in CPlane::LoadPath and CTrain::ReadAndInterpretTrackFile =============
+namespace NullTerminatedLines
+{
+	static char* gString;
+
+	static void* orgSscanf_LoadPath;
+	__declspec(naked) static void sscanf1_LoadPath_Terminate()
+	{
+		_asm
+		{
+			mov		eax, [esp+4]
+			mov		byte ptr [eax+ecx], 0
+			jmp		[orgSscanf_LoadPath]
+		}
+	}
+
+	static void* orgSscanf1;
+	__declspec(naked) static void sscanf1_Terminate()
+	{
+		_asm
+		{
+			mov		eax, [esp+4]
+			mov		byte ptr [eax+ecx], 0
+			jmp		[orgSscanf1]
+		}
+	}
+
+	__declspec(naked) static void ReadTrackFile_Terminate()
+	{
+		_asm
+		{
+			mov		ecx, [gString]
+			mov		byte ptr [ecx+edx], 0
+			mov     ecx, [esi]
+			inc     ebp
+			add     ecx, [esp+0ACh-98h]
+			retn
+		}
+	}
+}
+
+
 void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -1403,6 +1445,26 @@ void Patch_III_Common()
 
 		Patch<uint16_t>(probability_do_nothing, 35000u * 32767u / 100000u);
 		Patch<uint32_t>(probability_flee, 75000u * 32767u / 100000u);
+	}
+
+
+	// Null terminate read lines in CPlane::LoadPath and CTrain::ReadAndInterpretTrackFile
+	{
+		using namespace NullTerminatedLines;
+
+		auto loadPath = get_pattern("DD D8 45 E8", 3);
+		auto readTrackFile1 = pattern("E8 ? ? ? ? 0F BF 07").get_one();
+		auto readTrackFile2 = pattern(" 8B 0E 45 03 4C 24 10").get_one();
+
+		gString = *readTrackFile1.get<char*>(-5 + 1);
+
+		InterceptCall(loadPath, orgSscanf_LoadPath, sscanf1_LoadPath_Terminate);
+
+		Patch(readTrackFile1.get<void>(-10 + 1), "%hd");
+		InterceptCall(readTrackFile1.get<void>(), orgSscanf1, sscanf1_Terminate);
+
+		Nop(readTrackFile2.get<void>(), 2);
+		InjectHook(readTrackFile2.get<void>(2), ReadTrackFile_Terminate, HookType::Call);
 	}
 }
 

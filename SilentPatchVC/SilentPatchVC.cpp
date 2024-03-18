@@ -536,6 +536,22 @@ namespace EnvMapsOnExtras
 }
 
 
+// ============= Null terminate read lines in CPlane::LoadPath =============
+namespace NullTerminatedLines
+{
+	static void* orgSscanf_LoadPath;
+	__declspec(naked) static void sscanf1_LoadPath_Terminate()
+	{
+		_asm
+		{
+			mov		eax, [esp+4]
+			mov		byte ptr [eax+ecx], 0
+			jmp		[orgSscanf_LoadPath]
+		}
+	}
+}
+
+
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -1297,6 +1313,16 @@ void Patch_VC_Common()
 		auto probability = get_pattern("66 81 7B 5A ? ? 73 50", 4);
 
 		Patch<uint16_t>(probability, 35000u / 2u);
+	}
+
+
+	// Null terminate read lines in CPlane::LoadPath
+	{
+		using namespace NullTerminatedLines;
+
+		auto loadPath = get_pattern("DD D8 45 E8", 3);
+
+		InterceptCall(loadPath, orgSscanf_LoadPath, sscanf1_LoadPath_Terminate);
 	}
 }
 
