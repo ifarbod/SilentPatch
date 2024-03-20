@@ -616,6 +616,21 @@ namespace NullTerminatedLines
 }
 
 
+// ============= Backport 1.1 Stats menu font fix to 1.0 =============
+namespace StatsMenuFont
+{
+	static void (*orgSetFontStyle)(short);
+
+	static int (__thiscall *orgConstructStatLine)(void* obj, int);
+	static int __fastcall ConstructStatLine_SetFontStyle(void* obj, void*, int index)
+	{
+		const int result = orgConstructStatLine(obj, index);
+		orgSetFontStyle(0);
+		return result;
+	}
+}
+
+
 void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -1465,6 +1480,22 @@ void Patch_III_Common()
 
 		Nop(readTrackFile2.get<void>(), 2);
 		InjectHook(readTrackFile2.get<void>(2), ReadTrackFile_Terminate, HookType::Call);
+	}
+
+
+	// Backport 1.1 Stats menu font fix to 1.0
+	{
+		using namespace StatsMenuFont;
+
+		// This pattern fails by design on 1.1/Steam
+		auto constructStatLine = pattern("E8 ? ? ? ? D9 05 ? ? ? ? DC 0D ? ? ? ? 89 C7").count_hint(1);
+		if (constructStatLine.size() == 1)
+		{
+			auto setFontStyle = get_pattern("6A 00 E8 ? ? ? ? 83 3D ? ? ? ? ? 59 0F 84", 2);
+
+			ReadCall(setFontStyle, orgSetFontStyle);
+			InterceptCall(constructStatLine.get_first<void>(), orgConstructStatLine, ConstructStatLine_SetFontStyle);
+		}
 	}
 }
 
