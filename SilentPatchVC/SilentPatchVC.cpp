@@ -552,6 +552,21 @@ namespace NullTerminatedLines
 }
 
 
+// ============= Don't reset mouse sensitivity on New Game =============
+namespace MouseSensNewGame
+{
+	static float DefaultHorizontalAccel;
+	static float* fMouseAccelHorzntl;
+
+	static void (*orgSetDirMyDocuments)();
+	static void SetDirMyDocuments_ResetMouse()
+	{
+		orgSetDirMyDocuments();
+		*fMouseAccelHorzntl = DefaultHorizontalAccel;
+	}
+}
+
+
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -1323,6 +1338,21 @@ void Patch_VC_Common()
 		auto loadPath = get_pattern("DD D8 45 E8", 3);
 
 		InterceptCall(loadPath, orgSscanf_LoadPath, sscanf1_LoadPath_Terminate);
+	}
+
+
+	// Don't reset mouse sensitivity on New Game
+	{
+		using namespace MouseSensNewGame;
+
+		auto cameraInit = pattern("C7 85 14 09 00 00 00 00 00 00 C7 05 ? ? ? ? ? ? ? ? C7 05").get_one();
+		auto setDirMyDocuments = get_pattern("89 CD E8 ? ? ? ? 68", 2);
+
+		DefaultHorizontalAccel = *cameraInit.get<float>(20 + 2 + 4);
+		fMouseAccelHorzntl = *cameraInit.get<float*>(20 + 2);
+
+		Nop(cameraInit.get<void>(20), 10);
+		InterceptCall(setDirMyDocuments, orgSetDirMyDocuments, SetDirMyDocuments_ResetMouse);
 	}
 }
 
