@@ -630,6 +630,28 @@ namespace StatsMenuFont
 	}
 }
 
+// ============= Enable Dodo keyboard controls for all cars when the flying cars cheat is enabled =============
+namespace DodoKeyboardControls
+{
+	static bool* bAllDodosCheat;
+
+	static void* (*orgFindPlayerVehicle)();
+	__declspec(naked) static void FindPlayerVehicle_DodoCheck()
+	{
+		_asm
+		{
+			call	[orgFindPlayerVehicle]
+			mov		ecx, [bAllDodosCheat]
+			cmp		byte ptr [ecx], 0
+			je		CheatDisabled
+			mov		byte ptr [esp+1Ch-14h], 1
+
+		CheatDisabled:
+			retn
+		}
+	}
+}
+
 
 void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
@@ -1496,6 +1518,18 @@ void Patch_III_Common()
 			ReadCall(setFontStyle, orgSetFontStyle);
 			InterceptCall(constructStatLine.get_first<void>(), orgConstructStatLine, ConstructStatLine_SetFontStyle);
 		}
+	}
+
+
+	// Enable Dodo keyboard controls for all cars when the flying cars cheat is enabled
+	{
+		using namespace DodoKeyboardControls;
+
+		auto findPlayerVehicle = get_pattern("E8 ? ? ? ? 0F BF 40 5C 83 F8 7E");
+		auto allDodosCheat = *get_pattern<bool*>("80 3D ? ? ? ? ? 74 5B", 2);
+
+		bAllDodosCheat = allDodosCheat;
+		InterceptCall(findPlayerVehicle, orgFindPlayerVehicle, FindPlayerVehicle_DodoCheck);
 	}
 }
 
