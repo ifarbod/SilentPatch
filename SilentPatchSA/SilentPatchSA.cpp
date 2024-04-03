@@ -1592,13 +1592,14 @@ namespace HierarchyTypoFix
 		{ "transmission_r", "transmision_r" },
 		{ "wheel_lm_dummy", "wheel_lm" },
 	};
+	static int (*orgStrcasecmp)(const char*, const char*);
 	int strcasecmp( const char* dataName, const char* nodeName )
 	{
 		/*assert( std::is_sorted(std::begin(typosAndFixes), std::end(typosAndFixes), [] (const auto& a, const auto& b) {
 			return _stricmp( a.second, b.second ) < 0;
 		}) );*/
 
-		const int origComp = _stricmp( dataName, nodeName );
+		const int origComp = orgStrcasecmp( dataName, nodeName );
 		if ( origComp == 0 ) return 0;
 
 		for ( const auto& typo : typosAndFixes )
@@ -4969,7 +4970,11 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// DFT-30 wheel, Sweeper brushes and other typos in hierarchy
-	InjectHook( 0x4C5311, HierarchyTypoFix::strcasecmp );
+	{
+		using namespace HierarchyTypoFix;
+
+		InterceptCall(0x4C5311, orgStrcasecmp, strcasecmp);
+	}
 
 
 	// Tug tow bar (misc_b instead of misc_a
