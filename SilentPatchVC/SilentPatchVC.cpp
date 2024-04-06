@@ -59,8 +59,6 @@ static HMODULE		hDLLModule;
 
 static const void*		RosieAudioFix_JumpBack;
 
-static void (*PrintString)(float,float,const wchar_t*);
-
 static RsGlobalType*	RsGlobal;
 static const void*		SubtitlesShadowFix_JumpBack;
 
@@ -128,40 +126,75 @@ void __stdcall Recalculate(float& fX, float& fY, signed int nShadow)
 	fY = nShadow * GetHeightMult() * RsGlobal->MaximumHeight;
 }
 
-static void AlteredPrintString_Internal(float fX, float fY, float fMarginX, float fMarginY, const wchar_t* pText)
+namespace PrintStringShadows
 {
-	PrintString(fX - fMarginX + (fMarginX * GetWidthMult() * RsGlobal->MaximumWidth), fY - fMarginY + (fMarginY * GetHeightMult() * RsGlobal->MaximumHeight), pText);
-}
+	template<uintptr_t addr>
+	static const float** margin = reinterpret_cast<const float**>(Memory::DynBaseAddress(addr));
 
-template<uintptr_t pFltX, uintptr_t pFltY>
-void AlteredPrintString(float fX, float fY, const wchar_t* pText)
-{
-	const float	fMarginX = **reinterpret_cast<float**>(pFltX);
-	const float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	AlteredPrintString_Internal(fX, fY, fMarginX, fMarginY, pText);
-}
+	static void PrintString_Internal(void (*printFn)(float,float,const wchar_t*), float fX, float fY, float fMarginX, float fMarginY, const wchar_t* pText)
+	{
+		printFn(fX - fMarginX + (fMarginX * GetWidthMult() * RsGlobal->MaximumWidth), fY - fMarginY + (fMarginY * GetHeightMult() * RsGlobal->MaximumHeight), pText);
+	}
 
-template<uintptr_t pFltX, uintptr_t pFltY>
-void AlteredPrintStringMinus(float fX, float fY, const wchar_t* pText)
-{
-	const float	fMarginX = **reinterpret_cast<float**>(pFltX);
-	const float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	AlteredPrintString_Internal(fX, fY, -fMarginX, -fMarginY, pText);
-}
+	template<uintptr_t pFltX, uintptr_t pFltY>
+	struct XY
+	{
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
+		static void PrintString(float fX, float fY, const wchar_t* pText)
+		{
+			PrintString_Internal(orgPrintString, fX, fY, **margin<pFltX>, **margin<pFltY>, pText);
+		}
 
-template<uintptr_t pFltX>
-void AlteredPrintStringXOnly(float fX, float fY, const wchar_t* pText)
-{
-	const float	fMarginX = **reinterpret_cast<float**>(pFltX);
-	AlteredPrintString_Internal(fX, fY, fMarginX, 0.0f, pText);
-}
+		static void Hook(uintptr_t addr)
+		{
+			Memory::DynBase::InterceptCall(addr, orgPrintString, PrintString);
+		}
+	};
 
-template<uintptr_t pFltY>
-void AlteredPrintStringYOnly(float fX, float fY, const wchar_t* pText)
-{
-	const float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	AlteredPrintString_Internal(fX, fY, 0.0f, fMarginY, pText);
+	template<uintptr_t pFltX, uintptr_t pFltY>
+	struct XYMinus
+	{
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
+		static void PrintString(float fX, float fY, const wchar_t* pText)
+		{
+			PrintString_Internal(orgPrintString, fX, fY, -(**margin<pFltX>), -(**margin<pFltY>), pText);
+		}
 
+		static void Hook(uintptr_t addr)
+		{
+			Memory::DynBase::InterceptCall(addr, orgPrintString, PrintString);
+		}
+	};
+
+	template<uintptr_t pFltX>
+	struct X
+	{
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
+		static void PrintString(float fX, float fY, const wchar_t* pText)
+		{
+			PrintString_Internal(orgPrintString, fX, fY, **margin<pFltX>, 0.0f, pText);
+		}
+
+		static void Hook(uintptr_t addr)
+		{
+			Memory::DynBase::InterceptCall(addr, orgPrintString, PrintString);
+		}
+	};
+
+	template<uintptr_t pFltY>
+	struct Y
+	{
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
+		static void PrintString(float fX, float fY, const wchar_t* pText)
+		{
+			PrintString_Internal(orgPrintString, fX, fY, 0.0f, **margin<pFltY>, pText);
+		}
+
+		static void Hook(uintptr_t addr)
+		{
+			Memory::DynBase::InterceptCall(addr, orgPrintString, PrintString);
+		}
+	};
 }
 
 float FixedRefValue()
@@ -756,13 +789,11 @@ void InjectDelayedPatches_VC_Common()
 
 void Patch_VC_10(uint32_t width, uint32_t height)
 {
-	using namespace Memory;
+	using namespace Memory::DynBase;
 
-	PrintString = (void(*)(float,float,const wchar_t*))0x551040;
-
-	RsGlobal = *(RsGlobalType**)0x602D32;
-	RosieAudioFix_JumpBack = (void*)0x42BFFE;
-	SubtitlesShadowFix_JumpBack = (void*)0x551701;
+	RsGlobal = *(RsGlobalType**)DynBaseAddress(0x602D32);
+	RosieAudioFix_JumpBack = (void*)DynBaseAddress(0x42BFFE);
+	SubtitlesShadowFix_JumpBack = (void*)DynBaseAddress(0x551701);
 
 	InjectHook(0x5433BD, FixedRefValue);
 
@@ -779,8 +810,12 @@ void Patch_VC_10(uint32_t width, uint32_t height)
 	Patch<BYTE>(0x551835, 0x24-0x18);
 	Patch<BYTE>(0x5516FB, 0x90);
 
-	InjectHook(0x5FA1FD, AlteredPrintString<0x5FA1F6,0x5FA1D5>);
-	InjectHook(0x54474D, AlteredPrintStringMinus<0x544727,0x544727>);
+	{
+		using namespace PrintStringShadows;
+
+		XY<0x5FA1F6, 0x5FA1D5>::Hook(0x5FA1FD);
+		XYMinus<0x544727, 0x544727>::Hook(0x54474D);
+	}
 
 	// Mouse fucking fix!
 	Patch<DWORD>(0x601740, 0xC3C030);
@@ -796,12 +831,12 @@ void Patch_VC_10(uint32_t width, uint32_t height)
 	InjectHook(0x4A5E45, ResetMousePos);
 
 	// New wndproc
-	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x601727;
+	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))DynBaseAddress(0x601727);
 	Patch(0x601727, &pCustomWndProc);
 
 	// Y axis sensitivity fix
 	// By ThirteenAG
-	float* sens = *(float**)0x4796E5;
+	float* sens = *(float**)DynBaseAddress(0x4796E5);
 	Patch<const void*>(0x479410 + 0x2E0 + 0x2, sens);
 	Patch<const void*>(0x47A20E + 0x27D + 0x2, sens);
 	Patch<const void*>(0x47AE27 + 0x1CC + 0x2, sens);
@@ -863,13 +898,11 @@ void Patch_VC_10(uint32_t width, uint32_t height)
 
 void Patch_VC_11(uint32_t width, uint32_t height)
 {
-	using namespace Memory;
+	using namespace Memory::DynBase;
 
-	PrintString = (void(*)(float,float,const wchar_t*))0x551060;
-
-	RsGlobal = *(RsGlobalType**)0x602D12;
-	RosieAudioFix_JumpBack = (void*)0x42BFFE;
-	SubtitlesShadowFix_JumpBack = (void*)0x551721;
+	RsGlobal = *(RsGlobalType**)DynBaseAddress(0x602D12);
+	RosieAudioFix_JumpBack = (void*)DynBaseAddress(0x42BFFE);
+	SubtitlesShadowFix_JumpBack = (void*)DynBaseAddress(0x551721);
 
 	InjectHook(0x5433DD, FixedRefValue);
 
@@ -886,8 +919,12 @@ void Patch_VC_11(uint32_t width, uint32_t height)
 	Patch<BYTE>(0x551855, 0x24-0x18);
 	Patch<BYTE>(0x55171B, 0x90);
 
-	InjectHook(0x5FA21D, AlteredPrintString<0x5FA216,0x5FA1F5>);
-	InjectHook(0x54476D, AlteredPrintStringMinus<0x544747,0x544747>);
+	{
+		using namespace PrintStringShadows;
+
+		XY<0x5FA216, 0x5FA1F5>::Hook(0x5FA21D);
+		XYMinus<0x544747, 0x544747>::Hook(0x54476D);
+	}
 
 	// Mouse fucking fix!
 	Patch<DWORD>(0x601770, 0xC3C030);
@@ -902,12 +939,12 @@ void Patch_VC_11(uint32_t width, uint32_t height)
 	InjectHook(0x4A5E65, ResetMousePos);
 
 	// New wndproc
-	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x601757;
+	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))DynBaseAddress(0x601757);
 	Patch(0x601757, &pCustomWndProc);
 
 	// Y axis sensitivity fix
 	// By ThirteenAG
-	float* sens = *(float**)0x4796E5;
+	float* sens = *(float**)DynBaseAddress(0x4796E5);
 	Patch<const void*>(0x479410 + 0x2E0 + 0x2, sens);
 	Patch<const void*>(0x47A20E + 0x27D + 0x2, sens);
 	Patch<const void*>(0x47AE27 + 0x1CC + 0x2, sens);
@@ -960,13 +997,11 @@ void Patch_VC_11(uint32_t width, uint32_t height)
 
 void Patch_VC_Steam(uint32_t width, uint32_t height)
 {
-	using namespace Memory;
+	using namespace Memory::DynBase;
 
-	PrintString = (void(*)(float,float,const wchar_t*))0x550F30;
-
-	RsGlobal = *(RsGlobalType**)0x602952;
-	RosieAudioFix_JumpBack = (void*)0x42BFCE;
-	SubtitlesShadowFix_JumpBack = (void*)0x5515F1;
+	RsGlobal = *(RsGlobalType**)DynBaseAddress(0x602952);
+	RosieAudioFix_JumpBack = (void*)DynBaseAddress(0x42BFCE);
+	SubtitlesShadowFix_JumpBack = (void*)DynBaseAddress(0x5515F1);
 
 	InjectHook(0x5432AD, FixedRefValue);
 
@@ -983,8 +1018,12 @@ void Patch_VC_Steam(uint32_t width, uint32_t height)
 	Patch<BYTE>(0x551725, 0x24-0x18);
 	Patch<BYTE>(0x5515EB, 0x90);
 
-	InjectHook(0x5F9E5D, AlteredPrintString<0x5F9E56,0x5F9E35>);
-	InjectHook(0x54463D, AlteredPrintStringMinus<0x544617,0x544617>);
+	{
+		using namespace PrintStringShadows;
+
+		XY<0x5F9E56, 0x5F9E35>::Hook(0x5F9E5D);
+		XYMinus<0x544617, 0x544617>::Hook(0x54463D);
+	}
 
 	// Mouse fucking fix!
 	Patch<DWORD>(0x6013B0, 0xC3C030);
@@ -999,12 +1038,12 @@ void Patch_VC_Steam(uint32_t width, uint32_t height)
 	InjectHook(0x4A5D15, ResetMousePos);
 
 	// New wndproc
-	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x601397;
+	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))DynBaseAddress(0x601397);
 	Patch(0x601397, &pCustomWndProc);
 
 	// Y axis sensitivity fix
 	// By ThirteenAG
-	float* sens = *(float**)0x4795C5;
+	float* sens = *(float**)DynBaseAddress(0x4795C5);
 	Patch<const void*>(0x4792F0 + 0x2E0 + 0x2, sens);
 	Patch<const void*>(0x47A0EE + 0x27D + 0x2, sens);
 	Patch<const void*>(0x47AD07 + 0x1CC + 0x2, sens);
@@ -1056,7 +1095,7 @@ void Patch_VC_Steam(uint32_t width, uint32_t height)
 
 void Patch_VC_JP()
 {
-	using namespace Memory;
+	using namespace Memory::DynBase;
 
 	// Y axis sensitivity fix
 	// By ThirteenAG

@@ -55,28 +55,26 @@ static HMODULE hDLLModule;
 
 
 static void (*DrawRect)(const CRect&,const CRGBA&);
-static void (*SetScale)(float,float);
 static int*				InstantHitsFiredByPlayer;
 static const void*		HeadlightsFix_JumpBack;
 
 
 void (__stdcall *AudioResetTimers)(unsigned int);
-static void (*PrintString)(float,float,const wchar_t*);
 
 static bool*			bWantsToDrawHud;
 static bool*			bCamCheck;
 static RsGlobalType*	RsGlobal;
 static const void*		SubtitlesShadowFix_JumpBack;
 
+static const float& ResolutionWidthMult = **AddressByVersion<float**>(0x57E956, 0x57ECA6, 0x57EBA6);
 inline float GetWidthMult()
 {
-	static const float&		ResolutionWidthMult = **AddressByVersion<float**>(0x57E956, 0x57ECA6, 0x57EBA6);
 	return ResolutionWidthMult;
 }
 
+static const float& ResolutionHeightMult = **AddressByVersion<float**>(0x57E940, 0x57EC90, 0x57EB90);
 inline float GetHeightMult()
 {
-	static const float&		ResolutionHeightMult = **AddressByVersion<float**>(0x57E940, 0x57EC90, 0x57EB90);
 	return ResolutionHeightMult;
 }
 
@@ -101,9 +99,18 @@ void ShowRadarTrace(float fX, float fY, unsigned int nScale, BYTE r, BYTE g, BYT
 	}
 }
 
-void SetScaleProperly(float fX, float fY)
+namespace ScalingFixes
 {
-	SetScale(fX * GetWidthMult() * RsGlobal->MaximumWidth, fY * GetHeightMult() * RsGlobal->MaximumHeight);
+	template<std::size_t Index>
+	static void (*orgSetScale)(float fX, float fY);
+
+	template<std::size_t Index>
+	static void SetScale_Fix(float fX, float fY)
+	{
+		orgSetScale<Index>(fX * GetWidthMult() * RsGlobal->MaximumWidth, fY * GetHeightMult() * RsGlobal->MaximumHeight);
+	}
+
+	HOOK_EACH_FUNC(SetScale, orgSetScale, SetScale_Fix);
 }
 
 class CGang
@@ -196,40 +203,75 @@ void __stdcall Recalculate(signed int nShadow)
 	fShadowYSize = nShadow * GetHeightMult() * RsGlobal->MaximumHeight;
 }
 
-static void AlteredPrintString_Internal(float fX, float fY, float fMarginX, float fMarginY, const wchar_t* pText)
+namespace PrintStringShadows
 {
-	PrintString(fX - fMarginX + (fMarginX * GetWidthMult() * RsGlobal->MaximumWidth), fY - fMarginY + (fMarginY * GetHeightMult() * RsGlobal->MaximumHeight), pText);
-}
+	template<uintptr_t addr>
+	static const float** margin = reinterpret_cast<const float**>(Memory::DynBaseAddress(addr));
 
-template<uintptr_t pFltX, uintptr_t pFltY>
-void AlteredPrintString(float fX, float fY, const wchar_t* pText)
-{
-	const float	fMarginX = **reinterpret_cast<float**>(pFltX);
-	const float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	AlteredPrintString_Internal(fX, fY, fMarginX, fMarginY, pText);
-}
+	static void PrintString_Internal(void (*printFn)(float,float,const wchar_t*), float fX, float fY, float fMarginX, float fMarginY, const wchar_t* pText)
+	{
+		printFn(fX - fMarginX + (fMarginX * GetWidthMult() * RsGlobal->MaximumWidth), fY - fMarginY + (fMarginY * GetHeightMult() * RsGlobal->MaximumHeight), pText);
+	}
 
-template<uintptr_t pFltX, uintptr_t pFltY>
-void AlteredPrintStringMinus(float fX, float fY, const wchar_t* pText)
-{
-	const float	fMarginX = **reinterpret_cast<float**>(pFltX);
-	const float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	AlteredPrintString_Internal(fX, fY, -fMarginX, -fMarginY, pText);
-}
+	template<uintptr_t pFltX, uintptr_t pFltY>
+	struct XY
+	{
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
+		static void PrintString(float fX, float fY, const wchar_t* pText)
+		{
+			PrintString_Internal(orgPrintString, fX, fY, **margin<pFltX>, **margin<pFltY>, pText);
+		}
 
-template<uintptr_t pFltX>
-void AlteredPrintStringXOnly(float fX, float fY, const wchar_t* pText)
-{
-	const float	fMarginX = **reinterpret_cast<float**>(pFltX);
-	AlteredPrintString_Internal(fX, fY, fMarginX, 0.0f, pText);
-}
+		static void Hook(uintptr_t addr)
+		{
+			Memory::DynBase::InterceptCall(addr, orgPrintString, PrintString);
+		}
+	};
 
-template<uintptr_t pFltY>
-void AlteredPrintStringYOnly(float fX, float fY, const wchar_t* pText)
-{
-	const float	fMarginY = **reinterpret_cast<float**>(pFltY);
-	AlteredPrintString_Internal(fX, fY, 0.0f, fMarginY, pText);
-	
+	template<uintptr_t pFltX, uintptr_t pFltY>
+	struct XYMinus
+	{
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
+		static void PrintString(float fX, float fY, const wchar_t* pText)
+		{
+			PrintString_Internal(orgPrintString, fX, fY, -(**margin<pFltX>), -(**margin<pFltY>), pText);
+		}
+
+		static void Hook(uintptr_t addr)
+		{
+			Memory::DynBase::InterceptCall(addr, orgPrintString, PrintString);
+		}
+	};
+
+	template<uintptr_t pFltX>
+	struct X
+	{
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
+		static void PrintString(float fX, float fY, const wchar_t* pText)
+		{
+			PrintString_Internal(orgPrintString, fX, fY, **margin<pFltX>, 0.0f, pText);
+		}
+
+		static void Hook(uintptr_t addr)
+		{
+			Memory::DynBase::InterceptCall(addr, orgPrintString, PrintString);
+		}
+	};
+
+	template<uintptr_t pFltY>
+	struct Y
+	{
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
+		static void PrintString(float fX, float fY, const wchar_t* pText)
+		{
+			PrintString_Internal(orgPrintString, fX, fY, 0.0f, **margin<pFltY>, pText);
+		}
+
+		static void Hook(uintptr_t addr)
+		{
+			Memory::DynBase::InterceptCall(addr, orgPrintString, PrintString);
+		}
+	};
 }
 
 float FixedRefValue()
@@ -319,8 +361,8 @@ int NewFrameRender(int nEvent, void* pParam)
 	return RsEventHandler(nEvent, pParam);
 }
 
-static signed int& LastTimeFireTruckCreated = **(int**)0x41D2E5;
-static signed int& LastTimeAmbulanceCreated = **(int**)0x41D2F9;
+static signed int& LastTimeFireTruckCreated = **(int**)Memory::DynBaseAddress(0x41D2E5);
+static signed int& LastTimeAmbulanceCreated = **(int**)Memory::DynBaseAddress(0x41D2F9);
 static void (*orgCarCtrlReInit)();
 void CarCtrlReInit_SilentPatch()
 {
@@ -834,19 +876,17 @@ void InjectDelayedPatches_III_Common()
 
 void Patch_III_10(uint32_t width, uint32_t height)
 {
-	using namespace Memory;
+	using namespace Memory::DynBase;
 
-	DrawRect = (void(*)(const CRect&,const CRGBA&))0x51F970;
-	SetScale = (void(*)(float,float))0x501B80;
-	AudioResetTimers = (void(__stdcall*)(unsigned int))0x57CCD0;
-	PrintString = (void(*)(float,float,const wchar_t*))0x500F50;
+	DrawRect = (void(*)(const CRect&,const CRGBA&))DynBaseAddress(0x51F970);
+	AudioResetTimers = (void(__stdcall*)(unsigned int))DynBaseAddress(0x57CCD0);
 
-	InstantHitsFiredByPlayer = *(int**)0x482C8F;
-	bWantsToDrawHud = *(bool**)0x4A5877;
-	bCamCheck = *(bool**)0x4A588C;
-	RsGlobal = *(RsGlobalType**)0x584C42;
-	HeadlightsFix_JumpBack = (void*)0x5382F2;
-	SubtitlesShadowFix_JumpBack = (void*)0x500D32;
+	InstantHitsFiredByPlayer = *(int**)DynBaseAddress(0x482C8F);
+	bWantsToDrawHud = *(bool**)DynBaseAddress(0x4A5877);
+	bCamCheck = *(bool**)DynBaseAddress(0x4A588C);
+	RsGlobal = *(RsGlobalType**)DynBaseAddress(0x584C42);
+	HeadlightsFix_JumpBack = (void*)DynBaseAddress(0x5382F2);
+	SubtitlesShadowFix_JumpBack = (void*)DynBaseAddress(0x500D32);
 
 	Patch<BYTE>(0x490F83, 1);
 
@@ -854,12 +894,15 @@ void Patch_III_10(uint32_t width, uint32_t height)
 	InjectHook(0x5382EC, HeadlightsFix, HookType::Jump);
 
 	InjectHook(0x4A5870, ShowRadarTrace, HookType::Jump);
-	InjectHook(0x4209A7, SetScaleProperly);
-	InjectHook(0x420A1F, SetScaleProperly);
-	InjectHook(0x420AC1, SetScaleProperly);
-	InjectHook(0x420D9E, SetScaleProperly);
-	InjectHook(0x426342, SetScaleProperly);
-	InjectHook(0x4326B8, SetScaleProperly);
+	{
+		using namespace ScalingFixes;
+
+		std::array<uintptr_t, 6> set_scale {
+			0x4209A7, 0x420A1F, 0x420AC1, 0x420D9E, 0x426342, 0x4326B8
+		};
+
+		HookEach_SetScale(set_scale, InterceptCall);
+	}
 
 	InjectHook(0x4F9E4D, FixedRefValue);
 
@@ -879,35 +922,39 @@ void Patch_III_10(uint32_t width, uint32_t height)
 	Patch<BYTE>(0x5623B5, 0x90);
 	InjectHook(0x5623B6, M16StatsFix, HookType::Call);
 
-	InjectHook(0x505F82, AlteredPrintString<0x505F7B,0x505F50>);
-	InjectHook(0x5065DA, AlteredPrintString<0x5065D3,0x5065A8>);
-	InjectHook(0x50669B, AlteredPrintString<0x50668E,0x506670>);
-	InjectHook(0x50694B, AlteredPrintString<0x506944,0x506919>);
-	InjectHook(0x506A0C, AlteredPrintString<0x5069FF,0x5069E1>);
-	InjectHook(0x506C37, AlteredPrintString<0x506C2B,0x506C22>);
-	InjectHook(0x5070FA, AlteredPrintString<0x5070F3,0x5070C8>);
-	InjectHook(0x507598, AlteredPrintString<0x507591,0x507566>);
-	InjectHook(0x507754, AlteredPrintString<0x50774D,0x507722>);
-	InjectHook(0x507944, AlteredPrintString<0x50793D,0x507912>);
-	InjectHook(0x507AC8, AlteredPrintStringYOnly<0x507A8B>);
-	InjectHook(0x507CF0, AlteredPrintString<0x507CE9,0x507CBE>);
-	InjectHook(0x507FF1, AlteredPrintStringYOnly<0x507FB4>);
-	InjectHook(0x508C6E, AlteredPrintString<0x508C67,0x508C46>);
-	InjectHook(0x508F09, AlteredPrintStringXOnly<0x508F02>);
-	InjectHook(0x426446, AlteredPrintString<0x42643F,0x426418>);
-	InjectHook(0x426584, AlteredPrintString<0x42657D,0x426556>);
-	InjectHook(0x42665F, AlteredPrintStringMinus<0x426658,0x426637>);
-	InjectHook(0x5098D6, AlteredPrintString<0x509A5E,0x509A3D>);
-	InjectHook(0x509A65, AlteredPrintStringMinus<0x509A5E,0x509A3D>);
-	InjectHook(0x50A142, AlteredPrintStringXOnly<0x50A139>);
-	InjectHook(0x57E9F5, AlteredPrintString<0x57E9EE,0x57E9CD>);
+	{
+		using namespace PrintStringShadows;
+
+		XY<0x505F7B, 0x505F50>::Hook(0x505F82);
+		XY<0x5065D3, 0x5065A8>::Hook(0x5065DA);
+		XY<0x50668E, 0x506670>::Hook(0x50669B);
+		XY<0x506944, 0x506919>::Hook(0x50694B);
+		XY<0x5069FF, 0x5069E1>::Hook(0x506A0C);
+		XY<0x506C2B, 0x506C22>::Hook(0x506C37);
+		XY<0x5070F3, 0x5070C8>::Hook(0x5070FA);
+		XY<0x507591, 0x507566>::Hook(0x507598);
+		XY<0x50774D, 0x507722>::Hook(0x507754);
+		XY<0x50793D, 0x507912>::Hook(0x507944);
+		Y<0x507A8B>::Hook(0x507AC8);
+		XY<0x507CE9, 0x507CBE>::Hook(0x507CF0);
+		Y<0x507FB4>::Hook(0x507FF1);
+		XY<0x508C67, 0x508C46>::Hook(0x508C6E);
+		X<0x508F02>::Hook(0x508F09);
+		XY<0x42643F, 0x426418>::Hook(0x426446);
+		XY<0x42657D, 0x426556>::Hook(0x426584);
+		XYMinus<0x426658, 0x426637>::Hook(0x42665F);
+		XY<0x509A5E, 0x509A3D>::Hook(0x5098D6);
+		XYMinus<0x509A5E, 0x509A3D>::Hook(0x509A65);
+		X<0x50A139>::Hook(0x50A142);
+		XY<0x57E9EE, 0x57E9CD>::Hook(0x57E9F5);
+	}
 
 	// RsMouseSetPos call (SA style fix)
 	ReadCall( 0x48E539, orgConstructRenderList );
 	InjectHook(0x48E539, ResetMousePos);
 
 	// New wndproc
-	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x581C74;
+	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))DynBaseAddress(0x581C74);
 	Patch(0x581C74, &pCustomWndProc);
 
 	// Armour cheat as TORTOISE - like in 1.1 and Steam
@@ -935,7 +982,7 @@ void Patch_III_10(uint32_t width, uint32_t height)
 	// add esp, 38h
 	// mov CGarages::RespraysAreFree, 0
 	// retn
-	bool* pFreeResprays = *(bool**)0x4224A4;
+	bool* pFreeResprays = *(bool**)DynBaseAddress(0x4224A4);
 	Patch<BYTE>(0x421E06, 0x38);
 	Patch<WORD>(0x421E07, 0x05C6);
 	Patch<const void*>(0x421E09, pFreeResprays);
@@ -972,19 +1019,17 @@ void Patch_III_10(uint32_t width, uint32_t height)
 
 void Patch_III_11(uint32_t width, uint32_t height)
 {
-	using namespace Memory;
+	using namespace Memory::DynBase;
 
-	DrawRect = (void(*)(const CRect&,const CRGBA&))0x51FBA0;
-	SetScale = (void(*)(float,float))0x501C60;
-	AudioResetTimers = (void(__stdcall*)(unsigned int))0x57CCC0;
-	PrintString = (void(*)(float,float,const wchar_t*))0x501030;
+	DrawRect = (void(*)(const CRect&,const CRGBA&))DynBaseAddress(0x51FBA0);
+	AudioResetTimers = (void(__stdcall*)(unsigned int))DynBaseAddress(0x57CCC0);
 
-	InstantHitsFiredByPlayer = *(int**)0x482D5F;
-	bWantsToDrawHud = *(bool**)0x4A5967;
-	bCamCheck = *(bool**)0x4A597C;
-	RsGlobal = *(RsGlobalType**)0x584F82;
-	HeadlightsFix_JumpBack = (void*)0x538532;
-	SubtitlesShadowFix_JumpBack = (void*)0x500E12;
+	InstantHitsFiredByPlayer = *(int**)DynBaseAddress(0x482D5F);
+	bWantsToDrawHud = *(bool**)DynBaseAddress(0x4A5967);
+	bCamCheck = *(bool**)DynBaseAddress(0x4A597C);
+	RsGlobal = *(RsGlobalType**)DynBaseAddress(0x584F82);
+	HeadlightsFix_JumpBack = (void*)DynBaseAddress(0x538532);
+	SubtitlesShadowFix_JumpBack = (void*)DynBaseAddress(0x500E12);
 
 	Patch<BYTE>(0x491043, 1);
 
@@ -992,12 +1037,15 @@ void Patch_III_11(uint32_t width, uint32_t height)
 	InjectHook(0x53852C, HeadlightsFix, HookType::Jump);
 
 	InjectHook(0x4A5960, ShowRadarTrace, HookType::Jump);
-	InjectHook(0x4209A7, SetScaleProperly);
-	InjectHook(0x420A1F, SetScaleProperly);
-	InjectHook(0x420AC1, SetScaleProperly);
-	InjectHook(0x420D9E, SetScaleProperly);
-	InjectHook(0x426342, SetScaleProperly);
-	InjectHook(0x4326B8, SetScaleProperly);
+	{
+		using namespace ScalingFixes;
+
+		std::array<uintptr_t, 6> set_scale {
+			0x4209A7, 0x420A1F, 0x420AC1, 0x420D9E, 0x426342, 0x4326B8
+		};
+
+		HookEach_SetScale(set_scale, InterceptCall);
+	}
 
 	InjectHook(0x4F9F2D, FixedRefValue);
 
@@ -1017,35 +1065,39 @@ void Patch_III_11(uint32_t width, uint32_t height)
 	Patch<BYTE>(0x5624E5, 0x90);
 	InjectHook(0x5624E6, M16StatsFix, HookType::Call);
 
-	InjectHook(0x506062, AlteredPrintString<0x50605B,0x506030>);
-	InjectHook(0x5066BA, AlteredPrintString<0x5066B3,0x506688>);
-	InjectHook(0x50677B, AlteredPrintString<0x50676E,0x506750>);
-	InjectHook(0x506A2B, AlteredPrintString<0x506A24,0x5069F9>);
-	InjectHook(0x506AEC, AlteredPrintString<0x506ADF,0x506AC1>);
-	InjectHook(0x506D17, AlteredPrintString<0x506D0B,0x506D02>);
-	InjectHook(0x5071DA, AlteredPrintString<0x5071D3,0x5071A8>);
-	InjectHook(0x507678, AlteredPrintString<0x507671,0x507646>);
-	InjectHook(0x507834, AlteredPrintString<0x50782D,0x507802>);
-	InjectHook(0x507A24, AlteredPrintString<0x507A1D,0x5079F2>);
-	InjectHook(0x507BA8, AlteredPrintStringYOnly<0x507B6B>);
-	InjectHook(0x507DD0, AlteredPrintString<0x507DC9,0x507D9E>);
-	InjectHook(0x5080D1, AlteredPrintStringYOnly<0x508094>);
-	InjectHook(0x508D4E, AlteredPrintString<0x508D47,0x508D26>);
-	InjectHook(0x508FE9, AlteredPrintStringXOnly<0x508FE2>);
-	InjectHook(0x426446, AlteredPrintString<0x42643F,0x426418>);
-	InjectHook(0x426584, AlteredPrintString<0x42657D,0x426556>);
-	InjectHook(0x42665F, AlteredPrintStringMinus<0x426658,0x426637>);
-	InjectHook(0x5099B6, AlteredPrintString<0x509B3E,0x509B1D>);
-	InjectHook(0x509B45, AlteredPrintStringMinus<0x509B3E,0x509B1D>);
-	InjectHook(0x50A222, AlteredPrintStringXOnly<0x50A219>);
-	InjectHook(0x57ED45, AlteredPrintString<0x57ED3E,0x57ED1D>);
+	{
+		using namespace PrintStringShadows;
+
+		XY<0x50605B, 0x506030>::Hook(0x506062);
+		XY<0x5066B3, 0x506688>::Hook(0x5066BA);
+		XY<0x50676E, 0x506750>::Hook(0x50677B);
+		XY<0x506A24, 0x5069F9>::Hook(0x506A2B);
+		XY<0x506ADF, 0x506AC1>::Hook(0x506AEC);
+		XY<0x506D0B, 0x506D02>::Hook(0x506D17);
+		XY<0x5071D3, 0x5071A8>::Hook(0x5071DA);
+		XY<0x507671, 0x507646>::Hook(0x507678);
+		XY<0x50782D, 0x507802>::Hook(0x507834);
+		XY<0x507A1D, 0x5079F2>::Hook(0x507A24);
+		Y<0x507B6B>::Hook(0x507BA8);
+		XY<0x507DC9, 0x507D9E>::Hook(0x507DD0);
+		Y<0x508094>::Hook(0x5080D1);
+		XY<0x508D47, 0x508D26>::Hook(0x508D4E);
+		X<0x508FE2>::Hook(0x508FE9);
+		XY<0x42643F, 0x426418>::Hook(0x426446);
+		XY<0x42657D, 0x426556>::Hook(0x426584);
+		XYMinus<0x426658, 0x426637>::Hook(0x42665F);
+		XY<0x509B3E, 0x509B1D>::Hook(0x5099B6);
+		XYMinus<0x509B3E, 0x509B1D>::Hook(0x509B45);
+		X<0x50A219>::Hook(0x50A222);
+		XY<0x57ED3E, 0x57ED1D>::Hook(0x57ED45);
+	}
 
 	// RsMouseSetPos call (SA style fix)
 	ReadCall( 0x48E5F9, orgConstructRenderList );
 	InjectHook(0x48E5F9, ResetMousePos);
 
 	// New wndproc
-	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x581FB4;
+	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))DynBaseAddress(0x581FB4);
 	Patch(0x581FB4, &pCustomWndProc);
 
 	// (Hopefully) more precise frame limiter
@@ -1063,7 +1115,7 @@ void Patch_III_11(uint32_t width, uint32_t height)
 	// add esp, 38h
 	// mov CGarages::RespraysAreFree, 0
 	// retn
-	bool* pFreeResprays = *(bool**)0x4224A4;
+	bool* pFreeResprays = *(bool**)DynBaseAddress(0x4224A4);
 	Patch<BYTE>(0x421E06, 0x38);
 	Patch<WORD>(0x421E07, 0x05C6);
 	Patch<const void*>(0x421E09, pFreeResprays);
@@ -1090,28 +1142,29 @@ void Patch_III_11(uint32_t width, uint32_t height)
 
 void Patch_III_Steam(uint32_t width, uint32_t height)
 {
-	using namespace Memory;
+	using namespace Memory::DynBase;
 
-	DrawRect = (void(*)(const CRect&,const CRGBA&))0x51FB30;
-	SetScale = (void(*)(float,float))0x501BF0;
-	AudioResetTimers = (void(__stdcall*)(unsigned int))0x57CF20;
-	PrintString = (void(*)(float,float,const wchar_t*))0x500FC0;
+	DrawRect = (void(*)(const CRect&,const CRGBA&))DynBaseAddress(0x51FB30);
+	AudioResetTimers = (void(__stdcall*)(unsigned int))DynBaseAddress(0x57CF20);
 
-	InstantHitsFiredByPlayer = *(int**)0x482D5F;
-	bWantsToDrawHud = *(bool**)0x4A58F7;
-	bCamCheck = *(bool**)0x4A590C;
-	RsGlobal = *(RsGlobalType**)0x584E72;
-	SubtitlesShadowFix_JumpBack = (void*)0x500DA2;
+	InstantHitsFiredByPlayer = *(int**)DynBaseAddress(0x482D5F);
+	bWantsToDrawHud = *(bool**)DynBaseAddress(0x4A58F7);
+	bCamCheck = *(bool**)DynBaseAddress(0x4A590C);
+	RsGlobal = *(RsGlobalType**)DynBaseAddress(0x584E72);
+	SubtitlesShadowFix_JumpBack = (void*)DynBaseAddress(0x500DA2);
 
 	Patch<BYTE>(0x490FD3, 1);
 
 	InjectHook(0x4A58F0, ShowRadarTrace, HookType::Jump);
-	InjectHook(0x4209A7, SetScaleProperly);
-	InjectHook(0x420A1F, SetScaleProperly);
-	InjectHook(0x420AC1, SetScaleProperly);
-	InjectHook(0x420D9E, SetScaleProperly);
-	InjectHook(0x426342, SetScaleProperly);
-	InjectHook(0x4326B8, SetScaleProperly);	
+	{
+		using namespace ScalingFixes;
+
+		std::array<uintptr_t, 6> set_scale {
+			0x4209A7, 0x420A1F, 0x420AC1, 0x420D9E, 0x426342, 0x4326B8
+		};
+
+		HookEach_SetScale(set_scale, InterceptCall);
+	}
 
 	InjectHook(0x4F9EBD, FixedRefValue);
 
@@ -1131,35 +1184,39 @@ void Patch_III_Steam(uint32_t width, uint32_t height)
 	Patch<BYTE>(0x562495, 0x90);
 	InjectHook(0x562496, M16StatsFix, HookType::Call);
 
-	InjectHook(0x505FF2, AlteredPrintString<0x505FEB,0x505FC0>);
-	InjectHook(0x50664A, AlteredPrintString<0x506643,0x506618>);
-	InjectHook(0x50670B, AlteredPrintString<0x5066FE,0x5066E0>);
-	InjectHook(0x5069BB, AlteredPrintString<0x5069B4,0x506989>);
-	InjectHook(0x506A7C, AlteredPrintString<0x506A6F,0x506A51>);
-	InjectHook(0x506CA7, AlteredPrintString<0x506C9B,0x506C92>);
-	InjectHook(0x50716A, AlteredPrintString<0x507163,0x507138>);
-	InjectHook(0x507608, AlteredPrintString<0x507601,0x5075D6>);
-	InjectHook(0x5077C4, AlteredPrintString<0x5077BD,0x507792>);
-	InjectHook(0x5079B4, AlteredPrintString<0x5079AD,0x507982>);
-	InjectHook(0x507B38, AlteredPrintStringYOnly<0x507AFB>);
-	InjectHook(0x507D60, AlteredPrintString<0x507D59,0x507D2E>);
-	InjectHook(0x508061, AlteredPrintStringYOnly<0x508024>);
-	InjectHook(0x508CDE, AlteredPrintString<0x508CD7,0x508CB6>);
-	InjectHook(0x508F79, AlteredPrintStringXOnly<0x508F72>);
-	InjectHook(0x426446, AlteredPrintString<0x42643F,0x426418>);
-	InjectHook(0x426584, AlteredPrintString<0x42657D,0x426556>);
-	InjectHook(0x42665F, AlteredPrintStringMinus<0x426658,0x426637>);
-	InjectHook(0x509946, AlteredPrintString<0x509ACE,0x509AAD>);
-	InjectHook(0x509AD5, AlteredPrintStringMinus<0x509ACE,0x509AAD>);
-	InjectHook(0x50A1B2, AlteredPrintStringXOnly<0x50A1A9>);
-	InjectHook(0x57EC45, AlteredPrintString<0x57EC3E,0x57EC1D>);
+	{
+		using namespace PrintStringShadows;
+
+		XY<0x505FEB, 0x505FC0>::Hook(0x505FF2);
+		XY<0x506643, 0x506618>::Hook(0x50664A);
+		XY<0x5066FE, 0x5066E0>::Hook(0x50670B);
+		XY<0x5069B4, 0x506989>::Hook(0x5069BB);
+		XY<0x506A6F, 0x506A51>::Hook(0x506A7C);
+		XY<0x506C9B, 0x506C92>::Hook(0x506CA7);
+		XY<0x507163, 0x507138>::Hook(0x50716A);
+		XY<0x507601, 0x5075D6>::Hook(0x507608);
+		XY<0x5077BD, 0x507792>::Hook(0x5077C4);
+		XY<0x5079AD, 0x507982>::Hook(0x5079B4);
+		Y<0x507AFB>::Hook(0x507B38);
+		XY<0x507D59, 0x507D2E>::Hook(0x507D60);
+		Y<0x508024>::Hook(0x508061);
+		XY<0x508CD7, 0x508CB6>::Hook(0x508CDE);
+		X<0x508F72>::Hook(0x508F79);
+		XY<0x42643F, 0x426418>::Hook(0x426446);
+		XY<0x42657D, 0x426556>::Hook(0x426584);
+		XYMinus<0x426658, 0x426637>::Hook(0x42665F);
+		XY<0x509ACE, 0x509AAD>::Hook(0x509946);
+		XYMinus<0x509ACE, 0x509AAD>::Hook(0x509AD5);
+		X<0x50A1A9>::Hook(0x50A1B2);
+		XY<0x57EC3E, 0x57EC1D>::Hook(0x57EC45);
+	}
 
 	// RsMouseSetPos call (SA style fix)
 	ReadCall( 0x48E589, orgConstructRenderList );
 	InjectHook(0x48E589, ResetMousePos);
 
 	// New wndproc
-	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))0x581EA4;
+	OldWndProc = *(LRESULT (CALLBACK***)(HWND, UINT, WPARAM, LPARAM))DynBaseAddress(0x581EA4);
 	Patch(0x581EA4, &pCustomWndProc);
 
 	// (Hopefully) more precise frame limiter
@@ -1176,7 +1233,7 @@ void Patch_III_Steam(uint32_t width, uint32_t height)
 	// add esp, 38h
 	// mov CGarages::RespraysAreFree, 0
 	// retn
-	bool* pFreeResprays = *(bool**)0x4224A4;
+	bool* pFreeResprays = *(bool**)DynBaseAddress(0x4224A4);
 	Patch<BYTE>(0x421E06, 0x38);
 	Patch<WORD>(0x421E07, 0x05C6);
 	Patch<const void*>(0x421E09, pFreeResprays);
