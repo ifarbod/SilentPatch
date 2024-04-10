@@ -600,6 +600,53 @@ namespace MouseSensNewGame
 }
 
 
+// ============= Fixed pickup effects colors =============
+namespace PickupEffectsFixes
+{
+	__declspec(naked) static void PickUpEffects_BigDollarColor()
+	{
+		_asm
+		{
+			mov		byte ptr [esp+184h-170h], 0
+			mov		dword ptr [esp+184h-174h], 37
+			retn
+		}
+	}
+
+	__declspec(naked) static void PickUpEffects_Minigun2Glow()
+	{
+		_asm
+		{
+			cmp		ecx, 294	// minigun2
+			jnz		NotMinigun2
+			mov		byte ptr [esp+184h-170h], 0
+			xor		eax, eax
+			jmp		Return
+
+		NotMinigun2:
+			lea     eax, [ecx+1]
+
+		Return:
+			mov     ebx, ecx
+			retn
+		}
+	}
+
+	__declspec(naked) static void PickUpEffects_GiveUsAnObject()
+	{
+		_asm
+		{
+			jnz		GiveUsAnObject_NotEqual
+			mov     si, [eax+58h]
+			retn
+
+		GiveUsAnObject_NotEqual:
+			mov		si, -1
+			retn
+		}
+	}
+}
+
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -1392,6 +1439,33 @@ void Patch_VC_Common()
 
 		Nop(cameraInit.get<void>(20), 10);
 		InterceptCall(setDirMyDocuments, orgSetDirMyDocuments, SetDirMyDocuments_ResetMouse);
+	}
+
+
+	// Fixed pickup effects
+	{
+		using namespace PickupEffectsFixes;
+
+		// Give money pickups color ID 37, like most other "generic" pickups
+		// Coincidentally, it's also the most likely color to be "randomly" assigned to them now
+		auto bigDollarColor = get_pattern("C6 44 24 ? 00 E9 ? ? ? ? 8D 80 00 00 00 00 0F B7 1D ? ? ? ? 39 CB 75 0C");
+
+		// Remove the glow from minigun2
+		auto minigun2Glow = get_pattern("8D 41 01 89 CB");
+
+		// Don't spawn the grenade together with the detonator in the pickup
+		// FLA might be altering this due to the usage of 16-bit IDs? Just in case allow for graceful failure
+		auto pickupExtraObject = pattern("75 04 66 8B 70 58").count_hint(1);
+		if (pickupExtraObject.size() == 1)
+		{
+			auto match = pickupExtraObject.get_one();
+
+			Nop(match.get<void>(), 1);
+			InjectHook(match.get<void>(1), &PickUpEffects_GiveUsAnObject, HookType::Call);
+		}
+
+		InjectHook(bigDollarColor, &PickUpEffects_BigDollarColor, HookType::Call);
+		InjectHook(minigun2Glow, &PickUpEffects_Minigun2Glow, HookType::Call);
 	}
 }
 
