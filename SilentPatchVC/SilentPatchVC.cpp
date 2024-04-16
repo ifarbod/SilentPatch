@@ -1467,6 +1467,18 @@ void Patch_VC_Common()
 		InjectHook(bigDollarColor, &PickUpEffects_BigDollarColor, HookType::Call);
 		InjectHook(minigun2Glow, &PickUpEffects_Minigun2Glow, HookType::Call);
 	}
+
+
+	// Fixed the muzzle flash facing the wrong direction
+	// By Wesser
+	{
+		auto fireInstantHit = pattern("D9 44 24 50 D8 44 24 44").get_one();
+
+		// Replace fld [esp].vecSource with fldz, as vecEnd is already absolute
+		Patch(fireInstantHit.get<void>(), { 0xD9, 0xEE, 0x90, 0x90 });
+		Patch(fireInstantHit.get<void>(15), { 0xD9, 0xEE, 0x90, 0x90 });
+		Patch(fireInstantHit.get<void>(30), { 0xD9, 0xEE, 0x90, 0x90 });
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
