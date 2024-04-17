@@ -647,6 +647,42 @@ namespace PickupEffectsFixes
 	}
 }
 
+
+// ============= Fixed IS_PLAYER_TARGETTING_CHAR incorrectly detecting targetting in Classic controls =============
+// ============= when the player is not aiming =============
+// ============= By Wesser =============
+namespace IsPlayerTargettingCharFix
+{
+	static bool* bUseMouse3rdPerson;
+	static void* TheCamera;
+	static bool (__fastcall* Using1stPersonWeaponMode)();
+
+	__declspec(naked) static void IsPlayerTargettingChar_ExtraChecks()
+	{
+		// After this extra block of code, there is a jz Return, so set ZF to 0 here if this path is to be entered
+		_asm
+		{
+			test	bl, bl
+			jnz		ReturnToUpdateCompareFlag
+			mov		eax, [bUseMouse3rdPerson]
+			cmp		byte ptr [eax], 0
+			jne		CmpAndReturn
+			mov		ecx, [TheCamera]
+			call	[Using1stPersonWeaponMode]
+			test	al, al
+			jz		ReturnToUpdateCompareFlag
+
+		CmpAndReturn:
+			cmp     byte ptr [esp+11Ch-10Ch], 0
+			retn
+
+		ReturnToUpdateCompareFlag:
+			xor		al, al
+			retn
+		}
+	}
+}
+
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -1478,6 +1514,28 @@ void Patch_VC_Common()
 		Patch(fireInstantHit.get<void>(), { 0xD9, 0xEE, 0x90, 0x90 });
 		Patch(fireInstantHit.get<void>(15), { 0xD9, 0xEE, 0x90, 0x90 });
 		Patch(fireInstantHit.get<void>(30), { 0xD9, 0xEE, 0x90, 0x90 });
+	}
+
+
+	// Fixed IS_PLAYER_TARGETTING_CHAR incorrectly detecting targetting in Classic controls
+	// when the player is not aiming
+	// By Wesser
+	{
+		using namespace IsPlayerTargettingCharFix;
+
+		auto isPlayerTargettingChar = pattern("83 7C 24 ? ? A3 ? ? ? ? 0F 84").get_one();
+		auto using1stPersonWeaponMode = static_cast<decltype(Using1stPersonWeaponMode)>(get_pattern("66 83 F8 07 74 18", -7));
+		bool* useMouse3rdPerson = *get_pattern<bool*>("80 3D ? ? ? ? ? 75 09 66 C7 05 ? ? ? ? ? ? 8B 35", 2);
+		void* theCamera = *get_pattern<void*>("B9 ? ? ? ? 31 DB E8", 1);
+
+		Using1stPersonWeaponMode = using1stPersonWeaponMode;
+		bUseMouse3rdPerson = useMouse3rdPerson;
+		TheCamera = theCamera;
+
+		// Move mov ds:dword_784030, eax one instruction earlier so we don't need
+		// to include it in the patched routine
+		memmove(isPlayerTargettingChar.get<void>(), isPlayerTargettingChar.get<void>(5), 5);
+		InjectHook(isPlayerTargettingChar.get<void>(5), IsPlayerTargettingChar_ExtraChecks, HookType::Call);
 	}
 }
 
