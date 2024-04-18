@@ -31,6 +31,7 @@ namespace HandlingNameLoadFix
 // ============= Corona lines rendering fix =============
 namespace CoronaLinesFix
 {
+	static decltype(RwIm2DRenderLine)* orgRwIm2DRenderLine;
 	static RwBool RenderLine_SetRecipZ( RwIm2DVertex *vertices, RwInt32 numVertices, RwInt32 vert1, RwInt32 vert2 )
 	{
 		const RwReal nearScreenZ = RwIm2DGetNearScreenZ();
@@ -44,31 +45,45 @@ namespace CoronaLinesFix
 			RwIm2DVertexSetRecipCameraZ( &vertices[i], recipZ );
 		}
 
-		return RwIm2DRenderLine( vertices, numVertices, vert1, vert2 );
+		return orgRwIm2DRenderLine( vertices, numVertices, vert1, vert2 );
 	}
 }
 
 // ============= Static shadow alpha fix =============
 namespace StaticShadowAlphaFix
 {
-	static RwUInt32 alphaTestVal;
+	static constexpr RwUInt32 D3DRS_ALPHAFUNC = 25;
+	static constexpr RwUInt32 D3DCMP_ALWAYS = 8;
 
-	static RwBool RenderStateSet_StoreAlphaTest( RwRenderState state, void* value )
+	static RwUInt32 alphaFuncVal;
+
+	template<std::size_t Index>
+	static RwBool (*orgRenderStateSet_StoreAlphaTest)(RwRenderState state, void* value);
+
+	template<std::size_t Index>
+	static RwBool RenderStateSet_StoreAlphaTest(RwRenderState state, void* value)
 	{
-		RwD3D8GetRenderState( 15, &alphaTestVal ); // D3DRS_ALPHATESTENABLE
-		RwD3D8SetRenderState( 15, FALSE );
+		RwD3D8GetRenderState(D3DRS_ALPHAFUNC, &alphaFuncVal);
+		RwD3D8SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_ALWAYS);
 
-		return RwRenderStateSet( state, value );
+		return orgRenderStateSet_StoreAlphaTest<Index>(state, value);
 	}
 
-	static RwBool RenderStateSet_RestoreAlphaTest( RwRenderState state, void* value )
-	{
-		RwBool result = RwRenderStateSet( state, value );
+	template<std::size_t Index>
+	static RwBool (*orgRenderStateSet_RestoreAlphaTest)(RwRenderState state, void* value);
 
-		RwD3D8SetRenderState( 15, alphaTestVal );
+	template<std::size_t Index>
+	static RwBool RenderStateSet_RestoreAlphaTest(RwRenderState state, void* value)
+	{
+		RwBool result = orgRenderStateSet_RestoreAlphaTest<Index>(state, value);
+
+		RwD3D8SetRenderState(D3DRS_ALPHAFUNC, alphaFuncVal);
 
 		return result;
 	}
+
+	HOOK_EACH_FUNC(StoreAlphaTest, orgRenderStateSet_StoreAlphaTest, RenderStateSet_StoreAlphaTest);
+	HOOK_EACH_FUNC(RestoreAlphaTest, orgRenderStateSet_RestoreAlphaTest, RenderStateSet_RestoreAlphaTest);
 };
 
 // ============= Corrected corona placement for taxi =============
@@ -233,7 +248,7 @@ namespace Common {
 	
 				auto renderLine = get_pattern( "E8 ? ? ? ? 83 C4 10 FF 44 24 1C 43" );
 
-				InjectHook( renderLine, RenderLine_SetRecipZ );
+				InterceptCall(renderLine, orgRwIm2DRenderLine, RenderLine_SetRecipZ);
 			}
 
 
@@ -242,36 +257,29 @@ namespace Common {
 				using namespace StaticShadowAlphaFix;
 
 #if _GTA_III
-				void* disableAlphaTestAndSetState[] = { 
+				std::array<void*, 2> disableAlphaTestAndSetState = { 
 					get_pattern( "E8 ? ? ? ? 59 59 6A 00 6A 0E E8 ? ? ? ? 31 C0" ),
 					get_pattern( "E8 ? ? ? ? 0F B7 2D ? ? ? ? 31 C0" )
 				};
 
-				void* setStateAndReenableAlphaTest[] = {
+				std::array<void*, 2> setStateAndReenableAlphaTest = {
 					get_pattern( "E8 ? ? ? ? 59 59 6A 01 6A 08 E8 ? ? ? ? 59 59 83 C4 38" ),
 					get_pattern( "39 44 24 38 0F 8C ? ? ? ? 6A 00 6A 0C", 14 )
 				};
 #elif _GTA_VC
-				void* disableAlphaTestAndSetState[] = { 
+				std::array<void*, 2> disableAlphaTestAndSetState = { 
 					get_pattern( "E8 ? ? ? ? 59 59 6A 00 6A 0E E8 ? ? ? ? 31 C0" ),
 					get_pattern( "6A 01 6A 0C E8 ? ? ? ? 59 59 6A 03", 4 )
 				};
 
-				void* setStateAndReenableAlphaTest[] = {
+				std::array<void*, 2> setStateAndReenableAlphaTest = {
 					get_pattern( "0F 77 6A 00 6A 0C E8 ? ? ? ? 59", 6 ),
 					get_pattern( "39 44 24 34 0F 8C ? ? ? ? 6A 00 6A 0C", 14 )
 				};
 #endif
 
-				for ( auto match : disableAlphaTestAndSetState )
-				{
-					InjectHook( match, RenderStateSet_StoreAlphaTest );
-				}
-
-				for ( auto match : setStateAndReenableAlphaTest )
-				{
-					InjectHook( match, RenderStateSet_RestoreAlphaTest );
-				}
+				HookEach_StoreAlphaTest(disableAlphaTestAndSetState, InterceptCall);
+				HookEach_RestoreAlphaTest(setStateAndReenableAlphaTest, InterceptCall);
 			}
 
 

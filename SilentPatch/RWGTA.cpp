@@ -3,6 +3,8 @@
 #include "Utils/MemoryMgr.h"
 #include "Utils/Patterns.h"
 
+#define RwEngineInstance (*rwengine)
+
 #include <rwcore.h>
 
 // GTA versions of RenderWare functions/macros for GTA III/Vice City
@@ -11,7 +13,7 @@
 // Anything originally using RwEngineInstance shall be redefined here
 // Functions which RW 3.6 inlined can also easily be defined here
 
-void** GTARwEngineInstance = []() -> void** {
+void** rwengine = []() -> void** {
 	// Thanks Steam III...
 
 	// Locate RwRenderStateSet
@@ -45,20 +47,9 @@ void RwD3D8GetRenderState(RwUInt32 state, void* value)
 	*valuePtr = _rwD3D8RenderStates[ 2 * state ];
 }
 
-RwBool RwRenderStateSet(RwRenderState state, void *value)
-{
-	return GTARWSRCGLOBAL(dOpenDevice).fpRenderStateSet( state, value );
-}
-
-
-RwBool RwIm2DRenderLine(RwIm2DVertex *vertices, RwInt32 numVertices, RwInt32 vert1, RwInt32 vert2)
-{
-	return GTARWSRCGLOBAL(dOpenDevice).fpIm2DRenderLine( vertices, numVertices, vert1, vert2 );
-}
-
 RwReal RwIm2DGetNearScreenZ()
 {
-	return GTARWSRCGLOBAL(dOpenDevice).zBufferNear;
+	return RWSRCGLOBAL(dOpenDevice).zBufferNear;
 }
 
 // Unreachable stub
