@@ -25,10 +25,10 @@ auto	SetEditableMaterialsCB = AddressByVersion<RpAtomic*(*)(RpAtomic*,void*)>(0x
 
 void*	(CEntity::*CEntity::orgGetColModel)();
 
-static void ResetEditableMaterials(std::pair<void*,int>* pData)
+static void ResetEditableMaterials(std::pair<void**,void*> pData[], size_t num)
 {
-	for ( auto* i = pData; i->first != nullptr; i++ )
-		*static_cast<int*>(i->first) = i->second;
+	for (size_t i = 0; i < num; ++i)
+		*pData[i].first = pData[i].second;
 }
 
 RpAtomic* ShadowCameraRenderCB(RpAtomic* pAtomic)
@@ -66,8 +66,8 @@ void CObject::Render()
 	if ( m_bDoNotRender || !m_pRwObject )
 		return;
 
-	bool						bCallRestore = false;
-	std::pair<void*,int>		materialRestoreData[16];
+	std::pair<void**,void*> materialRestoreData[256];
+	size_t numMaterialsToRestore = 0;
 
 	RwScopedRenderState cullState(rwRENDERSTATECULLMODE);
 
@@ -83,20 +83,15 @@ void CObject::Render()
 
 		SetEditableMaterialsCB(reinterpret_cast<RpAtomic*>(m_pRwObject), &pData);
 		assert( pData >= std::begin(materialRestoreData) && pData < std::end(materialRestoreData) );
-		pData->first = nullptr;
+		numMaterialsToRestore = std::distance(materialRestoreData, pData);
 
 		// Disable backface culling for the part
 		RwRenderStateSet(rwRENDERSTATECULLMODE, reinterpret_cast<void*>(rwCULLMODECULLNONE));
-
-		bCallRestore = true;
 	}
 
 	CEntity::Render();
 
-	if ( bCallRestore )
-	{
-		ResetEditableMaterials(materialRestoreData);
-	}
+	ResetEditableMaterials(materialRestoreData, numMaterialsToRestore);
 }
 
 extern void (*WorldRemove)(CEntity*);
