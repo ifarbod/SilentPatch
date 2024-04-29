@@ -13,6 +13,7 @@
 #include <array>
 #include <memory>
 #include <Shlwapi.h>
+#include <time.h>
 
 #include "Utils/ModuleList.hpp"
 #include "Utils/Patterns.h"
@@ -57,8 +58,6 @@ DebugMenuAPI gDebugMenuAPI;
 
 static HMODULE		hDLLModule;
 
-static const void*		RosieAudioFix_JumpBack;
-
 static RsGlobalType*	RsGlobal;
 static const void*		SubtitlesShadowFix_JumpBack;
 
@@ -76,17 +75,6 @@ inline float GetHeightMult()
 {
 	static const float&		ResolutionHeightMult = **AddressByVersion<float**>(0x5FA148, 0x5FA168, 0x5F9DA8);
 	return ResolutionHeightMult;
-}
-
-
-void __declspec(naked) RosiesAudioFix()
-{
-	_asm
-	{
-		mov     byte ptr [ebx+0CCh], 0
-		mov     byte ptr [ebx+148h], 0
-		jmp		[RosieAudioFix_JumpBack]
-	}
 }
 
 static bool bGameInFocus = true;
@@ -294,6 +282,21 @@ void __declspec(naked) AutoPilotTimerFix_VC()
 		pop     ebx
 		retn    4
 	}
+}
+
+
+// PS2 implementation of rand()
+static uint64_t seed_rand_ps2 = time(nullptr);
+static int rand_ps2()
+{
+	seed_rand_ps2 = 0x5851F42D4C957F2D * seed_rand_ps2 + 1;
+	return ((seed_rand_ps2 >> 32) & 0x7FFFFFFF);
+}
+
+// PS2 rand, but matching PC's RAND_MAX
+static int rand15_ps2()
+{
+	return rand_ps2() & 0x7FFF;
 }
 
 namespace ZeroAmmoFix
@@ -875,12 +878,9 @@ void Patch_VC_10(uint32_t width, uint32_t height)
 	using namespace Memory::DynBase;
 
 	RsGlobal = *(RsGlobalType**)DynBaseAddress(0x602D32);
-	RosieAudioFix_JumpBack = (void*)DynBaseAddress(0x42BFFE);
 	SubtitlesShadowFix_JumpBack = (void*)DynBaseAddress(0x551701);
 
 	InjectHook(0x5433BD, FixedRefValue);
-
-	InjectHook(0x42BFF7, RosiesAudioFix, HookType::Jump);
 
 	InjectHook(0x5516FC, SubtitlesShadowFix, HookType::Jump);
 	Patch<BYTE>(0x5517C4, 0xD9);
@@ -984,12 +984,9 @@ void Patch_VC_11(uint32_t width, uint32_t height)
 	using namespace Memory::DynBase;
 
 	RsGlobal = *(RsGlobalType**)DynBaseAddress(0x602D12);
-	RosieAudioFix_JumpBack = (void*)DynBaseAddress(0x42BFFE);
 	SubtitlesShadowFix_JumpBack = (void*)DynBaseAddress(0x551721);
 
 	InjectHook(0x5433DD, FixedRefValue);
-
-	InjectHook(0x42BFF7, RosiesAudioFix, HookType::Jump);
 
 	InjectHook(0x55171C, SubtitlesShadowFix, HookType::Jump);
 	Patch<BYTE>(0x5517E4, 0xD9);
@@ -1083,12 +1080,9 @@ void Patch_VC_Steam(uint32_t width, uint32_t height)
 	using namespace Memory::DynBase;
 
 	RsGlobal = *(RsGlobalType**)DynBaseAddress(0x602952);
-	RosieAudioFix_JumpBack = (void*)DynBaseAddress(0x42BFCE);
 	SubtitlesShadowFix_JumpBack = (void*)DynBaseAddress(0x5515F1);
 
 	InjectHook(0x5432AD, FixedRefValue);
-
-	InjectHook(0x42BFC7, RosiesAudioFix, HookType::Jump);
 
 	InjectHook(0x5515EC, SubtitlesShadowFix, HookType::Jump);
 	Patch<BYTE>(0x5516B4, 0xD9);
@@ -1536,6 +1530,14 @@ void Patch_VC_Common()
 		// to include it in the patched routine
 		memmove(isPlayerTargettingChar.get<void>(), isPlayerTargettingChar.get<void>(5), 5);
 		InjectHook(isPlayerTargettingChar.get<void>(5), IsPlayerTargettingChar_ExtraChecks, HookType::Call);
+	}
+
+
+	// Use PS2 randomness for Rosenberg audio to hopefully bring the odds closer to PS2
+	// The functionality was never broken on PC - but the random distribution seemingly made it looks as if it was
+	{
+		auto busted_audio_rand = get_pattern("80 BB 48 01 00 00 00 0F 85 ? ? ? ? E8 ? ? ? ? 25 FF FF 00 00", 13);
+		InjectHook(busted_audio_rand, rand15_ps2);
 	}
 }
 
