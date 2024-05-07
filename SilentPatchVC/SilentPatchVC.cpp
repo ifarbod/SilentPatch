@@ -235,22 +235,6 @@ int NewFrameRender(int nEvent, void* pParam)
 }
 
 
-static signed int& LastTimeFireTruckCreated = **AddressByVersion<int**>(0x429435, 0x429435, 0x429405);
-static signed int& LastTimeAmbulanceCreated = **AddressByVersion<int**>(0x429449, 0x429449, 0x429419);
-static void (*orgCarCtrlReInit)();
-void CarCtrlReInit_SilentPatch()
-{
-	orgCarCtrlReInit();
-	LastTimeFireTruckCreated = 0;
-	LastTimeAmbulanceCreated = 0;
-}
-
-static bool& RespraysAreFree = **AddressByVersion<bool**>(0x430D17, 0x430D17, 0x430CE7);
-void GaragesInit_SilentPatch()
-{
-	RespraysAreFree = false;
-}
-
 static void (*orgPickNextNodeToChaseCar)(void*, float, float, void*);
 static float PickNextNodeToChaseCarZ = 0.0f;
 static void PickNextNodeToChaseCarXYZ( void* vehicle, const CVector& vec, void* chaseTarget )
@@ -686,6 +670,49 @@ namespace IsPlayerTargettingCharFix
 	}
 }
 
+
+// ============= Resetting stats and variables on New Game =============
+namespace VariableResets
+{
+	static auto TimerInitialise = reinterpret_cast<void(*)()>(hook::get_pattern("83 E4 F8 68 ? ? ? ? E8", -6));
+
+	using VarVariant = std::variant< bool*, int* >;
+	std::vector<VarVariant> GameVariablesToReset;
+
+	static void ReInitOurVariables()
+	{
+		for ( const auto& var : GameVariablesToReset )
+		{
+			std::visit( []( auto&& v ) {
+				*v = {};
+				}, var );
+		}
+
+		// Functions that should have been called by the game but aren't...
+		TimerInitialise();
+	}
+
+	template<std::size_t Index>
+	static void (*orgReInitGameObjectVariables)();
+
+	template<std::size_t Index>
+	void ReInitGameObjectVariables()
+	{
+		// First reinit "our" variables in case stock ones rely on those during resetting
+		ReInitOurVariables();
+		orgReInitGameObjectVariables<Index>();
+	}
+	HOOK_EACH_FUNC(ReInitGameObjectVariables, orgReInitGameObjectVariables, ReInitGameObjectVariables);
+
+	static void (*orgGameInitialise)(const char*);
+	void GameInitialise(const char* path)
+	{
+		ReInitOurVariables();
+		orgGameInitialise(path);
+	}
+}
+
+
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -951,14 +978,6 @@ void Patch_VC_10(uint32_t width, uint32_t height)
 	Patch<DWORD>(0x5FDDDB, 0xC5);
 
 
-	// Reinit CCarCtrl fields (firetruck and ambulance generation)
-	ReadCall( 0x4A489B, orgCarCtrlReInit );
-	InjectHook(0x4A489B, CarCtrlReInit_SilentPatch);
-
-
-	// Reinit free resprays flag
-	InjectHook(0x4349BB, GaragesInit_SilentPatch, HookType::Jump);
-
 	// Fixed ammo for melee weapons in cheats
 	Patch<BYTE>(0x4AED14+1, 1); // katana
 	Patch<BYTE>(0x4AEB74+1, 1); // chainsaw
@@ -1056,15 +1075,6 @@ void Patch_VC_11(uint32_t width, uint32_t height)
 	Patch<DWORD>(0x5FDDFB, 0xC5);
 
 
-	// Reinit CCarCtrl fields (firetruck and ambulance generation)
-	ReadCall( 0x4A48BB, orgCarCtrlReInit );
-	InjectHook(0x4A48BB, CarCtrlReInit_SilentPatch);
-
-
-	// Reinit free resprays flag
-	InjectHook(0x4349BB, GaragesInit_SilentPatch, HookType::Jump);
-
-
 	// Fixed ammo for melee weapons in cheats
 	Patch<BYTE>(0x4AED34+1, 1); // katana
 	Patch<BYTE>(0x4AEB94+1, 1); // chainsaw
@@ -1149,15 +1159,6 @@ void Patch_VC_Steam(uint32_t width, uint32_t height)
 
 	// Corrected crime codes
 	Patch<DWORD>(0x5FDA3B, 0xC5);
-
-
-	// Reinit CCarCtrl fields (firetruck and ambulance generation)
-	ReadCall( 0x4A475B, orgCarCtrlReInit );
-	InjectHook(0x4A475B, CarCtrlReInit_SilentPatch);
-
-
-	// Reinit free resprays flag
-	InjectHook(0x43497B, GaragesInit_SilentPatch, HookType::Jump);
 
 
 	// Fixed ammo for melee weapons in cheats
@@ -1538,6 +1539,26 @@ void Patch_VC_Common()
 	{
 		auto busted_audio_rand = get_pattern("80 BB 48 01 00 00 00 0F 85 ? ? ? ? E8 ? ? ? ? 25 FF FF 00 00", 13);
 		InjectHook(busted_audio_rand, rand15_ps2);
+	}
+
+
+	// Reset variables on New Game
+	{
+		using namespace VariableResets;
+
+		auto game_initialise = get_pattern("6A 00 E8 ? ? ? ? 83 C4 0C 68 ? ? ? ? E8 ? ? ? ? 59 C3", 15);
+		std::array<void*, 2> reinit_game_object_variables = {
+			get_pattern("74 05 E8 ? ? ? ? E8 ? ? ? ? 80 3D", 7),
+			get_pattern("C6 05 ? ? ? ? ? E8 ? ? ? ? C7 05", 7)
+		};
+
+		InterceptCall(game_initialise, orgGameInitialise, GameInitialise);
+		HookEach_ReInitGameObjectVariables(reinit_game_object_variables, InterceptCall);
+
+		// Variables to reset
+		GameVariablesToReset.emplace_back(*get_pattern<bool*>("7D 09 80 3D ? ? ? ? ? 74 32", 2 + 2)); // Free resprays
+		GameVariablesToReset.emplace_back(*get_pattern<int*>("7D 78 A1 ? ? ? ? 05", 2 + 1)); // LastTimeAmbulanceCreated
+		GameVariablesToReset.emplace_back(*get_pattern<int*>("A1 ? ? ? ? 05 ? ? ? ? 39 05 ? ? ? ? 0F 86 ? ? ? ? 8B 15", 1)); // LastTimeFireTruckCreated
 	}
 }
 

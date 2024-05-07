@@ -361,16 +361,6 @@ int NewFrameRender(int nEvent, void* pParam)
 	return RsEventHandler(nEvent, pParam);
 }
 
-static signed int& LastTimeFireTruckCreated = **(int**)Memory::DynBaseAddress(0x41D2E5);
-static signed int& LastTimeAmbulanceCreated = **(int**)Memory::DynBaseAddress(0x41D2F9);
-static void (*orgCarCtrlReInit)();
-void CarCtrlReInit_SilentPatch()
-{
-	orgCarCtrlReInit();
-	LastTimeFireTruckCreated = 0;
-	LastTimeAmbulanceCreated = 0;
-}
-
 static void (*orgPickNextNodeToChaseCar)(void*, float, float, void*);
 static float PickNextNodeToChaseCarZ = 0.0f;
 static void PickNextNodeToChaseCarXYZ( void* vehicle, const CVector& vec, void* chaseTarget )
@@ -695,6 +685,49 @@ namespace DodoKeyboardControls
 }
 
 
+// ============= Resetting stats and variables on New Game =============
+namespace VariableResets
+{
+	static auto TimerInitialise = reinterpret_cast<void(*)()>(hook::get_pattern("83 E4 F8 68 ? ? ? ? E8", -6));
+
+	using VarVariant = std::variant< bool*, int* >;
+	std::vector<VarVariant> GameVariablesToReset;
+
+	static void ReInitOurVariables()
+	{
+		for ( const auto& var : GameVariablesToReset )
+		{
+			std::visit( []( auto&& v ) {
+				*v = {};
+				}, var );
+		}
+
+		// Functions that should have been called by the game but aren't...
+		TimerInitialise();
+		PurpleNinesGlitchFix();
+	}
+
+	template<std::size_t Index>
+	static void (*orgReInitGameObjectVariables)();
+
+	template<std::size_t Index>
+	void ReInitGameObjectVariables()
+	{
+		// First reinit "our" variables in case stock ones rely on those during resetting
+		ReInitOurVariables();
+		orgReInitGameObjectVariables<Index>();
+	}
+	HOOK_EACH_FUNC(ReInitGameObjectVariables, orgReInitGameObjectVariables, ReInitGameObjectVariables);
+
+	static void (*orgGameInitialise)(const char*);
+	void GameInitialise(const char* path)
+	{
+		ReInitOurVariables();
+		orgGameInitialise(path);
+	}
+}
+
+
 void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -973,21 +1006,6 @@ void Patch_III_10(uint32_t width, uint32_t height)
 	InjectHook(0x582EFD, NewFrameRender);
 	InjectHook(0x582EA4, GetTimeSinceLastFrame);
 
-	// Reinit CCarCtrl fields (firetruck and ambulance generation)
-	ReadCall( 0x48C4FB, orgCarCtrlReInit );
-	InjectHook(0x48C4FB, CarCtrlReInit_SilentPatch);
-
-
-	// Reinit free resprays flag
-	// add esp, 38h
-	// mov CGarages::RespraysAreFree, 0
-	// retn
-	bool* pFreeResprays = *(bool**)DynBaseAddress(0x4224A4);
-	Patch<BYTE>(0x421E06, 0x38);
-	Patch<WORD>(0x421E07, 0x05C6);
-	Patch<const void*>(0x421E09, pFreeResprays);
-	Patch<BYTE>(0x421E0E, 0xC3);
-
 
 	// Radar blips bounds check
 	InjectHook(0x4A55B2, RadarBoundsCheckCoordBlip, HookType::Jump);
@@ -1106,22 +1124,6 @@ void Patch_III_11(uint32_t width, uint32_t height)
 	InjectHook(0x5831E4, GetTimeSinceLastFrame);
 
 
-	// Reinit CCarCtrl fields (firetruck and ambulance generation)
-	ReadCall( 0x48C5FB, orgCarCtrlReInit );
-	InjectHook(0x48C5FB, CarCtrlReInit_SilentPatch);
-
-
-	// Reinit free resprays flag
-	// add esp, 38h
-	// mov CGarages::RespraysAreFree, 0
-	// retn
-	bool* pFreeResprays = *(bool**)DynBaseAddress(0x4224A4);
-	Patch<BYTE>(0x421E06, 0x38);
-	Patch<WORD>(0x421E07, 0x05C6);
-	Patch<const void*>(0x421E09, pFreeResprays);
-	Patch<BYTE>(0x421E0E, 0xC3);
-
-
 	// Radar blips bounds check
 	InjectHook(0x4A56A2, RadarBoundsCheckCoordBlip, HookType::Jump);
 	InjectHook(0x4A5748, RadarBoundsCheckEntityBlip, HookType::Jump);
@@ -1224,21 +1226,6 @@ void Patch_III_Steam(uint32_t width, uint32_t height)
 	InjectHook(0x58312D, NewFrameRender);
 	InjectHook(0x5830D4, GetTimeSinceLastFrame);
 
-	// Reinit CCarCtrl fields (firetruck and ambulance generation)
-	ReadCall( 0x48C58B, orgCarCtrlReInit );
-	InjectHook(0x48C58B, CarCtrlReInit_SilentPatch);
-
-
-	// Reinit free resprays flag
-	// add esp, 38h
-	// mov CGarages::RespraysAreFree, 0
-	// retn
-	bool* pFreeResprays = *(bool**)DynBaseAddress(0x4224A4);
-	Patch<BYTE>(0x421E06, 0x38);
-	Patch<WORD>(0x421E07, 0x05C6);
-	Patch<const void*>(0x421E09, pFreeResprays);
-	Patch<BYTE>(0x421E0E, 0xC3);
-
 
 	// Radar blips bounds check
 	InjectHook(0x4A5632, RadarBoundsCheckCoordBlip, HookType::Jump);
@@ -1255,11 +1242,6 @@ void Patch_III_Common()
 	using namespace Memory;
 	using namespace hook;
 
-	// Purple Nines Glitch fix
-	{
-		auto addr = get_pattern( "0F BF 4C 24 04 8B 44 24 08 C1 E1 04 89 81", -0xC );
-		InjectHook( addr, PurpleNinesGlitchFix, HookType::Jump );
-	}
 
 	// New timers fix
 	{
@@ -1587,6 +1569,26 @@ void Patch_III_Common()
 
 		bAllDodosCheat = allDodosCheat;
 		InterceptCall(findPlayerVehicle, orgFindPlayerVehicle, FindPlayerVehicle_DodoCheck);
+	}
+
+
+	// Reset variables on New Game
+	{
+		using namespace VariableResets;
+
+		auto game_initialise = get_pattern("6A 00 E8 ? ? ? ? 83 C4 0C 68 ? ? ? ? E8 ? ? ? ? 59 C3", 15);
+		std::array<void*, 2> reinit_game_object_variables = {
+			get_pattern("E8 ? ? ? ? 80 3D ? ? ? ? ? 75 6B"),
+			get_pattern("C6 05 ? ? ? ? ? E8 ? ? ? ? C7 05", 7)
+		};
+
+		InterceptCall(game_initialise, orgGameInitialise, GameInitialise);
+		HookEach_ReInitGameObjectVariables(reinit_game_object_variables, InterceptCall);
+
+		// Variables to reset
+		GameVariablesToReset.emplace_back(*get_pattern<bool*>("80 3D ? ? ? ? ? 74 2A", 2)); // Free resprays
+		GameVariablesToReset.emplace_back(*get_pattern<int*>("7D 72 A1 ? ? ? ? 05", 2 + 1)); // LastTimeAmbulanceCreated
+		GameVariablesToReset.emplace_back(*get_pattern<int*>("74 7F A1 ? ? ? ? 05", 2 + 1)); // LastTimeFireTruckCreated
 	}
 }
 
