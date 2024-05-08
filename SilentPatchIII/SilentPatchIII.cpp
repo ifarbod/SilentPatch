@@ -58,13 +58,12 @@ static void (*DrawRect)(const CRect&,const CRGBA&);
 static int*				InstantHitsFiredByPlayer;
 static const void*		HeadlightsFix_JumpBack;
 
-
-void (__stdcall *AudioResetTimers)(unsigned int);
-
 static bool*			bWantsToDrawHud;
 static bool*			bCamCheck;
 static RsGlobalType*	RsGlobal;
 static const void*		SubtitlesShadowFix_JumpBack;
+
+auto 					WorldRemove = reinterpret_cast<void(*)(void*)>(hook::get_pattern("8A 43 50 56 24 07", -5));
 
 static const float& ResolutionWidthMult = **AddressByVersion<float**>(0x57E956, 0x57ECA6, 0x57EBA6);
 inline float GetWidthMult()
@@ -728,6 +727,44 @@ namespace VariableResets
 }
 
 
+// ============= Clean up the pickup object when reusing a temporary slot =============
+// This has been fixed in VC/SA
+namespace GenerateNewPickup_ReuseObjectFix
+{
+	static void* pPickupObject;
+	static void (*orgGiveUsAPickUpObject)(int);
+
+	__declspec(naked) void GiveUsAPickUpObject_CleanUpObject()
+	{
+		_asm
+		{
+			mov		eax, [pPickupObject]
+			add		eax, ebp
+			mov		eax, [eax]
+			test	eax, eax
+			jz		NoPickup
+			push	edi
+			mov		edi, eax
+
+			push	edi
+			call	[WorldRemove]
+			add		esp, 4
+
+			// Call dtor
+			mov		ecx, edi
+			mov		eax, [edi]
+			push	1
+			call	dword ptr [eax]
+
+			pop		edi
+
+		NoPickup:
+			jmp		[orgGiveUsAPickUpObject]
+		}
+	}
+}
+
+
 void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -912,7 +949,6 @@ void Patch_III_10(uint32_t width, uint32_t height)
 	using namespace Memory::DynBase;
 
 	DrawRect = (void(*)(const CRect&,const CRGBA&))DynBaseAddress(0x51F970);
-	AudioResetTimers = (void(__stdcall*)(unsigned int))DynBaseAddress(0x57CCD0);
 
 	InstantHitsFiredByPlayer = *(int**)DynBaseAddress(0x482C8F);
 	bWantsToDrawHud = *(bool**)DynBaseAddress(0x4A5877);
@@ -1040,7 +1076,6 @@ void Patch_III_11(uint32_t width, uint32_t height)
 	using namespace Memory::DynBase;
 
 	DrawRect = (void(*)(const CRect&,const CRGBA&))DynBaseAddress(0x51FBA0);
-	AudioResetTimers = (void(__stdcall*)(unsigned int))DynBaseAddress(0x57CCC0);
 
 	InstantHitsFiredByPlayer = *(int**)DynBaseAddress(0x482D5F);
 	bWantsToDrawHud = *(bool**)DynBaseAddress(0x4A5967);
@@ -1147,7 +1182,6 @@ void Patch_III_Steam(uint32_t width, uint32_t height)
 	using namespace Memory::DynBase;
 
 	DrawRect = (void(*)(const CRect&,const CRGBA&))DynBaseAddress(0x51FB30);
-	AudioResetTimers = (void(__stdcall*)(unsigned int))DynBaseAddress(0x57CF20);
 
 	InstantHitsFiredByPlayer = *(int**)DynBaseAddress(0x482D5F);
 	bWantsToDrawHud = *(bool**)DynBaseAddress(0x4A58F7);
@@ -1589,6 +1623,17 @@ void Patch_III_Common()
 		GameVariablesToReset.emplace_back(*get_pattern<bool*>("80 3D ? ? ? ? ? 74 2A", 2)); // Free resprays
 		GameVariablesToReset.emplace_back(*get_pattern<int*>("7D 72 A1 ? ? ? ? 05", 2 + 1)); // LastTimeAmbulanceCreated
 		GameVariablesToReset.emplace_back(*get_pattern<int*>("74 7F A1 ? ? ? ? 05", 2 + 1)); // LastTimeFireTruckCreated
+	}
+
+
+	// Clean up the pickup object when reusing a temporary slot
+	{
+		using namespace GenerateNewPickup_ReuseObjectFix;
+
+		auto give_us_a_pick_up_object = pattern("6A FF E8 ? ? ? ? 89 85").get_one();
+
+		pPickupObject = *give_us_a_pick_up_object.get<void*>(7 + 2);
+		InterceptCall(give_us_a_pick_up_object.get<void>(2), orgGiveUsAPickUpObject, GiveUsAPickUpObject_CleanUpObject);
 	}
 }
 
