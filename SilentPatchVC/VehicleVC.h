@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include "Maths.h"
+#include "TheFLAUtils.h"
 
 enum eVehicleType
 {
@@ -20,7 +21,7 @@ protected:
 	void*		__vmt;
 	CMatrix		m_matrix;
 	uint8_t		__pad4[16];
-	uint16_t	m_modelIndex; // TODO: THE FLA
+	FLAUtils::int16 m_modelIndex;
 	void*		m_pFirstReference;
 	int32_t		m_audioEntityId; // TODO: This should really be CPhysical
 	uint8_t		__pad5[320];
@@ -36,7 +37,7 @@ protected:
 
 public:
 	int32_t GetModelIndex() const
-		{ return m_modelIndex; }
+		{ return m_modelIndex.Get(); }
 
 	const CMatrix& GetMatrix() const
 		{ return m_matrix; }

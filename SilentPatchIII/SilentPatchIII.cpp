@@ -7,6 +7,7 @@
 #include "Desktop.h"
 #include "VehicleIII.h"
 #include "ModelInfoIII.h"
+#include "TheFLAUtils.h"
 
 #include <array>
 #include <memory>
@@ -925,6 +926,8 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 			InjectHook( match.get<void>( 2 ), &CSimpleModelInfo::SetNearDistanceForLOD_SilentPatch, HookType::Call );
 		}
 	}
+
+	FLAUtils::Init(moduleList);
 }
 
 void InjectDelayedPatches_III_Common()

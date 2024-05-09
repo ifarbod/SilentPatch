@@ -9,6 +9,7 @@
 #include "VehicleVC.h"
 #include "SVF.h"
 #include "RWUtils.hpp"
+#include "TheFLAUtils.h"
 
 #include <array>
 #include <memory>
@@ -882,6 +883,8 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 			}
 		}
 	}
+
+	FLAUtils::Init(moduleList);
 }
 
 void InjectDelayedPatches_VC_Common()

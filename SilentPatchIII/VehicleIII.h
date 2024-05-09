@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include "Maths.h"
+#include "TheFLAUtils.h"
 
 enum eVehicleType
 {
@@ -19,14 +20,14 @@ protected:
 	void*		__vmt;
 	CMatrix		m_matrix;
 	uint8_t		__pad2[16];
-	uint16_t	m_modelIndex; // TODO: THE FLA
+	FLAUtils::int16 m_modelIndex;
 	uint8_t		__pad1[548];
 	uint32_t	m_dwVehicleClass;
 
 
 public:
 	int32_t GetModelIndex() const
-	{ return m_modelIndex; }
+	{ return m_modelIndex.Get(); }
 
 	const CMatrix& GetMatrix() const
 	{ return m_matrix; }
