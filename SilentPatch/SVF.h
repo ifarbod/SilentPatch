@@ -10,6 +10,7 @@ namespace SVF
 
 #if _GTA_III || _GTA_VC
 		TAXI_LIGHT, // Corrected light placement for Taxi
+		SIT_IN_BOAT, // Sitting animation in the boat, used in Speeder
 #endif
 
 #if _GTA_VC

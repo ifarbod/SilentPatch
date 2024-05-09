@@ -8,6 +8,7 @@
 #include "VehicleIII.h"
 #include "ModelInfoIII.h"
 #include "TheFLAUtils.h"
+#include "SVF.h"
 
 #include <array>
 #include <memory>
@@ -762,6 +763,30 @@ namespace GenerateNewPickup_ReuseObjectFix
 		NoPickup:
 			jmp		[orgGiveUsAPickUpObject]
 		}
+	}
+}
+
+
+// ============= Sitting in boat (Speeder), implemented as a special vehicle feature =============
+// Based off SitInBoat from Fire_Head
+namespace SitInBoat
+{
+	static bool bSitInBoat = false;
+	static CVector* (*orgGetPositionToOpenCarDoor)(CVector*, CVehicle*, unsigned int);
+	static CVector* GetPositionToOpenCarDoor_CheckSitInBoat(CVector* out, CVehicle* vehicle, unsigned int type)
+	{
+		bSitInBoat = SVF::ModelHasFeature(vehicle->GetModelIndex(), SVF::Feature::SIT_IN_BOAT);
+		return orgGetPositionToOpenCarDoor(out, vehicle, type);
+	}
+
+	static void* (*orgBlendAnimation)(void*, unsigned int, unsigned int, float);
+	static void* BlendAnimation_SitInBoat(void* clump, unsigned int groupId, unsigned int animationId, float factor)
+	{
+		if (bSitInBoat)
+		{
+			animationId = 0x6F; // ANIMATION_CAR_SIT
+		}
+		return orgBlendAnimation(clump, groupId, animationId, factor);
 	}
 }
 
@@ -1637,6 +1662,19 @@ void Patch_III_Common()
 
 		pPickupObject = *give_us_a_pick_up_object.get<void*>(7 + 2);
 		InterceptCall(give_us_a_pick_up_object.get<void>(2), orgGiveUsAPickUpObject, GiveUsAPickUpObject_CleanUpObject);
+	}
+
+
+	// Sitting in boat (Speeder), implemented as a special vehicle feature
+	// Based off SitInBoat from Fire_Head
+	{
+		using namespace SitInBoat;
+
+		auto get_position_to_open_car_door = get_pattern("E8 ? ? ? ? 8B 93 ? ? ? ? 83 C4 0C");
+		auto blend_animation = get_pattern("6A 7A 6A 00 50 DD D8 E8 ? ? ? ? 83 C4 10", 7);
+
+		InterceptCall(get_position_to_open_car_door, orgGetPositionToOpenCarDoor, GetPositionToOpenCarDoor_CheckSitInBoat);
+		InterceptCall(blend_animation, orgBlendAnimation, BlendAnimation_SitInBoat);
 	}
 }
 

@@ -11,6 +11,7 @@ namespace SVF
 		constexpr std::pair< const char*, Feature > features[] = {
 #if _GTA_III || _GTA_VC
 			{ "TAXI_LIGHT", Feature::TAXI_LIGHT },
+			{ "SIT_IN_BOAT", Feature::SIT_IN_BOAT },
 #endif
 
 #if _GTA_VC
@@ -62,6 +63,7 @@ namespace SVF
 	static std::multimap<int32_t, std::tuple<Feature, int32_t> > specialVehFeatures = {
 #if _GTA_III
 		_registerFeatureInternal( 110, Feature::TAXI_LIGHT ),
+		_registerFeatureInternal( 142, Feature::SIT_IN_BOAT ),
 #elif _GTA_VC
 		_registerFeatureInternal( 147, Feature::FBI_WASHINGTON_SIREN ),
 		_registerFeatureInternal( 150, Feature::TAXI_LIGHT ),
