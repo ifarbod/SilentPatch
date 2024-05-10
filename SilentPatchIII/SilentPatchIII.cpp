@@ -1676,6 +1676,14 @@ void Patch_III_Common()
 		InterceptCall(get_position_to_open_car_door, orgGetPositionToOpenCarDoor, GetPositionToOpenCarDoor_CheckSitInBoat);
 		InterceptCall(blend_animation, orgBlendAnimation, BlendAnimation_SitInBoat);
 	}
+
+
+	// Copy the atomic render CB in CloneAtomicToFrameCB instead of overriding it
+	// Fixes detached limbs rendering the normal and LOD atomics together
+	{
+		auto set_render_cb = get_pattern("55 E8 ? ? ? ? 89 D8 59", 1);
+		Nop(set_render_cb, 5);
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
