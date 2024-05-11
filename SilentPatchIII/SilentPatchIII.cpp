@@ -770,22 +770,49 @@ namespace GenerateNewPickup_ReuseObjectFix
 // Based off SitInBoat from Fire_Head
 namespace SitInBoat
 {
-	static bool bSitInBoat = false;
-	static CVector* (*orgGetPositionToOpenCarDoor)(CVector*, CVehicle*, unsigned int);
-	static CVector* GetPositionToOpenCarDoor_CheckSitInBoat(CVector* out, CVehicle* vehicle, unsigned int type)
+	// We only need a single flag...
+	struct Ped
 	{
-		bSitInBoat = SVF::ModelHasFeature(vehicle->GetModelIndex(), SVF::Feature::SIT_IN_BOAT);
-		return orgGetPositionToOpenCarDoor(out, vehicle, type);
+		std::byte gap[348];
+		bool unused1 : 1;
+		bool unused2 : 1;
+		bool bVehExitWillBeInstant : 1;
+	};
+
+	static bool bSitInBoat = false;
+
+	template<std::size_t Index>
+	static void (__fastcall *orgRegisterReference)(CVehicle* pThis, void*, CVehicle** pReference);
+
+	template<std::size_t Index>
+	static void __fastcall RegisterReference_CheckSitInBoat(CVehicle* pThis, void*, CVehicle** pReference)
+	{
+		bSitInBoat = SVF::ModelHasFeature(pThis->GetModelIndex(), SVF::Feature::SIT_IN_BOAT);
+		orgRegisterReference<Index>(pThis, nullptr, pReference);
 	}
 
+	HOOK_EACH_FUNC(CheckSitInBoat, orgRegisterReference, RegisterReference_CheckSitInBoat);
+
+	template<std::size_t Index>
 	static void* (*orgBlendAnimation)(void*, unsigned int, unsigned int, float);
+
+	template<std::size_t Index>
 	static void* BlendAnimation_SitInBoat(void* clump, unsigned int groupId, unsigned int animationId, float factor)
 	{
 		if (bSitInBoat)
 		{
 			animationId = 0x6F; // ANIMATION_CAR_SIT
 		}
-		return orgBlendAnimation(clump, groupId, animationId, factor);
+		return orgBlendAnimation<Index>(clump, groupId, animationId, factor);
+	}
+
+	HOOK_EACH_FUNC(BlendAnimation, orgBlendAnimation, BlendAnimation_SitInBoat);
+
+	using FinishCB = void(*)(void*, void*);
+	static void __fastcall FinishCallback_CallImmediately(void*, void*, FinishCB cb, Ped* ped)
+	{
+		cb(nullptr, ped);
+		ped->bVehExitWillBeInstant = true;
 	}
 }
 
@@ -1665,15 +1692,25 @@ void Patch_III_Common()
 
 
 	// Sitting in boat (Speeder), implemented as a special vehicle feature
-	// Based off SitInBoat from Fire_Head
+	// Based off SitInBoat from Fire_Head, with extra improvements
 	{
 		using namespace SitInBoat;
 
-		auto get_position_to_open_car_door = get_pattern("E8 ? ? ? ? 8B 93 ? ? ? ? 83 C4 0C");
-		auto blend_animation = get_pattern("6A 7A 6A 00 50 DD D8 E8 ? ? ? ? 83 C4 10", 7);
+		std::array<void*, 2> register_reference = {
+			get_pattern("E8 ? ? ? ? 8B 83 ? ? ? ? FE 80"),
+			get_pattern("E8 ? ? ? ? C7 85 ? ? ? ? ? ? ? ? 8A 45 51 24 FE 88 45 51 8A 85"),
+		};
+		std::array<void*, 2> blend_animation = {
+			get_pattern("6A 7A 6A 00 50 DD D8 E8 ? ? ? ? 83 C4 10", 7),
+			get_pattern("E8 ? ? ? ? 89 85 ? ? ? ? 83 C4 10"),
+		};
+		auto finish_callback = get_pattern("53 68 ? ? ? ? E8 ? ? ? ? 89 D9 E8", 6);
 
-		InterceptCall(get_position_to_open_car_door, orgGetPositionToOpenCarDoor, GetPositionToOpenCarDoor_CheckSitInBoat);
-		InterceptCall(blend_animation, orgBlendAnimation, BlendAnimation_SitInBoat);
+		HookEach_CheckSitInBoat(register_reference, InterceptCall);
+		HookEach_BlendAnimation(blend_animation, InterceptCall);
+
+		// This is intended - we don't actually need the original SetFinishCallback, only its parameters!
+		InjectHook(finish_callback, FinishCallback_CallImmediately);
 	}
 
 
