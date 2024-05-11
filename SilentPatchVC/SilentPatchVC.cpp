@@ -1563,6 +1563,30 @@ void Patch_VC_Common()
 		GameVariablesToReset.emplace_back(*get_pattern<int*>("7D 78 A1 ? ? ? ? 05", 2 + 1)); // LastTimeAmbulanceCreated
 		GameVariablesToReset.emplace_back(*get_pattern<int*>("A1 ? ? ? ? 05 ? ? ? ? 39 05 ? ? ? ? 0F 86 ? ? ? ? 8B 15", 1)); // LastTimeFireTruckCreated
 	}
+
+
+	// Ped speech fix
+	// Based off Sergenaur's fix
+	{
+		// Remove the artificial 6s delay between any ped speech samples
+		auto delay_check = pattern("80 BE ? ? ? ? ? 0F 85 ? ? ? ? B9");
+		auto comment_delay_id1 = pattern("0F B7 C2 DD D8 C1 E0 04");
+		auto comment_delay_id2 = pattern("0F B7 95 DA 05 00 00 D9 6C 24 04");
+
+		// Make sure we don't conflict with Sergenaur's fix
+		if (delay_check.count_hint(1).size() == 1 && comment_delay_id1.count_hint(1).size() == 1 && comment_delay_id2.count_hint(1).size() == 1)
+		{
+			Nop(delay_check.get_first<void>(7), 6);
+
+			// movzx eax, dx -> movzx eax, bx
+			Patch(comment_delay_id1.get_first<void>(), { 0x0F, 0xB7, 0xC3 });
+
+			// movzx edx, word ptr [ebp+5DAh] -> movzx edx, bx \ nop
+			auto delay_id2 = comment_delay_id2.get_one();
+			Patch(delay_id2.get<void>(), { 0x0F, 0xB7, 0xD3 });
+			Nop(delay_id2.get<void>(3), 4);
+		}
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
