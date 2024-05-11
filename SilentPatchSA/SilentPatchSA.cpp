@@ -33,6 +33,8 @@
 #include "debugmenu_public.h"
 #include "resource.h"
 
+EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+
 // ============= Mod compatibility stuff =============
 
 namespace ModCompat
@@ -350,10 +352,8 @@ uint32_t&				bDrawCrossHair = **AddressByVersion<uint32_t**>(0x58E7BF + 2, {"83 
 
 DebugMenuAPI gDebugMenuAPI;
 
-
 // Custom variables
 static float		fSunFarClip;
-static HMODULE		hDLLModule;
 static struct
 {
 	char			Extension[8];
@@ -1914,19 +1914,25 @@ namespace MoonphasesFix
 	static void RenderOneXLUSprite_MoonPhases( float arg1, float arg2, float arg3, float arg4, float arg5, uint8_t red, uint8_t green, uint8_t blue, int16_t mult, float arg10, uint8_t alpha, uint8_t arg12, uint8_t arg13 )
 	{
 		static RwTexture*	gpMoonMask = [] () {
-			if ( GetFileAttributesW(L"lunar.png") != INVALID_FILE_ATTRIBUTES )
+			
+			// load from file
+			RwTexture* mask = CPNGFile::ReadFromFile("lunar.png");
+			if (mask == nullptr)
 			{
-				// load from file
-				return CPNGFile::ReadFromFile("lunar.png");
+				const HMODULE module = reinterpret_cast<HMODULE>(&__ImageBase);
+
+				// Load from memory
+				HRSRC resource = FindResource(module, MAKEINTRESOURCE(IDB_LUNAR64), RT_RCDATA);
+				if (resource != nullptr)
+				{
+					HGLOBAL loadedResource = LoadResource(module, resource);
+					if (loadedResource != nullptr)
+					{
+						mask = CPNGFile::ReadFromMemory(LockResource(loadedResource), SizeofResource(module, resource));
+					}
+				}
 			}
-
-			// Load from memory
-			HRSRC resource = FindResource(hDLLModule, MAKEINTRESOURCE(IDB_LUNAR64), RT_RCDATA);
-			assert( resource != nullptr );
-
-			void* pMoonMask = LockResource( LoadResource(hDLLModule, resource) );
-		
-			return CPNGFile::ReadFromMemory(pMoonMask, SizeofResource(hDLLModule, resource));
+			return mask;
 		} ();
 
 		RwScopedRenderState alphaTest( rwRENDERSTATEALPHATESTFUNCTION );
@@ -3472,7 +3478,7 @@ BOOL InjectDelayedPatches_10()
 
 		// Obtain a path to the ASI
 		wchar_t			wcModulePath[MAX_PATH];
-		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
+		GetModuleFileNameW(reinterpret_cast<HMODULE>(&__ImageBase), wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
 		const ModuleList moduleList;
@@ -3937,7 +3943,7 @@ BOOL InjectDelayedPatches_11()
 
 		// Obtain a path to the ASI
 		wchar_t			wcModulePath[MAX_PATH];
-		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
+		GetModuleFileNameW(reinterpret_cast<HMODULE>(&__ImageBase), wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
 		const ModuleList moduleList;
@@ -4112,7 +4118,7 @@ BOOL InjectDelayedPatches_Steam()
 
 		// Obtain a path to the ASI
 		wchar_t			wcModulePath[MAX_PATH];
-		GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
+		GetModuleFileNameW(reinterpret_cast<HMODULE>(&__ImageBase), wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 		PathRenameExtensionW(wcModulePath, L".ini");
 
 		const ModuleList moduleList;
@@ -7134,8 +7140,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 	if ( fdwReason == DLL_PROCESS_ATTACH )
 	{
-		hDLLModule = hinstDLL;
-
 		const HINSTANCE hInstance = GetModuleHandle( nullptr );
 		std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( hInstance, ".text" );
 		ScopedUnprotect::Section Protect2( hInstance, ".rdata" );

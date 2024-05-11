@@ -12,8 +12,6 @@ private:
 	uint8_t			__pad[0xDC];
 
 public:
-	CPlayerInfo& operator=( const CPlayerInfo& rhs );
-
 	CPlayerPed*		GetPlayerPed() const { return m_pPed; }
 	CVehicle*		GetControlledVehicle() const { return m_pControlledVehicle; }
 };

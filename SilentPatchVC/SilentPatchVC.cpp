@@ -25,6 +25,8 @@
 
 #pragma comment(lib, "shlwapi.lib")
 
+EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+
 // ============= Mod compatibility stuff =============
 
 namespace ModCompat
@@ -56,8 +58,6 @@ struct RsGlobalType
 };
 
 DebugMenuAPI gDebugMenuAPI;
-
-static HMODULE		hDLLModule;
 
 static RsGlobalType*	RsGlobal;
 static const void*		SubtitlesShadowFix_JumpBack;
@@ -893,7 +893,7 @@ void InjectDelayedPatches_VC_Common()
 
 	// Obtain a path to the ASI
 	wchar_t			wcModulePath[MAX_PATH];
-	GetModuleFileNameW(hDLLModule, wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
+	GetModuleFileNameW(reinterpret_cast<HMODULE>(&__ImageBase), wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
 	PathRenameExtensionW(wcModulePath, L".ini");
 
 	const bool hasDebugMenu = DebugMenuLoad();
@@ -1572,8 +1572,6 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
 	if ( fdwReason == DLL_PROCESS_ATTACH )
 	{
-		hDLLModule = hinstDLL;
-
 		const auto [width, height] = GetDesktopResolution();
 		sprintf_s(aNoDesktopMode, "Cannot find %ux%ux32 video mode", width, height);
 

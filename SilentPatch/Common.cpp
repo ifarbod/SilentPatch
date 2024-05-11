@@ -183,7 +183,7 @@ namespace DelayedPatches
 			if ( Func != nullptr ) Func();
 			// So we don't have to revert patches
 			HMODULE		hDummyHandle;
-			GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN, (LPCTSTR)&Inject_MSS, &hDummyHandle);
+			GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_PIN, TEXT(""), &hDummyHandle);
 		}
 	}
 	const auto pInjectMSS = Inject_MSS;
