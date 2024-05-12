@@ -25,6 +25,28 @@
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
+// ============= Mod compatibility stuff =============
+
+namespace ModCompat
+{
+	// If an old version of III Aircraft is installed, register Skimmer for the "Sit in boat" feature.
+	// If III Aircraft is ever updated, it will start exporting GetBuildNumber and will be expected to register
+	// Skimmer with SilentPatch by itself (in case an update un-hardcodes its ID). For the current builds, do it ourselves.
+	bool IIIAircraftNeedsSkimmerFallback(HMODULE module)
+	{
+		if (module == nullptr) return false; // III Aircraft not installed
+
+		bool bOldModVersion = true;
+
+		auto func = (uint32_t(*)())GetProcAddress(module, "GetBuildNumber");
+		if (func != nullptr)
+		{
+			bOldModVersion = func() < 0x200;
+		}
+		return bOldModVersion;
+	}
+}
+
 struct PsGlobalType
 {
 	HWND	window;
@@ -825,6 +847,7 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 	const ModuleList moduleList;
 
 	const HMODULE skygfxModule = moduleList.Get(L"skygfx");
+	const HMODULE iiiAircraftModule = moduleList.Get(L"IIIAircraft");
 	if (skygfxModule != nullptr)
 	{
 		auto attachCarPipe = reinterpret_cast<void(*)(RwObject*)>(GetProcAddress(skygfxModule, "AttachCarPipeToRwObject"));
@@ -832,6 +855,11 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 		{
 			CVehicleModelInfo::AttachCarPipeToRwObject = attachCarPipe;
 		}
+	}
+
+	if (ModCompat::IIIAircraftNeedsSkimmerFallback(iiiAircraftModule))
+	{
+		SVF::RegisterFeature(156, SVF::Feature::SIT_IN_BOAT);
 	}
 
 	// Locale based metric/imperial system INI/debug menu
