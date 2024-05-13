@@ -1748,6 +1748,21 @@ void Patch_III_Common()
 		auto set_render_cb = get_pattern("55 E8 ? ? ? ? 89 D8 59", 1);
 		Nop(set_render_cb, 5);
 	}
+
+
+	// Fix dark car reflections in the Steam EXE
+	// Based off Sergenaur's fix
+	{
+		auto reflection = pattern("A1 ? ? ? ? 85 C0 74 34");
+		if (reflection.count_hint(1).size() == 1) // This will only pass on the Steam EXE, and if Sergenaur's standalone fix isn't present
+		{
+			auto match = reflection.get_one();
+
+			// xor eax, eax \ nop
+			Patch(match.get<void>(), { 0x31, 0xC0 });
+			Nop(match.get<void>(2), 3);
+		}
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
