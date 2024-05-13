@@ -1763,6 +1763,13 @@ void Patch_III_Common()
 			Nop(match.get<void>(2), 3);
 		}
 	}
+
+
+	// Don't override the color of the FBI car
+	{
+		auto spawn_one_car = get_pattern("83 7C 24 ? ? 75 0E C6 85", 5);
+		Patch<uint8_t>(spawn_one_car, 0xEB);
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
