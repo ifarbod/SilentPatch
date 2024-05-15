@@ -3681,18 +3681,6 @@ BOOL InjectDelayedPatches_10()
 			Nop( 0x4C9239+9, 1 );
 		}
 
-		// Adblocker
-#if DISABLE_FLA_DONATION_WINDOW
-		if (  moduleList.Get(L"$fastman92limitAdjuster") != nullptr )
-		{
-			if ( *(DWORD*)0x748736 != 0xE8186A53 )
-			{
-				Patch<DWORD>(0x748736, 0xE8186A53);
-				InjectHook(AddressByRegion_10<int>(0x748739), 0x619B60);
-			}
-		}
-#endif
-
 		if ( *(DWORD*)0x4065BB == 0x3B0BE1C1 )
 		{
 			// Handle IMGs bigger than 4GB

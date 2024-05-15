@@ -988,16 +988,6 @@ void Patch_VC_10(uint32_t width, uint32_t height)
 	// Fixed crash related to autopilot timing calculations
 	InjectHook(0x418FAE, AutoPilotTimerFix_VC, HookType::Jump);
 
-
-	// Adblocker
-#if DISABLE_FLA_DONATION_WINDOW
-	if ( *(DWORD*)0x5FFAE9 != 0x006A026A )
-	{
-		Patch<DWORD>(0x5FFAE9, 0x006A026A);
-		Patch<WORD>(0x5FFAED, 0x006A);
-	}
-#endif
-
 	Common::Patches::DDraw_VC_10( width, height, aNoDesktopMode );
 }
 

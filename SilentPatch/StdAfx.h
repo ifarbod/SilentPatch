@@ -11,5 +11,3 @@
 #include "Utils/MemoryMgr.h"
 #include "Utils/MemoryMgr.GTA.h"
 #include "Utils/Patterns.h"
-
-#define DISABLE_FLA_DONATION_WINDOW		0

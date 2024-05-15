@@ -34,8 +34,6 @@ RwObject* GetFirstObject(RwFrame* pFrame);
 extern unsigned char& nGameClockDays;
 extern unsigned char& nGameClockMonths;
 
-#define DISABLE_FLA_DONATION_WINDOW		0
-
 #ifdef _DEBUG
 #define MEM_VALIDATORS 1
 #else
