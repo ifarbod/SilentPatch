@@ -41,7 +41,7 @@ namespace ModCompat
 		auto func = (uint32_t(*)())GetProcAddress(module, "GetBuildNumber");
 		if (func != nullptr)
 		{
-			bOldModVersion = func() < 0x200;
+			bOldModVersion = func() <= 0x100;
 		}
 		return bOldModVersion;
 	}
