@@ -208,30 +208,38 @@ namespace Common {
 		void III_VC_Common()
 		{
 			using namespace Memory;
-			using namespace hook;
+			using namespace hook::txn;
 
 			// Delayed patching
+			try
 			{
 				using namespace DelayedPatches;
 
 				auto addr_mssHook = get_pattern( "6A 00 6A 02 6A 10 68 00 7D 00 00", -6 + 2 );
+				auto addr_ualHook = get_pattern( "FF 15 ? ? ? ? 6A 00 6A 18", 0xA );
+
 				OldSetPreference = *static_cast<decltype(OldSetPreference)*>(addr_mssHook);
 				Patch( addr_mssHook, &pInjectMSS );
 
-				auto addr_ualHook = get_pattern( "FF 15 ? ? ? ? 6A 00 6A 18", 0xA );
 				ReadCall( addr_ualHook, RsEventHandler );
 				InjectHook( addr_ualHook, Inject_UAL );
 			}
+			TXN_CATCH();
+
 
 			// Fixed bomb ownership/bombs saving for bikes
+			try
 			{
 				auto addr = get_pattern( "83 3C 33 00 74 19 89 F9 E8", 8 );
 
 				ReadCall( addr, CStoredCar::orgRestoreCar );
 				InjectHook( addr, &CStoredCar::RestoreCar_SilentPatch );
 			}
+			TXN_CATCH();
+
 
 			// Fixed handling.cfg name matching (names don't need unique prefixes anymore)
+			try
 			{
 				using namespace HandlingNameLoadFix;
 
@@ -240,9 +248,11 @@ namespace Common {
 				InjectHook( findExactWord.get<void>( -5 ), strncpy_Fix );
 				InjectHook( findExactWord.get<void>( 0xD ), strncmp_Fix );
 			}
+			TXN_CATCH();
 
 
 			// Fixed corona lines rendering on non-nvidia cards
+			try
 			{
 				using namespace CoronaLinesFix;
 	
@@ -250,9 +260,11 @@ namespace Common {
 
 				InterceptCall(renderLine, orgRwIm2DRenderLine, RenderLine_SetRecipZ);
 			}
+			TXN_CATCH();
 
 
 			// Fixed static shadows not rendering under fire and pickups
+			try
 			{
 				using namespace StaticShadowAlphaFix;
 
@@ -281,9 +293,11 @@ namespace Common {
 				HookEach_StoreAlphaTest(disableAlphaTestAndSetState, InterceptCall);
 				HookEach_RestoreAlphaTest(setStateAndReenableAlphaTest, InterceptCall);
 			}
+			TXN_CATCH();
 
 
 			// Reset requested extras if created vehicle has no extras
+			try
 			{
 				using namespace CompsToUseFix;
 
@@ -291,10 +305,12 @@ namespace Common {
 				InjectHook( resetComps.get<void>( -14 ), ResetCompsForNoExtras, HookType::Call );
 				Nop( resetComps.get<void>( -9 ), 9 );
 			}
+			TXN_CATCH();
 
 
 			// Rescale light switching randomness in CAutomobile::PreRender/CBike::PreRender for PC the randomness range
 			// The original randomness was 50000 out of 65535, which is impossible to hit with PC's 32767 range
+			try
 			{
 				// GTA III expects 2 matches, VC expects 4 due to the addition of CBike::PreRender
 #if _GTA_III
@@ -310,9 +326,11 @@ namespace Common {
 					Patch<const void*>(match.get<void>(2), &LightStatusRandomnessThreshold);
 				});
 			}
+			TXN_CATCH();
 
 
 			// Make script randomness 16-bit, like on PS2
+			try
 			{
 				using namespace Rand16bit;
 
@@ -323,6 +341,7 @@ namespace Common {
 
 				HookEach_Rand(rands, InterceptCall);
 			}
+			TXN_CATCH();
 		}
 
 		void III_VC_SetDelayedPatchesFunc( void(*func)() )
@@ -333,24 +352,21 @@ namespace Common {
 		void III_VC_DelayedCommon( bool /*hasDebugMenu*/, const wchar_t* wcModulePath )
 		{
 			using namespace Memory;
-			using namespace hook;
+			using namespace hook::txn;
 
 			ExtraCompSpecularity::ReadExtraCompSpecularityExceptions(wcModulePath);
 
 			// Corrected taxi light placement for Taxi
-			if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableVehicleCoronaFixes", -1, wcModulePath) == 1 )
+			if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableVehicleCoronaFixes", -1, wcModulePath) == 1 ) try
 			{
 				using namespace TaxiCoronaFix;
 
-				auto getTaxiLightPos = pattern( "E8 ? ? ? ? D9 84 24 ? ? ? ? D8 84 24 ? ? ? ? 83 C4 0C FF 35" );
+				auto getTaxiLightPos = pattern( "E8 ? ? ? ? D9 84 24 ? ? ? ? D8 84 24 ? ? ? ? 83 C4 0C FF 35" ).get_one();
 
-				if ( getTaxiLightPos.count_hint(1).size() == 1 )
-				{
-					auto match = getTaxiLightPos.get_one();
-					Patch<uint8_t>( match.get<void>( -15 ), 0x55 ); // push eax -> push ebp
-					InjectHook( match.get<void>(), GetTransformedCoronaPos );
-				}
+				Patch<uint8_t>( getTaxiLightPos.get<void>( -15 ), 0x55 ); // push eax -> push ebp
+				InjectHook( getTaxiLightPos.get<void>(), GetTransformedCoronaPos );
 			}
+			TXN_CATCH();
 		}
 	}
 }

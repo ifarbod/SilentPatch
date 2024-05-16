@@ -39,23 +39,35 @@ namespace Common {
 
 	namespace Patches {
 
-		bool FixRwcseg_Patterns()
+		bool FixRwcseg_Patterns() try
 		{
-			using namespace hook;
+			using namespace hook::txn;
 
-			auto begin = pattern( "55 8B EC 50 53 51 52 8B 5D 14 8B 4D 10 8B 45 0C 8B 55 08" );
-			auto end = pattern( "9B D9 3D ? ? ? ? 81 25 ? ? ? ? FF FC FF FF 83 0D ? ? ? ? 3F" );
+			// _rwcseg can be placed far after the code section, and the default pattern heuristics currently break with it
+			// (it's only using SizeOfCode instead of scanning all code sections).
+			// To fix this, explicitly scan the entire module
+			const uintptr_t module = reinterpret_cast<uintptr_t>(GetModuleHandle(nullptr));
+			PIMAGE_DOS_HEADER dosHeader = reinterpret_cast<PIMAGE_DOS_HEADER>(module);
+			PIMAGE_NT_HEADERS ntHeader = reinterpret_cast<PIMAGE_NT_HEADERS>(module + dosHeader->e_lfanew);
 
-			if ( begin.count_hint(1).size() == 1 && end.count_hint(1).size() == 1 )
+			const uintptr_t sizeOfHeaders = ntHeader->OptionalHeader.SizeOfHeaders;
+			const uintptr_t moduleBegin = module + sizeOfHeaders;
+			const uintptr_t moduleEnd = module + (ntHeader->OptionalHeader.SizeOfImage - sizeOfHeaders);
+
+			auto begin = make_range_pattern(moduleBegin, moduleEnd, "55 8B EC 50 53 51 52 8B 5D 14 8B 4D 10 8B 45 0C 8B 55 08").get_first<void>();
+			auto end = make_range_pattern(moduleBegin, moduleEnd, "9B D9 3D ? ? ? ? 81 25 ? ? ? ? FF FC FF FF 83 0D ? ? ? ? 3F").get_first<void>(31);
+
+			const ptrdiff_t size = reinterpret_cast<uintptr_t>(end) - reinterpret_cast<uintptr_t>(begin);
+			if ( size > 0 )
 			{
-				const ptrdiff_t size = (intptr_t)end.get_first( 24 ) - (intptr_t)begin.get_first();
-				if ( size > 0 )
-				{
-					DWORD dwProtect;
-					VirtualProtect( begin.get_first(), size, PAGE_EXECUTE_READ, &dwProtect );
-					return true;
-				}
+				DWORD dwProtect;
+				VirtualProtect( begin, size, PAGE_EXECUTE_READ, &dwProtect );
+				return true;
 			}
+			return false;
+		}
+		catch (const hook::txn_exception&)
+		{
 			return false;
 		}
 
@@ -207,38 +219,34 @@ namespace Common {
 		void DDraw_Common()
 		{
 			using namespace Memory;
-			using namespace hook;
+			using namespace hook::txn;
 
 			// Remove FILE_FLAG_NO_BUFFERING from CdStreams
+			try
 			{
-				auto mem = pattern( "81 7C 24 04 00 08 00 00" ).count_hint(1);
-				if ( mem.size() == 1 )
-				{
-					Patch<uint8_t>( mem.get_first( 0x12 ), 0xEB );
-				}
+				auto mem = get_pattern("81 7C 24 04 00 08 00 00", 0x12);
+				Patch<uint8_t>( mem, 0xEB );
 			}
+			TXN_CATCH();
 
 
 			// No censorships
+			try
 			{
-				auto addr = pattern( "83 FB 07 74 0A 83 FD 07 74 05 83 FE 07 75 15" ).count_hint(1);
-				if ( addr.size() == 1 )
-				{
-					Patch( addr.get_first(), { 0xEB, 0x5E } );
-				}
-			
+				auto addr = get_pattern( "83 FB 07 74 0A 83 FD 07 74 05 83 FE 07 75 15" );
+				Patch( addr, { 0xEB, 0x5E } );	
 			}
+			TXN_CATCH();
 
 			// unnamed CdStream semaphore
+			try
 			{
-				auto mem = pattern( "8D 04 85 00 00 00 00 50 6A 40 FF 15" ).count_hint(1);
-				if ( mem.size() == 1 )
-				{
-					Patch( mem.get_first( 0x25 ), { 0x6A, 0x00 } ); // push 0 \ nop
-					Nop( mem.get_first( 0x25 + 2 ), 3 );
-				}
-			
+				auto mem = pattern( "8D 04 85 00 00 00 00 50 6A 40 FF 15" ).get_one();
+
+				Patch( mem.get<void>( 0x25 ), { 0x6A, 0x00 } ); // push 0 \ nop
+				Nop( mem.get<void>( 0x25 + 2 ), 3 );			
 			}
+			TXN_CATCH();
 		}
 	}
 }

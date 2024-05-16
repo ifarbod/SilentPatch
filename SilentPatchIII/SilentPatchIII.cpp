@@ -842,7 +842,7 @@ namespace SitInBoat
 void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
-	using namespace hook;
+	using namespace hook::txn;
 
 	const ModuleList moduleList;
 
@@ -876,135 +876,124 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 	}
 
 	// Make crane be unable to lift Coach instead of Blista
+	try
 	{
 		// There is a possible incompatibility with limit adjusters, so patch it in a delayed hook point and gracefully handle failure
-		auto canPickBlista = pattern( "83 FA 66 74" ).count_hint(1);
-		if ( canPickBlista.size() == 1 )
-		{
-			Patch<int8_t>( canPickBlista.get_first<void>( 2 ), 127 ); // coach
-		}
+		auto canPickBlista = get_pattern("83 FA 66 74", 2);
+		Patch<int8_t>( canPickBlista, 127 ); // coach
 	}
+	TXN_CATCH();
 
 
 	// Corrected siren corona placement for emergency vehicles
 	if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableVehicleCoronaFixes", -1, wcModulePath) == 1 )
 	{
 		// Other mods might be touching it, so only patch specific vehicles if their code has not been touched at all
+		try
 		{
-			auto firetruckX1 = pattern( "C7 84 24 9C 05 00 00 CD CC 8C 3F" );
-			auto firetruckY1 = pattern( "C7 84 24 A4 05 00 00 9A 99 D9 3F" );
-			auto firetruckZ1 = pattern( "C7 84 24 A8 05 00 00 00 00 00 40" );
+			auto firetruckX1 = get_pattern("C7 84 24 9C 05 00 00 CD CC 8C 3F", 7);
+			auto firetruckY1 = get_pattern("C7 84 24 A4 05 00 00 9A 99 D9 3F", 7);
+			auto firetruckZ1 = get_pattern("C7 84 24 A8 05 00 00 00 00 00 40", 7);
 
-			auto firetruckX2 = pattern( "C7 84 24 A8 05 00 00 CD CC 8C BF" );
-			auto firetruckY2 = pattern( "C7 84 24 B0 05 00 00 9A 99 D9 3F" );
-			auto firetruckZ2 = pattern( "C7 84 24 B4 05 00 00 00 00 00 40" );
+			auto firetruckX2 = get_pattern("C7 84 24 A8 05 00 00 CD CC 8C BF", 7);
+			auto firetruckY2 = get_pattern("C7 84 24 B0 05 00 00 9A 99 D9 3F", 7);
+			auto firetruckZ2 = get_pattern("C7 84 24 B4 05 00 00 00 00 00 40", 7);
 
-			if ( firetruckX1.count_hint(1).size() == 1 && firetruckY1.count_hint(1).size() == 1 && firetruckZ1.count_hint(1).size() == 1 &&
-				firetruckX2.count_hint(1).size() == 1 && firetruckY2.count_hint(1).size() == 1 && firetruckZ2.count_hint(1).size() == 1 )
-			{
-				constexpr CVector FIRETRUCK_SIREN_POS(0.95f, 3.2f, 1.4f);
+			constexpr CVector FIRETRUCK_SIREN_POS(0.95f, 3.2f, 1.4f);
 
-				Patch<float>( firetruckX1.get_first( 7 ), FIRETRUCK_SIREN_POS.x );
-				Patch<float>( firetruckY1.get_first( 7 ), FIRETRUCK_SIREN_POS.y );
-				Patch<float>( firetruckZ1.get_first( 7 ), FIRETRUCK_SIREN_POS.z );
+			Patch<float>( firetruckX1, FIRETRUCK_SIREN_POS.x );
+			Patch<float>( firetruckY1, FIRETRUCK_SIREN_POS.y );
+			Patch<float>( firetruckZ1, FIRETRUCK_SIREN_POS.z );
 
-				Patch<float>( firetruckX2.get_first( 7 ), -FIRETRUCK_SIREN_POS.x );
-				Patch<float>( firetruckY2.get_first( 7 ), FIRETRUCK_SIREN_POS.y );
-				Patch<float>( firetruckZ2.get_first( 7 ), FIRETRUCK_SIREN_POS.z );
-			}
+			Patch<float>( firetruckX2, -FIRETRUCK_SIREN_POS.x );
+			Patch<float>( firetruckY2, FIRETRUCK_SIREN_POS.y );
+			Patch<float>( firetruckZ2, FIRETRUCK_SIREN_POS.z );
 		}
+		TXN_CATCH();
+
+		try
 		{
-			auto ambulanceX1 = pattern( "C7 84 24 84 05 00 00 CD CC 8C 3F" );
-			auto ambulanceY1 = pattern( "C7 84 24 8C 05 00 00 66 66 66 3F" );
-			auto ambulanceZ1 = pattern( "C7 84 24 90 05 00 00 CD CC CC 3F" );
+			auto ambulanceX1 = get_pattern("C7 84 24 84 05 00 00 CD CC 8C 3F", 7);
+			auto ambulanceY1 = get_pattern("C7 84 24 8C 05 00 00 66 66 66 3F", 7);
+			auto ambulanceZ1 = get_pattern("C7 84 24 90 05 00 00 CD CC CC 3F", 7);
 
-			auto ambulanceX2 = pattern( "C7 84 24 90 05 00 00 CD CC 8C BF" );
-			auto ambulanceY2 = pattern( "C7 84 24 98 05 00 00 66 66 66 3F" );
-			auto ambulanceZ2 = pattern( "C7 84 24 9C 05 00 00 CD CC CC 3F" );
+			auto ambulanceX2 = get_pattern("C7 84 24 90 05 00 00 CD CC 8C BF", 7);
+			auto ambulanceY2 = get_pattern("C7 84 24 98 05 00 00 66 66 66 3F", 7);
+			auto ambulanceZ2 = get_pattern("C7 84 24 9C 05 00 00 CD CC CC 3F", 7);
 
-			if ( ambulanceX1.count_hint(1).size() == 1 && ambulanceY1.count_hint(1).size() == 1 && ambulanceZ1.count_hint(1).size() == 1 &&
-				ambulanceX2.count_hint(1).size() == 1 && ambulanceY2.count_hint(1).size() == 1 && ambulanceZ2.count_hint(1).size() == 1 )
-			{
-				constexpr CVector AMBULANCE_SIREN_POS(0.7f, 0.65f, 1.55f);
+			constexpr CVector AMBULANCE_SIREN_POS(0.7f, 0.65f, 1.55f);
 
-				Patch<float>( ambulanceX1.get_first( 7 ), AMBULANCE_SIREN_POS.x );
-				Patch<float>( ambulanceY1.get_first( 7 ), AMBULANCE_SIREN_POS.y );
-				Patch<float>( ambulanceZ1.get_first( 7 ), AMBULANCE_SIREN_POS.z );
+			Patch<float>( ambulanceX1, AMBULANCE_SIREN_POS.x );
+			Patch<float>( ambulanceY1, AMBULANCE_SIREN_POS.y );
+			Patch<float>( ambulanceZ1, AMBULANCE_SIREN_POS.z );
 
-				Patch<float>( ambulanceX2.get_first( 7 ), -AMBULANCE_SIREN_POS.x );
-				Patch<float>( ambulanceY2.get_first( 7 ), AMBULANCE_SIREN_POS.y );
-				Patch<float>( ambulanceZ2.get_first( 7 ), AMBULANCE_SIREN_POS.z );
-			}
+			Patch<float>( ambulanceX2, -AMBULANCE_SIREN_POS.x );
+			Patch<float>( ambulanceY2, AMBULANCE_SIREN_POS.y );
+			Patch<float>( ambulanceZ2, AMBULANCE_SIREN_POS.z );
 		}
+		TXN_CATCH();
+
+		try
 		{
-			auto enforcerX1 = pattern( "C7 84 24 6C 05 00 00 CD CC 8C 3F" );
-			auto enforcerY1 = pattern( "C7 84 24 74 05 00 00 CD CC 4C 3F" );
-			auto enforcerZ1 = pattern( "C7 84 24 78 05 00 00 9A 99 99 3F" );
+			auto enforcerX1 = get_pattern("C7 84 24 6C 05 00 00 CD CC 8C 3F", 7);
+			auto enforcerY1 = get_pattern("C7 84 24 74 05 00 00 CD CC 4C 3F", 7);
+			auto enforcerZ1 = get_pattern("C7 84 24 78 05 00 00 9A 99 99 3F", 7);
 
-			auto enforcerX2 = pattern( "C7 84 24 78 05 00 00 CD CC 8C BF" );
-			auto enforcerY2 = pattern( "C7 84 24 80 05 00 00 CD CC 4C 3F" );
-			auto enforcerZ2 = pattern( "C7 84 24 84 05 00 00 9A 99 99 3F" );
+			auto enforcerX2 = get_pattern("C7 84 24 78 05 00 00 CD CC 8C BF", 7);
+			auto enforcerY2 = get_pattern("C7 84 24 80 05 00 00 CD CC 4C 3F", 7);
+			auto enforcerZ2 = get_pattern("C7 84 24 84 05 00 00 9A 99 99 3F", 7);
 
-			if ( enforcerX1.count_hint(1).size() == 1 && enforcerY1.count_hint(1).size() == 1 && enforcerZ1.count_hint(1).size() == 1 &&
-				enforcerX2.count_hint(1).size() == 1 && enforcerY2.count_hint(1).size() == 1 && enforcerZ2.count_hint(1).size() == 1 )
-			{
-				constexpr CVector ENFORCER_SIREN_POS(0.6f, 1.05f, 1.4f);
+			constexpr CVector ENFORCER_SIREN_POS(0.6f, 1.05f, 1.4f);
 
-				Patch<float>( enforcerX1.get_first( 7 ), ENFORCER_SIREN_POS.x );
-				Patch<float>( enforcerY1.get_first( 7 ), ENFORCER_SIREN_POS.y );
-				Patch<float>( enforcerZ1.get_first( 7 ), ENFORCER_SIREN_POS.z );
+			Patch<float>( enforcerX1, ENFORCER_SIREN_POS.x );
+			Patch<float>( enforcerY1, ENFORCER_SIREN_POS.y );
+			Patch<float>( enforcerZ1, ENFORCER_SIREN_POS.z );
 
-				Patch<float>( enforcerX2.get_first( 7 ), -ENFORCER_SIREN_POS.x );
-				Patch<float>( enforcerY2.get_first( 7 ), ENFORCER_SIREN_POS.y );
-				Patch<float>( enforcerZ2.get_first( 7 ), ENFORCER_SIREN_POS.z );
-			}
+			Patch<float>( enforcerX2, -ENFORCER_SIREN_POS.x );
+			Patch<float>( enforcerY2, ENFORCER_SIREN_POS.y );
+			Patch<float>( enforcerZ2, ENFORCER_SIREN_POS.z );
 		}
+		TXN_CATCH();
+
+		try
 		{
-			auto chopper1 = pattern( "C7 44 24 44 00 00 E0 40 50 C7 44 24 4C 00 00 00 00" );	// Front light
+			auto chopper1 = pattern("C7 44 24 44 00 00 E0 40 50 C7 44 24 4C 00 00 00 00").get_one();	// Front light
 
-			if ( chopper1.count_hint(1).size() == 1 )
-			{
-				constexpr CVector CHOPPER_SEARCH_LIGHT_POS(0.0f, 3.0f, -1.25f);
+			constexpr CVector CHOPPER_SEARCH_LIGHT_POS(0.0f, 3.0f, -1.25f);
 
-				auto match = chopper1.get_one();
-
-				Patch( match.get<float>( 4 ), CHOPPER_SEARCH_LIGHT_POS.y );
-				Patch( match.get<float>( 9 + 4 ), CHOPPER_SEARCH_LIGHT_POS.z );
-			}
+			Patch( chopper1.get<float>( 4 ), CHOPPER_SEARCH_LIGHT_POS.y );
+			Patch( chopper1.get<float>( 9 + 4 ), CHOPPER_SEARCH_LIGHT_POS.z );
 		}
+		TXN_CATCH();
 	}
 
 
 	// Corrected FBI Car secondary siren sound
+	try
 	{
 		using namespace SirenSwitchingFix;
 
 		// Other mods might be touching it, so only patch specific vehicles if their code has not been touched at all
-		auto usesSirenSwitching = pattern( "E8 ? ? ? ? 84 C0 74 12 83 C4 08" ).count_hint(1);
-		if ( usesSirenSwitching.size() == 1 )
-		{
-			auto match = usesSirenSwitching.get_one();
-			ReadCall( match.get<void>(), orgUsesSirenSwitching );
-			InjectHook( match.get<void>(), UsesSirenSwitching_FbiCar );
-		}
+		auto usesSirenSwitching = pattern("E8 ? ? ? ? 84 C0 74 12 83 C4 08").get_one();
+
+		InterceptCall(usesSirenSwitching.get<void>(), orgUsesSirenSwitching, UsesSirenSwitching_FbiCar);
 	}
+	TXN_CATCH();
 
 
 	// Corrected CSimpleModelInfo::SetupBigBuilding minimum draw distance for big buildings without a matching model
 	// Fixes cranes in Portland and bright windows in the city
 	// By aap
+	try
 	{
-		auto setupMinDist = pattern( "C7 43 44 00 00 C8 42" ).count_hint(1);
-		if ( setupMinDist.size() == 1 ) // In case of another mod or second instance of SP changing it
-		{
-			auto match = setupMinDist.get_one();
+		auto setupMinDist = pattern("C7 43 44 00 00 C8 42").get_one();
 
-			// mov ecx, ebx
-			// call CSimpleModelInfo::SetNearDistanceForLOD
-			Patch( match.get<void>(), { 0x89, 0xD9 } );
-			InjectHook( match.get<void>( 2 ), &CSimpleModelInfo::SetNearDistanceForLOD_SilentPatch, HookType::Call );
-		}
+		// mov ecx, ebx
+		// call CSimpleModelInfo::SetNearDistanceForLOD
+		Patch( setupMinDist.get<void>(), { 0x89, 0xD9 } );
+		InjectHook( setupMinDist.get<void>( 2 ), &CSimpleModelInfo::SetNearDistanceForLOD_SilentPatch, HookType::Call );
 	}
+	TXN_CATCH();
 
 	FLAUtils::Init(moduleList);
 }
@@ -1346,10 +1335,11 @@ void Patch_III_Steam(uint32_t width, uint32_t height)
 void Patch_III_Common()
 {
 	using namespace Memory;
-	using namespace hook;
+	using namespace hook::txn;
 
 
 	// New timers fix
+	try
 	{
 		auto hookPoint = pattern( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08" ).get_one();
 		auto jmpPoint = get_pattern( "DD D8 E9 37 FF FF FF DD D8" );
@@ -1357,8 +1347,11 @@ void Patch_III_Common()
 		InjectHook( hookPoint.get<void>( 0x21 ), CTimer::Update_SilentPatch, HookType::Call );
 		InjectHook( hookPoint.get<void>( 0x21 + 5 ), jmpPoint, HookType::Jump );
 	}
+	TXN_CATCH();
+
 
 	// Alt+F4
+	try
 	{
 		auto addr = pattern( "59 59 31 C0 83 C4 48 5D 5F 5E 5B C2 10 00" ).count(2);
 		auto dest = get_pattern( "53 55 56 FF 74 24 68 FF 15" );
@@ -1367,8 +1360,11 @@ void Patch_III_Common()
 			InjectHook( match.get<void>( 2 ), dest, HookType::Jump );
 		});
 	}
+	TXN_CATCH();
+
 
 	// Proper panels damage
+	try
 	{
 		auto addr = pattern( "C6 43 09 03 C6 43 0A 03 C6 43 0B 03" ).get_one();
 
@@ -1376,8 +1372,11 @@ void Patch_III_Common()
 		Patch<uint8_t>( addr.get<void>( 0x23 + 1 ), 6 );
 		Nop( addr.get<void>( 0x3F ), 7 );
 	}
+	TXN_CATCH();
+
 
 	// Proper metric-imperial conversion constants
+	try
 	{
 		static const float METERS_TO_MILES = 0.0006213711922f;
 		static const float METERS_TO_FEET = 3.280839895f;
@@ -1389,8 +1388,11 @@ void Patch_III_Common()
 		Patch<const void*>( addr.get(2).get<void>( 2 ), &METERS_TO_FEET );
 		Patch<const void*>( addr.get(3).get<void>( 2 ), &METERS_TO_FEET );
 	}
+	TXN_CATCH();
+
 
 	// Improved pathfinding in PickNextNodeAccordingStrategy - PickNextNodeToChaseCar with XYZ coords
+	try
 	{
 		auto addr = pattern( "E8 ? ? ? ? 50 8D 44 24 10 50 E8" ).get_one();
 		ReadCall( addr.get<void>( 0x25 ), orgPickNextNodeToChaseCar );
@@ -1421,25 +1423,31 @@ void Patch_III_Common()
 		// Uncomment this to get rid of "treadable hack" in CCarCtrl::PickNextNodeToChaseCar (to mirror VC behaviour)
 		InjectHook( funcAddr + 0x2A, funcAddr + 0x182, HookType::Jump );
 	}
+	TXN_CATCH();
 
 
 	// No censorships
+	try
 	{
 		auto addr = get_pattern( "8B 15 ? ? ? ? C6 05 ? ? ? ? 00 89 D0" );
 		Patch( addr, { 0x83, 0xC4, 0x08, 0xC3 } );	// add     esp, 8 \ retn
 	}
+	TXN_CATCH();
 
 
 	// 014C cargen counter fix (by spaceeinstein)
+	try
 	{
 		auto do_processing = pattern( "0F B7 45 28 83 F8 FF 7D 04 66 FF 4D 28" ).get_one();
 
 		Patch<uint8_t>( do_processing.get<uint8_t*>(1), 0xBF ); // movzx   eax, word ptr [ebx+28h] -> movsx   eax, word ptr [ebx+28h]
 		Patch<uint8_t>( do_processing.get<uint8_t*>(7), 0x74 ); // jge -> jz
 	}
+	TXN_CATCH();
 
 
 	// Fixed ammo from SCM
+	try
 	{
 		using namespace ZeroAmmoFix;
 
@@ -1449,9 +1457,11 @@ void Patch_III_Common()
 		};
 		HookEach_GiveWeapon(give_weapon, InterceptCall);
 	}
+	TXN_CATCH();
 
 
 	// Credits =)
+	try
 	{
 		auto renderCredits = pattern( "83 C4 14 8D 45 F4 50 FF 35 ? ? ? ? E8 ? ? ? ? 59 59 8D 45 F4 50 FF 35 ? ? ? ? E8 ? ? ? ? 59 59 E8" ).get_one();
 
@@ -1459,9 +1469,11 @@ void Patch_III_Common()
 		ReadCall( renderCredits.get<void>( -5 ), Credits::PrintCreditText_Hooked );
 		InjectHook( renderCredits.get<void>( -5 ), Credits::PrintSPCredits );
 	}
+	TXN_CATCH();
 
 
 	// Decreased keyboard input latency
+	try
 	{
 		using namespace KeyboardInputFix;
 
@@ -1477,19 +1489,19 @@ void Patch_III_Common()
 		InjectHook( simButtonCheckers, ClearSimButtonPressCheckers );
 		InjectHook( updatePads.get<void>( 10 ), jmpDest, HookType::Jump );
 	}
+	TXN_CATCH();
 
 
 	// Locale based metric/imperial system
+	try
 	{
 		using namespace Localization;
 
 		void* updateCompareFlag = get_pattern( "89 E9 6A 00 E8 ? ? ? ? 30 C0 83 C4 70 5D 5E 5B C2 04 00", 4 );
+		auto constructStatLine = pattern( "FF 24 9D ? ? ? ? 39 D0" ).get_one();
 
 		ReadCall( updateCompareFlag, orgUpdateCompareFlag_IsMetric );
 		InjectHook( updateCompareFlag, UpdateCompareFlag_IsMetric );
-
-		// Stats
-		auto constructStatLine = pattern( "FF 24 9D ? ? ? ? 39 D0" ).get_one();
 
 		// push eax
 		// push edx
@@ -1503,25 +1515,29 @@ void Patch_III_Common()
 		Patch( constructStatLine.get<void>( -0xF + 7 ), { 0x0F, 0xB6, 0xD8, 0x5A, 0x58 } );
 		Nop( constructStatLine.get<void>( -0xF + 12 ), 3 );
 	}
+	TXN_CATCH();
 
 
 	// Add cDMAudio::IsAudioInitialised checks before constructing cAudioScriptObject, like in VC
+	try
 	{
 		using namespace AudioInitializedFix;
 
 		auto processCommands300 = pattern( "E8 ? ? ? ? 85 C0 59 74 ? 89 C1 E8 ? ? ? ? D9 05" ).get_one();
+		auto processCommands300_2 = pattern( "6A 14 E8 ? ? ? ? 89 C3 59 85 DB 74" ).get_one();
+		auto bulletInfoUpdate_Switch = *get_pattern<uintptr_t*>( "FF 24 85 ? ? ? ? 6A 14", 3 );
+		auto playlayOneShotScriptObject = pattern( "6A 14 E8 ? ? ? ? 85 C0 59 74 ? 89 C1 E8 ? ? ? ? D9 03 D9 58 04" ).get_one();
+		auto loadAllAudioScriptObjects = get_pattern( "FF B5 78 FF FF FF E8 ? ? ? ? 59 59 8B 45 C8", 6 );
+
 		ReadCall( processCommands300.get<void>( 0 ), operatorNew );
 
 		InjectHook( processCommands300.get<void>( 0 ), operatorNew_InitializedCheck );
 		Patch<int8_t>( processCommands300.get<void>( 8 + 1 ), 0x440B62 - 0x440B24 );
 
-		auto processCommands300_2 = pattern( "6A 14 E8 ? ? ? ? 89 C3 59 85 DB 74" ).get_one();
 		InjectHook( processCommands300_2.get<void>( 2 ), operatorNew_InitializedCheck );
 		Patch<int8_t>( processCommands300_2.get<void>( 0xC + 1 ), 0x440BD7 - 0x440B8B );
 
 		// We need to patch switch cases 0, 3, 4
-		auto bulletInfoUpdate_Switch = *get_pattern<uintptr_t*>( "FF 24 85 ? ? ? ? 6A 14", 3 );
-
 		const uintptr_t bulletInfoUpdate_0 = bulletInfoUpdate_Switch[0];
 		const uintptr_t bulletInfoUpdate_3 = bulletInfoUpdate_Switch[3];
 		const uintptr_t bulletInfoUpdate_4 = bulletInfoUpdate_Switch[4];
@@ -1535,32 +1551,31 @@ void Patch_III_Common()
 		InjectHook( bulletInfoUpdate_4 + 2, operatorNew_InitializedCheck );
 		Patch<int8_t>( bulletInfoUpdate_4 + 0xA + 1, 0x558C19 - 0x558BE3 );
 
-		auto playlayOneShotScriptObject = pattern( "6A 14 E8 ? ? ? ? 85 C0 59 74 ? 89 C1 E8 ? ? ? ? D9 03 D9 58 04" ).get_one();
 		InjectHook( playlayOneShotScriptObject.get<void>( 2 ), operatorNew_InitializedCheck );
 		Patch<int8_t>( playlayOneShotScriptObject.get<void>( 0xA + 1 ), 0x57C633 - 0x57C601 );
 
-		auto loadAllAudioScriptObjects = get_pattern( "FF B5 78 FF FF FF E8 ? ? ? ? 59 59 8B 45 C8", 6 );
 		ReadCall( loadAllAudioScriptObjects, orgLoadAllAudioScriptObjects );
 		InjectHook( loadAllAudioScriptObjects, LoadAllAudioScriptObjects_InitializedCheck );
 	}
+	TXN_CATCH();
 
 
 	// Give chopper/escape a properly sized collision bounding box instead of using ped's
+	try
 	{
-		auto initHelisPattern = pattern( "C6 40 2C 00 A1" ).count_hint(1);
-		if ( initHelisPattern.size() == 1 )
-		{
-			static constexpr CColModel colModelChopper( CColSphere( 8.5f, CVector(0.0f, -1.75f, 0.73f), 0, 0 ), 
-							CColBox( CVector(-2.18f, -8.52f, -0.67f), CVector(-2.18f, 4.58f, 2.125f), 0, 0 ) );
+		auto initHelis = pattern( "C6 40 2C 00 A1" ).get_one();
 
-			auto initHelis = initHelisPattern.get_one();
-			Patch( initHelis.get<void>( -7 + 3 ), &colModelChopper );
-			Patch( initHelis.get<void>( 9 + 3 ), &colModelChopper );
-		}
+		static constexpr CColModel colModelChopper( CColSphere( 8.5f, CVector(0.0f, -1.75f, 0.73f), 0, 0 ), 
+						CColBox( CVector(-2.18f, -8.52f, -0.67f), CVector(-2.18f, 4.58f, 2.125f), 0, 0 ) );
+
+		Patch( initHelis.get<void>( -7 + 3 ), &colModelChopper );
+		Patch( initHelis.get<void>( 9 + 3 ), &colModelChopper );
 	}
+	TXN_CATCH();
 
 
 	// Fixed vehicles exploding twice if the driver leaves the car while it's exploding
+	try
 	{
 		using namespace RemoveDriverStatusFix;
 
@@ -1581,35 +1596,43 @@ void Patch_III_Common()
 		Nop(processCommands4, 3);
 		Nop(pedSetOutCar, 3);
 	}
+	TXN_CATCH();
 
 
 	// Fixed an inverted condition in CCarCtrl::PickNextNodeRandomly
 	// leading to cars being unable to turn right from one way roads
 	// By Nick007J
+	try
 	{
 		auto pickNodeRandomly = get_pattern("3B 44 24 24 74 09", 4);
 		Patch<uint8_t>(pickNodeRandomly, 0x75);
 	}
+	TXN_CATCH();
 
 
 	// Apply bilinear filtering on the player skin
+	try
 	{
 		using namespace SkinTextureFilter;
 
 		auto getSkinTexture = get_pattern("E8 ? ? ? ? 89 C3 59 55");
 		InterceptCall(getSkinTexture, orgRwTextureCreate, RwTextureCreate_SetLinearFilter);
 	}
+	TXN_CATCH();
 
 
 	// Apply the environment mapping on extra components
+	try
 	{
 		auto setEnvironmentMap = get_pattern("C7 83 D8 01 00 00 00 00 00 00 E8", 10);
 	
 		InterceptCall(setEnvironmentMap, CVehicleModelInfo::orgSetEnvironmentMap, &CVehicleModelInfo::SetEnvironmentMap_ExtraComps);
 	}
+	TXN_CATCH();
 
 
 	// Fix the evasive dive miscalculating the angle, resulting in peds diving towards the vehicle
+	try
 	{
 		using namespace EvasiveDiveFix;
 
@@ -1618,9 +1641,11 @@ void Patch_III_Common()
 		Nop(setEvasiveDive.get<void>(), 1);
 		InjectHook(setEvasiveDive.get<void>(1), &CalculateAngle_Hook, HookType::Call);
 	}
+	TXN_CATCH();
 
 
 	// Fix probabilities in CVehicle::InflictDamage incorrectly assuming a random range from 0 to 100.000
+	try
 	{
 		auto probability_do_nothing = get_pattern("66 81 7E 5A ? ? 73 50", 4);
 		auto probability_flee = get_pattern("0F B7 46 5A 3D ? ? ? ? 0F 8E", 4 + 1);
@@ -1628,9 +1653,11 @@ void Patch_III_Common()
 		Patch<uint16_t>(probability_do_nothing, 35000u * 32767u / 100000u);
 		Patch<uint32_t>(probability_flee, 75000u * 32767u / 100000u);
 	}
+	TXN_CATCH();
 
 
 	// Null terminate read lines in CPlane::LoadPath and CTrain::ReadAndInterpretTrackFile
+	try
 	{
 		using namespace NullTerminatedLines;
 
@@ -1648,25 +1675,26 @@ void Patch_III_Common()
 		Nop(readTrackFile2.get<void>(), 2);
 		InjectHook(readTrackFile2.get<void>(2), ReadTrackFile_Terminate, HookType::Call);
 	}
+	TXN_CATCH();
 
 
 	// Backport 1.1 Stats menu font fix to 1.0
+	try
 	{
 		using namespace StatsMenuFont;
 
 		// This pattern fails by design on 1.1/Steam
-		auto constructStatLine = pattern("E8 ? ? ? ? D9 05 ? ? ? ? DC 0D ? ? ? ? 89 C7").count_hint(1);
-		if (constructStatLine.size() == 1)
-		{
-			auto setFontStyle = get_pattern("6A 00 E8 ? ? ? ? 83 3D ? ? ? ? ? 59 0F 84", 2);
+		auto constructStatLine = pattern("E8 ? ? ? ? D9 05 ? ? ? ? DC 0D ? ? ? ? 89 C7").get_one();
+		auto setFontStyle = get_pattern("6A 00 E8 ? ? ? ? 83 3D ? ? ? ? ? 59 0F 84", 2);
 
-			ReadCall(setFontStyle, orgSetFontStyle);
-			InterceptCall(constructStatLine.get_first<void>(), orgConstructStatLine, ConstructStatLine_SetFontStyle);
-		}
+		ReadCall(setFontStyle, orgSetFontStyle);
+		InterceptCall(constructStatLine.get<void>(), orgConstructStatLine, ConstructStatLine_SetFontStyle);
 	}
+	TXN_CATCH();
 
 
 	// Enable Dodo keyboard controls for all cars when the flying cars cheat is enabled
+	try
 	{
 		using namespace DodoKeyboardControls;
 
@@ -1676,9 +1704,11 @@ void Patch_III_Common()
 		bAllDodosCheat = allDodosCheat;
 		InterceptCall(findPlayerVehicle, orgFindPlayerVehicle, FindPlayerVehicle_DodoCheck);
 	}
+	TXN_CATCH();
 
 
 	// Reset variables on New Game
+	try
 	{
 		using namespace VariableResets;
 
@@ -1696,9 +1726,11 @@ void Patch_III_Common()
 		GameVariablesToReset.emplace_back(*get_pattern<int*>("7D 72 A1 ? ? ? ? 05", 2 + 1)); // LastTimeAmbulanceCreated
 		GameVariablesToReset.emplace_back(*get_pattern<int*>("74 7F A1 ? ? ? ? 05", 2 + 1)); // LastTimeFireTruckCreated
 	}
+	TXN_CATCH();
 
 
 	// Clean up the pickup object when reusing a temporary slot
+	try
 	{
 		using namespace GenerateNewPickup_ReuseObjectFix;
 
@@ -1707,10 +1739,12 @@ void Patch_III_Common()
 		pPickupObject = *give_us_a_pick_up_object.get<void*>(7 + 2);
 		InterceptCall(give_us_a_pick_up_object.get<void>(2), orgGiveUsAPickUpObject, GiveUsAPickUpObject_CleanUpObject);
 	}
+	TXN_CATCH();
 
 
 	// Sitting in boat (Speeder), implemented as a special vehicle feature
 	// Based off SitInBoat from Fire_Head, with extra improvements
+	try
 	{
 		using namespace SitInBoat;
 
@@ -1730,36 +1764,40 @@ void Patch_III_Common()
 		// This is intended - we don't actually need the original SetFinishCallback, only its parameters!
 		InjectHook(finish_callback, FinishCallback_CallImmediately);
 	}
+	TXN_CATCH();
 
 
 	// Copy the atomic render CB in CloneAtomicToFrameCB instead of overriding it
 	// Fixes detached limbs rendering the normal and LOD atomics together
+	try
 	{
 		auto set_render_cb = get_pattern("55 E8 ? ? ? ? 89 D8 59", 1);
 		Nop(set_render_cb, 5);
 	}
+	TXN_CATCH();
 
 
 	// Fix dark car reflections in the Steam EXE
 	// Based off Sergenaur's fix
+	try
 	{
-		auto reflection = pattern("A1 ? ? ? ? 85 C0 74 34");
-		if (reflection.count_hint(1).size() == 1) // This will only pass on the Steam EXE, and if Sergenaur's standalone fix isn't present
-		{
-			auto match = reflection.get_one();
+		// This will only pass on the Steam EXE, and if Sergenaur's standalone fix isn't present
+		auto reflection = pattern("A1 ? ? ? ? 85 C0 74 34").get_one();
 
-			// xor eax, eax \ nop
-			Patch(match.get<void>(), { 0x31, 0xC0 });
-			Nop(match.get<void>(2), 3);
-		}
+		// xor eax, eax \ nop
+		Patch(reflection.get<void>(), { 0x31, 0xC0 });
+		Nop(reflection.get<void>(2), 3);
 	}
+	TXN_CATCH();
 
 
 	// Don't override the color of the FBI car
+	try
 	{
 		auto spawn_one_car = get_pattern("83 7C 24 ? ? 75 0E C6 85", 5);
 		Patch<uint8_t>(spawn_one_car, 0xEB);
 	}
+	TXN_CATCH();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)

@@ -717,7 +717,7 @@ namespace VariableResets
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
-	using namespace hook;
+	using namespace hook::txn;
 
 	const ModuleList moduleList;
 
@@ -749,139 +749,124 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	if ( GetPrivateProfileIntW(L"SilentPatch", L"EnableVehicleCoronaFixes", -1, wcModulePath) == 1 )
 	{
 		// Other mods might be touching it, so only patch specific vehicles if their code has not been touched at all
+		try
 		{
-			auto firetruck1 = pattern( "8D 8C 24 24 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
-			auto firetruck2 = pattern( "8D 8C 24 30 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
+			auto firetruck1 = pattern("8D 8C 24 24 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35").get_one();
+			auto firetruck2 = pattern("8D 8C 24 30 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35").get_one();
 
-			if ( firetruck1.count_hint(1).size() == 1 && firetruck2.count_hint(1).size() == 1 )
-			{
-				static const CVector FIRETRUCK_SIREN_POS(0.95f, 3.2f, 1.4f);
-				static const float FIRETRUCK_SIREN_MINUS_X = -FIRETRUCK_SIREN_POS.x;
+			static const CVector FIRETRUCK_SIREN_POS(0.95f, 3.2f, 1.4f);
+			static const float FIRETRUCK_SIREN_MINUS_X = -FIRETRUCK_SIREN_POS.x;
 
-				auto match1 = firetruck1.get_one();
-				auto match2 = firetruck2.get_one();
+			Patch( firetruck1.get<float*>( 7 + 2 ), &FIRETRUCK_SIREN_POS.z );
+			Patch( firetruck1.get<float*>( 7 + 2 + (6*1) ), &FIRETRUCK_SIREN_POS.y );
+			Patch( firetruck1.get<float*>( 7 + 2 + (6*2) ), &FIRETRUCK_SIREN_POS.x );
 
-				Patch( match1.get<float*>( 7 + 2 ), &FIRETRUCK_SIREN_POS.z );
-				Patch( match1.get<float*>( 7 + 2 + (6*1) ), &FIRETRUCK_SIREN_POS.y );
-				Patch( match1.get<float*>( 7 + 2 + (6*2) ), &FIRETRUCK_SIREN_POS.x );
-
-				Patch( match2.get<float*>( 7 + 2 ), &FIRETRUCK_SIREN_POS.z );
-				Patch( match2.get<float*>( 7 + 2 + (6*1) ), &FIRETRUCK_SIREN_POS.y );
-				Patch( match2.get<float*>( 7 + 2 + (6*2) ), &FIRETRUCK_SIREN_MINUS_X );
-			}
+			Patch( firetruck2.get<float*>( 7 + 2 ), &FIRETRUCK_SIREN_POS.z );
+			Patch( firetruck2.get<float*>( 7 + 2 + (6*1) ), &FIRETRUCK_SIREN_POS.y );
+			Patch( firetruck2.get<float*>( 7 + 2 + (6*2) ), &FIRETRUCK_SIREN_MINUS_X );
 		}
+		TXN_CATCH();
+
+		try
 		{
-			auto ambulan1 = pattern( "8D 8C 24 0C 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
-			auto ambulan2 = pattern( "8D 8C 24 18 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
+			auto ambulan1 = pattern("8D 8C 24 0C 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35").get_one();
+			auto ambulan2 = pattern("8D 8C 24 18 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35").get_one();
 
-			if ( ambulan1.count_hint(1).size() == 1 && ambulan2.count_hint(1).size() == 1 )
-			{
-				static const CVector AMBULANCE_SIREN_POS(0.7f, 0.65f, 1.55f);
-				static const float AMBULANCE_SIREN_MINUS_X = -AMBULANCE_SIREN_POS.x;
+			static const CVector AMBULANCE_SIREN_POS(0.7f, 0.65f, 1.55f);
+			static const float AMBULANCE_SIREN_MINUS_X = -AMBULANCE_SIREN_POS.x;
 
-				auto match1 = ambulan1.get_one();
-				auto match2 = ambulan2.get_one();
+			Patch( ambulan1.get<float*>( 7 + 2 ), &AMBULANCE_SIREN_POS.z );
+			Patch( ambulan1.get<float*>( 7 + 2 + (6*1) ), &AMBULANCE_SIREN_POS.y );
+			Patch( ambulan1.get<float*>( 7 + 2 + (6*2) ), &AMBULANCE_SIREN_POS.x );
 
-				Patch( match1.get<float*>( 7 + 2 ), &AMBULANCE_SIREN_POS.z );
-				Patch( match1.get<float*>( 7 + 2 + (6*1) ), &AMBULANCE_SIREN_POS.y );
-				Patch( match1.get<float*>( 7 + 2 + (6*2) ), &AMBULANCE_SIREN_POS.x );
-
-				Patch( match2.get<float*>( 7 + 2 ), &AMBULANCE_SIREN_POS.z );
-				Patch( match2.get<float*>( 7 + 2 + (6*1) ), &AMBULANCE_SIREN_POS.y );
-				Patch( match2.get<float*>( 7 + 2 + (6*2) ), &AMBULANCE_SIREN_MINUS_X );
-			}
+			Patch( ambulan2.get<float*>( 7 + 2 ), &AMBULANCE_SIREN_POS.z );
+			Patch( ambulan2.get<float*>( 7 + 2 + (6*1) ), &AMBULANCE_SIREN_POS.y );
+			Patch( ambulan2.get<float*>( 7 + 2 + (6*2) ), &AMBULANCE_SIREN_MINUS_X );
 		}
+		TXN_CATCH();
+
+		try
 		{
-			auto police1 = pattern( "8D 8C 24 DC 08 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
-			auto police2 = pattern( "8D 8C 24 E8 08 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
+			auto police1 = pattern("8D 8C 24 DC 08 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35").get_one();
+			auto police2 = pattern("8D 8C 24 E8 08 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35").get_one();
 
-			if ( police1.count_hint(1).size() == 1 && police2.count_hint(1).size() == 1 )
-			{
-				static const CVector POLICE_SIREN_POS(0.55f, -0.4f, 0.95f);
-				static const float POLICE_SIREN_MINUS_X = -POLICE_SIREN_POS.x;
+			static const CVector POLICE_SIREN_POS(0.55f, -0.4f, 0.95f);
+			static const float POLICE_SIREN_MINUS_X = -POLICE_SIREN_POS.x;
 
-				auto match1 = police1.get_one();
-				auto match2 = police2.get_one();
+			Patch( police1.get<float*>( 7 + 2 ), &POLICE_SIREN_POS.z );
+			Patch( police1.get<float*>( 7 + 2 + (6*1) ), &POLICE_SIREN_POS.y );
+			Patch( police1.get<float*>( 7 + 2 + (6*2) ), &POLICE_SIREN_POS.x );
 
-				Patch( match1.get<float*>( 7 + 2 ), &POLICE_SIREN_POS.z );
-				Patch( match1.get<float*>( 7 + 2 + (6*1) ), &POLICE_SIREN_POS.y );
-				Patch( match1.get<float*>( 7 + 2 + (6*2) ), &POLICE_SIREN_POS.x );
-
-				Patch( match2.get<float*>( 7 + 2 ), &POLICE_SIREN_POS.z );
-				Patch( match2.get<float*>( 7 + 2 + (6*1) ), &POLICE_SIREN_POS.y );
-				Patch( match2.get<float*>( 7 + 2 + (6*2) ), &POLICE_SIREN_MINUS_X );
-			}
+			Patch( police2.get<float*>( 7 + 2 ), &POLICE_SIREN_POS.z );
+			Patch( police2.get<float*>( 7 + 2 + (6*1) ), &POLICE_SIREN_POS.y );
+			Patch( police2.get<float*>( 7 + 2 + (6*2) ), &POLICE_SIREN_MINUS_X );
 		}
+		TXN_CATCH();
+
+		try
 		{
-			auto enforcer1 = pattern( "8D 8C 24 F4 08 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
-			auto enforcer2 = pattern( "8D 8C 24 00 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35" );
+			auto enforcer1 = pattern("8D 8C 24 F4 08 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35").get_one();
+			auto enforcer2 = pattern("8D 8C 24 00 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35").get_one();
 
-			if ( enforcer1.count_hint(1).size() == 1 && enforcer2.count_hint(1).size() == 1 )
-			{
-				static const CVector ENFORCER_SIREN_POS(0.6f, 1.05f, 1.4f);
-				static const float ENFORCER_SIREN_MINUS_X = -ENFORCER_SIREN_POS.x;
+			static const CVector ENFORCER_SIREN_POS(0.6f, 1.05f, 1.4f);
+			static const float ENFORCER_SIREN_MINUS_X = -ENFORCER_SIREN_POS.x;
 
-				auto match1 = enforcer1.get_one();
-				auto match2 = enforcer2.get_one();
+			Patch( enforcer1.get<float*>( 7 + 2 ), &ENFORCER_SIREN_POS.z );
+			Patch( enforcer1.get<float*>( 7 + 2 + (6*1) ), &ENFORCER_SIREN_POS.y );
+			Patch( enforcer1.get<float*>( 7 + 2 + (6*2) ), &ENFORCER_SIREN_POS.x );
 
-				Patch( match1.get<float*>( 7 + 2 ), &ENFORCER_SIREN_POS.z );
-				Patch( match1.get<float*>( 7 + 2 + (6*1) ), &ENFORCER_SIREN_POS.y );
-				Patch( match1.get<float*>( 7 + 2 + (6*2) ), &ENFORCER_SIREN_POS.x );
-
-				Patch( match2.get<float*>( 7 + 2 ), &ENFORCER_SIREN_POS.z );
-				Patch( match2.get<float*>( 7 + 2 + (6*1) ), &ENFORCER_SIREN_POS.y );
-				Patch( match2.get<float*>( 7 + 2 + (6*2) ), &ENFORCER_SIREN_MINUS_X );	
-			}
+			Patch( enforcer2.get<float*>( 7 + 2 ), &ENFORCER_SIREN_POS.z );
+			Patch( enforcer2.get<float*>( 7 + 2 + (6*1) ), &ENFORCER_SIREN_POS.y );
+			Patch( enforcer2.get<float*>( 7 + 2 + (6*2) ), &ENFORCER_SIREN_MINUS_X );	
 		}
-		{
-			auto chopper1 = pattern( "C7 44 24 44 00 00 E0 40 50 C7 44 24 4C 00 00 00 00" );	// Front light
-			auto chopper2 = pattern( "C7 44 24 6C 00 00 10 C1 8D 44 24 5C C7 44 24 70 00 00 00 00" );	// Tail light
+		TXN_CATCH();
 
-			if ( chopper1.count_hint(1).size() == 1 )
+		{
+			try
 			{
+				auto chopper1 = pattern("C7 44 24 44 00 00 E0 40 50 C7 44 24 4C 00 00 00 00").get_one();	// Front light
+
 				constexpr CVector CHOPPER_SEARCH_LIGHT_POS(0.0f, 3.0f, -1.0f);	// Same as in III Aircraft (not implemented there yet!)
 
-				auto match = chopper1.get_one();
-
-				Patch( match.get<float>( 4 ), CHOPPER_SEARCH_LIGHT_POS.y );
-				Patch( match.get<float>( 9 + 4 ), CHOPPER_SEARCH_LIGHT_POS.z );
+				Patch( chopper1.get<float>( 4 ), CHOPPER_SEARCH_LIGHT_POS.y );
+				Patch( chopper1.get<float>( 9 + 4 ), CHOPPER_SEARCH_LIGHT_POS.z );
 			}
+			TXN_CATCH();
 
-			if ( chopper2.count_hint(1).size() == 1 )
+			try
 			{
+				auto chopper2 = pattern("C7 44 24 6C 00 00 10 C1 8D 44 24 5C C7 44 24 70 00 00 00 00").get_one();	// Tail light
+
 				constexpr CVector CHOPPER_RED_LIGHT_POS(0.0f, -7.5f, 2.5f);	// Same as in III Aircraft
 
-				auto match = chopper2.get_one();
-
-				Patch( match.get<float>( 4 ), CHOPPER_RED_LIGHT_POS.y );
-				Patch( match.get<float>( 12 + 4 ), CHOPPER_RED_LIGHT_POS.z );
+				Patch( chopper2.get<float>( 4 ), CHOPPER_RED_LIGHT_POS.y );
+				Patch( chopper2.get<float>( 12 + 4 ), CHOPPER_RED_LIGHT_POS.z );
 			}
+			TXN_CATCH();
 		}
+
+		try
 		{
 			using namespace FBISirenCoronaFix;
 
-			auto hasFBISiren = pattern( "83 E9 04 0F 84 87 0A 00 00 83 E9 10" ); // Predicate for showing FBI/Vice Squad siren
-			auto viceCheetah = pattern( "8D 8C 24 CC 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35 ? ? ? ? E8" ); // Siren pos
+			auto viceCheetah = pattern("8D 8C 24 CC 09 00 00 FF 35 ? ? ? ? FF 35 ? ? ? ? FF 35 ? ? ? ? E8").get_one(); // Siren pos
 
-			if ( viceCheetah.count_hint(1).size() == 1 )
+			try
 			{
-				auto match = viceCheetah.get_one();
+				auto hasFBISiren = pattern("83 E9 04 0F 84 87 0A 00 00 83 E9 10").get_one(); // Predicate for showing FBI/Vice Squad siren
 
-				if ( hasFBISiren.count_hint(1).size() == 1 )
-				{
-					auto matchSiren = hasFBISiren.get_one();
+				Patch<uint8_t>( hasFBISiren.get<void>(), 0x55 ); // push ebp
+				InjectHook( hasFBISiren.get<void>( 1 ), SetUpFBISiren, HookType::Call );
+				Patch( hasFBISiren.get<void>( 1 + 5 ), { 0x83, 0xC4, 0x04, 0x84, 0xC0, 0x90 } ); // add esp, 4 / test al, al / nop
 
-					Patch<uint8_t>( matchSiren.get<void>(), 0x55 ); // push ebp
-					InjectHook( matchSiren.get<void>( 1 ), SetUpFBISiren, HookType::Call );
-					Patch( matchSiren.get<void>( 1 + 5 ), { 0x83, 0xC4, 0x04, 0x84, 0xC0, 0x90 } ); // add esp, 4 / test al, al / nop
-
-					InjectHook( match.get<void>( 0x19 ), SetUpVector );
-				}
-
-				static const float VICE_CHEETAH_SIREN_POS_Z = 0.25f;
-				Patch( match.get<float*>( 7 + 2 ), &VICE_CHEETAH_SIREN_POS_Z );
+				InjectHook( viceCheetah.get<void>( 0x19 ), SetUpVector );
 			}
+			TXN_CATCH();
+
+			static const float VICE_CHEETAH_SIREN_POS_Z = 0.25f;
+			Patch( viceCheetah.get<float*>( 7 + 2 ), &VICE_CHEETAH_SIREN_POS_Z );
 		}
+		TXN_CATCH();
 	}
 
 	FLAUtils::Init(moduleList);
@@ -1180,9 +1165,10 @@ void Patch_VC_JP()
 void Patch_VC_Common()
 {
 	using namespace Memory;
-	using namespace hook;
+	using namespace hook::txn;
 
 	// New timers fix
+	try
 	{
 		auto hookPoint = pattern( "83 E4 F8 89 44 24 08 C7 44 24 0C 00 00 00 00 DF 6C 24 08" ).get_one();
 		auto jmpPoint = get_pattern( "DD D8 E9 31 FF FF FF" );
@@ -1190,8 +1176,11 @@ void Patch_VC_Common()
 		InjectHook( hookPoint.get<void>( 0x21 ), CTimer::Update_SilentPatch, HookType::Call );
 		InjectHook( hookPoint.get<void>( 0x21 + 5 ), jmpPoint, HookType::Jump );
 	}
+	TXN_CATCH();
+
 
 	// Alt+F4
+	try
 	{
 		auto addr = pattern( "59 59 31 C0 83 C4 70 5D 5F 5E 5B C2 10 00" ).count(2);
 		auto dest = get_pattern( "53 55 56 FF B4 24 90 00 00 00 FF 15" );
@@ -1200,8 +1189,11 @@ void Patch_VC_Common()
 			InjectHook( match.get<void>( 2 ), dest, HookType::Jump );
 		});
 	}
+	TXN_CATCH();
+
 
 	// Proper panels damage
+	try
 	{
 		auto addr = pattern( "C6 41 09 03 C6 41 0A 03 C6 41 0B 03" ).get_one();
 
@@ -1212,20 +1204,27 @@ void Patch_VC_Common()
 
 		Nop( addr.get<void>( 0x33 ), 7 );
 	}
+	TXN_CATCH();
+
 
 	// Proper metric-imperial conversion constants
+	try
 	{
 		static const float METERS_TO_MILES = 0.0006213711922f;
 		auto addr = pattern( "75 ? D9 05 ? ? ? ? D8 0D ? ? ? ? 6A 00 6A 00 D9 9C 24" ).count(6);
+		auto sum = get_pattern( "D9 9C 24 A8 00 00 00 8D 84 24 A8 00 00 00 50", -6 + 2 );
+
 		addr.for_each_result( [&]( pattern_match match ) {
 			Patch<const void*>( match.get<void>( 0x8 + 2 ), &METERS_TO_MILES );
 		});
 
-		auto sum = get_pattern( "D9 9C 24 A8 00 00 00 8D 84 24 A8 00 00 00 50", -6 + 2 );
 		Patch<const void*>( sum, &METERS_TO_MILES );
 	}
+	TXN_CATCH();
+
 
 	// Improved pathfinding in PickNextNodeAccordingStrategy - PickNextNodeToChaseCar with XYZ coords
+	try
 	{
 		auto addr = pattern( "E8 ? ? ? ? 50 8D 44 24 10 50 E8" ).get_one();
 		ReadCall( addr.get<void>( 0x25 ), orgPickNextNodeToChaseCar );
@@ -1258,25 +1257,31 @@ void Patch_VC_Common()
 		InjectHook( addr.get<void>( 0x46 ), PickNextNodeToChaseCarXYZ );
 		Patch<uint8_t>( addr.get<void>( 0x4B + 2 ), 0xC );
 	}
+	TXN_CATCH();
 
 
 	// No censorships
+	try
 	{
 		auto addr = get_pattern( "8B 43 50 85 C0 8B 53 50 74 2B 83 E8 01" );
 		Patch( addr, { 0x83, 0xC4, 0x08, 0x5B, 0xC3 } );	// add     esp, 8 \ pop ebx \ retn
 	}
+	TXN_CATCH();
 
 
 	// 014C cargen counter fix (by spaceeinstein)
+	try
 	{
 		auto do_processing = pattern( "0F B7 43 28 83 F8 FF 7D 04 66 FF 4B 28" ).get_one();
 
 		Patch<uint8_t>( do_processing.get<uint8_t*>(1), 0xBF ); // movzx   eax, word ptr [ebx+28h] -> movsx   eax, word ptr [ebx+28h]
 		Patch<uint8_t>( do_processing.get<uint8_t*>(7), 0x74 ); // jge -> jz
 	}
+	TXN_CATCH();
 
 
 	// Fixed ammo from SCM
+	try
 	{
 		using namespace ZeroAmmoFix;
 
@@ -1286,16 +1291,20 @@ void Patch_VC_Common()
 		};
 		HookEach_GiveWeapon(give_weapon, InterceptCall);
 	}
+	TXN_CATCH();
 
 
 	// Extras working correctly on bikes
+	try
 	{
 		auto createInstance = get_pattern( "89 C1 8B 41 04" );
 		InjectHook( createInstance, CreateInstance_BikeFix, HookType::Call );
 	}
+	TXN_CATCH();
 
 
 	// Credits =)
+	try
 	{
 		auto renderCredits = pattern( "8D 44 24 28 83 C4 14 50 FF 35 ? ? ? ? E8 ? ? ? ? 8D 44 24 1C 59 59 50 FF 35 ? ? ? ? E8 ? ? ? ? 59 59" ).get_one();
 
@@ -1303,9 +1312,11 @@ void Patch_VC_Common()
 		ReadCall( renderCredits.get<void>( -5 ), Credits::PrintCreditText_Hooked );
 		InjectHook( renderCredits.get<void>( -5 ), Credits::PrintSPCredits );
 	}
+	TXN_CATCH();
 
 
 	// Decreased keyboard input latency
+	try
 	{
 		using namespace KeyboardInputFix;
 
@@ -1321,42 +1332,44 @@ void Patch_VC_Common()
 		InjectHook( simButtonCheckers, ClearSimButtonPressCheckers );
 		InjectHook( updatePads.get<void>( 9 ), jmpDest, HookType::Jump );
 	}
+	TXN_CATCH();
 
 
 	// Locale based metric/imperial system
+	try
 	{
 		using namespace Localization;
 
 		void* updateCompareFlag = get_pattern( "89 D9 6A 00 E8 ? ? ? ? 30 C0 83 C4 70 5D 5F 5E 5B C2 04 00", 4 );
+		auto constructStatLine = pattern( "85 C0 74 11 83 E8 01 83 F8 03" ).get_one();
 
 		ReadCall( updateCompareFlag, orgUpdateCompareFlag_IsMetric );
 		InjectHook( updateCompareFlag, UpdateCompareFlag_IsMetric );
 
 		// Stats
-		auto constructStatLine = pattern( "85 C0 74 11 83 E8 01 83 F8 03" ).get_one();
-
 		Nop( constructStatLine.get<void>( -11 ), 1 );
 		InjectHook( constructStatLine.get<void>( -11 + 1 ), PrefsLanguage_IsMetric, HookType::Call );
 		Nop( constructStatLine.get<void>( -2 ), 2 );
 	}
+	TXN_CATCH();
 
 
 	// Corrected FBI Washington sirens sound
 	// Primary siren lower pitched like in FBI Rancher and secondary siren higher pitched
+	try
 	{
 		using namespace SirenSwitchingFix;
 
 		// Other mods might be touching it, so only patch specific vehicles if their code has not been touched at all
-		auto sirenPitch = pattern( "83 F8 17 74 32" ).count_hint(1);
-		if ( sirenPitch.size() == 1 )
+		auto sirenPitch = pattern( "83 F8 17 74 32" ).get_one();
+
+		InjectHook( sirenPitch.get<void>( 5 ), IsFBIRanchOrFBICar, HookType::Call );
+		Patch( sirenPitch.get<void>( 5 + 5 ), { 0x84, 0xC0 } ); // test al, al
+		Nop( sirenPitch.get<void>( 5 + 5 + 2 ), 4 );
+
+		// Pitch shift FBI Washington primary siren
+		try
 		{
-			auto match = sirenPitch.get_one();
-
-			InjectHook( match.get<void>( 5 ), IsFBIRanchOrFBICar, HookType::Call );
-			Patch( match.get<void>( 5 + 5 ), { 0x84, 0xC0 } ); // test al, al
-			Nop( match.get<void>( 5 + 5 + 2 ), 4 );
-
-			// Pitch shift FBI Washington primary siren
 			struct tVehicleSampleData {
 				int m_nAccelerationSampleIndex;
 				char m_bEngineSoundType;
@@ -1375,20 +1388,25 @@ void Patch_VC_Common()
 				dataTable[17].m_nSirenOrAlarmFrequency = dataTable[90].m_nSirenOrAlarmFrequency;
 			}
 		}
+		TXN_CATCH();
 	}
+	TXN_CATCH();
 
 
 	// Allow extra6 to be picked with component rule 4 (any)
+	try
 	{
 		void* extraMult6 = get_pattern( "D8 0D ? ? ? ? D9 7C 24 04 8B 44 24 04 80 4C 24 05 0C D9 6C 24 04 89 44 24 04 DB 5C 24 08 D9 6C 24 04 8B 44 24 08 83 C4 10 5D", 2 );
 
 		static const float MULT_6 = 6.0f;
 		Patch( extraMult6, &MULT_6 );
 	}
+	TXN_CATCH();
 
 	
 	// Make drive-by one shot sounds owned by the driver instead of the car
 	// Fixes incorrect weapon sound being used for drive-by
+	try
 	{
 		auto getDriverOneShot = pattern( "FF 35 ? ? ? ? 6A 37 50 E8 ? ? ? ? 83 7E 08 00" ).get_one();
 
@@ -1398,9 +1416,11 @@ void Patch_VC_Common()
 		Patch( getDriverOneShot.get<void>( -8 ), { 0x90, 0x89, 0xD9 } );
 		InjectHook( getDriverOneShot.get<void>( -5 ), &CVehicle::GetOneShotOwnerID_SilentPatch, HookType::Call );
 	}
+	TXN_CATCH();
 
 
 	// Fixed vehicles exploding twice if the driver leaves the car while it's exploding
+	try
 	{
 		using namespace RemoveDriverStatusFix;
 
@@ -1419,9 +1439,11 @@ void Patch_VC_Common()
 		Nop(removeThisPed, 3);
 		Nop(pedSetOutCar, 3);
 	}
+	TXN_CATCH();
 
 
 	// Apply the environment mapping on extra components
+	try
 	{
 		using namespace EnvMapsOnExtras;
 
@@ -1431,17 +1453,21 @@ void Patch_VC_Common()
 		Patch<uint8_t>(forAllAtomics.get<void>(), 0x53);
 		InterceptCall(forAllAtomics.get<void>(1), orgRpClumpForAllAtomics, RpClumpForAllAtomics_ExtraComps);
 	}
+	TXN_CATCH();
 
 
 	// Fix probabilities in CVehicle::InflictDamage incorrectly assuming a random range from 0 to 100.000
+	try
 	{
 		auto probability = get_pattern("66 81 7B 5A ? ? 73 50", 4);
 
 		Patch<uint16_t>(probability, 35000u / 2u);
 	}
+	TXN_CATCH();
 
 
 	// Null terminate read lines in CPlane::LoadPath
+	try
 	{
 		using namespace NullTerminatedLines;
 
@@ -1449,9 +1475,11 @@ void Patch_VC_Common()
 
 		InterceptCall(loadPath, orgSscanf_LoadPath, sscanf1_LoadPath_Terminate);
 	}
+	TXN_CATCH();
 
 
 	// Don't reset mouse sensitivity on New Game
+	try
 	{
 		using namespace MouseSensNewGame;
 
@@ -1464,9 +1492,11 @@ void Patch_VC_Common()
 		Nop(cameraInit.get<void>(20), 10);
 		InterceptCall(setDirMyDocuments, orgSetDirMyDocuments, SetDirMyDocuments_ResetMouse);
 	}
+	TXN_CATCH();
 
 
 	// Fixed pickup effects
+	try
 	{
 		using namespace PickupEffectsFixes;
 
@@ -1479,22 +1509,24 @@ void Patch_VC_Common()
 
 		// Don't spawn the grenade together with the detonator in the pickup
 		// FLA might be altering this due to the usage of 16-bit IDs? Just in case allow for graceful failure
-		auto pickupExtraObject = pattern("75 04 66 8B 70 58").count_hint(1);
-		if (pickupExtraObject.size() == 1)
+		try
 		{
-			auto match = pickupExtraObject.get_one();
+			auto pickupExtraObject = pattern("75 04 66 8B 70 58").get_one();
 
-			Nop(match.get<void>(), 1);
-			InjectHook(match.get<void>(1), &PickUpEffects_GiveUsAnObject, HookType::Call);
+			Nop(pickupExtraObject.get<void>(), 1);
+			InjectHook(pickupExtraObject.get<void>(1), &PickUpEffects_GiveUsAnObject, HookType::Call);
 		}
+		TXN_CATCH();
 
 		InjectHook(bigDollarColor, &PickUpEffects_BigDollarColor, HookType::Call);
 		InjectHook(minigun2Glow, &PickUpEffects_Minigun2Glow, HookType::Call);
 	}
+	TXN_CATCH();
 
 
 	// Fixed the muzzle flash facing the wrong direction
 	// By Wesser
+	try
 	{
 		auto fireInstantHit = pattern("D9 44 24 50 D8 44 24 44").get_one();
 
@@ -1503,11 +1535,13 @@ void Patch_VC_Common()
 		Patch(fireInstantHit.get<void>(15), { 0xD9, 0xEE, 0x90, 0x90 });
 		Patch(fireInstantHit.get<void>(30), { 0xD9, 0xEE, 0x90, 0x90 });
 	}
+	TXN_CATCH();
 
 
 	// Fixed IS_PLAYER_TARGETTING_CHAR incorrectly detecting targetting in Classic controls
 	// when the player is not aiming
 	// By Wesser
+	try
 	{
 		using namespace IsPlayerTargettingCharFix;
 
@@ -1525,17 +1559,21 @@ void Patch_VC_Common()
 		memmove(isPlayerTargettingChar.get<void>(), isPlayerTargettingChar.get<void>(5), 5);
 		InjectHook(isPlayerTargettingChar.get<void>(5), IsPlayerTargettingChar_ExtraChecks, HookType::Call);
 	}
+	TXN_CATCH();
 
 
 	// Use PS2 randomness for Rosenberg audio to hopefully bring the odds closer to PS2
 	// The functionality was never broken on PC - but the random distribution seemingly made it looks as if it was
+	try
 	{
 		auto busted_audio_rand = get_pattern("80 BB 48 01 00 00 00 0F 85 ? ? ? ? E8 ? ? ? ? 25 FF FF 00 00", 13);
 		InjectHook(busted_audio_rand, rand15_ps2);
 	}
+	TXN_CATCH();
 
 
 	// Reset variables on New Game
+	try
 	{
 		using namespace VariableResets;
 
@@ -1553,30 +1591,28 @@ void Patch_VC_Common()
 		GameVariablesToReset.emplace_back(*get_pattern<int*>("7D 78 A1 ? ? ? ? 05", 2 + 1)); // LastTimeAmbulanceCreated
 		GameVariablesToReset.emplace_back(*get_pattern<int*>("A1 ? ? ? ? 05 ? ? ? ? 39 05 ? ? ? ? 0F 86 ? ? ? ? 8B 15", 1)); // LastTimeFireTruckCreated
 	}
+	TXN_CATCH();
 
 
 	// Ped speech fix
 	// Based off Sergenaur's fix
+	try
 	{
 		// Remove the artificial 6s delay between any ped speech samples
-		auto delay_check = pattern("80 BE ? ? ? ? ? 0F 85 ? ? ? ? B9");
-		auto comment_delay_id1 = pattern("0F B7 C2 DD D8 C1 E0 04");
-		auto comment_delay_id2 = pattern("0F B7 95 DA 05 00 00 D9 6C 24 04");
+		auto delay_check = get_pattern("80 BE ? ? ? ? ? 0F 85 ? ? ? ? B9", 7);
+		auto comment_delay_id1 = get_pattern("0F B7 C2 DD D8 C1 E0 04");
+		auto comment_delay_id2 = pattern("0F B7 95 DA 05 00 00 D9 6C 24 04").get_one();
 
-		// Make sure we don't conflict with Sergenaur's fix
-		if (delay_check.count_hint(1).size() == 1 && comment_delay_id1.count_hint(1).size() == 1 && comment_delay_id2.count_hint(1).size() == 1)
-		{
-			Nop(delay_check.get_first<void>(7), 6);
+		Nop(delay_check, 6);
 
-			// movzx eax, dx -> movzx eax, bx
-			Patch(comment_delay_id1.get_first<void>(), { 0x0F, 0xB7, 0xC3 });
+		// movzx eax, dx -> movzx eax, bx
+		Patch(comment_delay_id1, { 0x0F, 0xB7, 0xC3 });
 
-			// movzx edx, word ptr [ebp+5DAh] -> movzx edx, bx \ nop
-			auto delay_id2 = comment_delay_id2.get_one();
-			Patch(delay_id2.get<void>(), { 0x0F, 0xB7, 0xD3 });
-			Nop(delay_id2.get<void>(3), 4);
-		}
+		// movzx edx, word ptr [ebp+5DAh] -> movzx edx, bx \ nop
+		Patch(comment_delay_id2.get<void>(), { 0x0F, 0xB7, 0xD3 });
+		Nop(comment_delay_id2.get<void>(3), 4);
 	}
+	TXN_CATCH();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)

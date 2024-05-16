@@ -4261,7 +4261,7 @@ BOOL InjectDelayedPatches_Newsteam()
 	if ( !IsAlreadyRunning() )
 	{
 		using namespace Memory;
-		using namespace hook;
+		using namespace hook::txn;
 
 		const HINSTANCE hInstance = GetModuleHandle( nullptr );
 		std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( hInstance, ".text" );
@@ -4276,14 +4276,15 @@ BOOL InjectDelayedPatches_Newsteam()
 			constexpr bool flaBugAware = false;
 			constexpr bool usesEnhancedImages = false;
 
-			if constexpr ( !usesEnhancedImages || flaBugAware )
+			if constexpr ( !usesEnhancedImages || flaBugAware ) try
 			{
 				void* initThread = get_pattern( "74 14 81 25 ? ? ? ? ? ? ? ? C7 05", 0x16 );
+				auto cdStreamSync = pattern( "8B 0D ? ? ? ? 8D 04 40 03 C0" ).get_one(); // 0x4064E6
+				auto cdStreamInitThread = pattern( "6A 00 6A 02 6A 00 6A 00 FF D3" ).get_one();
+				auto cdStreamShutdown = pattern( "8B 4C 07 14" ).get_one();
 
 				ReadCall( initThread, CdStreamSync::orgCdStreamInitThread );
 				InjectHook( initThread, CdStreamSync::CdStreamInitThread );
-
-				auto cdStreamSync = pattern( "8B 0D ? ? ? ? 8D 04 40 03 C0" ).get_one(); // 0x4064E6
 
 				Patch( cdStreamSync.get<void>( 0x18 ), { 0x56, 0xFF, 0x15 } );
 				Patch( cdStreamSync.get<void>( 0x18 + 3 ), &CdStreamSync::CdStreamSyncOnObject );
@@ -4292,7 +4293,7 @@ BOOL InjectDelayedPatches_Newsteam()
 				Patch( cdStreamSync.get<void>( 0x5E + 2 ), &CdStreamSync::pGetOverlappedResult );
 				Patch( cdStreamSync.get<void>( 0x5E + 6 ), { 0x5E, 0x5D, 0xC3 } ); // pop esi / pop ebp / retn
 
-				if constexpr ( !usesEnhancedImages )
+				if constexpr ( !usesEnhancedImages ) try
 				{
 					auto cdStreamThread = pattern( "C7 46 04 00 00 00 00 8A 4E 0D" ).get_one();
 
@@ -4300,17 +4301,17 @@ BOOL InjectDelayedPatches_Newsteam()
 					Patch( cdStreamThread.get<void>( 3 ), &CdStreamSync::CdStreamThreadOnObject );
 					Patch( cdStreamThread.get<void>( 3 + 4 ), { 0xEB, 0x17 } );
 				}
+				TXN_CATCH();
 
-				auto cdStreamInitThread = pattern( "6A 00 6A 02 6A 00 6A 00 FF D3" ).get_one();
 				Patch( cdStreamInitThread.get<void>(), { 0xFF, 0x15 } );
 				Patch( cdStreamInitThread.get<void>( 2 ), &CdStreamSync::CdStreamInitializeSyncObject );
 				Nop( cdStreamInitThread.get<void>( 6 ), 4 );
 				Nop( cdStreamInitThread.get<void>( 0x16 ), 2 );
 
-				auto cdStreamShutdown = pattern( "8B 4C 07 14" ).get_one();
 				Patch( cdStreamShutdown.get<void>(), { 0x56, 0x50 } );
 				InjectHook( cdStreamShutdown.get<void>( 2 ), CdStreamSync::CdStreamShutdownSyncObject_Stub, HookType::Call );
 			}
+			TXN_CATCH();
 		}
 
 
@@ -6093,15 +6094,19 @@ void Patch_SA_Steam()
 void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 {
 	using namespace Memory;
-	using namespace hook;
+	using namespace hook::txn;
 
+	try
 	{
 		void* isAlreadyRunning = get_pattern( "85 C0 74 08 33 C0 8B E5 5D C2 10 00", -5 );
 		ReadCall( isAlreadyRunning, IsAlreadyRunning );
 		InjectHook(isAlreadyRunning, InjectDelayedPatches_Newsteam);
 	}
+	TXN_CATCH();
+
 
 	// (Hopefully) more precise frame limiter
+	try
 	{
 		void* rsEventHandler = get_pattern( "83 C4 08 39 3D ? ? ? ? 75 23", -5 );
 		void* getTimeSinceLastFrame = get_pattern( "EB 7F E8 ? ? ? ? 89 45 08", 2 );
@@ -6110,53 +6115,54 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InjectHook( rsEventHandler, NewFrameRender );
 		InjectHook( getTimeSinceLastFrame, GetTimeSinceLastFrame );
 	}
+	TXN_CATCH();
+
 
 	// No framedelay
+	try
 	{
-		// TODO: Simplify with transactional patching
-		auto framedelay_jmpSrc = pattern( "83 EC 08 E8 ? ? ? ? E8" ).count(1);
-		auto framedelay_jmpDest = pattern( "33 D2 8B C6 F7 F1 A3" ).count(1);
-		auto popEsi = pattern( "83 C4 04 83 7D 08 00 5E" ).count(1);
+		auto framedelay_jmpSrc = get_pattern("83 EC 08 E8 ? ? ? ? E8", 3);
+		auto framedelay_jmpDest = get_pattern("33 D2 8B C6 F7 F1 A3", 11);
+		auto popEsi = pattern("83 C4 04 83 7D 08 00 5E").get_one();
 
-		if ( framedelay_jmpSrc.size() == 1 && framedelay_jmpDest.size() == 1 && popEsi.size() == 1 )
-		{
-			// TODO: Let this place long or short jump, whatever it prefers
-			InjectHook( framedelay_jmpSrc.get_first<void>( 3 ), framedelay_jmpDest.get_first<void>( 11 ), HookType::Jump );
+		InjectHook( framedelay_jmpSrc, framedelay_jmpDest, HookType::Jump );
 
-			auto popEsiMatch = popEsi.get_one();
-			Patch<BYTE>( popEsiMatch.get<void>( 3 + 2 ), 0x4);
-			Nop( popEsiMatch.get<void>( 3 + 4 ), 1 );
-		}
+		Patch<BYTE>( popEsi.get<void>( 3 + 2 ), 0x4);
+		Nop( popEsi.get<void>( 3 + 4 ), 1 );
 	}
+	TXN_CATCH();
+
 
 	// Unlock 1.0/1.01 saves loading
+	try
 	{
-		auto sizeCheck = pattern( "0F 84 ? ? ? ? 8D 45 FC" ).count(1);
-		if ( sizeCheck.size() == 1 )
-		{
-			Patch( sizeCheck.get_first<void>(), { 0x90, 0xE9 } ); // nop / jmp
-		}
+		auto sizeCheck = get_pattern( "0F 84 ? ? ? ? 8D 45 FC" );
+		Patch( sizeCheck, { 0x90, 0xE9 } ); // nop / jmp
 	}
+	TXN_CATCH();
+
 
 	// Old .set files working again
+	try
 	{
 		void* setFileSave = get_pattern( "C6 45 FD 5F", 0xE + 1 );
-		auto setCheckVersion1 = pattern( "83 7D F8 07" ).count(1);
-		auto setCheckVersion2 = pattern( "83 C4 18 83 7D FC 07" ).count(1);
+		auto setCheckVersion1 = get_pattern( "83 7D F8 07", 3);
+		auto setCheckVersion2 = get_pattern( "83 C4 18 83 7D FC 07", 3 + 3);
 
-		if ( setCheckVersion1.size() == 1 && setCheckVersion2.size() == 1 )
-		{
-			static const DWORD dwSetVersion = 6;
-			Patch( setFileSave, &dwSetVersion );
-			Patch<BYTE>( setCheckVersion1.get_first<void>( 3 ), dwSetVersion );
-			Patch<BYTE>( setCheckVersion2.get_first<void>( 3 + 3 ), dwSetVersion );
-		}
+		static const DWORD dwSetVersion = 6;
+		Patch( setFileSave, &dwSetVersion );
+		Patch<BYTE>( setCheckVersion1, dwSetVersion );
+		Patch<BYTE>( setCheckVersion2, dwSetVersion );
 	}
+	TXN_CATCH();
+
 
 	// Disable re-initialization of DirectInput mouse device by the game
+	try
 	{
 		void* reinitMouse1 = get_pattern( "84 C0 ? 0F E8 ? ? ? ? 6A 01 E8", 2 );
 		auto reinitMouse2 = pattern( "84 C0 ? 0E E8 ? ? ? ? 53 E8" ).count(2);
+		void* diInitMouse = get_pattern( "6A 00 83 C1 1C", -3 );
 
 		Patch<BYTE>( reinitMouse1, 0xEB );
 
@@ -6164,72 +6170,71 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 			Patch<BYTE>( match.get<void>( 2 ), 0xEB );
 		});
 
-		void* diInitMouse = get_pattern( "6A 00 83 C1 1C", -3 );
-
 		// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
 		// nop / mov al, 1
 		Patch( diInitMouse, { 0x90, 0xB0, 0x01 } );
 	}
+	TXN_CATCH();
+
 
 	// Unlocked widescreen resolutions
 	{
 		// Assume anybody could have changed those, so bail out if ANYTHING goes wrong
 		// However, all those patches are independent so try one by one
-		auto wsRes_jmpSrc = pattern( "81 F9 E0 01 00 00 7C").count(1);
-		auto wsRes1_jmpDest = pattern( "8B 45 EC 0F AF C2" ).count(1);
-		auto wsRes2 = pattern( "0F 8C ? ? ? ? 81 7D ? ? ? ? ? 0F 8C" ).count(1);
-		auto wsRes3 = pattern( "7A 4D EB 02" ).count(1);
-
-		if ( wsRes_jmpSrc.size() == 1 && wsRes1_jmpDest.size() == 1 )
+		try
 		{
-			auto wsRes_jmpSrcMatch = wsRes_jmpSrc.get_one();
-			auto wsRes1_jmpDestMatch = wsRes1_jmpDest.get_one();
+			auto wsRes_jmpSrc = pattern( "81 F9 E0 01 00 00 7C").get_one();
+			auto wsRes1_jmpDest = pattern( "8B 45 EC 0F AF C2" ).get_one();
 
-			const uintptr_t jumpSource = reinterpret_cast<uintptr_t>(wsRes_jmpSrcMatch.get<void>( 6 + 2 ));
-			const uintptr_t jumpDestination = reinterpret_cast<uintptr_t>(wsRes1_jmpDestMatch.get<void>() );
+			const uintptr_t jumpSource = reinterpret_cast<uintptr_t>(wsRes_jmpSrc.get<void>( 6 + 2 ));
+			const uintptr_t jumpDestination = reinterpret_cast<uintptr_t>(wsRes1_jmpDest.get<void>() );
 			const ptrdiff_t dist = jumpDestination - jumpSource;
 			// Can only do a short jump
 			if ( INT8_MIN <= dist && dist <= INT8_MAX )
 			{
 				// jnl 00B19C33
-				Patch( wsRes_jmpSrcMatch.get<void>( 6 ), { 0x7D, static_cast<uint8_t>(dist) } );
+				Patch( wsRes_jmpSrc.get<void>( 6 ), { 0x7D, static_cast<uint8_t>(dist) } );
 			}
 		}
+		TXN_CATCH();
 
-		if ( wsRes2.size() == 1 )
+		try
 		{
-			auto wsRes2Match = wsRes2.get_one();
-			Nop( wsRes2Match.get<void>(), 4 );
-			Patch( wsRes2Match.get<void>( 4 ), { 0x7D, 0xD } );
-		}
+			auto wsRes2 = pattern( "0F 8C ? ? ? ? 81 7D ? ? ? ? ? 0F 8C" ).get_one();
 
-		if ( wsRes3.size() == 1 )
-		{
-			Nop( wsRes3.get_first<void>(), 2 );
+			Nop( wsRes2.get<void>(), 4 );
+			Patch( wsRes2.get<void>( 4 ), { 0x7D, 0xD } );
 		}
+		TXN_CATCH();
+
+		try
+		{
+			auto wsRes3 = get_pattern( "7A 4D EB 02" );
+			Nop( wsRes3, 2 );
+		}
+		TXN_CATCH();
 	}
+
 
 	// Default resolution to native resolution
+	try
 	{
-		auto resolution = pattern( "BB 20 03 00 00" ).count(1); // Another instance could overwrite it so check first
+		auto resolution = pattern( "BB 20 03 00 00" ).get_one();
+		void* cannotFindResMessage = get_pattern( "6A 00 68 ? ? ? ? 68 ? ? ? ? 6A 00", 7 + 1 );
 
-		if ( resolution.size() == 1 )
-		{
-			void* cannotFindResMessage = get_pattern( "6A 00 68 ? ? ? ? 68 ? ? ? ? 6A 00", 7 + 1 );
+		RECT			desktop;
+		GetWindowRect(GetDesktopWindow(), &desktop);
+		sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
 
-			RECT			desktop;
-			GetWindowRect(GetDesktopWindow(), &desktop);
-			sprintf_s(aNoDesktopMode, "Cannot find %dx%dx32 video mode", desktop.right, desktop.bottom);
-
-			auto resolutionMatch = resolution.get_one();
-
-			Patch<LONG>( resolutionMatch.get<void>( 1 ), desktop.right );
-			Patch<LONG>( resolutionMatch.get<void>( 5 + 1 ), desktop.bottom );
-			Patch<const char*>( cannotFindResMessage, aNoDesktopMode );
-		}
+		Patch<LONG>( resolution.get<void>( 1 ), desktop.right );
+		Patch<LONG>( resolution.get<void>( 5 + 1 ), desktop.bottom );
+		Patch<const char*>( cannotFindResMessage, aNoDesktopMode );
 	}
+	TXN_CATCH();
+
 
 	// No DirectPlay dependency
+	try
 	{
 		auto getDXversion = pattern( "50 68 ? ? ? ? A3" ).get_one();
 
@@ -6237,38 +6242,55 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		Patch<BYTE>( getDXversion.get<void>( -5 ), 0xB8 );
 		Patch<DWORD>( getDXversion.get<void>( -5 + 1 ), 0x900 );
 	}
+	TXN_CATCH();
+
 
 	// SHGetFolderPath on User Files
+	try
 	{
 		void* getDocumentsPath = get_pattern( "8D 45 FC 50 68 19 00 02 00", -6 );
 		InjectHook( getDocumentsPath, GetMyDocumentsPathSA, HookType::Jump );
 	}
+	TXN_CATCH();
+
 
 	// Fixed muzzleflash not showing from last bullet
+	try
 	{
 		auto weaponStateCheck = pattern("83 BC 8E A4 05 00 00 01").get_one();
 		Nop(weaponStateCheck.get<void>(-16), 22);
 		Patch(weaponStateCheck.get<void>(6), { 0x84, 0xC0, 0x74 });
 	}
+	TXN_CATCH();
+
 
 	// Proper randomizations
+	try
 	{
-		pattern( "C1 F8 06 99" ).count(2).for_each_result( []( pattern_match match ) {
+		auto pedsRand = pattern( "C1 F8 06 99" ).count(2);
+		void* prostitutesRand = get_pattern( "8B F8 32 C0", -5 );
+
+		pedsRand.for_each_result( []( pattern_match match ) {
 			InjectHook( match.get<void>( -5 ), Int32Rand ); // Missing ped paths
 		});
 
-		void* prostitutesRand = get_pattern( "8B F8 32 C0", -5 );
 		InjectHook( prostitutesRand, Int32Rand ); // Prostitutes
 	}
+	TXN_CATCH();
+
 
 	// Help boxes showing with big message
 	// Game seems to assume they can show together
+	try
 	{
 		void* showingBigMessage = get_pattern( "38 1D ? ? ? ? 0F 85 ? ? ? ? 38 1D ? ? ? ? 0F 85 ? ? ? ? 38 1D", 6 );
 		Nop( showingBigMessage, 6 );
 	}
+	TXN_CATCH();
+
 
 	// Fixed lens flare
+	try
 	{
 		auto coronasRenderEpilogue = pattern( "83 C7 3C FF 4D BC" ).get_one();
 		auto flushLensSwitchZ = pattern( "6A 01 6A 06 FF D0 83 C4 08" ).get_one();
@@ -6295,8 +6317,11 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		Patch<BYTE>( initBufferSwitchZ.get<void>( -8 + 3 ), 0xB9 );
 		Patch( initBufferSwitchZ.get<void>( -8 + 4 ), &InitBufferSwitchZ );
 	}
+	TXN_CATCH();
+
 
 	// Y axis sensitivity fix
+	try
 	{
 		auto horizontalSens = pattern( "D9 05 ? ? ? ? D8 4D 0C D8 C9" ).get_one();
 		float* sens = *horizontalSens.get<float*>( 2 );
@@ -6308,15 +6333,20 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		float* vertSens = *horizontalSens.get<float*>( 0xE + 2 );
 		memcpy( bytes + 2, &vertSens, sizeof(vertSens) );
 
-		pattern( {bytes, _countof(bytes)}, {mask, _countof(mask)} ).count(4).for_each_result( [sens]( pattern_match match ) {
+		auto mulVerticalSens1 = pattern( {bytes, _countof(bytes)}, {mask, _countof(mask)} ).count(4);
+		void* mulVerticalSens2 = get_pattern( "D8 0D ? ? ? ? D8 C9 D9 5D F4", 2 );
+
+		mulVerticalSens1.for_each_result( [sens]( pattern_match match ) {
 			Patch( match.get<void>( 2 ), sens );
 		} );
 
-		void* mulVerticalSens = get_pattern( "D8 0D ? ? ? ? D8 C9 D9 5D F4", 2 );
-		Patch( mulVerticalSens, sens );
+		Patch( mulVerticalSens2, sens );
 	}
+	TXN_CATCH();
+
 
 	// Don't lock mouse Y axis during fadeins
+	try
 	{
 		void* followPedWithMouse = get_pattern( "D9 5D 08 A0", -7 );
 		void* followPedWithMouse2 = get_pattern( "66 83 3D ? ? ? ? ? 0F 85 ? ? ? ? 80 3D", -6 );
@@ -6329,29 +6359,42 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		Patch( followPedWithMouse2, { 0x90, 0xE9 } );
 		InjectHook( followPedSA, folowPedSA_dest, HookType::Jump );
 	}
+	TXN_CATCH();
+
 
 	// Fixed mirrors crash
+	try
 	{
 		// TODO: Change when short jumps are supported
 		void* beforeMainRender = get_pattern( "8B 15 ? ? ? ? 83 C4 0C 52", 0xF );
 		Patch( beforeMainRender, { 0x85, 0xC0, 0x74, 0x34, 0x83, 0xC4, 0x04 } );
 	}
+	TXN_CATCH();
+
 
 	// Mirrors depth fix & bumped quality
+	try
 	{
 		void* createBuffers = get_pattern( "7B 0A C7 05 ? ? ? ? 01 00 00 00", 0xC );
 		InjectHook( createBuffers, CreateMirrorBuffers );
 	}
+	TXN_CATCH();
+
 
 	// Fixed MSAA options
+	try
 	{
 		using namespace MSAAFixes;
 
-		// TODO: Remove wildcards in patterns once transactional patching is implemented
-		auto func1 = pattern( "83 BE C8 00 00 00 04 ? ? E8" ).get_one();
-		void* func2 = get_pattern( "05 A3 ? ? ? ? 59", -1 );
-		void* func3 = get_pattern( "05 A3 ? ? ? ? 8B C7", -1 );
-		void* func4 = get_pattern( "0F 8C ? ? ? ? 8B 44 24 0C", 0x18 );
+		auto func1 = pattern("83 BE C8 00 00 00 04 7F 11 E8").get_one();
+		void* func2 = get_pattern("76 05 A3 ? ? ? ? 59");
+		void* func3 = get_pattern("76 05 A3 ? ? ? ? 8B C7");
+		void* func4 = get_pattern("0F 8C ? ? ? ? 8B 44 24 0C", 0x18);
+
+		auto getMaxMultisamplingLevels = pattern( "5F 89 86 C8 00 00 00 8A 45 FF" ).get_one();
+		void* changeMultiSamplingLevels = get_pattern( "8B 8E D0 00 00 00 51", -5 );
+		void* changeMultiSamplingLevels2 = get_pattern( "8B 96 D0 00 00 00 52", -5 );
+		void* setMultiSamplingLevels = get_pattern( "83 C4 04 8B C7 5F 5E 5B 8B E5 5D C3 BB", -5 );
 
 		Patch<BYTE>( func1.get<void>( 0x4A ), 0xEB ); // jmp
 		Nop( func1.get<void>( 7 ), 2 ); // nop a jmp
@@ -6359,11 +6402,6 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		Patch<BYTE>(func2, 0xEB); // jmp
 		Patch<BYTE>(func3, 0xEB); // jmp
 		Patch(func4, { 0x90, 0xE9 }); // jmp
-
-		auto getMaxMultisamplingLevels = pattern( "5F 89 86 C8 00 00 00 8A 45 FF" ).get_one();
-		void* changeMultiSamplingLevels = get_pattern( "8B 8E D0 00 00 00 51", -5 );
-		void* changeMultiSamplingLevels2 = get_pattern( "8B 96 D0 00 00 00 52", -5 );
-		void* setMultiSamplingLevels = get_pattern( "83 C4 04 8B C7 5F 5E 5B 8B E5 5D C3 BB", -5 );
 
 		std::array<void*, 2> getMaxMultiSamplingLevels = {
 			getMaxMultisamplingLevels.get<void>( -5 ),
@@ -6379,27 +6417,34 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		};
 		HookEach_SetOrChangeMultiSamplingLevels(setOrChangeMultiSamplingLevels, InterceptCall);
 
-		auto msaaText = pattern( "48 50 68 ? ? ? ? 53" ).count(1); // Only so newsteam r1 doesn't crash
-		if ( msaaText.size() == 1 )								   // transactional patching will obsolete this
+		// Only so newsteam r1 doesn't crash
+		try
 		{
-			auto msaaTextMatch = msaaText.get_one();
+			auto msaaText = pattern( "48 50 68 ? ? ? ? 53" ).get_one();
 
 			// nop / mov edx, offset MSAAText
-			Patch( msaaTextMatch.get<void>( -6 ), { 0x90, 0xBA } );
-			Patch( msaaTextMatch.get<void>( -6 + 2 ), MSAAText );
+			Patch( msaaText.get<void>( -6 ), { 0x90, 0xBA } );
+			Patch( msaaText.get<void>( -6 + 2 ), MSAAText );
 		}
+		TXN_CATCH();
 	}
+	TXN_CATCH();
+
 
 	// Fixed car collisions - car you're hitting gets proper damage now
+	try
 	{
 		auto fixedCarDamage = pattern( "8B 7D 10 0F B6 47 21" ).get_one();
 
 		Nop( fixedCarDamage.get<void>(), 2 );
 		InjectHook( fixedCarDamage.get<void>( 2 ), FixedCarDamage_Newsteam, HookType::Call );
 	}
+	TXN_CATCH();
+
 
 	// Car explosion crash with multimonitor
 	// Unitialized collision data breaking stencil shadows
+	try
 	{
 		using namespace UnitializedCollisionDataFix;
 
@@ -6412,12 +6457,15 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InterceptCall(memMgrAlloc, orgMemMgrMalloc, CollisionData_MallocAndInit);
 		HookEach_CollisionDataNew(newAlloc, InterceptCall);
 	}
+	TXN_CATCH();
+
 
 	// Crash when entering advanced display options on a dual monitor machine after:
 	// - starting game on primary monitor in maximum resolution, exiting,
 	// starting again in maximum resolution on secondary monitor.
 	// Secondary monitor maximum resolution had to be greater than maximum resolution of primary monitor.
 	// Not in 1.01
+	try
 	{
 		void* storeVideoModes = get_pattern( "6A 00 8B F8 6A 04", -5 );
 		void* retrieveVideoModes = get_pattern( "57 E8 ? ? ? ? 83 3D", 1 );
@@ -6426,61 +6474,61 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InjectHook( storeVideoModes, GetNumVideoModes_Store );
 		InjectHook( retrieveVideoModes, GetNumVideoModes_Retrieve );
 	}
+	TXN_CATCH();
+
 
 	// Fixed escalators crash
+	try
 	{
 		orgEscalatorsUpdate = static_cast<decltype(orgEscalatorsUpdate)>(get_pattern( "80 3D ? ? ? ? ? 74 23 56" ));
 
-		// TODO: Simplify when transactional patching is implemented
-		auto updateEscalators = pattern( "80 3D ? ? ? ? ? 74 22 56" ).count(1);
-		auto removeEscalatorsForEntity = pattern( "80 7E F5 00 74 56" ).count(1);
+		auto updateEscalators = get_pattern("80 3D ? ? ? ? ? 74 22 56");
+		auto removeEscalatorsForEntity = pattern( "80 7E F5 00 74 56" ).get_one();
 
-		if ( updateEscalators.size() == 1 && removeEscalatorsForEntity.size() == 1 )
-		{
-			InjectHook( updateEscalators.get_first(), UpdateEscalators, HookType::Jump );
+		InjectHook( updateEscalators, UpdateEscalators, HookType::Jump );
 
-			// lea ecx, [esi-84] / call CEscalator::SwitchOffNoRemove / jmp loc_734C0A
-			auto removeEscalatorsMatch = removeEscalatorsForEntity.get_one();
-
-			// TODO: Change when short jmps are supported
-			Patch( removeEscalatorsMatch.get<void>(), { 0x8D, 0x8E } );
-			Patch<int32_t>( removeEscalatorsMatch.get<void>( 2 ), -0x84 );
-			InjectHook( removeEscalatorsMatch.get<void>( 6 ), &CEscalator::SwitchOffNoRemove, HookType::Call );
-			Patch( removeEscalatorsMatch.get<void>( 6 + 5 ), { 0xEB, 0x4F } );
-		}
+		// lea ecx, [esi-84] / call CEscalator::SwitchOffNoRemove / jmp loc_734C0A
+		// TODO: Change when short jmps are supported
+		Patch( removeEscalatorsForEntity.get<void>(), { 0x8D, 0x8E } );
+		Patch<int32_t>( removeEscalatorsForEntity.get<void>( 2 ), -0x84 );
+		InjectHook( removeEscalatorsForEntity.get<void>( 6 ), &CEscalator::SwitchOffNoRemove, HookType::Call );
+		Patch( removeEscalatorsForEntity.get<void>( 6 + 5 ), { 0xEB, 0x4F } );
 	}
+	TXN_CATCH();
+
 
 	// Don't allocate constant memory for stencil shadows every frame
+	try
 	{
-		// TODO: Simplify when transactional patching is implemented
-		auto shadowAlloc = pattern( "83 C4 08 6A 00 68 00 60 00 00" ).count(1);
-		auto shadowFree = pattern( "A2 ? ? ? ? A1 ? ? ? ? 50 E8" ).count(1);
-		if ( shadowAlloc.size() == 1 && shadowFree.size() == 1 )
-		{
-			auto allocMatch = shadowAlloc.get_one();
+		auto shadowAlloc = pattern("83 C4 08 6A 00 68 00 60 00 00").get_one();
+		auto shadowFree = get_pattern( "A2 ? ? ? ? A1 ? ? ? ? 50 E8", 5);
 
-			InjectHook( allocMatch.get<void>( 3 ), StencilShadowAlloc, HookType::Call) ;
-			Patch( allocMatch.get<void>( 3 + 5 ), { 0xEB, 0x2C } );
-			Nop( allocMatch.get<void>( 0x3B ), 3 );
-			Patch( shadowFree.get_first( 5 ), { 0x5F, 0x5E, 0x5B, 0x5D, 0xC3 } ); // pop edi, pop esi, pop ebx, pop ebp, retn
-		}
+		InjectHook( shadowAlloc.get<void>( 3 ), StencilShadowAlloc, HookType::Call) ;
+		Patch( shadowAlloc.get<void>( 3 + 5 ), { 0xEB, 0x2C } );
+		Nop( shadowAlloc.get<void>( 0x3B ), 3 );
+		Patch( shadowFree, { 0x5F, 0x5E, 0x5B, 0x5D, 0xC3 } ); // pop edi, pop esi, pop ebx, pop ebp, retn
 	}
+	TXN_CATCH();
+
 
 	// "Streaming memory bug" fix
+	try
 	{
 		void* animInterpolator = get_pattern( "83 C4 1C C7 03 00 30 00 00 5B", -5 );
 		InjectHook(animInterpolator, GTARtAnimInterpolatorSetCurrentAnim);
 	}
+	TXN_CATCH();
+
 
 	// Fixed ammo for melee weapons in cheats
+	try
 	{
-		// TODO: Remove wildcards in patterns once transactional patching is implemented
-		void* knifeAmmo1 = get_pattern( "6A ? 6A 04 6A FF", 1 );
-		void* knifeAmmo2 = get_pattern( "6A 01 6A ? 6A 04 6A 01", 2 + 1 );
-		void* chainsawAmmo1 = get_pattern( "6A ? 6A 09 6A FF", 1 );
-		void* chainsawAmmo2 = get_pattern( "6A ? 6A 09 6A 01", 1 );
-		void* parachuteAmmo = get_pattern( "6A ? 6A 2E 6A FF", 1 );
-		void* katanaAmmo = get_pattern( "83 C4 0C ? ? ? 6A 08 6A FF", 3 );
+		void* knifeAmmo1 = get_pattern( "6A 00 6A 04 6A FF", 1 );
+		void* knifeAmmo2 = get_pattern( "6A 01 6A 00 6A 04 6A 01", 2 + 1 );
+		void* chainsawAmmo1 = get_pattern( "6A 00 6A 09 6A FF", 1 );
+		void* chainsawAmmo2 = get_pattern( "6A 00 6A 09 6A 01", 1 );
+		void* parachuteAmmo = get_pattern( "6A 00 6A 2E 6A FF", 1 );
+		void* katanaAmmo = get_pattern( "83 C4 0C 6A 01 53 6A 08 6A FF", 3 );
 
 		Patch<BYTE>(knifeAmmo1, 1); // knife
 		Patch<BYTE>(knifeAmmo2, 1); // knife
@@ -6491,8 +6539,11 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		// push ebx / push 1
 		Patch( katanaAmmo, { 0x53, 0x6A, 0x01 } ); // katana
 	}
+	TXN_CATCH();
+
 
 	// Proper aspect ratios
+	try
 	{
 		auto calculateAr = pattern( "74 13 D9 05 ? ? ? ? D9 1D" ).get_one(); // 0x734247; has two matches but both from the same function
 
@@ -6501,6 +6552,8 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		Patch<const void*>(calculateAr.get<void>( 0x1E + 2 ), &f54);
 		Patch<const void*>(calculateAr.get<void>( 0x31 + 2 ), &f43);	
 	}
+	TXN_CATCH();
+
 
 	// 6 extra directionals on Medium and higher
 	// push dword ptr [CGame::currArea]
@@ -6508,6 +6561,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	// add esp, 4
 	// mov ebx, eax
 	// nop
+	try
 	{
 		auto maxdirs_addr = pattern( "83 3D ? ? ? ? 00 8D 5E 05 74 05 BB 06 00 00 00" ).get_one();
 
@@ -6516,15 +6570,21 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		Patch( maxdirs_addr.get<void>(11), { 0x83, 0xC4, 0x04, 0x8B, 0xD8 } );
 		Nop( maxdirs_addr.get<void>(16), 1 );
 	}
+	TXN_CATCH();
+
 
 	// AI accuracy issue
+	try
 	{
 		auto match = pattern( "8B 82 8C 05 00 00 85 C0 74 09" ).get_one(); // 0x76DEA7 in newsteam r1
 		Nop(match.get<int>(0), 1);
 		InjectHook( match.get<int>(1), WeaponRangeMult_VehicleCheck, HookType::Call );
 	}
+	TXN_CATCH();
+
 
 	// Don't catch WM_SYSKEYDOWN and WM_SYSKEYUP (fixes Alt+F4)
+	try
 	{
 		auto patternie = pattern( "8B 75 10 8B ? 14 56" ).count(2); // 0x77C588 and 0x77C5CC in newsteam r2
 		auto defproc = get_pattern( "8B ? 14 8B ? 10 8B ? 08 ? ? 56" );
@@ -6539,11 +6599,25 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 			Patch<int8_t>( match.get<int>(0x2B + 2), -8 ); // use stack space for new lParam
 		} );
 	}
+	TXN_CATCH();
 
 
 	// Reset variables on New Game
+	try
 	{
 		using namespace VariableResets;
+
+		// Variables to reset
+		{
+			auto timers_init = pattern( "89 45 FC DB 45 FC C6 05 ? ? ? ? 01" ).get_one();
+
+			GameVariablesToReset.emplace_back( *timers_init.get<signed int*>(-17 + 2) );
+			GameVariablesToReset.emplace_back( *timers_init.get<signed int*>(-11 + 2) );
+			GameVariablesToReset.emplace_back( *timers_init.get<TimeNextMadDriverChaseCreated_t<float>*>(0x41 + 2) );
+		}
+
+		GameVariablesToReset.emplace_back( *get_pattern<ResetToTrue_t*>( "A2 ? ? ? ? E9 ? ? ? ? 6A 01 8B CE", 1 ) ); // CGameLogic::bPenaltyForDeathApplies
+		GameVariablesToReset.emplace_back( *get_pattern<ResetToTrue_t*>( "88 0D ? ? ? ? E9 ? ? ? ? 6A 05", 2 ) ); // CGameLogic::bPenaltyForArrestApplies
 
 		{
 			auto loadPickup = get_pattern("E8 ? ? ? ? EB 1B 6A 00");
@@ -6560,40 +6634,38 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 			InterceptCall(loadCarGenerator, orgLoadCarGenerator, LoadCarGenerator_SaveLine);
 			InterceptCall(loadStuntJump, orgLoadStuntJump, LoadStuntJump_SaveLine);
 		}
-
-		// Variables to reset
-		{
-			auto timers_init = pattern( "89 45 FC DB 45 FC C6 05 ? ? ? ? 01" ).get_one();
-
-			GameVariablesToReset.emplace_back( *timers_init.get<signed int*>(-17 + 2) );
-			GameVariablesToReset.emplace_back( *timers_init.get<signed int*>(-11 + 2) );
-			GameVariablesToReset.emplace_back( *timers_init.get<TimeNextMadDriverChaseCreated_t<float>*>(0x41 + 2) );
-		}
-
-		GameVariablesToReset.emplace_back( *get_pattern<ResetToTrue_t*>( "A2 ? ? ? ? E9 ? ? ? ? 6A 01 8B CE", 1 ) ); // CGameLogic::bPenaltyForDeathApplies
-		GameVariablesToReset.emplace_back( *get_pattern<ResetToTrue_t*>( "88 0D ? ? ? ? E9 ? ? ? ? 6A 05", 2 ) ); // CGameLogic::bPenaltyForArrestApplies
 	}
+	TXN_CATCH();
+
 
 	// FuckCarCompletely not fixing panels
+	try
 	{
 		void* panel_addr = get_pattern( "C6 46 04 FA 5E 5B", -3 );
 		Nop(panel_addr, 3);
 	}
+	TXN_CATCH();
+
 
 	// 014C cargen counter fix (by spaceeinstein)
+	try
 	{
 		auto do_processing = pattern( "B8 C3 2E 57 06 F7 EE C1 FA 06" ).get_one();
 
 		Patch<uint8_t>( do_processing.get<uint8_t*>(27 + 1), 0xBF ); // movzx eax, word ptr [edi+1Ah] -> movsx eax, word ptr [edi+1Ah]
 		Patch<uint8_t>( do_processing.get<uint8_t*>(41), 0x74 ); // jge -> jz
 	}
+	TXN_CATCH();
+
 
 	// Linear filtering on script sprites
+	try
 	{
 		void* drawScriptSprites = get_pattern( "81 EC 94 01 00 00 53 56 57 50", 10 );
 		ReadCall( drawScriptSprites, orgDrawScriptSpritesAndRectangles );
 		InjectHook( drawScriptSprites, DrawScriptSpritesAndRectangles );
 	}
+	TXN_CATCH();
 
 	// Animated Phoenix hood scoop
 	// TODO
@@ -6609,25 +6681,44 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 
 	// Make freeing temp objects more aggressive to fix vending crash
-	InjectHook( get_pattern( "57 8B 78 08 89 45 FC 85 FF 74 5B", -9 ), CObject::TryToFreeUpTempObjects_SilentPatch, HookType::Jump );
+	try
+	{
+		auto match = get_pattern("57 8B 78 08 89 45 FC 85 FF 74 5B", -9);
+		InjectHook( match, CObject::TryToFreeUpTempObjects_SilentPatch, HookType::Jump );
+	}
+	TXN_CATCH();
 
 
 	// Remove FILE_FLAG_NO_BUFFERING from CdStreams
-	Patch<uint8_t>( get_pattern( "81 F9 00 08 00 00 ? 05", 6 ), 0xEB );
+	try
+	{
+		auto match = get_pattern("81 F9 00 08 00 00 ? 05", 6);
+		Patch<uint8_t>( match, 0xEB );
+	}
+	TXN_CATCH();
 
 
 	// Proper metric-imperial conversion constants
-	static const double METERS_TO_FEET_DIV = 1.0 / 3.280839895;
-	Patch<const void*>( get_pattern( "83 EC 08 DC 35 ? ? ? ? DD 1C 24", 3 + 2 ), &METERS_TO_FEET_DIV );
-	Patch<const void*>( get_pattern( "51 DC 35 ? ? ? ? DD 1C 24", 1 + 2 ), &METERS_TO_FEET_DIV );
+	try
+	{
+		auto match1 = get_pattern( "83 EC 08 DC 35 ? ? ? ? DD 1C 24", 3 + 2 );
+		auto match2 = get_pattern( "51 DC 35 ? ? ? ? DD 1C 24", 1 + 2 );
+
+		static const double METERS_TO_FEET_DIV = 1.0 / 3.280839895;
+		Patch<const void*>( match1, &METERS_TO_FEET_DIV );
+		Patch<const void*>( match2, &METERS_TO_FEET_DIV );
+	}
+	TXN_CATCH();
 
 
 	// Fixed impounding of random vehicles (because CVehicle::~CVehicle doesn't remove cars from apCarsToKeep)
+	try
 	{
 		void* recordVehicleDeleted = get_pattern( "E8 ? ? ? ? 33 C0 66 89 86" );
 		ReadCall( recordVehicleDeleted, orgRecordVehicleDeleted );
 		InjectHook( recordVehicleDeleted, RecordVehicleDeleted_AndRemoveFromVehicleList );
 	}
+	TXN_CATCH();
 
 
 	// Don't include an extra D3DLIGHT on vehicles since we fixed directional already
@@ -6636,6 +6727,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 	// Fixed CAEAudioUtility timers - not typecasting to float so we're not losing precision after X days of PC uptime
 	// Also fixed integer division by zero
+	try
 	{
 		auto staticInitialize = pattern( "FF 15 ? ? ? ? 5F 5E 85 C0" ).get_one();
 
@@ -6643,13 +6735,20 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InjectHook( staticInitialize.get<void>( 0x1E ), AudioUtilsGetStartTime );
 		InjectHook( get_pattern( "50 FF 15 ? ? ? ? DF 6D F8", -9 ), AudioUtilsGetCurrentTimeInMs, HookType::Jump );
 	}
+	TXN_CATCH();
 
 
 	// Car generators placed in interiors visible everywhere
-	InjectHook( get_pattern( "E8 ? ? ? ? 0F B6 57 0A" ), &CEntity::SetPositionAndAreaCode );
+	try
+	{
+		auto match = get_pattern("E8 ? ? ? ? 0F B6 57 0A");
+		InjectHook( match, &CEntity::SetPositionAndAreaCode );
+	}
+	TXN_CATCH();
 
 
 	// Fixed bomb ownership/bombs saving for bikes
+	try
 	{
 		std::array<void*, 2> restoreCar = {
 			get_pattern( "8D 4E EE E8", 3 ),
@@ -6657,27 +6756,43 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		};
 		CStoredCar::HookEach_RestoreCar(restoreCar, InterceptCall);
 	}
+	TXN_CATCH();
 
 
 	// unnamed CdStream semaphore
+	try
 	{
 		auto semaName = pattern( "52 6A 40 FF 15" ).get_one();
 
 		Patch( semaName.get<void>( 9 ), { 0x6A, 0x00 } ); // push 0 \ nop
 		Nop( semaName.get<void>( 9 + 2 ), 3 );
 	}
+	TXN_CATCH();
 
 
 	// Correct streaming when using RC vehicles
-	InjectHook( get_pattern( "88 1D ? ? ? ? E8 ? ? ? ? 8B F0 83 C4 04 3B F3", 6 ), FindPlayerEntityWithRC );
-	InjectHook( get_pattern( "E8 ? ? ? ? 83 C4 08 85 C0 74 07 C6 05" ), FindPlayerVehicle_RCWrap );
+	try
+	{
+		auto findPlayerEntity = get_pattern("88 1D ? ? ? ? E8 ? ? ? ? 8B F0 83 C4 04 3B F3", 6);
+		auto findPlayerVehicle = get_pattern("E8 ? ? ? ? 83 C4 08 85 C0 74 07 C6 05");
+
+		InjectHook( findPlayerEntity, FindPlayerEntityWithRC );
+		InjectHook( findPlayerVehicle, FindPlayerVehicle_RCWrap );
+	}
+	TXN_CATCH();
 
 
 	// Fixed triangle above recruitable peds' heads
-	Patch<uint8_t>( get_pattern( "83 BE 98 05 00 00 ? D9 45 DC", 6 ), 8 ); // GANG2
+	try
+	{
+		auto match = get_pattern( "83 BE 98 05 00 00 ? D9 45 DC", 6 );
+		Patch<uint8_t>( match, 8 ); // GANG2
+	}
+	TXN_CATCH();
 
 
 	// Credits =)
+	try
 	{
 		auto renderCredits = pattern( "83 C4 18 E8 ? ? ? ? 80 3D" ).get_one();
 
@@ -6685,17 +6800,22 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		ReadCall( renderCredits.get<void>( -5 ), Credits::PrintCreditText_Hooked );
 		InjectHook( renderCredits.get<void>( -5 ), Credits::PrintSPCredits );
 	}
+	TXN_CATCH();
+
 
 	// Fixed ammo from SCM
+	try
 	{
 		void* giveWeapon = get_pattern( "8B CE E8 ? ? ? ? 8B CE 8B D8", 2 );
 
 		ReadCall( giveWeapon, CPed::orgGiveWeapon );
 		InjectHook( giveWeapon, &CPed::GiveWeapon_SP );
 	}
+	TXN_CATCH();
 
 
 	// Fixed bicycle on fire - instead of CJ being set on fire, bicycle's driver is
+	try
 	{
 		using namespace BicycleFire;
 
@@ -6713,9 +6833,11 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		ReadCall( doStuffToGoOnFire.get<void>( START_FIRE_OFFSET + 0x10 ), CFireManager::orgStartFire );
 		InjectHook( doStuffToGoOnFire.get<void>( START_FIRE_OFFSET + 0x10 ), &CFireManager::StartFire_NullEntityCheck );
 	}
+	TXN_CATCH();
 
 
 	// Decreased keyboard input latency
+	try
 	{
 		using namespace KeyboardInputFix;
 
@@ -6731,8 +6853,10 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		Nop( updatePads.get<void>( 20 ), 2 );
 		Nop( updatePads.get<void>( 37 ), 2 );
 	}
+	TXN_CATCH();
 
 	// Fixed handling.cfg name matching (names don't need unique prefixes anymore)
+	try
 	{
 		using namespace HandlingNameLoadFix;
 
@@ -6741,8 +6865,10 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InjectHook( findExactWord.get<void>( -5 ), strncpy_Fix );
 		InjectHook( findExactWord.get<void>( 9 ), strncmp_Fix );
 	}
+	TXN_CATCH();
 
 	// No censorships (not set nor loaded from savegame)
+	try
 	{
 		using namespace Localization;
 
@@ -6773,17 +6899,22 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InjectHook( setGermanGame, SetUncensoredGame, HookType::Jump );
 		InjectHook( setFrenchGame, SetUncensoredGame, HookType::Jump );
 	}
+	TXN_CATCH();
+
 
 	// Default Steer with Mouse to disabled, like in older executables not based on xbox
+	try
 	{
 		// mov _ZN8CVehicle22m_bEnableMouseSteeringE, bl ->
 		// mov _ZN8CVehicle22m_bEnableMouseSteeringE, al
 		void* setDefaultPreferences = get_pattern( "89 86 AD 00 00 00 66 89 86 B1 00 00 00", -0xC );
 		Patch( setDefaultPreferences, { 0x90, 0xA2 } );
 	}
+	TXN_CATCH();
 
 
 	// Re-introduce corona rotation on PC, like it is in III/VC/SA PS2
+	try
 	{
 		using namespace CoronaRotationFix;
 
@@ -6796,9 +6927,11 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		ReadCall( renderOneXLUSprite, orgRenderOneXLUSprite_Rotate_Aspect );
 		InjectHook( renderOneXLUSprite, RenderOneXLUSprite_Rotate_Aspect_SilentPatch );
 	}
+	TXN_CATCH();
 
 
 	// Fixed static shadows not rendering under fire and pickups
+	try
 	{
 		using namespace StaticShadowAlphaFix;
 
@@ -6809,9 +6942,11 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		ReadCall( renderStaticShadows.get<void>( 1 + 5 + 5 + 5 ), orgRenderStoredShadows );
 		InjectHook( renderStaticShadows.get<void>( 1 + 5 + 5 + 5 ), RenderStoredShadows_StateFix );
 	}
+	TXN_CATCH();
 
 
 	// Disable building pipeline for skinned objects (like parachute)
+	try
 	{
 		using namespace SkinBuildingPipelineFix;
 
@@ -6819,27 +6954,33 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		InterceptCall(setupAtomic, orgCustomBuildingDNPipeline_CustomPipeAtomicSetup, CustomBuildingDNPipeline_CustomPipeAtomicSetup_Skinned);
 	}
+	TXN_CATCH();
 
 
 	// Reset requested extras if created vehicle has no extras
 	// Fixes eg. lightless taxis
+	try
 	{
 		auto resetComps = pattern( "6A 00 68 ? ? ? ? 57 E8 ? ? ? ? 83 C4 0C 8B C7" ).get_one();
 
 		InjectHook( resetComps.get<void>( -9 ), CVehicleModelInfo::ResetCompsForNoExtras, HookType::Call );
 		Nop( resetComps.get<void>( -9 + 5 ), 4 );
 	}
+	TXN_CATCH();
 
 
 	// Allow extra6 to be picked with component rule 4 (any)
+	try
 	{
 		void* extra6 = get_pattern( "6A 00 E8 ? ? ? ? 83 C4 08 5E", -2 + 1 );
 
 		Patch<int8_t>( extra6, 6 );
 	}
+	TXN_CATCH();
 
 
 	// Disallow moving cam up/down with mouse when looking back/left/right in vehicle
+	try
 	{
 		using namespace FollowCarMouseCamFix;
 
@@ -6852,21 +6993,24 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		ReadCall( getPad, orgGetPad );
 		InjectHook( getPad, getPadAndSetFlag );
 	}
+	TXN_CATCH();
 
 
 	// Add wind animations when driving a Quadbike
 	// By Wesser
+	try
 	{
 		auto isOpenTopCar = pattern("8B 11 8B 82 9C 00 00 00 FF D0").get_one();
 
 		InjectHook(isOpenTopCar.get<void>(), &CVehicle::IsOpenTopCarOrQuadbike, HookType::Call);
 		Nop(isOpenTopCar.get<void>(5), 5);
-
 	}
+	TXN_CATCH();
 
 
 	// Tie handlebar movement to the stering animations on Quadbike, fixes odd animation interpolations at low speeds
 	// By Wesser
+	try
 	{
 		auto processRiderAnims = pattern("DD 05 ? ? ? ? D9 05 ? ? ? ? E8 ? ? ? ? D9 5D F0 80 7D 0B 00").get_one();
 		// Compiler reordered variables compared to the older versions, so they need to be preserved
@@ -6878,19 +7022,23 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		Nop(saveDriveByAnim.get<void>(), 1);
 		InjectHook(saveDriveByAnim.get<void>(1), &QuadbikeHandlebarAnims::SaveDriveByAnim_Steam, HookType::Call);
 	}
+	TXN_CATCH();
 
 
 	// Disable the radio station change anim on boats where CJ stands upright
 	// By Wesser
+	try
 	{
 		using namespace UprightBoatRadioStationChange;
 
 		auto blendAnimation = get_pattern("E8 ? ? ? ? 83 C4 10 85 C0 0F 85 ? ? ? ? D9 47 48");
 		InterceptCall(blendAnimation, orgAnimManagerBlendAnimation, AnimManagerBlendAnimation_SkipIfBoatDrive);
 	}
+	TXN_CATCH();
 
 
 	// Fix a memory leak when taking photos
+	try
 	{
 		using namespace CameraMemoryLeakFix;
 
@@ -6899,37 +7047,45 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InjectHook(psGrabScreen.get<void>(2), psGrabScreen_UnlockAndReleaseSurface_Steam, HookType::Jump);
 		InjectHook(psGrabScreen.get<void>(7 + 2), psGrabScreen_UnlockAndReleaseSurface_Steam, HookType::Jump);
 	}
+	TXN_CATCH();
 
 
 	// Fix crosshair issues when sniper rifle is quipped and a photo is taken by a gang member
 	// By Wesser
+	try
 	{
 		using namespace CameraCrosshairFix;
 
 		auto getWeaponInfo = get_pattern("E8 ? ? ? ? 8B 40 0C 83 C4 08 85 C0");
 		InterceptCall(getWeaponInfo, orgGetWeaponInfo, GetWeaponInfo_OrCamera);
 	}
+	TXN_CATCH();
 
 
 	// Cancel the Drive By task of biker cops when losing the wanted level
+	try
 	{
 		using namespace BikerCopsDriveByFix;
 
 		auto backToCruisingIfNoWantedLevel = get_pattern("56 E8 ? ? ? ? 80 A6 ? ? ? ? ? 83 C4 04", 1);
 		InterceptCall(backToCruisingIfNoWantedLevel, orgJoinCarWithRoadSystem, JoinCarWithRoadSystem_AbortDriveByTask);
 	}
+	TXN_CATCH();
 
 
 	// Fix miscolored racing checkpoints if no other marker was drawn before them
+	try
 	{
 		using namespace RacingCheckpointsRender;
 
 		auto clumpRender = get_pattern("E8 ? ? ? ? DD 05 ? ? ? ? 83 C4 14");
 		InterceptCall(clumpRender, orgRpClumpRender, RpClumpRender_SetLitFlag);
 	}
+	TXN_CATCH();
 
 
 	// Delay destroying of cigarettes/bottles held by NPCs so it does not potentially corrupt the moving list
+	try
 	{
 		// CWorld::Process processes all entries in the moving list, calling ProcessControl on them.
 		// CPlayerPed::ProcessControl handles the gang recruitment which in turn can result in homies dropping cigarettes or bottles.
@@ -6945,10 +7101,12 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		Patch(dropEntity, { 0x81, 0x4E, 0x1C, 0x00, 0x08, 0x00, 0x00, 0xEB, 0x13 });
 	}
+	TXN_CATCH();
 
 
 	// Spawn lapdm1 (biker cop) correctly if the script requests one with PEDTYPE_COP
 	// By Wesser
+	try
 	{
 		using namespace GetCorrectPedModel_Lapdm1;
 
@@ -6960,9 +7118,11 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 			Patch(jumpTablePtr+4, &BikerCop_Steam);
 		}
 	}
+	TXN_CATCH();
 
 
 	// Only allow impounding cars and bikes (and their subclasses), as impounding helicopters, planes, boats makes no sense
+	try
 	{
 		using namespace RestrictImpoundVehicleTypes;
 
@@ -6973,11 +7133,13 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		};
 		HookEach_ShouldImpound(isThisVehicleInteresting, InterceptCall);
 	}
+	TXN_CATCH();
 
 
 	// Fix PlayerPed replay crashes
 	// 1. Crash when starting a mocap cutscene after playing a replay wearing different clothes to the ones CJ has currently
 	// 2. Crash when playing back a replay with a different motion group anim (fat/muscular/normal) than the current one
+	try
 	{
 		using namespace ReplayPlayerPedCrashFixes;
 
@@ -6987,19 +7149,23 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InterceptCall(restoreStuffFromMem, orgRestoreStuffFromMem, RestoreStuffFromMem_RebuildPlayer);
 		InterceptCall(rebuildPlayer, orgRebuildPlayer, RebuildPlayer_LoadAllMotionGroupAnims);
 	}
+	TXN_CATCH();
 
 
 	// Fix planes spawning in places where they crash easily
+	try
 	{
 		using namespace FindPlaneCreationCoorsFix;
 
 		auto findPlaneCreationCoors = get_pattern("E8 ? ? ? ? 83 C4 18 84 C0 74 09");
 		InterceptCall(findPlaneCreationCoors, orgCheckCameraCollisionBuildings, CheckCameraCollisionBuildings_FixParams_Steam);
 	}
+	TXN_CATCH();
 
 
 	// Allow hovering on the Jetpack with Keyboard + Mouse controls
 	// Does not modify any other controls, only hovering
+	try
 	{
 		using namespace JetpackKeyboardControlsHover;
 
@@ -7013,10 +7179,12 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InjectHook(processControl_CheckHover.get<void>(6 + 1), &ProcessControlInput_HoverWithKeyboard_Steam, HookType::Jump);
 		ReadCall(processControl_DoHover.get<void>(), orgGetLookBehindForCar);
 	}
+	TXN_CATCH();
 
 
 	// During riots, don't target the player group during missions
 	// Fixes recruited homies panicking during Los Desperados and other riot-time missions
+	try
 	{
 		using namespace RiotDontTargetPlayerGroupDuringMissions;
 
@@ -7027,19 +7195,23 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		SkipTargetting = skipTargetting;
 		InjectHook(targettingCheck.get<void>(), CheckIfInPlayerGroupAndOnAMission_Steam, HookType::Jump);
 	}
+	TXN_CATCH();
 
 
 	// Rescale light switching randomness in CVehicle::GetVehicleLightsStatus for PC the randomness range
 	// The original randomness was 50000 out of 65535, which is impossible to hit with PC's 32767 range
+	try
 	{
 		auto getVehicleLightsStatus = get_pattern("DC 35 ? ? ? ? D9 05 ? ? ? ? D8 D9", 2);
 
 		static const double LightStatusRandomnessThreshold = 25000.0;
 		Patch<const void*>(getVehicleLightsStatus, &LightStatusRandomnessThreshold);
 	}
+	TXN_CATCH();
 
 
 	// Fixed vehicles exploding twice if the driver leaves the car while it's exploding
+	try
 	{
 		using namespace RemoveDriverStatusFix;
 
@@ -7057,9 +7229,11 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		Nop(removeThisPed, 3);
 		Nop(taskSimpleCarSetPedOut, 3);
 	}
+	TXN_CATCH();
 
 
 	// Fixed falling stars rendering black
+	try
 	{
 		using namespace ShootingStarsFix;
 
@@ -7067,9 +7241,11 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		InterceptCall(rwIm3dTransform, orgRwIm3DTransform, RwIm3DTransform_UnsetTexture);
 	}
+	TXN_CATCH();
 
 
 	// Enable directional lights on flying car components
+	try
 	{
 		using namespace LitFlyingComponents;
 
@@ -7077,12 +7253,14 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		InterceptCall(worldAdd, orgWorldAdd, WorldAdd_SetLightObjectFlag);
 	}
+	TXN_CATCH();
 
 
 	// Fix the logic behind exploding cars losing wheels
 	// Right now, they lose one wheel at random according to the damage manager, but they always lose the front left wheel visually.
 	// This change matches the visuals to the physics
 	// Also make it possible for the rear right wheel to be randomly picked
+	try
 	{
 		auto automobileBlowUp = pattern("E8 ? ? ? ? 8B 8E ? ? ? ? 8D 45 08").get_one();
 		auto automobileBlowUpCutscene = pattern("E8 ? ? ? ? 80 7D 10 00 C7 45").get_one();
@@ -7106,9 +7284,11 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		static const double fRandomness = -4.0;
 		Patch(wheelDetachRandomness, &fRandomness);
 	}
+	TXN_CATCH();
 
 
 	// Make script randomness 16-bit, like on PS2
+	try
 	{
 		using namespace Rand16bit;
 
@@ -7119,6 +7299,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		HookEach_Rand(rands, InterceptCall);
 	}
+	TXN_CATCH();
 }
 
 
