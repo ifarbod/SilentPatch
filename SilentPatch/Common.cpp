@@ -163,7 +163,8 @@ namespace Rand16bit
 		return bottomBits | topBit;
 	}
 
-	HOOK_EACH_FUNC(Rand, orgRand, rand16bit);
+	HOOK_EACH_FUNC_CTR(Rand_Script, 0, orgRand, rand16bit);
+	HOOK_EACH_FUNC_CTR(Rand_PedChat, 1, orgRand, rand16bit);
 }
 
 
@@ -329,19 +330,35 @@ namespace Common {
 			TXN_CATCH();
 
 
-			// Make script randomness 16-bit, like on PS2
-			try
+			// Fix various randomness factors expecting 16-bit rand()
 			{
+				// Treat each instance separately
 				using namespace Rand16bit;
 
-				std::array<void*, 2> rands = {
-					get_pattern("E8 ? ? ? ? 0F B7 C0 89 06"),
-					get_pattern("E8 ? ? ? ? 25 FF FF 00 00 89 84 24 ? ? ? ? 30 C0"),
-				};
+				// Script randomness
+				try
+				{
+					std::array<void*, 2> rands = {
+						get_pattern("E8 ? ? ? ? 0F B7 C0 89 06"),
+						get_pattern("E8 ? ? ? ? 25 FF FF 00 00 89 84 24 ? ? ? ? 30 C0"),
+					};
 
-				HookEach_Rand(rands, InterceptCall);
+					HookEach_Rand_Script(rands, InterceptCall);
+				}
+				TXN_CATCH();
+
+				// CPed::Chat
+				try
+				{
+					std::array<void*, 2> rands = {
+						get_pattern("E8 ? ? ? ? 66 3D 00 02"),
+						get_pattern("E8 ? ? ? ? 66 83 F8 14"),
+					};
+
+					HookEach_Rand_PedChat(rands, InterceptCall);
+				}
+				TXN_CATCH();
 			}
-			TXN_CATCH();
 		}
 
 		void III_VC_SetDelayedPatchesFunc( void(*func)() )
