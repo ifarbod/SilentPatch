@@ -260,7 +260,7 @@ public:
 	bool				bObjectFlag4 : 1;
 	bool				bObjectFlag5 : 1;
 	bool				m_bIsExploded : 1;
-	bool				bObjectFlag7 : 1;
+	bool				bUseVehicleColours : 1;
 	bool				m_bIsLampPost : 1;
 	bool				m_bIsTargetable : 1;
 	bool				m_bIsBroken : 1;

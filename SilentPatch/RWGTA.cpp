@@ -1,5 +1,3 @@
-#include "RWGTA.h"
-
 #include "Utils/MemoryMgr.h"
 #include "Utils/Patterns.h"
 
@@ -17,21 +15,25 @@ void** rwengine = []() -> void** {
 	// Thanks Steam III...
 
 	// Locate RwRenderStateSet
-	auto renderStateSetPtr = hook::get_pattern( "D1 7C 24 2C", 4 );
-	auto renderStateSet = reinterpret_cast<uintptr_t>(Memory::ReadCallFrom( renderStateSetPtr ));
-
-	// Test III 1.0/1.1/VC
-	if ( *reinterpret_cast<uint8_t*>(renderStateSet) == 0xA1 )
+	try
 	{
-		return *reinterpret_cast<void***>(renderStateSet + 1);
-	}
+		auto renderStateSetPtr = hook::txn::get_pattern( "D1 7C 24 2C", 4 );
+		auto renderStateSet = reinterpret_cast<uintptr_t>(Memory::ReadCallFrom( renderStateSetPtr ));
 
-	// Test III Steam
-	renderStateSet += 3;
-	if ( *reinterpret_cast<uint8_t*>(renderStateSet) == 0xA1 )
-	{
-		return *reinterpret_cast<void***>(renderStateSet + 1);
+		// Test III 1.0/1.1/VC
+		if ( *reinterpret_cast<uint8_t*>(renderStateSet) == 0xA1 )
+		{
+			return *reinterpret_cast<void***>(renderStateSet + 1);
+		}
+
+		// Test III Steam
+		renderStateSet += 3;
+		if ( *reinterpret_cast<uint8_t*>(renderStateSet) == 0xA1 )
+		{
+			return *reinterpret_cast<void***>(renderStateSet + 1);
+		}
 	}
+	TXN_CATCH();
 
 	assert(!"Could not locate RwEngineInstance!");
 	return nullptr;
@@ -50,6 +52,16 @@ void RwD3D8GetRenderState(RwUInt32 state, void* value)
 RwReal RwIm2DGetNearScreenZ()
 {
 	return RWSRCGLOBAL(dOpenDevice).zBufferNear;
+}
+
+RwBool RwRenderStateGet(RwRenderState state, void *value)
+{
+	return RWSRCGLOBAL(dOpenDevice).fpRenderStateGet(state, value);
+}
+
+RwBool RwRenderStateSet(RwRenderState state, void *value)
+{
+	return RWSRCGLOBAL(dOpenDevice).fpRenderStateSet(state, value);
 }
 
 // Unreachable stub

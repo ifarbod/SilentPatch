@@ -89,9 +89,6 @@
     <ClInclude Include="..\SilentPatch\debugmenu_public.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\SilentPatch\RWGTA.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\SilentPatch\Maths.h">
       <Filter>Header Files</Filter>
     </ClInclude>

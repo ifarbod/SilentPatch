@@ -68,7 +68,7 @@ void CPed::RenderWeapon(bool bWeapon, bool bMuzzleFlash, bool bForShadow)
 
 				if ( bMuzzleFlash && m_pMuzzleFlashFrame != nullptr )
 				{
-					RwScopedRenderState zWrite(rwRENDERSTATEZWRITEENABLE);
+					RwScopedRenderState<rwRENDERSTATEZWRITEENABLE> zWrite;
 					RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, FALSE);
 
 					SetGunFlashAlpha(bRightGun);

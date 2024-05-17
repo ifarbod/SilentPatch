@@ -714,6 +714,63 @@ namespace VariableResets
 }
 
 
+// ============= Disabled backface culling on detached car parts =============
+namespace CarPartsBackfaceCulling
+{
+	// Only the parts of CObject we need
+	enum // m_objectCreatedBy
+	{
+		GAME_OBJECT = 1,
+		MISSION_OBJECT = 2,
+		TEMP_OBJECT = 3,
+	};
+
+	struct Object
+	{
+		std::byte		__pad[364];
+		uint8_t			m_objectCreatedBy;
+		bool			bObjectFlag0 : 1;
+		bool			bObjectFlag1 : 1;
+		bool			bObjectFlag2 : 1;
+		bool			bObjectFlag3 : 1;
+		bool			bObjectFlag4 : 1;
+		bool			bObjectFlag5 : 1;
+		bool			m_bIsExploded : 1;
+		bool			bUseVehicleColours : 1;
+		std::byte		__pad2[22];
+		FLAUtils::int16	m_wCarPartModelIndex;
+	};
+
+	static void* ObjectRender_Prologue_JumpBack;
+	__declspec(naked) static void __fastcall ObjectRender_Original(Object*)
+	{
+		_asm
+		{
+			push	ebx
+			push	esi
+			mov		ebx, ecx
+			push	edi
+			jmp		[ObjectRender_Prologue_JumpBack]
+		}
+	}
+
+	// If CObject::Render is re-routed by another mod, we overwrite this later
+	static void (__fastcall *orgObjectRender)(Object* obj) = &ObjectRender_Original;
+
+	static void __fastcall ObjectRender_BackfaceCulling(Object* obj)
+	{
+		RwScopedRenderState<rwRENDERSTATECULLMODE> cullState;
+
+		if (obj->m_wCarPartModelIndex.Get() != -1 && obj->m_objectCreatedBy == TEMP_OBJECT && obj->bUseVehicleColours)
+		{
+			RwRenderStateSet(rwRENDERSTATECULLMODE, reinterpret_cast<void*>(rwCULLMODECULLNONE));
+		}
+
+		orgObjectRender(obj);
+	}
+}
+
+
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -1611,6 +1668,26 @@ void Patch_VC_Common()
 		// movzx edx, word ptr [ebp+5DAh] -> movzx edx, bx \ nop
 		Patch(comment_delay_id2.get<void>(), { 0x0F, 0xB7, 0xD3 });
 		Nop(comment_delay_id2.get<void>(3), 4);
+	}
+	TXN_CATCH();
+
+
+	// Disabled backface culling on detached car parts
+	try
+	{
+		using namespace CarPartsBackfaceCulling;
+
+		auto object_render = pattern("55 83 EC 68 8A 43 54").get_one();
+
+		ObjectRender_Prologue_JumpBack = object_render.get<void>();
+		
+		// Check if CObject::Render is already re-routed by something else
+		if (*object_render.get<uint8_t>(-5) == 0xE9)
+		{
+			ReadCall(object_render.get<void>(-5), orgObjectRender);
+		}
+
+		InjectHook(object_render.get<void>(-5), ObjectRender_BackfaceCulling, HookType::Jump);
 	}
 	TXN_CATCH();
 }

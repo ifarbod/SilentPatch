@@ -375,7 +375,7 @@ static RpAtomic* RenderAtomic(RpAtomic* pAtomic, float fComp)
 
 static RpAtomic* StaticPropellerRender(RpAtomic* pAtomic)
 {
-	RwScopedRenderState alphaRef(rwRENDERSTATEALPHATESTFUNCTIONREF);
+	RwScopedRenderState<rwRENDERSTATEALPHATESTFUNCTIONREF> alphaRef;
 
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, 0);
 	pAtomic = AtomicDefaultRenderCallBack(pAtomic);
@@ -385,8 +385,8 @@ static RpAtomic* StaticPropellerRender(RpAtomic* pAtomic)
 
 static RpAtomic* MovingPropellerRender(RpAtomic* pAtomic)
 {
-	RwScopedRenderState alphaRef(rwRENDERSTATEALPHATESTFUNCTIONREF);
-	RwScopedRenderState vertexAlpha(rwRENDERSTATEVERTEXALPHAENABLE);
+	RwScopedRenderState<rwRENDERSTATEALPHATESTFUNCTIONREF> alphaRef;
+	RwScopedRenderState<rwRENDERSTATEVERTEXALPHAENABLE> vertexAlpha;
 
 	RwRenderStateSet(rwRENDERSTATEALPHATESTFUNCTIONREF, 0);
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
@@ -430,9 +430,9 @@ void RenderWeapon(CPed* pPed)
 
 void RenderWeaponPedsForPC()
 {
-	RwScopedRenderState vertexAlpha(rwRENDERSTATEVERTEXALPHAENABLE);
-	RwScopedRenderState zWrite(rwRENDERSTATEZWRITEENABLE);
-	RwScopedRenderState fogEnable(rwRENDERSTATEFOGENABLE);
+	RwScopedRenderState<rwRENDERSTATEVERTEXALPHAENABLE> vertexAlpha;
+	RwScopedRenderState<rwRENDERSTATEZWRITEENABLE> zWrite;
+	RwScopedRenderState<rwRENDERSTATEFOGENABLE> fogEnable;
 
 	RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, reinterpret_cast<void*>(TRUE));
 	RwRenderStateSet(rwRENDERSTATEZWRITEENABLE, reinterpret_cast<void*>(TRUE));
@@ -1869,7 +1869,7 @@ namespace StaticShadowAlphaFix
 	static void (*orgRenderStaticShadows)();
 	static void RenderStaticShadows_StateFix()
 	{
-		RwScopedRenderState state(rwRENDERSTATEALPHATESTFUNCTION);
+		RwScopedRenderState<rwRENDERSTATEALPHATESTFUNCTION> state;
 
 		RwRenderStateSet( rwRENDERSTATEALPHATESTFUNCTION, (void*)rwALPHATESTFUNCTIONALWAYS );
 		orgRenderStaticShadows();
@@ -1878,7 +1878,7 @@ namespace StaticShadowAlphaFix
 	static void (*orgRenderStoredShadows)();
 	static void RenderStoredShadows_StateFix()
 	{
-		RwScopedRenderState state(rwRENDERSTATEALPHATESTFUNCTION);
+		RwScopedRenderState<rwRENDERSTATEALPHATESTFUNCTION> state;
 
 		RwRenderStateSet( rwRENDERSTATEALPHATESTFUNCTION, (void*)rwALPHATESTFUNCTIONALWAYS );
 		orgRenderStoredShadows();
@@ -1935,7 +1935,7 @@ namespace MoonphasesFix
 			return mask;
 		} ();
 
-		RwScopedRenderState alphaTest( rwRENDERSTATEALPHATESTFUNCTION );
+		RwScopedRenderState<rwRENDERSTATEALPHATESTFUNCTION> alphaTest;
 
 		if ( gpMoonMask != nullptr )
 		{

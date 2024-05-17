@@ -247,6 +247,7 @@ copy /y "$(TargetPath)" "H:\Rockstar Games\Grand Theft Auto San Andreas\SilentPa
     <ClInclude Include="..\SilentPatch\Desktop.h" />
     <ClInclude Include="..\SilentPatch\Maths.h" />
     <ClInclude Include="..\SilentPatch\resource1.h" />
+    <ClInclude Include="..\SilentPatch\RWUtils.hpp" />
     <ClInclude Include="..\SilentPatch\SVF.h" />
     <ClInclude Include="..\SilentPatch\TheFLAUtils.h" />
     <ClInclude Include="..\SilentPatch\Utils\DelimStringReader.h" />
@@ -264,7 +265,6 @@ copy /y "$(TargetPath)" "H:\Rockstar Games\Grand Theft Auto San Andreas\SilentPa
     <ClInclude Include="PNGFile.h" />
     <ClInclude Include="PoolsSA.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="RWUtils.hpp" />
     <ClInclude Include="ScriptSA.h" />
     <ClInclude Include="StdAfxSA.h" />
     <ClInclude Include="TimerSA.h" />

@@ -69,10 +69,10 @@ void CObject::Render()
 	std::pair<void**,void*> materialRestoreData[256];
 	size_t numMaterialsToRestore = 0;
 
-	RwScopedRenderState cullState(rwRENDERSTATECULLMODE);
+	RwScopedRenderState<rwRENDERSTATECULLMODE> cullState;
 
 	const int32_t carPartModelIndex = m_wCarPartModelIndex.Get();
-	if ( carPartModelIndex != -1 && m_objectCreatedBy == TEMP_OBJECT && bObjectFlag7 && RwObjectGetType(m_pRwObject) == rpATOMIC )
+	if ( carPartModelIndex != -1 && m_objectCreatedBy == TEMP_OBJECT && bUseVehicleColours && RwObjectGetType(m_pRwObject) == rpATOMIC )
 	{
 		auto* pData = materialRestoreData;
 
