@@ -799,7 +799,10 @@ namespace SelectableBackfaceCulling
 		if (entityType == 4)
 		{
 			const Object* object = reinterpret_cast<const Object*>(entity);
-			return object->m_wCarPartModelIndex.Get() != -1 && object->m_objectCreatedBy == TEMP_OBJECT && object->bUseVehicleColours;
+			if (object->m_wCarPartModelIndex.Get() != -1 && object->m_objectCreatedBy == TEMP_OBJECT && object->bUseVehicleColours)
+			{
+				return true;
+			}
 		}
 
 		// For everything else, check the exclusion list
@@ -840,7 +843,7 @@ namespace SVFReadyHook
 		if (model != nullptr)
 		{
 			uint16_t* flags = reinterpret_cast<uint16_t*>(static_cast<char*>(model) + 0x42);
-			*flags |= 0xC0;
+			*flags |= 0x40;
 		}
 	}
 }
