@@ -18,6 +18,7 @@ namespace SVF
 			{ "FBI_RANCHER_SIREN", Feature::FBI_RANCHER_SIREN },
 			{ "FBI_WASHINGTON_SIREN", Feature::FBI_WASHINGTON_SIREN },
 			{ "VICE_CHEETAH_SIREN", Feature::VICE_CHEETAH_SIREN },
+			{ "DRAW_BACKFACES", Feature::DRAW_BACKFACES },
 #endif
 
 #if _GTA_SA

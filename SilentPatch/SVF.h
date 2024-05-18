@@ -18,6 +18,8 @@ namespace SVF
 		FBI_RANCHER_SIREN,
 		FBI_WASHINGTON_SIREN,
 		VICE_CHEETAH_SIREN,
+
+		DRAW_BACKFACES, // Not vehicle specific, but it'll do
 #endif
 
 #if _GTA_III || _GTA_VC

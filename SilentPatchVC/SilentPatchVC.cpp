@@ -10,6 +10,7 @@
 #include "SVF.h"
 #include "RWUtils.hpp"
 #include "TheFLAUtils.h"
+#include "ParseUtils.hpp"
 
 #include <array>
 #include <memory>
@@ -20,6 +21,7 @@
 #include "Utils/Patterns.h"
 #include "Utils/ScopedUnprotect.hpp"
 #include "Utils/HookEach.hpp"
+#include "Utils/DelimStringReader.h"
 
 #include "debugmenu_public.h"
 
@@ -714,15 +716,39 @@ namespace VariableResets
 }
 
 
-// ============= Disabled backface culling on detached car parts =============
-namespace CarPartsBackfaceCulling
+// ============= Disabled backface culling on detached car parts, peds and specific models =============
+namespace SelectableBackfaceCulling
 {
-	// Only the parts of CObject we need
+	void ReadDrawBackfacesExclusions(const wchar_t* pPath)
+	{
+		constexpr size_t SCRATCH_PAD_SIZE = 32767;
+		WideDelimStringReader reader(SCRATCH_PAD_SIZE);
+
+		GetPrivateProfileSectionW(L"DrawBackfaces", reader.GetBuffer(), reader.GetSize(), pPath);
+		while (const wchar_t* str = reader.GetString())
+		{
+			auto modelID = ParseUtils::TryParseInt(str);
+			if (modelID)
+				SVF::RegisterFeature(*modelID, SVF::Feature::DRAW_BACKFACES);
+			else
+				SVF::RegisterFeature(ParseUtils::ParseString(str), SVF::Feature::DRAW_BACKFACES);
+		}
+	}
+
+	// Only the parts of CEntity and CObject we need
 	enum // m_objectCreatedBy
 	{
 		GAME_OBJECT = 1,
 		MISSION_OBJECT = 2,
 		TEMP_OBJECT = 3,
+	};
+
+	struct Entity
+	{
+		std::byte		__pad[80];
+		uint8_t			m_nType : 3;
+		std::byte		__pad2[11];
+		FLAUtils::int16	m_modelIndex;
 	};
 
 	struct Object
@@ -741,43 +767,81 @@ namespace CarPartsBackfaceCulling
 		FLAUtils::int16	m_wCarPartModelIndex;
 	};
 
-	static void* ObjectRender_Prologue_JumpBack;
-	__declspec(naked) static void __fastcall ObjectRender_Original(Object*)
+	static void* EntityRender_Prologue_JumpBack;
+	__declspec(naked) static void __fastcall EntityRender_Original(Entity*)
 	{
 		_asm
 		{
-			push	ebx
-			push	esi
-			mov		ebx, ecx
-			push	edi
-			jmp		[ObjectRender_Prologue_JumpBack]
+			push    ebx
+			mov     ebx, ecx
+			cmp     dword ptr [ebx+4Ch], 0
+			jmp		[EntityRender_Prologue_JumpBack]
 		}
 	}
 
-	// If CObject::Render is re-routed by another mod, we overwrite this later
-	static void (__fastcall *orgObjectRender)(Object* obj) = &ObjectRender_Original;
+	static bool ShouldDisableBackfaceCulling(const Entity* entity)
+	{
+		const uint8_t entityType = entity->m_nType;
 
-	static void __fastcall ObjectRender_BackfaceCulling(Object* obj)
+		// Vehicles disable BFC elsewhere already
+		if (entityType == 2)
+		{
+			return false;
+		}
+
+		// Always disable BFC on peds
+		if (entityType == 3)
+		{
+			return true;
+		}
+
+		// For objects, do extra checks
+		if (entityType == 4)
+		{
+			const Object* object = reinterpret_cast<const Object*>(entity);
+			return object->m_wCarPartModelIndex.Get() != -1 && object->m_objectCreatedBy == TEMP_OBJECT && object->bUseVehicleColours;
+		}
+
+		// For everything else, check the exclusion list
+		return SVF::ModelHasFeature(entity->m_modelIndex.Get(), SVF::Feature::DRAW_BACKFACES);
+	}
+
+	// If CEntity::Render is re-routed by another mod, we overwrite this later
+	static void (__fastcall *orgEntityRender)(Entity* obj) = &EntityRender_Original;
+
+	static void __fastcall EntityRender_BackfaceCulling(Entity* obj)
 	{
 		RwScopedRenderState<rwRENDERSTATECULLMODE> cullState;
 
-		if (obj->m_wCarPartModelIndex.Get() != -1 && obj->m_objectCreatedBy == TEMP_OBJECT && obj->bUseVehicleColours)
+		if (ShouldDisableBackfaceCulling(obj))
 		{
 			RwRenderStateSet(rwRENDERSTATECULLMODE, reinterpret_cast<void*>(rwCULLMODECULLNONE));
 		}
 
-		orgObjectRender(obj);
+		orgEntityRender(obj);
 	}
 }
 
 
 namespace SVFReadyHook
 {
+	static void* (*GetModelInfo)(const char*, int*);
+
 	static void (*orgInitialiseObjectData)(const char*);
 	static void InitialiseObjectData_ReadySVF(const char* path)
 	{
 		orgInitialiseObjectData(path);
 		SVF::MarkModelNamesReady();
+
+		// This is a bit dirty, but whatever
+		// Tooled Up in North Point Mall needs a "draw last" flag, or else our BFC changes break it very badly
+		// AmmuNation and other stores already have that flag, this one does not
+		void* model = GetModelInfo("mall_hardware", nullptr);
+		if (model != nullptr)
+		{
+			uint16_t* flags = reinterpret_cast<uint16_t*>(static_cast<char*>(model) + 0x42);
+			*flags |= 0xC0;
+		}
 	}
 }
 
@@ -945,6 +1009,7 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		auto initialiseObjectData = get_pattern("E8 ? ? ? ? 59 E8 ? ? ? ? E8 ? ? ? ? 31 DB");
 		auto getModelInfo = (void*(*)(const char*, int*))get_pattern("57 31 FF 55 8B 6C 24 14", -6);
 
+		GetModelInfo = getModelInfo;
 		InterceptCall(initialiseObjectData, orgInitialiseObjectData, InitialiseObjectData_ReadySVF);
 		SVF::RegisterGetModelInfoCB(getModelInfo);
 	}
@@ -964,6 +1029,8 @@ void InjectDelayedPatches_VC_Common()
 	PathRenameExtensionW(wcModulePath, L".ini");
 
 	const bool hasDebugMenu = DebugMenuLoad();
+
+	SelectableBackfaceCulling::ReadDrawBackfacesExclusions(wcModulePath);
 
 	InjectDelayedPatches_VC_Common( hasDebugMenu, wcModulePath );
 
@@ -1697,22 +1764,22 @@ void Patch_VC_Common()
 	TXN_CATCH();
 
 
-	// Disabled backface culling on detached car parts
+	// Disabled backface culling on detached car parts, peds and specific models
 	try
 	{
-		using namespace CarPartsBackfaceCulling;
+		using namespace SelectableBackfaceCulling;
 
-		auto object_render = pattern("55 83 EC 68 8A 43 54").get_one();
+		auto entity_render = pattern("56 75 06 5E 5B C3").get_one();
 
-		ObjectRender_Prologue_JumpBack = object_render.get<void>();
+		EntityRender_Prologue_JumpBack = entity_render.get<void>();
 		
-		// Check if CObject::Render is already re-routed by something else
-		if (*object_render.get<uint8_t>(-5) == 0xE9)
+		// Check if CEntity::Render is already re-routed by something else
+		if (*entity_render.get<uint8_t>(-7) == 0xE9)
 		{
-			ReadCall(object_render.get<void>(-5), orgObjectRender);
+			ReadCall(entity_render.get<void>(-7), orgEntityRender);
 		}
 
-		InjectHook(object_render.get<void>(-5), ObjectRender_BackfaceCulling, HookType::Jump);
+		InjectHook(entity_render.get<void>(-7), EntityRender_BackfaceCulling, HookType::Jump);
 	}
 	TXN_CATCH();
 }
