@@ -29,6 +29,7 @@
 #include "Utils/HookEach.hpp"
 
 #include "Desktop.h"
+#include "SVF.h"
 
 #include "debugmenu_public.h"
 #include "resource.h"
@@ -2659,6 +2660,16 @@ static bool IgnoresWeaponPedsForPCFix()
 }
 
 
+namespace SVFReadyHook
+{
+	static void (*orgMatchAllModelStrings)();
+	static void MatchAllModelStrings_ReadySVF()
+	{
+		orgMatchAllModelStrings();
+		SVF::MarkModelNamesReady();
+	}
+}
+
 #ifndef NDEBUG
 
 // ============= QPC spoof for verifying high timer issues =============
@@ -3892,6 +3903,16 @@ BOOL InjectDelayedPatches_10()
 				DebugMenuEntry *e = DebugMenuAddVar( "SilentPatch", "Forced units", &forcedUnits, nullptr, 1, -1, 1, str );
 				DebugMenuEntrySetWrap(e, true);
 			}			
+		}
+
+		// Register CBaseModelInfo::GetModelInfo for SVF so we can resolve model names
+		{
+			using namespace SVFReadyHook;
+
+			auto func = (void*(*)(const char*, int*))0x4C5940;
+
+			InterceptCall(0x5B922F, orgMatchAllModelStrings, MatchAllModelStrings_ReadySVF);
+			SVF::RegisterGetModelInfoCB(func);
 		}
 
 #ifndef NDEBUG

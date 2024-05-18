@@ -170,6 +170,7 @@
     <ClInclude Include="..\SilentPatch\debugmenu_public.h" />
     <ClInclude Include="..\SilentPatch\Desktop.h" />
     <ClInclude Include="..\SilentPatch\Maths.h" />
+    <ClInclude Include="..\SilentPatch\ParseUtils.hpp" />
     <ClInclude Include="..\SilentPatch\RWUtils.hpp" />
     <ClInclude Include="..\SilentPatch\StdAfx.h" />
     <ClInclude Include="..\SilentPatch\StoredCar.h" />
@@ -194,6 +195,11 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\SilentPatch\Desktop.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Shipping|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\SilentPatch\ParseUtils.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Shipping|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>

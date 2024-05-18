@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <string>
 
 namespace SVF
 {
@@ -49,8 +50,12 @@ namespace SVF
 	};
 
 	int32_t RegisterFeature( int32_t modelID, Feature feature );
+	int32_t RegisterFeature( std::string modelName, Feature feature );
 	void DeleteFeature( int32_t cookie );
 	void DisableStockVehiclesForFeature( Feature feature );
 	bool ModelHasFeature( int32_t modelID, Feature feature );
 	std::function<bool(Feature)> ForAllModelFeatures( int32_t modelID, std::function<bool(Feature)> pred );
+
+	void RegisterGetModelInfoCB(void*(*func)(const char*, int*));
+	void MarkModelNamesReady();
 };

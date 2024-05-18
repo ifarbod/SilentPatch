@@ -5,6 +5,7 @@
 #include "Utils/HookEach.hpp"
 #include "StoredCar.h"
 #include "SVF.h"
+#include "ParseUtils.hpp"
 
 #include "Utils/DelimStringReader.h"
 
@@ -136,9 +137,11 @@ namespace ExtraCompSpecularity
 		GetPrivateProfileSectionW(L"ExtraCompSpecularityExceptions", reader.GetBuffer(), reader.GetSize(), pPath);
 		while (const wchar_t* str = reader.GetString())
 		{
-			int32_t toList = wcstol(str, nullptr, 0);
-			if ( toList > 0 )
-				SVF::RegisterFeature(toList, SVF::Feature::_INTERNAL_NO_SPECULARITY_ON_EXTRAS);
+			auto modelID = ParseUtils::TryParseInt(str);
+			if (modelID)
+				SVF::RegisterFeature(*modelID, SVF::Feature::_INTERNAL_NO_SPECULARITY_ON_EXTRAS);
+			else
+				SVF::RegisterFeature(ParseUtils::ParseString(str), SVF::Feature::_INTERNAL_NO_SPECULARITY_ON_EXTRAS);
 		}
 	}
 

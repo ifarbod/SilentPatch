@@ -207,6 +207,11 @@ copy /y "$(TargetPath)" "H:\Rockstar Games\Grand Theft Auto San Andreas\SilentPa
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Shipping|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\SilentPatch\ParseUtils.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Shipping|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\SilentPatch\SVF.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Shipping|Win32'">NotUsing</PrecompiledHeader>
@@ -246,6 +251,7 @@ copy /y "$(TargetPath)" "H:\Rockstar Games\Grand Theft Auto San Andreas\SilentPa
     <ClInclude Include="..\SilentPatch\debugmenu_public.h" />
     <ClInclude Include="..\SilentPatch\Desktop.h" />
     <ClInclude Include="..\SilentPatch\Maths.h" />
+    <ClInclude Include="..\SilentPatch\ParseUtils.hpp" />
     <ClInclude Include="..\SilentPatch\resource1.h" />
     <ClInclude Include="..\SilentPatch\RWUtils.hpp" />
     <ClInclude Include="..\SilentPatch\SVF.h" />

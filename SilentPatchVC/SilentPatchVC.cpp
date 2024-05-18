@@ -771,6 +771,17 @@ namespace CarPartsBackfaceCulling
 }
 
 
+namespace SVFReadyHook
+{
+	static void (*orgInitialiseObjectData)(const char*);
+	static void InitialiseObjectData_ReadySVF(const char* path)
+	{
+		orgInitialiseObjectData(path);
+		SVF::MarkModelNamesReady();
+	}
+}
+
+
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -925,6 +936,20 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		}
 		TXN_CATCH();
 	}
+
+	// Register CBaseModelInfo::GetModelInfo for SVF so we can resolve model names
+	try
+	{
+		using namespace SVFReadyHook;
+
+		auto initialiseObjectData = get_pattern("E8 ? ? ? ? 59 E8 ? ? ? ? E8 ? ? ? ? 31 DB");
+		auto getModelInfo = (void*(*)(const char*, int*))get_pattern("57 31 FF 55 8B 6C 24 14", -6);
+
+		InterceptCall(initialiseObjectData, orgInitialiseObjectData, InitialiseObjectData_ReadySVF);
+		SVF::RegisterGetModelInfoCB(getModelInfo);
+	}
+	TXN_CATCH();
+
 
 	FLAUtils::Init(moduleList);
 }

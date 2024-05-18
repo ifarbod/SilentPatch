@@ -839,6 +839,17 @@ namespace SitInBoat
 }
 
 
+namespace SVFReadyHook
+{
+	static void (*orgInitialiseObjectData)(const char*);
+	static void InitialiseObjectData_ReadySVF(const char* path)
+	{
+		orgInitialiseObjectData(path);
+		SVF::MarkModelNamesReady();
+	}
+}
+
+
 void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -994,6 +1005,21 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 		InjectHook( setupMinDist.get<void>( 2 ), &CSimpleModelInfo::SetNearDistanceForLOD_SilentPatch, HookType::Call );
 	}
 	TXN_CATCH();
+
+
+	// Register CBaseModelInfo::GetModelInfo for SVF so we can resolve model names
+	try
+	{
+		using namespace SVFReadyHook;
+
+		auto initialiseObjectData = get_pattern("E8 ? ? ? ? B3 01 59 8D 6D 04");
+		auto getModelInfo = (void*(*)(const char*, int*))get_pattern("31 FF 8D 84 20 00 00 00 00 8B 04 BD", -7);
+
+		InterceptCall(initialiseObjectData, orgInitialiseObjectData, InitialiseObjectData_ReadySVF);
+		SVF::RegisterGetModelInfoCB(getModelInfo);
+	}
+	TXN_CATCH();
+
 
 	FLAUtils::Init(moduleList);
 }

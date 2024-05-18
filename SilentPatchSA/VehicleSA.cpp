@@ -6,6 +6,7 @@
 #include "PedSA.h"
 #include "Utils/DelimStringReader.h"
 #include "PlayerInfoSA.h"
+#include "ParseUtils.hpp"
 
 #include "SVF.h"
 
@@ -27,26 +28,29 @@ bool ReadDoubleRearWheels(const wchar_t* pPath)
 	GetPrivateProfileSectionW( L"DoubleRearWheels", reader.GetBuffer(), reader.GetSize(), pPath );
 	while ( const wchar_t* str = reader.GetString() )
 	{
-		wchar_t textLine[64];
-		wchar_t* context = nullptr;
-		wchar_t* token;
+		wchar_t textLine[128];
+		wcscpy_s(textLine, str);
 
-		wcscpy_s( textLine, str );
-		token = wcstok_s( textLine, L"=", &context );
+		wchar_t* context = nullptr;	
+		wchar_t* model = wcstok_s(textLine, L"=", &context);
+		if (model == nullptr) continue;
 
-		int32_t toList = wcstol( token, nullptr, 0 );
-		if ( toList <= 0 ) continue;
+		wchar_t* val = wcstok_s(nullptr, L"=", &context);	
+		if (val == nullptr) continue;
 
-		wchar_t* begin = wcstok_s( nullptr, L"=", &context );	
-		if ( begin == nullptr ) continue;
+		auto value = ParseUtils::TryParseInt(val);
+		if (!value) continue;
 
-		wchar_t* end = nullptr;
-		bool value = wcstoul( begin, &end, 0 ) != 0;
-		if ( begin != end )
+		auto modelID = ParseUtils::TryParseInt(model);
+		if (modelID)
 		{
-			SVF::RegisterFeature( toList, value ? SVF::Feature::_INTERNAL_FORCE_DOUBLE_RWHEELS_ON : SVF::Feature::_INTERNAL_FORCE_DOUBLE_RWHEELS_OFF );
-			listedAny = true;
+			SVF::RegisterFeature(*modelID, *value ? SVF::Feature::_INTERNAL_FORCE_DOUBLE_RWHEELS_ON : SVF::Feature::_INTERNAL_FORCE_DOUBLE_RWHEELS_OFF);	
 		}
+		else
+		{
+			SVF::RegisterFeature(ParseUtils::ParseString(model), *value ? SVF::Feature::_INTERNAL_FORCE_DOUBLE_RWHEELS_ON : SVF::Feature::_INTERNAL_FORCE_DOUBLE_RWHEELS_OFF);	
+		}
+		listedAny = true;
 	}
 	return listedAny;
 }
@@ -202,9 +206,11 @@ void ReadRotorFixExceptions(const wchar_t* pPath)
 	GetPrivateProfileSectionW( L"RotorFixExceptions", reader.GetBuffer(), reader.GetSize(), pPath );
 	while ( const wchar_t* str = reader.GetString() )
 	{
-		int32_t toList = wcstol( str, nullptr, 0 );
-		if ( toList > 0 )
-			SVF::RegisterFeature( toList, SVF::Feature::_INTERNAL_NO_ROTOR_FADE );
+		auto ID = ParseUtils::TryParseInt(str);
+		if (ID)
+			SVF::RegisterFeature(*ID, SVF::Feature::_INTERNAL_NO_ROTOR_FADE);
+		else
+			SVF::RegisterFeature(ParseUtils::ParseString(str), SVF::Feature::_INTERNAL_NO_ROTOR_FADE);
 	}
 }
 
@@ -216,9 +222,11 @@ void ReadLightbeamFixExceptions(const wchar_t* pPath)
 	GetPrivateProfileSectionW( L"LightbeamFixExceptions", reader.GetBuffer(), reader.GetSize(), pPath );
 	while ( const wchar_t* str = reader.GetString() )
 	{
-		int32_t toList = wcstol( str, nullptr, 0 );
-		if ( toList > 0 )
-			SVF::RegisterFeature( toList, SVF::Feature::_INTERNAL_NO_LIGHTBEAM_BFC_FIX );
+		auto ID = ParseUtils::TryParseInt(str);
+		if (ID)
+			SVF::RegisterFeature(*ID, SVF::Feature::_INTERNAL_NO_LIGHTBEAM_BFC_FIX);
+		else
+			SVF::RegisterFeature(ParseUtils::ParseString(str), SVF::Feature::_INTERNAL_NO_LIGHTBEAM_BFC_FIX);
 	}
 }
 
