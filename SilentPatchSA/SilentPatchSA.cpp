@@ -18,6 +18,7 @@
 #include "PNGFile.h"
 #include "PlayerInfoSA.h"
 #include "FireManagerSA.h"
+#include "Random.h"
 
 #include "WaveDecoderSA.h"
 #include "FLACDecoderSA.h"
@@ -894,15 +895,6 @@ int NewFrameRender(int nEvent, void* pParam)
 	return RsEventHandler(nEvent, pParam);
 }
 
-#include <ctime>
-#include <random>
-
-static std::ranlux48 generator (time(nullptr));
-int32_t Int32Rand()
-{
-	return generator() & INT32_MAX;
-}
-
 auto FlushSpriteBuffer = AddressByVersion<void(*)()>(0x70CF20, 0x70D750, 0x7591E0, { "85 C0 0F 8E ? ? ? ? 83 3D", -5 });
 void FlushLensSwitchZ( RwRenderState rwa, void* rwb )
 {
@@ -1630,7 +1622,7 @@ namespace VariableResets
 		T m_timer;
 
 		TimeNextMadDriverChaseCreated_t()
-			: m_timer( (static_cast<float>(Int32Rand()) / INT32_MAX) * 600.0f + 600.0f )
+			: m_timer( (static_cast<float>(ConsoleRandomness::rand31()) / INT32_MAX) * 600.0f + 600.0f )
 		{
 		}
 	};
@@ -4628,9 +4620,13 @@ void Patch_SA_10(HINSTANCE hInstance)
 	Patch(0x61ECE2, { 0x84, 0xC0, 0x74 });
 
 	// Proper randomizations
-	InjectHook(0x44E82E, Int32Rand); // Missing ped paths
-	InjectHook(0x44ECEE, Int32Rand); // Missing ped paths
-	InjectHook(0x666EA0, Int32Rand); // Prostitutes
+	{
+		using namespace ConsoleRandomness;
+
+		InjectHook(0x44E82E, rand31); // Missing ped paths
+		InjectHook(0x44ECEE, rand31); // Missing ped paths
+		InjectHook(0x666EA0, rand31); // Prostitutes
+	}
 
 	// Help boxes showing with big message
 	// Game seems to assume they can show together
@@ -5624,9 +5620,13 @@ void Patch_SA_11()
 	Patch(0x61F502, { 0x84, 0xC0, 0x74 });
 
 	// Proper randomizations
-	InjectHook(0x44E8AE, Int32Rand); // Missing ped paths
-	InjectHook(0x44ED6E, Int32Rand); // Missing ped paths
-	InjectHook(0x6676C0, Int32Rand); // Prostitutes
+	{
+		using namespace ConsoleRandomness;
+
+		InjectHook(0x44E8AE, rand31); // Missing ped paths
+		InjectHook(0x44ED6E, rand31); // Missing ped paths
+		InjectHook(0x6676C0, rand31); // Prostitutes
+	}
 
 	// Help boxes showing with big message
 	// Game seems to assume they can show together
@@ -5937,9 +5937,13 @@ void Patch_SA_Steam()
 	// REMOVED - the fix pointed at some unrelated instruction anyway? I think it never worked
 
 	// Proper randomizations
-	InjectHook(0x452CCF, Int32Rand); // Missing ped paths
-	InjectHook(0x45322C, Int32Rand); // Missing ped paths
-	InjectHook(0x690263, Int32Rand); // Prostitutes
+	{
+		using namespace ConsoleRandomness;
+
+		InjectHook(0x452CCF, rand31); // Missing ped paths
+		InjectHook(0x45322C, rand31); // Missing ped paths
+		InjectHook(0x690263, rand31); // Prostitutes
+	}
 
 	// Help boxes showing with big message
 	// Game seems to assume they can show together
@@ -6288,14 +6292,16 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	// Proper randomizations
 	try
 	{
+		using namespace ConsoleRandomness;
+
 		auto pedsRand = pattern( "C1 F8 06 99" ).count(2);
 		void* prostitutesRand = get_pattern( "8B F8 32 C0", -5 );
 
 		pedsRand.for_each_result( []( pattern_match match ) {
-			InjectHook( match.get<void>( -5 ), Int32Rand ); // Missing ped paths
+			InjectHook( match.get<void>( -5 ), rand31 ); // Missing ped paths
 		});
 
-		InjectHook( prostitutesRand, Int32Rand ); // Prostitutes
+		InjectHook( prostitutesRand, rand31 ); // Prostitutes
 	}
 	TXN_CATCH();
 

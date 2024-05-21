@@ -69,6 +69,9 @@
     <ClInclude Include="..\SilentPatch\ParseUtils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\SilentPatch\Random.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\SilentPatch\Timer.cpp">

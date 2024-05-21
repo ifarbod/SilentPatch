@@ -7,6 +7,7 @@
 #include "Utils/DelimStringReader.h"
 #include "PlayerInfoSA.h"
 #include "ParseUtils.hpp"
+#include "Random.h"
 
 #include "SVF.h"
 
@@ -122,7 +123,7 @@ void (CPlane::*CPlane::orgPlanePreRender)();
 
 static int32_t random(int32_t from, int32_t to)
 {
-	return from + ( Int32Rand() % (to-from) );
+	return from + ( ConsoleRandomness::rand31() % (to-from) );
 }
 
 static RwObject* GetCurrentAtomicObject( RwFrame* frame )

@@ -6,6 +6,7 @@
 #include "StoredCar.h"
 #include "SVF.h"
 #include "ParseUtils.hpp"
+#include "Random.h"
 
 #include "Utils/DelimStringReader.h"
 
@@ -150,26 +151,6 @@ namespace ExtraCompSpecularity
 		return SVF::ModelHasFeature(modelID, SVF::Feature::_INTERNAL_NO_SPECULARITY_ON_EXTRAS);
 	}
 }
-
-
-// ============= Make script randomness 16-bit, like on PS2 =============
-namespace Rand16bit
-{
-	template<std::size_t Index>
-	static int (*orgRand)();
-
-	template<std::size_t Index>
-	static int rand16bit()
-	{
-		const int bottomBits = orgRand<Index>();
-		const int topBit = (orgRand<Index>() & 1) << 15;
-		return bottomBits | topBit;
-	}
-
-	HOOK_EACH_FUNC_CTR(Rand_Script, 0, orgRand, rand16bit);
-	HOOK_EACH_FUNC_CTR(Rand_PedChat, 1, orgRand, rand16bit);
-}
-
 
 // ============= Delayed patches =============
 namespace DelayedPatches
@@ -336,7 +317,7 @@ namespace Common {
 			// Fix various randomness factors expecting 16-bit rand()
 			{
 				// Treat each instance separately
-				using namespace Rand16bit;
+				using namespace ConsoleRandomness;
 
 				// Script randomness
 				try
@@ -346,7 +327,10 @@ namespace Common {
 						get_pattern("E8 ? ? ? ? 25 FF FF 00 00 89 84 24 ? ? ? ? 30 C0"),
 					};
 
-					HookEach_Rand_Script(rands, InterceptCall);
+					for (void* rand : rands)
+					{
+						InjectHook(rand, rand16);
+					}
 				}
 				TXN_CATCH();
 
@@ -358,7 +342,10 @@ namespace Common {
 						get_pattern("E8 ? ? ? ? 66 83 F8 14"),
 					};
 
-					HookEach_Rand_PedChat(rands, InterceptCall);
+					for (void* rand : rands)
+					{
+						InjectHook(rand, rand16);
+					}
 				}
 				TXN_CATCH();
 			}

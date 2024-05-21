@@ -72,6 +72,7 @@
     <ClInclude Include="..\SilentPatch\Desktop.h" />
     <ClInclude Include="..\SilentPatch\Maths.h" />
     <ClInclude Include="..\SilentPatch\ParseUtils.hpp" />
+    <ClInclude Include="..\SilentPatch\Random.h" />
     <ClInclude Include="..\SilentPatch\StdAfx.h" />
     <ClInclude Include="..\SilentPatch\StoredCar.h" />
     <ClInclude Include="..\SilentPatch\SVF.h" />

@@ -11,6 +11,7 @@
 #include "RWUtils.hpp"
 #include "TheFLAUtils.h"
 #include "ParseUtils.hpp"
+#include "Random.h"
 
 #include <array>
 #include <memory>
@@ -271,20 +272,6 @@ void __declspec(naked) AutoPilotTimerFix_VC()
 	}
 }
 
-
-// PS2 implementation of rand()
-static uint64_t seed_rand_ps2 = time(nullptr);
-static int rand_ps2()
-{
-	seed_rand_ps2 = 0x5851F42D4C957F2D * seed_rand_ps2 + 1;
-	return ((seed_rand_ps2 >> 32) & 0x7FFFFFFF);
-}
-
-// PS2 rand, but matching PC's RAND_MAX
-static int rand15_ps2()
-{
-	return rand_ps2() & 0x7FFF;
-}
 
 namespace ZeroAmmoFix
 {
@@ -1718,8 +1705,10 @@ void Patch_VC_Common()
 	// The functionality was never broken on PC - but the random distribution seemingly made it looks as if it was
 	try
 	{
+		using namespace ConsoleRandomness;
+
 		auto busted_audio_rand = get_pattern("80 BB 48 01 00 00 00 0F 85 ? ? ? ? E8 ? ? ? ? 25 FF FF 00 00", 13);
-		InjectHook(busted_audio_rand, rand15_ps2);
+		InjectHook(busted_audio_rand, rand15);
 	}
 	TXN_CATCH();
 
