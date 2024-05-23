@@ -885,6 +885,22 @@ namespace ModelIndicesReadyHook
 }
 
 
+// ============= Fix the outro splash flickering for a frame when fading in =============
+namespace OutroSplashFix
+{
+	struct RGBA
+	{
+		uint8_t r, g, b, a;
+	};
+
+	static RGBA* (__thiscall *orgRGBASet)(RGBA*, uint8_t, uint8_t, uint8_t, uint8_t);
+	static RGBA* __fastcall RGBASet_Clamp(RGBA* rgba, void*, int r, int g, int b, int a)
+	{	
+		return orgRGBASet(rgba, static_cast<uint8_t>(r), static_cast<uint8_t>(g), static_cast<uint8_t>(b), static_cast<uint8_t>(std::clamp(a, 0, 255)));
+	}
+}
+
+
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -1841,6 +1857,35 @@ void Patch_VC_Common()
 		}
 
 		InjectHook(entity_render.get<void>(-7), EntityRender_BackfaceCulling, HookType::Jump);
+	}
+	TXN_CATCH();
+
+
+	// Correct the duration of the outro splash to 2.5 seconds
+	// The outro splash displays for 150 ticks from the moment it fully fades in, with the tick cpimt supposedly incrementing every 10ms
+	// However, since the game is locked to 30FPS, the tick count actually increments every 33.3ms, so the splash takes around 5s
+	// Correct the "tick rate" to 33ms and the "tick count" to 75, so it is more or less 2.5s at 30FPS,
+	// and similarly long when running at 60FPS or uncapped. The original code hints at 1.5s,
+	// but that makes it hard to read the splash before it vanishes
+	//
+	// Also fix the splash flickering for a frame when fading in
+	try
+	{
+		using namespace OutroSplashFix;
+
+		auto outro_tick_rate = get_pattern("83 F8 0A 76 10", 2);
+		auto outro_tick_count = get_pattern("81 3D ? ? ? ? 96 00 00 00", 6);
+		auto splash_rgba = get_pattern("E8 ? ? ? ? DB 05 ? ? ? ? 8D 54 24 2C");
+		auto alpha_clamp = get_pattern("8A 83 ? ? ? ? 8D 4C 24 2C");
+
+		// Ideally, we want (time - lastTime) >= 33, but we can express the same with > 32
+		Patch<uint8_t>(outro_tick_rate, 32);
+		Patch<uint32_t>(outro_tick_count, 75);
+
+		InterceptCall(splash_rgba, orgRGBASet, RGBASet_Clamp);
+
+		// al -> eax
+		Patch<uint8_t>(alpha_clamp, 0x8B);
 	}
 	TXN_CATCH();
 }
