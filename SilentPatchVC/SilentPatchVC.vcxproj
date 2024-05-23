@@ -181,6 +181,7 @@
     <ClInclude Include="..\SilentPatch\Utils\MemoryMgr.GTA.h" />
     <ClInclude Include="..\SilentPatch\Utils\MemoryMgr.h" />
     <ClInclude Include="..\SilentPatch\Utils\Patterns.h" />
+    <ClInclude Include="EntityVC.h" />
     <ClInclude Include="ModelInfoVC.h" />
     <ClInclude Include="VehicleVC.h" />
   </ItemGroup>

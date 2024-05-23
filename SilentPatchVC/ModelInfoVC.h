@@ -23,5 +23,16 @@ public:
 	static void AttachCarPipeToRwObject_Default(RwObject*) { }
 	static inline void (*AttachCarPipeToRwObject)(RwObject* object) = &AttachCarPipeToRwObject_Default;
 };
+static_assert(sizeof(CVehicleModelInfo) == 0x174, "Wrong size: CVehicleModelInfo");
 
-static_assert(sizeof(CVehicleModelInfo) == 0x174, "Wrong size: CvehicleModelInfo");
+class CSimpleModelInfo
+{
+public:
+	void*	__vmt;
+	char	m_name[24];
+	uint8_t __pad[12];
+	void*	m_atomics[3];
+	float	m_lodDistances[3];
+	uint8_t	__pad2[4];
+};
+static_assert(sizeof(CSimpleModelInfo) == 68, "Wrong size: CSimpleModelInfo");

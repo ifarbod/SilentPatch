@@ -839,7 +839,7 @@ namespace SitInBoat
 }
 
 
-namespace SVFReadyHook
+namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
 	static void InitialiseObjectData_ReadySVF(const char* path)
@@ -1010,7 +1010,7 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 	// Register CBaseModelInfo::GetModelInfo for SVF so we can resolve model names
 	try
 	{
-		using namespace SVFReadyHook;
+		using namespace ModelIndicesReadyHook;
 
 		auto initialiseObjectData = get_pattern("E8 ? ? ? ? B3 01 59 8D 6D 04");
 		auto getModelInfo = (void*(*)(const char*, int*))get_pattern("31 FF 8D 84 20 00 00 00 00 8B 04 BD", -7);

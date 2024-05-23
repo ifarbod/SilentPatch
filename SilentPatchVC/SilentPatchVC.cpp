@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "Common_ddraw.h"
 #include "Desktop.h"
+#include "EntityVC.h"
 #include "ModelInfoVC.h"
 #include "VehicleVC.h"
 #include "SVF.h"
@@ -64,6 +65,8 @@ DebugMenuAPI gDebugMenuAPI;
 
 static RsGlobalType*	RsGlobal;
 static const void*		SubtitlesShadowFix_JumpBack;
+
+void* (*GetModelInfo)(const char*, int*);
 
 // This is actually CBaseModelInfo, but we currently don't have it defined
 CVehicleModelInfo**& ms_modelInfoPtrs = *hook::get_pattern<CVehicleModelInfo**>("8B 15 ? ? ? ? 8D 04 24", 2);
@@ -722,22 +725,7 @@ namespace SelectableBackfaceCulling
 		}
 	}
 
-	// Only the parts of CEntity and CObject we need
-	enum // m_objectCreatedBy
-	{
-		GAME_OBJECT = 1,
-		MISSION_OBJECT = 2,
-		TEMP_OBJECT = 3,
-	};
-
-	struct Entity
-	{
-		std::byte		__pad[80];
-		uint8_t			m_nType : 3;
-		std::byte		__pad2[11];
-		FLAUtils::int16	m_modelIndex;
-	};
-
+	// Only the parts of CObject we need
 	struct Object
 	{
 		std::byte		__pad[364];
@@ -755,7 +743,7 @@ namespace SelectableBackfaceCulling
 	};
 
 	static void* EntityRender_Prologue_JumpBack;
-	__declspec(naked) static void __fastcall EntityRender_Original(Entity*)
+	__declspec(naked) static void __fastcall EntityRender_Original(CEntity*)
 	{
 		_asm
 		{
@@ -766,7 +754,7 @@ namespace SelectableBackfaceCulling
 		}
 	}
 
-	static bool ShouldDisableBackfaceCulling(const Entity* entity)
+	static bool ShouldDisableBackfaceCulling(const CEntity* entity)
 	{
 		const uint8_t entityType = entity->m_nType;
 
@@ -797,9 +785,9 @@ namespace SelectableBackfaceCulling
 	}
 
 	// If CEntity::Render is re-routed by another mod, we overwrite this later
-	static void (__fastcall *orgEntityRender)(Entity* obj) = &EntityRender_Original;
+	static void (__fastcall *orgEntityRender)(CEntity* obj) = &EntityRender_Original;
 
-	static void __fastcall EntityRender_BackfaceCulling(Entity* obj)
+	static void __fastcall EntityRender_BackfaceCulling(CEntity* obj)
 	{
 		RwScopedRenderState<rwRENDERSTATECULLMODE> cullState;
 
@@ -813,15 +801,76 @@ namespace SelectableBackfaceCulling
 }
 
 
-namespace SVFReadyHook
+// ============= Fix the construction site LOD losing its HQ model and showing at all times =============
+namespace ConstructionSiteLODFix
 {
-	static void* (*GetModelInfo)(const char*, int*);
+	static bool bActivateConstructionSiteFix = false;
 
+	static int32_t MI_BLDNGST2MESH, MI_BLDNGST2MESHDAM;
+	static CSimpleModelInfo* Bldngst2mesh_ModelInfo;
+	static CSimpleModelInfo* Bldngst2meshDam_ModelInfo;
+	static CSimpleModelInfo* LODngst2mesh_ModelInfo;
+	void MatchModelIndices()
+	{
+		CSimpleModelInfo* Bldngst2mesh = reinterpret_cast<CSimpleModelInfo*>(GetModelInfo("bldngst2mesh", &MI_BLDNGST2MESH));
+		CSimpleModelInfo* Bldngst2meshDam = reinterpret_cast<CSimpleModelInfo*>(GetModelInfo("bldngst2meshdam", &MI_BLDNGST2MESHDAM));
+		CSimpleModelInfo* LODngst2mesh = reinterpret_cast<CSimpleModelInfo*>(GetModelInfo("LODngst2mesh", nullptr));
+		CSimpleModelInfo* LODngst2meshDam = reinterpret_cast<CSimpleModelInfo*>(GetModelInfo("LODngst2meshdam", nullptr));
+
+		const bool bHasBldngst2mesh = Bldngst2mesh != nullptr;
+		const bool bHasBldngst2meshDam = Bldngst2meshDam != nullptr;
+		const bool bHasLODngst2mesh = LODngst2mesh != nullptr;
+		const bool bHasLODngst2meshDam = LODngst2meshDam != nullptr;
+
+		// LODngst2meshdam doesn't exist in the vanilla game, so if it exists - a mod to fix this issue via
+		// the map modifications has been installed.
+		bActivateConstructionSiteFix = bHasBldngst2mesh && bHasBldngst2meshDam && bHasLODngst2mesh && !bHasLODngst2meshDam;
+
+		Bldngst2mesh_ModelInfo = Bldngst2mesh;
+		Bldngst2meshDam_ModelInfo = Bldngst2meshDam;
+		LODngst2mesh_ModelInfo = LODngst2mesh;
+	}
+
+	static void FixConstructionSiteModel(int oldModelID, int newModelID)
+	{
+		if (!bActivateConstructionSiteFix)
+		{
+			return;
+		}
+
+		if (oldModelID == MI_BLDNGST2MESH && newModelID == MI_BLDNGST2MESHDAM)
+		{
+			LODngst2mesh_ModelInfo->m_atomics[2] = Bldngst2meshDam_ModelInfo;
+		}
+		else if (oldModelID == MI_BLDNGST2MESHDAM && newModelID == MI_BLDNGST2MESH)
+		{
+			LODngst2mesh_ModelInfo->m_atomics[2] = Bldngst2mesh_ModelInfo;
+		}
+	}
+
+	template<std::size_t Index>
+	static void (__fastcall *orgReplaceWithNewModel)(CEntity* building, void*, int newModelID);
+
+	template<std::size_t Index>
+	static void __fastcall ReplaceWithNewModel_ConstructionSiteFix(CEntity* building, void*, int newModelID)
+	{
+		const int oldModelID = building->m_modelIndex.Get();
+		orgReplaceWithNewModel<Index>(building, nullptr, newModelID);
+		FixConstructionSiteModel(oldModelID, newModelID);
+	}
+
+	HOOK_EACH_FUNC(ReplaceWithNewModel, orgReplaceWithNewModel, ReplaceWithNewModel_ConstructionSiteFix);
+}
+
+
+namespace ModelIndicesReadyHook
+{
 	static void (*orgInitialiseObjectData)(const char*);
 	static void InitialiseObjectData_ReadySVF(const char* path)
 	{
 		orgInitialiseObjectData(path);
 		SVF::MarkModelNamesReady();
+		ConstructionSiteLODFix::MatchModelIndices();
 
 		// This is a bit dirty, but whatever
 		// Tooled Up in North Point Mall needs a "draw last" flag, or else our BFC changes break it very badly
@@ -991,10 +1040,12 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		TXN_CATCH();
 	}
 
+
+	bool HasModelInfo = false;
 	// Register CBaseModelInfo::GetModelInfo for SVF so we can resolve model names
 	try
 	{
-		using namespace SVFReadyHook;
+		using namespace ModelIndicesReadyHook;
 
 		auto initialiseObjectData = get_pattern("E8 ? ? ? ? 59 E8 ? ? ? ? E8 ? ? ? ? 31 DB");
 		auto getModelInfo = (void*(*)(const char*, int*))get_pattern("57 31 FF 55 8B 6C 24 14", -6);
@@ -1002,6 +1053,24 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		GetModelInfo = getModelInfo;
 		InterceptCall(initialiseObjectData, orgInitialiseObjectData, InitialiseObjectData_ReadySVF);
 		SVF::RegisterGetModelInfoCB(getModelInfo);
+
+		HasModelInfo = true;
+	}
+	TXN_CATCH();
+
+
+	// Fix the construction site LOD losing its HQ model and showing at all times
+	if (HasModelInfo) try
+	{
+		using namespace ConstructionSiteLODFix;
+
+		std::array<void*, 3> replaceWithNewModel = {
+			get_pattern("E8 ? ? ? ? C7 85 ? ? ? ? 00 00 00 00 83 8D ? ? ? ? FF"),
+			get_pattern("DD D8 E8 ? ? ? ? 56", 2),
+			get_pattern("E8 ? ? ? ? FF 44 24 0C 83 C5 0C"),
+		};
+		
+		HookEach_ReplaceWithNewModel(replaceWithNewModel, InterceptCall);
 	}
 	TXN_CATCH();
 

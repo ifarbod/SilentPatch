@@ -2652,7 +2652,7 @@ static bool IgnoresWeaponPedsForPCFix()
 }
 
 
-namespace SVFReadyHook
+namespace ModelIndicesReadyHook
 {
 	static void (*orgMatchAllModelStrings)();
 	static void MatchAllModelStrings_ReadySVF()
@@ -3899,7 +3899,7 @@ BOOL InjectDelayedPatches_10()
 
 		// Register CBaseModelInfo::GetModelInfo for SVF so we can resolve model names
 		{
-			using namespace SVFReadyHook;
+			using namespace ModelIndicesReadyHook;
 
 			auto func = (void*(*)(const char*, int*))0x4C5940;
 
