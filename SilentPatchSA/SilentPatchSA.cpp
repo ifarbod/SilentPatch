@@ -5361,6 +5361,13 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
+	// Invert a CPed::IsAlive check in CTaskComplexEnterCar::CreateNextSubTask to avoid assigning
+	// CTaskComplexLeaveCarAndDie to alive drivers 
+	// Fixes a bug where stealing the car from the passenger side while holding throttle and/or brake would kill the driver,
+	// or briefly resurrect them if they were already dead
+	Patch<uint8_t>(0x63F576, 0x75);
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -7325,6 +7332,19 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		};
 
 		HookEach_Rand(rands, InterceptCall);
+	}
+	TXN_CATCH();
+
+
+	// Invert a CPed::IsAlive check in CTaskComplexEnterCar::CreateNextSubTask to avoid assigning
+	// CTaskComplexLeaveCarAndDie to alive drivers 
+	// Fixes a bug where stealing the car from the passenger side while holding throttle and/or brake would kill the driver,
+	// or briefly resurrect them if they were already dead
+	try
+	{
+		auto isAlive = get_pattern("74 38 E8 ? ? ? ? 8B F8");
+
+		Patch<uint8_t>(isAlive, 0x75);
 	}
 	TXN_CATCH();
 }
