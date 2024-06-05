@@ -901,6 +901,37 @@ namespace OutroSplashFix
 }
 
 
+// ============= Fix Tommy not shaking his fists with brass knuckles (in all cases) and most post-GTA III weapons (when cars slow down for him) =============
+namespace TommyFistShakeWithWeapons
+{
+	struct WeaponInfo
+	{
+		std::byte	__pad[0x60];
+		uint32_t	m_weaponSlot;
+	};
+	static WeaponInfo* (*GetWeaponInfo)(uint32_t weaponID);
+
+	static bool WeaponProhibitsFistShake(uint32_t weaponID)
+	{
+		const uint32_t weaponSlot = GetWeaponInfo(weaponID)->m_weaponSlot;
+		const bool bWeaponAllowsFistShake = weaponSlot == 0 || weaponSlot == 1 || weaponSlot == 3 || weaponSlot == 5;
+		return !bWeaponAllowsFistShake;
+	}
+
+	static __declspec(naked) void CheckWeaponGroupHook()
+	{
+		_asm
+		{
+			push	dword ptr [eax]
+			call	WeaponProhibitsFistShake
+			add		esp, 4
+			test	al, al
+			retn
+		}
+	}
+}
+
+
 void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModulePath )
 {
 	using namespace Memory;
@@ -1886,6 +1917,30 @@ void Patch_VC_Common()
 
 		// al -> eax
 		Patch<uint8_t>(alpha_clamp, 0x8B);
+	}
+	TXN_CATCH();
+
+
+	// Fix Tommy not shaking his fists with brass knuckles (in all cases)
+	// and most post-GTA III weapons (when cars slow down for him)
+	try
+	{
+		using namespace TommyFistShakeWithWeapons;
+
+		auto weapon_group_1a = pattern("8B 40 60 59 83 F8 01 75 43").get_one();
+		auto weapon_group_1b = get_pattern("83 F8 01 0F 85 ? ? ? ? 8A 85", 3+1);
+		auto slow_car_down_for_peds = pattern("89 C7 8B 17 85 D2 74 19").get_one();
+		auto else_jump = get_pattern("0F 85 ? ? ? ? 8A 83 ? ? ? ? 24 FE");
+
+		ReadCall(weapon_group_1a.get<void>(-5), GetWeaponInfo);
+
+		// jnz -> ja
+		Patch<uint8_t>(weapon_group_1a.get<void>(7), 0x77);
+		Patch<uint8_t>(weapon_group_1b, 0x87);
+
+		Nop(slow_car_down_for_peds.get<void>(), 1);
+		InjectHook(slow_car_down_for_peds.get<void>(1), &CheckWeaponGroupHook, HookType::Call);
+		InjectHook(slow_car_down_for_peds.get<void>(8), else_jump, HookType::Jump);
 	}
 	TXN_CATCH();
 }
