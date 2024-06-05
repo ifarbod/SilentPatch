@@ -3490,6 +3490,7 @@ BOOL InjectDelayedPatches_10()
 		const bool		bSAMP = moduleList.Get(L"samp") != nullptr;
 		const bool		bSARender = moduleList.Get(L"SARender") != nullptr;
 		const bool		bOutfit = moduleList.Get(L"outfit") != nullptr;
+		const bool		bSAMPGraphicsRestore = moduleList.Get(L"SAMPGraphicRestore") != nullptr;
 
 		if ( bSAMP )
 		{
@@ -3906,6 +3907,17 @@ BOOL InjectDelayedPatches_10()
 			InterceptCall(0x5B922F, orgMatchAllModelStrings, MatchAllModelStrings_ReadySVF);
 			SVF::RegisterGetModelInfoCB(func);
 		}
+
+
+		// Disable building pipeline for skinned objects (like parachute)
+		// SAMP Graphics Restore fixes the bug preventing this fix from working right
+		if (!bSAMP || bSAMPGraphicsRestore)
+		{
+			using namespace SkinBuildingPipelineFix;
+
+			InterceptCall(0x5D7F1E, orgCustomBuildingDNPipeline_CustomPipeAtomicSetup, CustomBuildingDNPipeline_CustomPipeAtomicSetup_Skinned);
+		}
+
 
 #ifndef NDEBUG
 		if ( const int QPCDays = GetPrivateProfileIntW(L"Debug", L"AddDaysToQPC", 0, wcModulePath); QPCDays != 0 )
@@ -5071,14 +5083,6 @@ void Patch_SA_10(HINSTANCE hInstance)
 		InjectHook( 0x53E0C3, RenderStaticShadows_StateFix );
 
 		// Stored shadows conflict with SSE and are patched only when it's not installed
-	}
-
-
-	// Disable building pipeline for skinned objects (like parachute)
-	{
-		using namespace SkinBuildingPipelineFix;
-
-		InterceptCall(0x5D7F1E, orgCustomBuildingDNPipeline_CustomPipeAtomicSetup, CustomBuildingDNPipeline_CustomPipeAtomicSetup_Skinned);
 	}
 
 
