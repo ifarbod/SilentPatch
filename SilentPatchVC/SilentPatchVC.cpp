@@ -911,10 +911,17 @@ namespace TommyFistShakeWithWeapons
 	};
 	static WeaponInfo* (*GetWeaponInfo)(uint32_t weaponID);
 
+	constexpr uint32_t WEAPON_CHAINSAW = 11;
+	static WeaponInfo DUMMY_INFO = [] {
+		WeaponInfo dummy;
+		dummy.m_weaponSlot = 99;
+		return dummy;
+	}();
+
 	static bool WeaponProhibitsFistShake(uint32_t weaponID)
 	{
 		const uint32_t weaponSlot = GetWeaponInfo(weaponID)->m_weaponSlot;
-		const bool bWeaponAllowsFistShake = weaponSlot == 0 || weaponSlot == 1 || weaponSlot == 3 || weaponSlot == 5;
+		const bool bWeaponAllowsFistShake = (weaponSlot == 0 || weaponSlot == 1 || weaponSlot == 3 || weaponSlot == 5) && weaponID != WEAPON_CHAINSAW;
 		return !bWeaponAllowsFistShake;
 	}
 
@@ -929,6 +936,21 @@ namespace TommyFistShakeWithWeapons
 			retn
 		}
 	}
+
+	template<std::size_t Index>
+	static WeaponInfo* (*orgGetWeaponInfo)(uint32_t weaponID);
+
+	template<std::size_t Index>
+	static WeaponInfo* gGetWeaponInfo_ExcludeChainsaw(uint32_t weaponID)
+	{
+		if (weaponID == WEAPON_CHAINSAW)
+		{
+			return &DUMMY_INFO;
+		}
+		return orgGetWeaponInfo<Index>(weaponID);
+	}
+
+	HOOK_EACH_FUNC(ExcludeChainsaw, orgGetWeaponInfo, gGetWeaponInfo_ExcludeChainsaw);
 }
 
 
@@ -1928,19 +1950,26 @@ void Patch_VC_Common()
 		using namespace TommyFistShakeWithWeapons;
 
 		auto weapon_group_1a = pattern("8B 40 60 59 83 F8 01 75 43").get_one();
-		auto weapon_group_1b = get_pattern("83 F8 01 0F 85 ? ? ? ? 8A 85", 3+1);
+		auto weapon_group_1b = pattern("8B 40 60 59 83 F8 01 0F 85 ? ? ? ? 8A 85").get_one();
 		auto slow_car_down_for_peds = pattern("89 C7 8B 17 85 D2 74 19").get_one();
 		auto else_jump = get_pattern("0F 85 ? ? ? ? 8A 83 ? ? ? ? 24 FE");
+
+		std::array<void*, 2> exclude_chainsaw = {
+			weapon_group_1a.get<void>(-5),
+			weapon_group_1b.get<void>(-5),
+		};
 
 		ReadCall(weapon_group_1a.get<void>(-5), GetWeaponInfo);
 
 		// jnz -> ja
 		Patch<uint8_t>(weapon_group_1a.get<void>(7), 0x77);
-		Patch<uint8_t>(weapon_group_1b, 0x87);
+		Patch<uint8_t>(weapon_group_1b.get<void>(7 + 1), 0x87);
 
 		Nop(slow_car_down_for_peds.get<void>(), 1);
 		InjectHook(slow_car_down_for_peds.get<void>(1), &CheckWeaponGroupHook, HookType::Call);
 		InjectHook(slow_car_down_for_peds.get<void>(8), else_jump, HookType::Jump);
+
+		HookEach_ExcludeChainsaw(exclude_chainsaw, InterceptCall);
 	}
 	TXN_CATCH();
 }
