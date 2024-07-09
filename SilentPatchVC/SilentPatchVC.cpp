@@ -1444,6 +1444,8 @@ void Patch_VC_Common()
 	using namespace Memory;
 	using namespace hook::txn;
 
+	const HMODULE hGameModule = GetModuleHandle(nullptr);
+
 	// New timers fix
 	try
 	{
@@ -1659,7 +1661,7 @@ void Patch_VC_Common()
 
 			tVehicleSampleData* dataTable = *get_pattern<tVehicleSampleData*>( "8B 04 95 ? ? ? ? 89 43 1C", 3 );
 			// Only pitch shift if table hasn't been relocated elsewhere
-			if ( GetModuleHandle( nullptr ) == ModCompat::Utils::GetModuleHandleFromAddress(dataTable) )
+			if ( hGameModule == ModCompat::Utils::GetModuleHandleFromAddress(dataTable) )
 			{
 				// fbicar frequency = fbiranch frequency
 				dataTable[17].m_nSirenOrAlarmFrequency = dataTable[90].m_nSirenOrAlarmFrequency;
@@ -1972,6 +1974,18 @@ void Patch_VC_Common()
 		HookEach_ExcludeChainsaw(exclude_chainsaw, InterceptCall);
 	}
 	TXN_CATCH();
+
+
+	// Fix the screwdriver not making sounds on impact
+	{
+		void** pedAttackJumpTable = *get_pattern<void**>("83 F8 05 77 77 FF 24 85", 5 + 3);
+		// Only make changes if the table hasn't been relocated
+		if (hGameModule == ModCompat::Utils::GetModuleHandleFromAddress(pedAttackJumpTable))
+		{
+			// Give ASSOCGRP_SCREWDRIVER the same case as ASSOCGRP_KNIFE and others
+			pedAttackJumpTable[1] = pedAttackJumpTable[2];
+		}
+	}
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
