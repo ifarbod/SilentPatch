@@ -30,10 +30,15 @@
 #include "Utils/HookEach.hpp"
 
 #include "Desktop.h"
+#include "FriendlyMonitorNames.h"
 #include "SVF.h"
 
 #include "debugmenu_public.h"
 #include "resource.h"
+
+#pragma comment(linker,"\"/manifestdependency:type='win32' \
+		name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
+		processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
@@ -130,6 +135,8 @@ static void* varRwMatrixRotate = AddressByVersion<void*>(0x7F1FD0, 0x7F28D0, 0x8
 WRAPPER RwMatrix* RwMatrixRotate(RwMatrix* matrix, const RwV3d* axis, RwReal angle, RwOpCombineType combineOp) { WRAPARG(matrix); WRAPARG(axis); WRAPARG(angle); WRAPARG(combineOp); VARJMP(varRwMatrixRotate); }
 static void* varRwD3D9SetRenderState = AddressByVersion<void*>(0x7FC2D0, 0x7FCBD0, 0x836290);
 WRAPPER void RwD3D9SetRenderState(RwUInt32 state, RwUInt32 value) { WRAPARG(state); WRAPARG(value); VARJMP(varRwD3D9SetRenderState); }
+static void* varRwEngineSetSubSystem = AddressByVersion<void*>(0x7F2C90, { "50 6A 00 6A 00 83 C1 10 6A 10 51", -0xA });
+WRAPPER RwBool RwEngineSetSubSystem(RwInt32 subSystemIndex) { WRAPARG(subSystemIndex); VARJMP(varRwEngineSetSubSystem); }
 
 RwCamera* RwCameraBeginUpdate(RwCamera* camera)
 {
@@ -2530,6 +2537,225 @@ namespace Rand16bit
 	}
 
 	HOOK_EACH_FUNC(Rand, orgRand, rand16bit);
+}
+
+
+// ============= Improved resolution selection dialog =============
+namespace NewResolutionSelectionDialog
+{
+	static IDirect3D9** ppRWD3D9;
+	static void* FrontEndMenuManager;
+	static char* (*orgGetDocumentsPath)();
+
+	static constexpr const char* SettingsFileName = "device_remembered.set";
+
+	static bool ShouldSkipDeviceSelection()
+	{
+		char cTmpPath[MAX_PATH];
+		PathCombineA(cTmpPath, GetMyDocumentsPathSA(), SettingsFileName);
+
+		bool bSkip = false;
+
+		FILE* hFile = nullptr;
+		if (fopen_s(&hFile, cTmpPath, "r") == 0)
+		{
+			unsigned int val = 0;
+			bSkip = fscanf_s(hFile, "%u", &val) == 1 && val != 0;
+			fclose(hFile);
+		}
+		return bSkip;
+	}
+
+	static void RememberDeviceSelection(bool bDoNotShowAgain)
+	{
+		char cTmpPath[MAX_PATH];
+		PathCombineA(cTmpPath, GetMyDocumentsPathSA(), SettingsFileName);
+
+		FILE* hFile = nullptr;
+		if (fopen_s(&hFile, cTmpPath, "w") == 0)
+		{
+			fprintf_s(hFile, "%u", bDoNotShowAgain ? 1 : 0);
+			fclose(hFile);
+		}
+	}
+
+	static RwSubSystemInfo *RwEngineGetSubSystemInfo_GetFriendlyNames(RwSubSystemInfo *subSystemInfo, RwInt32 subSystemIndex)
+	{
+		static const auto friendlyNames = FriendlyMonitorNames::GetNamesForDevicePaths();
+
+		D3DADAPTER_IDENTIFIER9 identifier;
+		if (FAILED((*ppRWD3D9)->GetAdapterIdentifier(subSystemIndex, 0, &identifier)))
+		{
+			return nullptr;
+		}
+
+		// If we can't find the friendly name, either because it doesn't exist or we're on an ancient Windows, fall back to the device name
+		auto it = friendlyNames.find(identifier.DeviceName);
+		if (it != friendlyNames.end())
+		{
+			strncpy_s(subSystemInfo->name, it->second.c_str(), _TRUNCATE);
+		}
+		else
+		{
+			strncpy_s(subSystemInfo->name, identifier.Description, _TRUNCATE);
+		}
+
+		return subSystemInfo;
+	}
+
+	static size_t MenuManagerAdapterOffset = 0xDC;
+	static RwInt32 RwEngineGetCurrentSubSystem_FromSettings()
+	{
+		RwInt32 subSystem = *reinterpret_cast<RwInt32*>(static_cast<char*>(FrontEndMenuManager) + MenuManagerAdapterOffset);
+		if (subSystem > 0)
+		{
+			// Force the device selection dialog to show again if anything is wrong
+			bool bResetDisplay = false;
+			if ((*ppRWD3D9)->GetAdapterCount() <= (UINT)subSystem)
+			{
+				subSystem = 0;
+				bResetDisplay = true;
+			}
+			if (RwEngineSetSubSystem(subSystem) == FALSE || bResetDisplay)
+			{
+				RememberDeviceSelection(false);
+				return 0;
+			}
+		}
+		return subSystem;
+	}
+
+	static void CreateNewButtonTooltip(HINSTANCE hInstance, HWND hDlg)
+	{
+		HWND hCheckbox = GetDlgItem(hDlg, IDC_REMEMBERRESCHOICE);
+		HWND hwndTip = CreateWindowEx(WS_EX_TOPMOST, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+						hDlg, nullptr, hInstance, nullptr);
+		
+		if (hCheckbox == nullptr || hwndTip == nullptr)
+		{
+			return;
+		}
+
+		TOOLINFO toolInfo { sizeof(toolInfo) };
+		toolInfo.hwnd = hDlg;
+		toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
+		toolInfo.uId = (UINT_PTR)hCheckbox;
+		toolInfo.lpszText = (LPWSTR)TEXT("Delete 'device_remembered.set' from GTA San Andreas User Files to show this dialog again.");
+
+		SendMessage(hwndTip, TTM_ADDTOOL, 0, (LPARAM)&toolInfo);
+	}
+
+	struct WrappedDialocFunc
+	{
+		DLGPROC lpDialogFunc;
+		LPARAM dwInitParam;
+	};
+	static INT_PTR CALLBACK CustomDlgProc(HWND window, UINT msg, WPARAM wParam, LPARAM lParam)
+	{
+		if (msg == WM_INITDIALOG)
+		{
+			const WrappedDialocFunc* data = reinterpret_cast<WrappedDialocFunc*>(lParam);
+			SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(data->lpDialogFunc));
+
+			data->lpDialogFunc(window, msg, wParam, data->dwInitParam);
+
+			// The stock dialog func loaded the selected adapter and resolution at this point,
+			// we can bail if we don't need to show the dialog
+			if (ShouldSkipDeviceSelection())
+			{
+				// The game inits the selected resolution weirdly, and corrects it in the IDOK handler
+				// so let's invoke it manually (bleh)
+				data->lpDialogFunc(window, WM_COMMAND, IDOK, 0);
+				return TRUE;
+			}
+
+			HMODULE hGameModule = GetModuleHandle(nullptr);
+			SendMessage(window, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(LoadIcon(hGameModule, MAKEINTRESOURCE(100))));
+			CreateNewButtonTooltip(hGameModule, window);
+
+			// Return TRUE instead of FALSE on init, we want keyboard focus
+			return TRUE;
+		}
+
+		// Custom handling for IDCANCEL (IDOK is fine)
+		if (msg == WM_COMMAND)
+		{
+			if (LOWORD(wParam) == IDCANCEL)
+			{
+				EndDialog(window, 0);
+				return TRUE;
+			}
+
+			// Just remember the selection, let the game handle the rest
+			if (LOWORD(wParam) == IDOK && IsDlgButtonChecked(window, IDC_REMEMBERRESCHOICE) == BST_CHECKED)
+			{
+				RememberDeviceSelection(true);
+			}
+		}
+
+		DLGPROC origProc = reinterpret_cast<DLGPROC>(GetWindowLongPtr(window, GWLP_USERDATA));
+		if (origProc != nullptr)
+		{
+			return origProc(window, msg, wParam, lParam);
+		}
+		return FALSE;
+	}
+
+	static INT_PTR WINAPI DialogBoxParamA_New(HINSTANCE /*hInstance*/, LPCSTR /*lpTemplateName*/, HWND /*hWndParent*/, DLGPROC lpDialogFunc, LPARAM dwInitParam)
+	{
+		int32_t (WINAPI *pSetThreadDpiAwarenessContext)(int32_t dpiContext) = nullptr;
+		int32_t oldDpiContext = 0;
+
+		// Specify the dialog as DPI unaware, so Windows scales it by itself
+		HMODULE user32Module = LoadLibraryW(L"user32");
+		if (user32Module != nullptr)
+		{
+			pSetThreadDpiAwarenessContext = (decltype(pSetThreadDpiAwarenessContext))GetProcAddress(user32Module, "SetThreadDpiAwarenessContext");
+		}
+
+		if (pSetThreadDpiAwarenessContext != nullptr)
+		{
+			oldDpiContext = pSetThreadDpiAwarenessContext(/*DPI_AWARENESS_CONTEXT_UNAWARE*/-1);
+		}
+
+		ACTCTX actCtx { sizeof(actCtx) };
+		actCtx.hModule = reinterpret_cast<HMODULE>(&__ImageBase);
+		actCtx.lpResourceName = MAKEINTRESOURCE(2);
+		actCtx.dwFlags = ACTCTX_FLAG_HMODULE_VALID | ACTCTX_FLAG_RESOURCE_NAME_VALID;
+		
+		ULONG_PTR cookie = 0;
+		bool bContextActivated = false;
+
+		HANDLE hActCtx = CreateActCtx(&actCtx);
+		if (hActCtx != INVALID_HANDLE_VALUE)
+		{
+			bContextActivated = ActivateActCtx(hActCtx, &cookie) != FALSE;
+		}
+
+		// Include our own context to allow for custom message handling
+		const WrappedDialocFunc origDlgProc { lpDialogFunc, dwInitParam };
+		const INT_PTR result = DialogBoxParam(reinterpret_cast<HMODULE>(&__ImageBase), MAKEINTRESOURCE(IDD_RESSELECT), nullptr, CustomDlgProc, reinterpret_cast<LPARAM>(&origDlgProc));
+
+		if (bContextActivated)
+		{
+			DeactivateActCtx(0, cookie);
+		}
+		if (hActCtx != INVALID_HANDLE_VALUE)
+		{
+			ReleaseActCtx(hActCtx);
+		}
+
+		if (pSetThreadDpiAwarenessContext != nullptr)
+		{
+			pSetThreadDpiAwarenessContext(oldDpiContext);
+		}
+		if (user32Module != nullptr)
+		{
+			FreeLibrary(user32Module);
+		}
+		return result;
+	}
+	static auto* const pDialogBoxParamA_New = &DialogBoxParamA_New;
 }
 
 
@@ -5372,6 +5598,22 @@ void Patch_SA_10(HINSTANCE hInstance)
 	Patch<uint8_t>(0x63F576, 0x75);
 
 
+	// Improved resolution selection dialog
+	{
+		using namespace NewResolutionSelectionDialog;
+
+		ppRWD3D9 = *(IDirect3D9***)(0x7F6312 + 1);
+		FrontEndMenuManager = *(void**)(0x4054DB + 1);
+
+		orgGetDocumentsPath = (char*(*)())0x744FB0;
+
+		Patch(0x0746241 + 2, &pDialogBoxParamA_New);
+
+		InjectHook(0x7461D8, RwEngineGetSubSystemInfo_GetFriendlyNames);
+		InjectHook(0x7461ED, RwEngineGetCurrentSubSystem_FromSettings);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -7349,6 +7591,39 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		auto isAlive = get_pattern("74 38 E8 ? ? ? ? 8B F8");
 
 		Patch<uint8_t>(isAlive, 0x75);
+	}
+	TXN_CATCH();
+
+
+	// Improved resolution selection dialog
+	try
+	{
+		using namespace NewResolutionSelectionDialog;
+
+		// RGL changed one of the parameters
+		auto dialogBoxParam = [] {
+			try {
+				// Steam
+				return get_pattern("51 FF 15 ? ? ? ? 85 C0 0F 84", 1 + 2);
+			} catch (const hook::txn_exception&) {
+				// RGL
+				return get_pattern("53 FF 15 ? ? ? ? 85 C0", 1 + 2);
+			}
+		}();
+			
+		auto rRwEngineGetSubSystemInfo = get_pattern("E8 ? ? ? ? 46 83 C4 08 83 C7 50");
+		auto rwEngineGetCurrentSubSystem = get_pattern("7C EA E8 ? ? ? ? A3", 2);
+		MenuManagerAdapterOffset = 0xD8;
+
+		ppRWD3D9 = *get_pattern<IDirect3D9**>("33 ED A3 ? ? ? ? 3B C5", 2 + 1);
+		FrontEndMenuManager = *get_pattern<void**>("50 50 68 ? ? ? ? B9 ? ? ? ? E8", 7 + 1); // This has 2 identical matches, we just need one
+
+		orgGetDocumentsPath = static_cast<char*(*)()>(get_pattern( "8D 45 FC 50 68 19 00 02 00", -6 ));
+
+		Patch(dialogBoxParam, &pDialogBoxParamA_New);
+
+		InjectHook(rRwEngineGetSubSystemInfo, RwEngineGetSubSystemInfo_GetFriendlyNames);
+		InjectHook(rwEngineGetCurrentSubSystem, RwEngineGetCurrentSubSystem_FromSettings);
 	}
 	TXN_CATCH();
 }
