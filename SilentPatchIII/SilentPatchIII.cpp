@@ -839,6 +839,56 @@ namespace SitInBoat
 }
 
 
+// ============= Fixed Brightness saving (fixed in VC) =============
+namespace FixedBrightnessSaving
+{
+	// Heuristics we use for determining whether the value is stock or from SilentPatch
+	// 0 - must have been the default brightness of 256 = stock
+	// >= 31 - must have been the default brightness of 256 + x = stock
+	// Otherwise, this must be the "value index" from SilentPatch
+	int (*orgRead)(int, char*, int);
+	int Read_Brightness(int file, int* brightness, int size)
+	{
+		// This should never happen
+		if (size != 1)
+		{
+			return orgRead(file, reinterpret_cast<char*>(brightness), size);
+		}
+
+		uint8_t tmp;
+		int result = orgRead(file, reinterpret_cast<char*>(&tmp), sizeof(tmp));
+		if (result != sizeof(tmp))
+		{
+			return result;
+		}
+		
+		if (tmp == 0 || tmp >= 31)
+		{
+			*brightness = 256 + tmp;
+		}
+		else
+		{
+			*brightness = (tmp - 1) << 5;
+		}
+
+		return result;
+	}
+
+	int (*orgWrite)(int, const char*, int);
+	int Write_Brightness(int file, const int* brightness, int size)
+	{
+		// This should never happen
+		if (size != 1)
+		{
+			return orgWrite(file, reinterpret_cast<const char*>(brightness), size);
+		}
+
+		const uint32_t brightnessRounded = (*brightness + 31u) & -32;
+		const uint8_t brightnessPacked = static_cast<uint8_t>(brightnessRounded >> 5) + 1;
+		return orgWrite(file, reinterpret_cast<const char*>(&brightnessPacked), sizeof(brightnessPacked));
+	}
+}
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -1822,6 +1872,35 @@ void Patch_III_Common()
 	{
 		auto spawn_one_car = get_pattern("83 7C 24 ? ? 75 0E C6 85", 5);
 		Patch<uint8_t>(spawn_one_car, 0xEB);
+	}
+	TXN_CATCH();
+
+
+	// Fixed Brightness saving (fixed in VC)
+	try
+	{
+		using namespace FixedBrightnessSaving;
+
+		// Read and Write calls in CMenuManager::LoadSettings and CMenuManager::SaveSettings
+		// are virtually indistinguishable from each other, so we need to build raw patterns that include
+		// the pointer to CMenuManager::m_PrefsBrightness
+		auto prefs_brightness = *get_pattern<int*>("83 3D ? ? ? ? 00 7D 0B", 2);
+		uint8_t prefs_brightness_bytes[4];
+		memcpy(&prefs_brightness_bytes, &prefs_brightness, sizeof(prefs_brightness_bytes));
+
+		const uint8_t mask[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0, 0x0, 0x0, 0x0, 0xFF, 0xFF, 0xFF };
+		const uint8_t read_pattern[] { 0x6A, 0x01, 0x68,
+			prefs_brightness_bytes[0], prefs_brightness_bytes[1], prefs_brightness_bytes[2], prefs_brightness_bytes[3],
+			0x53, 0xE8, 0x0, 0x0, 0x0, 0x0, 0x83, 0xC4, 0x0C };
+		const uint8_t write_pattern[] { 0x6A, 0x01, 0x68,
+			prefs_brightness_bytes[0], prefs_brightness_bytes[1], prefs_brightness_bytes[2], prefs_brightness_bytes[3],
+			0x55, 0xE8, 0x0, 0x0, 0x0, 0x0, 0x83, 0xC4, 0x0C };
+
+		auto read = pattern({read_pattern, sizeof(read_pattern)}, {mask, sizeof(mask)}).get_first<void>(8);
+		auto write = pattern({write_pattern, sizeof(write_pattern)}, {mask, sizeof(mask)}).get_first<void>(8);
+
+		InterceptCall(read, orgRead, Read_Brightness);
+		InterceptCall(write, orgWrite, Write_Brightness);
 	}
 	TXN_CATCH();
 }
