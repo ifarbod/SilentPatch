@@ -611,20 +611,6 @@ namespace PickupEffectsFixes
 			retn
 		}
 	}
-
-	__declspec(naked) static void PickUpEffects_GiveUsAnObject()
-	{
-		_asm
-		{
-			jnz		GiveUsAnObject_NotEqual
-			mov     si, [eax+58h]
-			retn
-
-		GiveUsAnObject_NotEqual:
-			mov		si, -1
-			retn
-		}
-	}
 }
 
 
@@ -1785,17 +1771,6 @@ void Patch_VC_Common()
 
 		// Remove the glow from minigun2
 		auto minigun2Glow = get_pattern("8D 41 01 89 CB");
-
-		// Don't spawn the grenade together with the detonator in the pickup
-		// FLA might be altering this due to the usage of 16-bit IDs? Just in case allow for graceful failure
-		try
-		{
-			auto pickupExtraObject = pattern("75 04 66 8B 70 58").get_one();
-
-			Nop(pickupExtraObject.get<void>(), 1);
-			InjectHook(pickupExtraObject.get<void>(1), &PickUpEffects_GiveUsAnObject, HookType::Call);
-		}
-		TXN_CATCH();
 
 		InjectHook(bigDollarColor, &PickUpEffects_BigDollarColor, HookType::Call);
 		InjectHook(minigun2Glow, &PickUpEffects_Minigun2Glow, HookType::Call);
