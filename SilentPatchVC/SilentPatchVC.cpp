@@ -1952,6 +1952,7 @@ void Patch_VC_Common()
 
 
 	// Fix the screwdriver not making sounds on impact
+	try
 	{
 		void** pedAttackJumpTable = *get_pattern<void**>("83 F8 05 77 77 FF 24 85", 5 + 3);
 		// Only make changes if the table hasn't been relocated
@@ -1961,6 +1962,16 @@ void Patch_VC_Common()
 			pedAttackJumpTable[1] = pedAttackJumpTable[2];
 		}
 	}
+	TXN_CATCH();
+
+
+	// Allow the tear gas to damage anyone (including the player), like on PS2
+	try
+	{
+		auto set_peds_choking = get_pattern("0F 84 ? ? ? ? 8D 4B 34 D9 41 08");
+		Nop(set_peds_choking, 6);
+	}
+	TXN_CATCH();
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
