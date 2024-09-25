@@ -5334,9 +5334,9 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
-	// Display stats in kg's as floats (they pass a float and intend to display an integer)
-	Patch<const char*>( 0x55A954 + 1, "%.0fkgs" );
-	Patch<const char*>( 0x5593E4 + 1, "%.0fkgs" );
+	// Display stats in kg as floats (they pass a float and intend to display an integer)
+	Patch<const char*>( 0x55A954 + 1, "%.0fkg" );
+	Patch<const char*>( 0x5593E4 + 1, "%.0fkg" );
 
 
 	// Add wind animations when driving a Quadbike
@@ -6451,6 +6451,15 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		// Make sure DirectInput mouse device is set non-exclusive (may not be needed?)
 		// nop / mov al, 1
 		Patch( diInitMouse, { 0x90, 0xB0, 0x01 } );
+	}
+	TXN_CATCH();
+
+
+	// Bindable NUM5
+	try
+	{
+		auto keys_exception_list = get_pattern("3D 08 04 00 00 74", 5);
+		Nop(keys_exception_list, 2);
 	}
 	TXN_CATCH();
 
