@@ -190,9 +190,11 @@ namespace PrintStringShadows
 			Memory::DynBase::InterceptCall(addr, orgPrintString, PrintString);
 		}
 	};
+}
 
-	// Radar position and radardisc shadow
-
+// ============= Radar position and radardisc shadow =============
+namespace RadardiscFixes
+{
 	static const float RADARDISC_SHRINK = 2.0f; // We are shrinking the radardisc by that
 	
 	template<std::size_t Index>
@@ -280,6 +282,50 @@ namespace PrintStringShadows
 	}
 
 	HOOK_EACH_INIT(DrawRadarDisc, orgDrawSprite, DrawSprite_Scale);
+}
+
+// ============= Fix the onscreen counter bar placement and shadow not scaling to resolution =============
+namespace OnscreenCounterBarFixes
+{
+	template<std::size_t Index>
+	static const float* orgXPos;
+
+	template<std::size_t Index>
+	static float XPos_Recalculated;
+
+	template<std::size_t Index>
+	static const float* orgYPos;
+
+	template<std::size_t Index>
+	static float YPos_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateXPositions(std::index_sequence<I...>)
+	{
+		const float multiplier = GetWidthMult() * RsGlobal->MaximumWidth;
+		((XPos_Recalculated<I> = *orgXPos<I> * multiplier), ...);
+	}
+
+	template<std::size_t... I>
+	static void RecalculateYPositions(std::index_sequence<I...>)
+	{
+		const float multiplier = GetHeightMult() * RsGlobal->MaximumHeight;
+		((YPos_Recalculated<I> = *orgYPos<I> * multiplier), ...);
+	}
+
+	static int (*orgAtoi)(const char* str);
+
+	template<std::size_t NumXPos, std::size_t NumYPos>
+	static int atoi_RecalculatePositions(const char* str)
+	{
+		RecalculateXPositions(std::make_index_sequence<NumXPos>{});
+		RecalculateYPositions(std::make_index_sequence<NumYPos>{});
+
+		return orgAtoi(str);
+	}
+
+	HOOK_EACH_INIT(XPos, orgXPos, XPos_Recalculated);
+	HOOK_EACH_INIT(YPos, orgYPos, YPos_Recalculated);
 }
 
 float FixedRefValue()
@@ -1049,6 +1095,12 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		}
 	}
 
+	auto PatchFloat = [](float** address, const float*& org, float& replaced)
+		{
+			org = *address;
+			Patch(address, &replaced);
+		};
+
 	// Locale based metric/imperial system INI/debug menu
 	{
 		using namespace Localization;
@@ -1225,8 +1277,7 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	// Fix the radar disc shadow scaling and radar X position
 	try
 	{
-		// Legacy namespace name, it's OK
-		using namespace PrintStringShadows;
+		using namespace RadardiscFixes;
 
 		auto draw_entity_coord_blip = pattern("D8 0D ? ? ? ? D8 05 ? ? ? ? DE C1 D9 5C 24 18").count(2);
 		auto draw_radar_disc1 = pattern("D8 25 ? ? ? ? DD DB D9 C2 D9 9C 24 ? ? ? ? DB 05 ? ? ? ? D8 0D ? ? ? ? D8 0D ? ? ? ? D8 05 ? ? ? ? D8 05").count(2);
@@ -1294,18 +1345,43 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		}
 		TXN_CATCH();
 
-
-		auto PatchFloat = [](float** address, const float*& org, float& replaced)
-		{
-			org = *address;
-			Patch(address, &replaced);
-		};
-
 		HookEach_CalculateRadarXPos(radarXPos, PatchFloat);
 		HookEach_CalculateRadarXPos_RadardiscShrink(radarXPos_RadardiscShrink, PatchFloat);
 		HookEach_CalculateRadarYPos_RadardiscShrink(radarYPos_RadardiscShrink, PatchFloat);
 		HookEach_DrawRadarDisc(spriteDraw, InterceptCall);
 		InterceptCall(drawMap, orgDrawMap, DrawMap_RecalculatePositions<radarXPos.size(), 0, radarXPos_RadardiscShrink.size(), radarYPos_RadardiscShrink.size()>);
+	}
+	TXN_CATCH();
+
+	
+	// Fix the onscreen counter bar placement and shadow not scaling to resolution
+	try
+	{
+		using namespace OnscreenCounterBarFixes;
+
+		auto atoiWrap = get_pattern("E8 ? ? ? ? D9 EE DB 05 ? ? ? ? 89 C7");
+		auto shadow1 = pattern("D8 05 ? ? ? ? D9 9C 24 ? ? ? ? D9 05 ? ? ? ? D8 44 24 50").get_one();
+		auto shadow2 = pattern("D9 05 ? ? ? ? D8 C1 D9 9C 24 ? ? ? ? D9 05").get_one();
+		auto fill1 = pattern("D8 05 ? ? ? ? D9 9C 24 ? ? ? ? D9 05 ? ? ? ? 8D 84 24").get_one();
+
+		std::array<float**, 6> XPositions = {
+			shadow1.get<float*>(2),
+			shadow2.get<float*>(2),
+			fill1.get<float*>(2),
+			fill1.get<float*>(13 + 2),
+			get_pattern<float*>("D9 05 ? ? ? ? D8 C1 D9 9C 24 ? ? ? ? DB 44 24 6C", 2),
+			get_pattern<float*>("D8 05 ? ? ? ? D9 9C 24 ? ? ? ? DE D9 E8 ? ? ? ? 59", 2),
+		};
+
+		std::array<float**, 2> YPositions = {
+			shadow1.get<float*>(13 + 2),
+			shadow2.get<float*>(15 + 2),
+		};
+
+		HookEach_XPos(XPositions, PatchFloat);
+		HookEach_YPos(YPositions, PatchFloat);
+
+		InterceptCall(atoiWrap, orgAtoi, atoi_RecalculatePositions<XPositions.size(), YPositions.size()>);
 	}
 	TXN_CATCH();
 
