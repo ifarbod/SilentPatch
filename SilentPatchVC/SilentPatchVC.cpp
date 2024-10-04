@@ -328,6 +328,61 @@ namespace OnscreenCounterBarFixes
 	HOOK_EACH_INIT(YPos, orgYPos, YPos_Recalculated);
 }
 
+// ============= Fix the radar trace blip outline not scaling to resolution =============
+namespace RadarTraceOutlineFixes
+{
+	template<std::size_t Index>
+	static const float* orgXPos;
+
+	template<std::size_t Index>
+	static float XPos_Recalculated;
+
+	template<std::size_t Index>
+	static const float* orgYPos;
+
+	template<std::size_t Index>
+	static float YPos_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateXPositions(std::index_sequence<I...>)
+	{
+		const float multiplier = GetWidthMult() * RsGlobal->MaximumWidth;
+		((XPos_Recalculated<I> = *orgXPos<I> * multiplier), ...);
+	}
+
+	template<std::size_t... I>
+	static void RecalculateYPositions(std::index_sequence<I...>)
+	{
+		const float multiplier = GetHeightMult() * RsGlobal->MaximumHeight;
+		((YPos_Recalculated<I> = *orgYPos<I> * multiplier), ...);
+	}
+
+	template<std::size_t NumXPos, std::size_t NumYPos>
+	struct PositionRecalculator
+	{
+		static void RecalculatePositions()
+		{
+			RecalculateXPositions(std::make_index_sequence<NumXPos>{});
+			RecalculateYPositions(std::make_index_sequence<NumYPos>{});
+		}
+
+		template<std::size_t Index>
+		static void (*orgShowRadarTraceWithHeight)(float, float, unsigned int, unsigned char, unsigned char, unsigned char, unsigned char, unsigned char);
+
+		template<std::size_t Index>
+		static void ShowRadarTraceWithHeight_RecalculatePositions(float a1, float a2, unsigned int a3, unsigned char a4, unsigned char a5, unsigned char a6, unsigned char a7, unsigned char a8)
+		{
+			RecalculatePositions();
+			orgShowRadarTraceWithHeight<Index>(a1, a2, a3, a4, a5, a6, a7, a8);
+		}
+
+		HOOK_EACH_INIT(ShowRadarTraceWithHeight, orgShowRadarTraceWithHeight, ShowRadarTraceWithHeight_RecalculatePositions);
+	};
+
+	HOOK_EACH_INIT(XPos, orgXPos, XPos_Recalculated);
+	HOOK_EACH_INIT(YPos, orgYPos, YPos_Recalculated);
+}
+
 float FixedRefValue()
 {
 	return 1.0f;
@@ -1382,6 +1437,48 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		HookEach_YPos(YPositions, PatchFloat);
 
 		InterceptCall(atoiWrap, orgAtoi, atoi_RecalculatePositions<XPositions.size(), YPositions.size()>);
+	}
+	TXN_CATCH();
+
+
+	// Fix the radar trace blip shadow not scaling to resolution
+	try
+	{
+		using namespace RadarTraceOutlineFixes;
+
+		auto triangle1 = pattern("D8 05 ? ? ? ? DD D9 D9 44 24 68").count(2);
+		auto triangle2 = pattern("D8 05 ? ? ? ? DD DA D9 44 24 58").count(2);
+
+		auto showRadarTraceWithHeight = pattern("E8 ? ? ? ? 83 C4 20 80 3D ? ? ? ? ? 0F 84 ? ? ? ? 30 D2").count(2);
+
+		std::array<float**, 5> XPositions = {
+			triangle1.get(0).get<float*>(2),
+			triangle1.get(1).get<float*>(2),
+
+			triangle2.get(0).get<float*>(2),
+			triangle2.get(1).get<float*>(2),
+
+			get_pattern<float*>("D8 05 ? ? ? ? DD D9 D9 44 24 50", 2),
+		};
+
+		std::array<float**, 6> YPositions = {
+			get_pattern<float*>("D9 05 ? ? ? ? D8 C1 D8 6C 24 58 DD DA", 2),
+			get_pattern<float*>("D9 05 ? ? ? ? D8 C1 D8 44 24 60", 2),
+			get_pattern<float*>("D8 05 ? ? ? ? DD D9 D9 44 24 58", 2),
+
+			get_pattern<float*>("D9 05 ? ? ? ? D8 C1 D8 6C 24 58 89 D0", 2),
+			get_pattern<float*>("D9 05 ? ? ? ? D8 C1 D8 44 24 64", 2),
+			get_pattern<float*>("D8 05 ? ? ? ? 89 D8", 2),
+		};
+
+		std::array<void*, 2> showRadarTraceWithHeight_Patches = {
+			showRadarTraceWithHeight.get(0).get<void>(),
+			showRadarTraceWithHeight.get(1).get<void>(),
+		};
+
+		HookEach_XPos(XPositions, PatchFloat);
+		HookEach_YPos(YPositions, PatchFloat);
+		PositionRecalculator<XPositions.size(), YPositions.size()>::HookEach_ShowRadarTraceWithHeight(showRadarTraceWithHeight_Patches, InterceptCall);
 	}
 	TXN_CATCH();
 
