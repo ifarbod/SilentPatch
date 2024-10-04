@@ -313,7 +313,7 @@ private:
 	}
 
 public:
-	HOOK_EACH_FUNC(DoHeadLightBeam, orgDoHeadLightBeam, &DoHeadLightBeam_LightBeamFixSaveObj);
+	HOOK_EACH_INIT(DoHeadLightBeam, orgDoHeadLightBeam, &DoHeadLightBeam_LightBeamFixSaveObj);
 };
 
 class NOVMT CAutomobile : public CVehicle
@@ -347,7 +347,7 @@ public:
 		AfterPreRender();
 	}
 
-	HOOK_EACH_FUNC(PreRender, orgAutomobilePreRender, &PreRender_SilentPatch);
+	HOOK_EACH_INIT(PreRender, orgAutomobilePreRender, &PreRender_SilentPatch);
 
 	void HideDestroyedWheels_SilentPatch(void (CAutomobile::*spawnFlyingComponentCB)(int, unsigned int), int nodeID, unsigned int modelID);
 
@@ -360,7 +360,7 @@ public:
 		HideDestroyedWheels_SilentPatch(orgSpawnFlyingComponent<Index>, nodeID, modelID);
 	}
 
-	HOOK_EACH_FUNC(SpawnFlyingComponent, orgSpawnFlyingComponent, &SpawnFlyingComponent_HideWheels);
+	HOOK_EACH_INIT(SpawnFlyingComponent, orgSpawnFlyingComponent, &SpawnFlyingComponent_HideWheels);
 
 	void		Fix_SilentPatch();
 	RwFrame*	GetTowBarFrame() const;
@@ -457,7 +457,7 @@ private:
 	}
 
 public:
-	HOOK_EACH_FUNC(RestoreCar, orgRestoreCar, &RestoreCar_SilentPatch);
+	HOOK_EACH_INIT(RestoreCar, orgRestoreCar, &RestoreCar_SilentPatch);
 
 private:
 	CVehicle* RestoreCar_LoadBombOwnership(CVehicle* vehicle);

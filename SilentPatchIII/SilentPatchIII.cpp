@@ -132,7 +132,7 @@ namespace ScalingFixes
 		orgSetScale<Index>(fX * GetWidthMult() * RsGlobal->MaximumWidth, fY * GetHeightMult() * RsGlobal->MaximumHeight);
 	}
 
-	HOOK_EACH_FUNC(SetScale, orgSetScale, SetScale_Fix);
+	HOOK_EACH_INIT(SetScale, orgSetScale, SetScale_Fix);
 }
 
 class CGang
@@ -428,7 +428,7 @@ static void __fastcall GiveWeapon_SP(void* ped, void*, unsigned int weapon, unsi
 {
 	orgGiveWeapon<Index>(ped, nullptr, weapon, std::max(1u, ammo));
 }
-HOOK_EACH_FUNC(GiveWeapon, orgGiveWeapon, GiveWeapon_SP);
+HOOK_EACH_INIT(GiveWeapon, orgGiveWeapon, GiveWeapon_SP);
 
 }
 
@@ -739,7 +739,7 @@ namespace VariableResets
 		ReInitOurVariables();
 		orgReInitGameObjectVariables<Index>();
 	}
-	HOOK_EACH_FUNC(ReInitGameObjectVariables, orgReInitGameObjectVariables, ReInitGameObjectVariables);
+	HOOK_EACH_INIT(ReInitGameObjectVariables, orgReInitGameObjectVariables, ReInitGameObjectVariables);
 
 	static void (*orgGameInitialise)(const char*);
 	void GameInitialise(const char* path)
@@ -813,7 +813,7 @@ namespace SitInBoat
 		orgRegisterReference<Index>(pThis, nullptr, pReference);
 	}
 
-	HOOK_EACH_FUNC(CheckSitInBoat, orgRegisterReference, RegisterReference_CheckSitInBoat);
+	HOOK_EACH_INIT(CheckSitInBoat, orgRegisterReference, RegisterReference_CheckSitInBoat);
 
 	template<std::size_t Index>
 	static void* (*orgBlendAnimation)(void*, unsigned int, unsigned int, float);
@@ -828,7 +828,7 @@ namespace SitInBoat
 		return orgBlendAnimation<Index>(clump, groupId, animationId, factor);
 	}
 
-	HOOK_EACH_FUNC(BlendAnimation, orgBlendAnimation, BlendAnimation_SitInBoat);
+	HOOK_EACH_INIT(BlendAnimation, orgBlendAnimation, BlendAnimation_SitInBoat);
 
 	using FinishCB = void(*)(void*, void*);
 	static void __fastcall FinishCallback_CallImmediately(void*, void*, FinishCB cb, Ped* ped)

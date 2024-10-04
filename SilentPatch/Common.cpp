@@ -84,8 +84,8 @@ namespace StaticShadowAlphaFix
 		return result;
 	}
 
-	HOOK_EACH_FUNC(StoreAlphaTest, orgRenderStateSet_StoreAlphaTest, RenderStateSet_StoreAlphaTest);
-	HOOK_EACH_FUNC(RestoreAlphaTest, orgRenderStateSet_RestoreAlphaTest, RenderStateSet_RestoreAlphaTest);
+	HOOK_EACH_INIT(StoreAlphaTest, orgRenderStateSet_StoreAlphaTest, RenderStateSet_StoreAlphaTest);
+	HOOK_EACH_INIT(RestoreAlphaTest, orgRenderStateSet_RestoreAlphaTest, RenderStateSet_RestoreAlphaTest);
 };
 
 // ============= Corrected corona placement for taxi =============

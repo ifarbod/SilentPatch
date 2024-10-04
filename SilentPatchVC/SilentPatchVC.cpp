@@ -190,6 +190,96 @@ namespace PrintStringShadows
 			Memory::DynBase::InterceptCall(addr, orgPrintString, PrintString);
 		}
 	};
+
+	// Radar position and radardisc shadow
+
+	static const float RADARDISC_SHRINK = 2.0f; // We are shrinking the radardisc by that
+	
+	template<std::size_t Index>
+	static const float* orgRadarXPos;
+
+	template<std::size_t Index>
+	static float RadarXPos_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateXPositions(std::index_sequence<I...>)
+	{
+		const float multiplier = GetWidthMult() * RsGlobal->MaximumWidth;
+		((RadarXPos_Recalculated<I> = *orgRadarXPos<I> * multiplier), ...);
+	}
+
+	template<std::size_t Index>
+	static const float* orgRadarYPos;
+
+	template<std::size_t Index>
+	static float RadarYPos_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateYPositions(std::index_sequence<I...>)
+	{
+		const float multiplier = GetHeightMult() * RsGlobal->MaximumHeight;
+		((RadarYPos_Recalculated<I> = *orgRadarYPos<I> * multiplier), ...);
+	}
+
+	template<std::size_t Index>
+	static const float* orgRadarXPos_RadardiscShrink;
+
+	template<std::size_t Index>
+	static float RadarXPos_Recalculated_RadardiscShrink;
+
+	template<std::size_t... I>
+	static void RecalculateXPositions_RadardiscShrink(std::index_sequence<I...>)
+	{
+		const float multiplier = GetWidthMult() * RsGlobal->MaximumWidth;
+		((RadarXPos_Recalculated_RadardiscShrink<I> = (*orgRadarXPos_RadardiscShrink<I> - RADARDISC_SHRINK) * multiplier), ...);
+	}
+
+	template<std::size_t Index>
+	static const float* orgRadarYPos_RadardiscShrink;
+
+	template<std::size_t Index>
+	static float RadarYPos_Recalculated_RadardiscShrink;
+
+	template<std::size_t... I>
+	static void RecalculateYPositions_RadardiscShrink(std::index_sequence<I...>)
+	{
+		const float multiplier = GetHeightMult() * RsGlobal->MaximumHeight;
+		((RadarYPos_Recalculated_RadardiscShrink<I> = (*orgRadarYPos_RadardiscShrink<I> - RADARDISC_SHRINK) * multiplier), ...);
+	}
+
+	static void (*orgDrawMap)();
+	template<std::size_t NumXPos, std::size_t NumYPos, std::size_t NumXPosRadardisc, std::size_t NumYPosRadardisc>
+	static void DrawMap_RecalculatePositions()
+	{
+		RecalculateXPositions(std::make_index_sequence<NumXPos>{});
+		RecalculateYPositions(std::make_index_sequence<NumYPos>{});
+		RecalculateXPositions_RadardiscShrink(std::make_index_sequence<NumXPosRadardisc>{});
+		RecalculateYPositions_RadardiscShrink(std::make_index_sequence<NumYPosRadardisc>{});
+		orgDrawMap();
+	}
+
+	HOOK_EACH_INIT(CalculateRadarXPos, orgRadarXPos, RadarXPos_Recalculated);
+	HOOK_EACH_INIT(CalculateRadarYPos, orgRadarYPos, RadarYPos_Recalculated);
+	HOOK_EACH_INIT(CalculateRadarXPos_RadardiscShrink, orgRadarXPos_RadardiscShrink, RadarXPos_Recalculated_RadardiscShrink);
+	HOOK_EACH_INIT(CalculateRadarYPos_RadardiscShrink, orgRadarYPos_RadardiscShrink, RadarYPos_Recalculated_RadardiscShrink);
+
+	static CRect ScaleWidthRect(CRect rect)
+	{
+		// Also account for a smaller radardisc
+		rect.x1 = (rect.x1 + RADARDISC_SHRINK) * GetWidthMult() * RsGlobal->MaximumWidth;
+		return rect;
+	}
+
+	template<std::size_t Index>
+	static void (__fastcall* orgDrawSprite)(void* obj, void*, const CRect& rect, const CRGBA& col1, const CRGBA& col2, const CRGBA& col3, const CRGBA& col4);
+	
+	template<std::size_t Index>
+	static void __fastcall DrawSprite_Scale(void* obj, void*, const CRect& rect, const CRGBA& col1, const CRGBA& col2, const CRGBA& col3, const CRGBA& col4)
+	{
+		orgDrawSprite<Index>(obj, nullptr, ScaleWidthRect(rect), col1, col2, col3, col4);
+	}
+
+	HOOK_EACH_INIT(DrawRadarDisc, orgDrawSprite, DrawSprite_Scale);
 }
 
 float FixedRefValue()
@@ -287,7 +377,7 @@ static void __fastcall GiveWeapon_SP(void* ped, void*, unsigned int weapon, unsi
 {
 	orgGiveWeapon<Index>(ped, nullptr, weapon, std::max(1u, ammo), flag);
 }
-HOOK_EACH_FUNC(GiveWeapon, orgGiveWeapon, GiveWeapon_SP);
+HOOK_EACH_INIT(GiveWeapon, orgGiveWeapon, GiveWeapon_SP);
 
 }
 
@@ -681,7 +771,7 @@ namespace VariableResets
 		ReInitOurVariables();
 		orgReInitGameObjectVariables<Index>();
 	}
-	HOOK_EACH_FUNC(ReInitGameObjectVariables, orgReInitGameObjectVariables, ReInitGameObjectVariables);
+	HOOK_EACH_INIT(ReInitGameObjectVariables, orgReInitGameObjectVariables, ReInitGameObjectVariables);
 
 	static void (*orgGameInitialise)(const char*);
 	void GameInitialise(const char* path)
@@ -845,7 +935,7 @@ namespace ConstructionSiteLODFix
 		FixConstructionSiteModel(oldModelID, newModelID);
 	}
 
-	HOOK_EACH_FUNC(ReplaceWithNewModel, orgReplaceWithNewModel, ReplaceWithNewModel_ConstructionSiteFix);
+	HOOK_EACH_INIT(ReplaceWithNewModel, orgReplaceWithNewModel, ReplaceWithNewModel_ConstructionSiteFix);
 }
 
 
@@ -936,7 +1026,7 @@ namespace TommyFistShakeWithWeapons
 		return orgGetWeaponInfo<Index>(weaponID);
 	}
 
-	HOOK_EACH_FUNC(ExcludeChainsaw, orgGetWeaponInfo, gGetWeaponInfo_ExcludeChainsaw);
+	HOOK_EACH_INIT(ExcludeChainsaw, orgGetWeaponInfo, gGetWeaponInfo_ExcludeChainsaw);
 }
 
 
@@ -946,6 +1036,8 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	using namespace hook::txn;
 
 	const ModuleList moduleList;
+
+	const HMODULE hGameModule = GetModuleHandle(nullptr);
 
 	const HMODULE skygfxModule = moduleList.Get(L"skygfx");
 	if (skygfxModule != nullptr)
@@ -1126,6 +1218,94 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		};
 		
 		HookEach_ReplaceWithNewModel(replaceWithNewModel, InterceptCall);
+	}
+	TXN_CATCH();
+
+
+	// Fix the radar disc shadow scaling and radar X position
+	try
+	{
+		// Legacy namespace name, it's OK
+		using namespace PrintStringShadows;
+
+		auto draw_entity_coord_blip = pattern("D8 0D ? ? ? ? D8 05 ? ? ? ? DE C1 D9 5C 24 18").count(2);
+		auto draw_radar_disc1 = pattern("D8 25 ? ? ? ? DD DB D9 C2 D9 9C 24 ? ? ? ? DB 05 ? ? ? ? D8 0D ? ? ? ? D8 0D ? ? ? ? D8 05 ? ? ? ? D8 05").count(2);
+		auto draw_radar_disc2 = pattern("D8 C1 D8 05 ? ? ? ? D9 9C 24 ? ? ? ? DE D9 DD D8").count(2);
+
+		std::array<float**, 8> radarXPos = {
+			get_pattern<float*>("D8 05 ? ? ? ? DE C1 D9 5C 24 28", 2),
+			get_pattern<float*>("D8 05 ? ? ? ? DE C1 D9 5C EC 30", 2),
+			get_pattern<float*>("D8 0D ? ? ? ? D8 05 ? ? ? ? DE C1 D9 9C C4", 6 + 2),
+			get_pattern<float*>("D8 0D ? ? ? ? D8 05 ? ? ? ? DE C1 D9 5C 24 08", 6 + 2),
+			get_pattern<float*>("D8 0D ? ? ? ? D8 05 ? ? ? ? DE C1 DD D9 DB 44 24 18", 6 + 2),
+			get_pattern<float*>("D8 0D ? ? ? ? D8 05 ? ? ? ? DE C1 DD DB DB 44 24 18", 6 + 2),
+			draw_entity_coord_blip.get(0).get<float*>(6 + 2),
+			draw_entity_coord_blip.get(1).get<float*>(6 + 2),
+		};
+
+		std::array<float**, 4> radarXPos_RadardiscShrink = {
+			draw_radar_disc1.get(0).get<float*>(35 + 2),
+			draw_radar_disc1.get(0).get<float*>(35 + 6 + 2),
+			draw_radar_disc1.get(1).get<float*>(35 + 2),
+			draw_radar_disc1.get(1).get<float*>(35 + 6 + 2),
+		};
+
+		std::array<float**, 4> radarYPos_RadardiscShrink = {
+			draw_radar_disc1.get(0).get<float*>(2),
+			draw_radar_disc1.get(1).get<float*>(2),
+			draw_radar_disc2.get(0).get<float*>(2 + 2),
+			draw_radar_disc2.get(1).get<float*>(2 + 2),
+		};
+
+		auto drawMap = get_pattern("59 E8 ? ? ? ? 83 3D ? ? ? ? ? 0F 84", 1);
+
+		auto drawRadarDiscSprite = pattern("D8 05 ? ? ? ? D9 9C 24 ? ? ? ? DE D9 DD D8 E8").count(2);
+		std::array<void*, 2> spriteDraw = {
+			drawRadarDiscSprite.get(0).get<void>(17),
+			drawRadarDiscSprite.get(1).get<void>(17),
+		};
+
+		// Undo the damage caused by IVRadarScaling from the widescreen fix moving the radar way too far to the right
+		// It's moved from 40.0f to 71.0f, which is way too much now that we're scaling the horizontal placement correctly!
+		try
+		{
+			// Use exactly the same patterns as widescreen fix
+			float* radarPos = *get_pattern<float*>("D8 05 ? ? ? ? DE C1 D9 5C 24 28", 2);
+			// No need to undo CRadar::DrawYouAreHereSprite, as wsfix keeps it as 40.0f
+
+			// This hardcodes a patched constant inside so the pattern will fail to match without IV radar scaling
+			auto radarRing1 = pattern("C7 84 24 ? ? ? ? 00 00 82 42").count(2);
+			auto radarRing2 = pattern("D8 05 ? ? ? ? D8 05 ? ? ? ? D9 9C 24").count(2);
+
+			// This + radarRing1 succeeding is enough proof that IVRadarScaling is in use
+			if (hGameModule == ModCompat::Utils::GetModuleHandleFromAddress(radarPos) && *radarPos == (40.0f + 31.0f))
+			{
+				*radarPos = 40.0f;
+				radarRing1.for_each_result([](pattern_match match)
+					{
+						Patch<float>(match.get<void>(7), 34.0f);
+					});
+				radarRing2.for_each_result([](pattern_match match)
+					{
+						static float STOCK_RADAR_POS = 40.0f;
+						Patch(match.get<void>(2), &STOCK_RADAR_POS);
+					});
+			}
+		}
+		TXN_CATCH();
+
+
+		auto PatchFloat = [](float** address, const float*& org, float& replaced)
+		{
+			org = *address;
+			Patch(address, &replaced);
+		};
+
+		HookEach_CalculateRadarXPos(radarXPos, PatchFloat);
+		HookEach_CalculateRadarXPos_RadardiscShrink(radarXPos_RadardiscShrink, PatchFloat);
+		HookEach_CalculateRadarYPos_RadardiscShrink(radarYPos_RadardiscShrink, PatchFloat);
+		HookEach_DrawRadarDisc(spriteDraw, InterceptCall);
+		InterceptCall(drawMap, orgDrawMap, DrawMap_RecalculatePositions<radarXPos.size(), 0, radarXPos_RadardiscShrink.size(), radarYPos_RadardiscShrink.size()>);
 	}
 	TXN_CATCH();
 

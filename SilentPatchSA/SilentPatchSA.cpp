@@ -770,7 +770,7 @@ static void WipeLocalVariableMemoryForMissionScript_ApplyFixes()
 	StartNewMission_SCMFixes();
 }
 
-HOOK_EACH_FUNC(SCMFixes, orgWipeLocalVariableMemoryForMissionScript, WipeLocalVariableMemoryForMissionScript_ApplyFixes)
+HOOK_EACH_INIT(SCMFixes, orgWipeLocalVariableMemoryForMissionScript, WipeLocalVariableMemoryForMissionScript_ApplyFixes)
 
 }
 
@@ -979,7 +979,7 @@ static RwUInt32 GetMaxMultiSamplingLevels()
 {
 	return GetMaxMultiSamplingLevels_BitScan(orgGetMaxMultiSamplingLevels<Index>());
 }
-HOOK_EACH_FUNC(GetMaxMultiSamplingLevels, orgGetMaxMultiSamplingLevels, GetMaxMultiSamplingLevels);
+HOOK_EACH_INIT(GetMaxMultiSamplingLevels, orgGetMaxMultiSamplingLevels, GetMaxMultiSamplingLevels);
 
 template<typename std::size_t Index>
 static void (*orgSetOrChangeMultiSamplingLevels)(RwUInt32);
@@ -989,7 +989,7 @@ static void SetOrChangeMultiSamplingLevels(RwUInt32 level)
 {
 	orgSetOrChangeMultiSamplingLevels<Index>( 1 << (level - 1) );
 }
-HOOK_EACH_FUNC(SetOrChangeMultiSamplingLevels, orgSetOrChangeMultiSamplingLevels, SetOrChangeMultiSamplingLevels);
+HOOK_EACH_INIT(SetOrChangeMultiSamplingLevels, orgSetOrChangeMultiSamplingLevels, SetOrChangeMultiSamplingLevels);
 
 void MSAAText( char* buffer, const char*, DWORD level )
 {
@@ -1038,7 +1038,7 @@ static void* CollisionData_NewAndInit(size_t size)
 
 	return mem;
 }
-HOOK_EACH_FUNC(CollisionDataNew, orgNewAlloc, CollisionData_NewAndInit);
+HOOK_EACH_INIT(CollisionDataNew, orgNewAlloc, CollisionData_NewAndInit);
 
 }
 
@@ -1722,7 +1722,7 @@ namespace VariableResets
 		// Then after the normal restart, re-instate pickups, car generators and stunt jumps from text IPLs as they have been 
 		ReloadObjectDefinitionsAfterReinit();
 	}
-	HOOK_EACH_FUNC(ReInitGameObjectVariables, orgReInitGameObjectVariables, ReInitGameObjectVariables);
+	HOOK_EACH_INIT(ReInitGameObjectVariables, orgReInitGameObjectVariables, ReInitGameObjectVariables);
 }
 
 namespace LightbeamFix
@@ -2279,7 +2279,7 @@ namespace RestrictImpoundVehicleTypes
 		return vehicle->CanThisVehicleBeImpounded() && orgIsThisVehicleInteresting<Index>(vehicle);
 	}
 
-	HOOK_EACH_FUNC(ShouldImpound, orgIsThisVehicleInteresting, IsThisVehicleInteresting_AndCanBeImpounded)
+	HOOK_EACH_INIT(ShouldImpound, orgIsThisVehicleInteresting, IsThisVehicleInteresting_AndCanBeImpounded)
 }
 
 
@@ -2536,7 +2536,7 @@ namespace Rand16bit
 		return bottomBits | topBit;
 	}
 
-	HOOK_EACH_FUNC(Rand, orgRand, rand16bit);
+	HOOK_EACH_INIT(Rand, orgRand, rand16bit);
 }
 
 
