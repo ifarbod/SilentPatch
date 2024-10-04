@@ -383,6 +383,53 @@ namespace RadarTraceOutlineFixes
 	HOOK_EACH_INIT(YPos, orgYPos, YPos_Recalculated);
 }
 
+
+// ============= Fix the loading bar outline not scaling to resolution=============
+namespace LoadingBarOutlineFixes
+{
+	template<std::size_t Index>
+	static const float* orgXPos;
+
+	template<std::size_t Index>
+	static float XPos_Recalculated;
+
+	template<std::size_t Index>
+	static const float* orgYPos;
+
+	template<std::size_t Index>
+	static float YPos_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateXPositions(std::index_sequence<I...>)
+	{
+		const float multiplier = GetWidthMult() * RsGlobal->MaximumWidth;
+		((XPos_Recalculated<I> = *orgXPos<I> * multiplier), ...);
+	}
+
+	template<std::size_t... I>
+	static void RecalculateYPositions(std::index_sequence<I...>)
+	{
+		const float multiplier = GetHeightMult() * RsGlobal->MaximumHeight;
+		((YPos_Recalculated<I> = *orgYPos<I> * multiplier), ...);
+	}
+
+	static CRGBA* (__fastcall* orgRGBACtor)(CRGBA* obj, void*, unsigned char r, unsigned char g, unsigned char b, unsigned char a);
+	
+	template<std::size_t NumXPos, std::size_t NumYPos>
+	static CRGBA* __fastcall RGBACtor_RecalculatePositions(CRGBA* obj, void*, unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+	{
+		RecalculateXPositions(std::make_index_sequence<NumXPos>{});
+		RecalculateYPositions(std::make_index_sequence<NumYPos>{});
+
+		return orgRGBACtor(obj, nullptr, r, g, b, a);
+	}
+
+
+	HOOK_EACH_INIT(XPos, orgXPos, XPos_Recalculated);
+	HOOK_EACH_INIT(YPos, orgYPos, YPos_Recalculated);
+}
+
+
 float FixedRefValue()
 {
 	return 1.0f;
@@ -1479,6 +1526,30 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		HookEach_XPos(XPositions, PatchFloat);
 		HookEach_YPos(YPositions, PatchFloat);
 		PositionRecalculator<XPositions.size(), YPositions.size()>::HookEach_ShowRadarTraceWithHeight(showRadarTraceWithHeight_Patches, InterceptCall);
+	}
+	TXN_CATCH();
+
+
+	// Fix the loading bar outline not scaling to resolution
+	try
+	{
+		using namespace LoadingBarOutlineFixes;
+
+		auto rgbaCtor = get_pattern("6A 00 E8 ? ? ? ? 8B 0D ? ? ? ? A1", 2);
+
+		std::array<float**, 2> XPositions = {
+			get_pattern<float*>("D9 C1 D8 25 ? ? ? ? DD DC", 2 + 2),
+			get_pattern<float*>(" D8 C2 D8 05 ? ? ? ? D9 5C 24 38", 2 + 2),
+		};
+
+		std::array<float**, 2> YPositions = {
+			get_pattern<float*>("DD D1 D8 25 ? ? ? ? D9 5C 24 3C", 2 + 2),
+			get_pattern<float*>("D8 05 ? ? ? ? D9 5C 24 34 DE D9", 2),
+		};
+
+		HookEach_XPos(XPositions, PatchFloat);
+		HookEach_YPos(YPositions, PatchFloat);
+		InterceptCall(rgbaCtor, orgRGBACtor, RGBACtor_RecalculatePositions<XPositions.size(), YPositions.size()>);
 	}
 	TXN_CATCH();
 
