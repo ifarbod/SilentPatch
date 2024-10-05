@@ -1420,6 +1420,7 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 
 		// Undo the damage caused by IVRadarScaling from the widescreen fix moving the radar way too far to the right
 		// It's moved from 40.0f to 71.0f, which is way too much now that we're scaling the horizontal placement correctly!
+		// This is removed from the most up-to-date widescreen fix, but keep it so we don't break with older builds.
 		try
 		{
 			// Use exactly the same patterns as widescreen fix

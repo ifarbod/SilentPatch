@@ -45,6 +45,17 @@ namespace ModCompat
 		}
 		return bOldModVersion;
 	}
+
+	namespace Utils
+	{
+		template<typename AT>
+		HMODULE GetModuleHandleFromAddress( AT address )
+		{
+			HMODULE result = nullptr;
+			GetModuleHandleEx( GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT|GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, LPCTSTR(address), &result );
+			return result;
+		}
+	}
 }
 
 struct PsGlobalType
@@ -889,6 +900,49 @@ namespace FixedBrightnessSaving
 	}
 }
 
+
+// ============= Radar position and radardisc scaling =============
+namespace RadardiscFixes
+{
+	template<std::size_t Index>
+	static const float* orgRadarXPos;
+
+	template<std::size_t Index>
+	static float RadarXPos_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateXPositions(std::index_sequence<I...>)
+	{
+		const float multiplier = GetWidthMult() * RsGlobal->MaximumWidth;
+		((RadarXPos_Recalculated<I> = *orgRadarXPos<I> * multiplier), ...);
+	}
+
+	template<std::size_t Index>
+	static const float* orgRadarYPos;
+
+	template<std::size_t Index>
+	static float RadarYPos_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateYPositions(std::index_sequence<I...>)
+	{
+		const float multiplier = GetHeightMult() * RsGlobal->MaximumHeight;
+		((RadarYPos_Recalculated<I> = *orgRadarYPos<I> * multiplier), ...);
+	}
+
+	static void (*orgDrawMap)();
+	template<std::size_t NumXPos, std::size_t NumYPos>
+	static void DrawMap_RecalculatePositions()
+	{
+		RecalculateXPositions(std::make_index_sequence<NumXPos>{});
+		RecalculateYPositions(std::make_index_sequence<NumYPos>{});
+		orgDrawMap();
+	}
+
+	HOOK_EACH_INIT(CalculateRadarXPos, orgRadarXPos, RadarXPos_Recalculated);
+	HOOK_EACH_INIT(CalculateRadarYPos, orgRadarYPos, RadarYPos_Recalculated);
+}
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -907,6 +961,8 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 
 	const ModuleList moduleList;
 
+	const HMODULE hGameModule = GetModuleHandle(nullptr);
+
 	const HMODULE skygfxModule = moduleList.Get(L"skygfx");
 	const HMODULE iiiAircraftModule = moduleList.Get(L"IIIAircraft");
 	if (skygfxModule != nullptr)
@@ -922,6 +978,12 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 	{
 		SVF::RegisterFeature(156, SVF::Feature::SIT_IN_BOAT);
 	}
+
+	auto PatchFloat = [](float** address, const float*& org, float& replaced)
+		{
+			org = *address;
+			Patch(address, &replaced);
+		};
 
 	// Locale based metric/imperial system INI/debug menu
 	{
@@ -1070,6 +1132,60 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 	}
 	TXN_CATCH();
 
+
+	// Fix the radar disc shadow scaling and radar X position
+	try
+	{
+		using namespace RadardiscFixes;
+		// We use this overkill pattern so we can get all those constants safely in one sweep. One big scan is better than several smaller ones.
+		auto drawRadardisc = pattern("D8 05 ? ? ? ? D9 1C 24 DB 05 ? ? ? ? 50 D8 0D ? ? ? ? D8 0D ? ? ? ? D8 05 ? ? ? ? D8 05 ? ? ? ? D9 1C 24 D9 C0 D8 25 ? ? ? ? 50 D9 1C 24 8D 8C 24 ? ? ? ? FF 35")
+								.get_one();
+		auto drawRadarMap = pattern("D8 05 ? ? ? ? D9 1C 24 50 D9 14 24 8D 4C 24 24 FF 35").get_one();
+
+		std::array<float**, 6> radarXPos = {
+			drawRadardisc.get<float*>(28 + 2),
+			drawRadardisc.get<float*>(34 + 2),
+			drawRadardisc.get<float*>(62 + 2),
+
+			get_pattern<float*>("D8 05 ? ? ? ? DE C1 D9 19", 2),
+			drawRadarMap.get<float*>(2),
+			drawRadarMap.get<float*>(17 + 2),
+		};
+
+		std::array<float**, 2> radarYPos = {
+			drawRadardisc.get<float*>(2),
+			drawRadardisc.get<float*>(45 + 2),
+		};
+
+		auto drawMap = get_pattern("0F 84 ? ? ? ? E8 ? ? ? ? 8D 8C 24", 6);
+
+		// Undo the damage caused by IVRadarScaling from the widescreen fix moving the radar way too far to the right
+		// It's moved from 40.0f to 71.0f, which is way too much now that we're scaling the horizontal placement correctly!
+		// This is removed from the most up-to-date widescreen fix, but keep it so we don't break with older builds.
+		try
+		{
+			// Use exactly the same patterns as widescreen fix
+			float* radarPos = *get_pattern<float*>("D8 05 ? ? ? ? DE C1 D9 19 8B 15 ? ? ? ? 89 14 24", 2);
+			auto radarDisc1 = get_pattern("FF 35 ? ? ? ? DD D8 E8 ? ? ? ? B9 ? ? ? ? 50", 2);
+			auto radarDisc2 = get_pattern("D8 05 ? ? ? ? D8 05 ? ? ? ? D9 1C 24 D9 C0 D8 25 ? ? ? ? 50", 2);
+
+			if (hGameModule == ModCompat::Utils::GetModuleHandleFromAddress(radarPos) && *radarPos == (40.0f + 31.0f))
+			{
+				*radarPos = 40.0f;
+
+				static float STOCK_RADAR_POS = 40.0f;
+				static float STOCK_RADARDISC_POS = STOCK_RADAR_POS - 4.0f;
+				Patch(radarDisc1, &STOCK_RADARDISC_POS);
+				Patch(radarDisc2, &STOCK_RADAR_POS);
+			}
+		}
+		TXN_CATCH();
+
+		HookEach_CalculateRadarXPos(radarXPos, PatchFloat);
+		HookEach_CalculateRadarYPos(radarYPos, PatchFloat);
+		InterceptCall(drawMap, orgDrawMap, DrawMap_RecalculatePositions<radarXPos.size(), radarYPos.size()>);
+	}
+	TXN_CATCH();
 
 	FLAUtils::Init(moduleList);
 }
