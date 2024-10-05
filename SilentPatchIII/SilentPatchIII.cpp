@@ -943,6 +943,50 @@ namespace RadardiscFixes
 	HOOK_EACH_INIT(CalculateRadarYPos, orgRadarYPos, RadarYPos_Recalculated);
 }
 
+// ============= Fix the onscreen counter bar X placement not scaling to resolution =============
+namespace OnscreenCounterBarFixes
+{
+	template<std::size_t Index>
+	static const float* orgXPos;
+
+	template<std::size_t Index>
+	static float XPos_Recalculated;
+
+	template<std::size_t Index>
+	static const float* orgYPos;
+
+	template<std::size_t Index>
+	static float YPos_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateXPositions(std::index_sequence<I...>)
+	{
+		const float multiplier = GetWidthMult() * RsGlobal->MaximumWidth;
+		((XPos_Recalculated<I> = *orgXPos<I> * multiplier), ...);
+	}
+
+	template<std::size_t... I>
+	static void RecalculateYPositions(std::index_sequence<I...>)
+	{
+		const float multiplier = GetHeightMult() * RsGlobal->MaximumHeight;
+		((YPos_Recalculated<I> = *orgYPos<I> * multiplier), ...);
+	}
+
+	static int (*orgAtoi)(const char* str);
+
+	template<std::size_t NumXPos, std::size_t NumYPos>
+	static int atoi_RecalculatePositions(const char* str)
+	{
+		RecalculateXPositions(std::make_index_sequence<NumXPos>{});
+		RecalculateYPositions(std::make_index_sequence<NumYPos>{});
+
+		return orgAtoi(str);
+	}
+
+	HOOK_EACH_INIT(XPos, orgXPos, XPos_Recalculated);
+	HOOK_EACH_INIT(YPos, orgYPos, YPos_Recalculated);
+}
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -1184,6 +1228,27 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 		HookEach_CalculateRadarXPos(radarXPos, PatchFloat);
 		HookEach_CalculateRadarYPos(radarYPos, PatchFloat);
 		InterceptCall(drawMap, orgDrawMap, DrawMap_RecalculatePositions<radarXPos.size(), radarYPos.size()>);
+	}
+	TXN_CATCH();
+
+
+	// Fix the onscreen counter bar X placement not scaling to resolution
+	try
+	{
+		using namespace OnscreenCounterBarFixes;
+
+		auto atoiWrap = get_pattern("E8 ? ? ? ? 59 8D 8C 24 ? ? ? ? 6A 50");
+
+		std::array<float**, 4> XPositions = {
+			get_pattern<float*>("D9 05 ? ? ? ? D8 C1 D9 1C 24", 2),
+			get_pattern<float*>("D8 E9 D8 05 ? ? ? ? D9 1C 24", 2 + 2),
+			get_pattern<float*>("D8 C2 D8 05 ? ? ? ? D9 1C 24", 2 + 2),
+			get_pattern<float*>("D9 05 ? ? ? ? D8 C2 D9 1C 24", 2),
+		};
+
+		HookEach_XPos(XPositions, PatchFloat);
+
+		InterceptCall(atoiWrap, orgAtoi, atoi_RecalculatePositions<XPositions.size(), 0>);
 	}
 	TXN_CATCH();
 
