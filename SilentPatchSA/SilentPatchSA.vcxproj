@@ -103,14 +103,7 @@
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
-    <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\gta-sa_newsteam_r1\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\gta-sa_newsteam_r2\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowviolence_gta-sa\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "D:\gry\San Andreas Multiplayer\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "H:\Rockstar Games\Grand Theft Auto San Andreas\SilentPatchSA.asi"</Command>
-    </PostBuildEvent>
+    <PostBuildEvent />
     <FxCompile>
       <ShaderModel>2.0</ShaderModel>
     </FxCompile>
@@ -144,14 +137,7 @@ copy /y "$(TargetPath)" "H:\Rockstar Games\Grand Theft Auto San Andreas\SilentPa
       <DelayLoadDLLs>shell32.dll;shlwapi.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
-    <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\gta-sa_newsteam_r1\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\gta-sa_newsteam_r2\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowviolence_gta-sa\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "D:\gry\San Andreas Multiplayer\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "H:\Rockstar Games\Grand Theft Auto San Andreas\SilentPatchSA.asi"</Command>
-    </PostBuildEvent>
+    <PostBuildEvent />
     <FxCompile>
       <ShaderModel>2.0</ShaderModel>
     </FxCompile>
@@ -186,14 +172,7 @@ copy /y "$(TargetPath)" "H:\Rockstar Games\Grand Theft Auto San Andreas\SilentPa
       <LargeAddressAware>true</LargeAddressAware>
       <AdditionalOptions>/pdbaltpath:%_PDB% %(AdditionalOptions)</AdditionalOptions>
     </Link>
-    <PostBuildEvent>
-      <Command>copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\gta-sa_newsteam_r1\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\gta-sa_newsteam_r2\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "D:\gry\GTA San Andreas clean\scripts\newsteam_r2_lowviolence_gta-sa\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "D:\gry\San Andreas Multiplayer\SilentPatchSA.asi"
-copy /y "$(TargetPath)" "H:\Rockstar Games\Grand Theft Auto San Andreas\SilentPatchSA.asi"</Command>
-    </PostBuildEvent>
+    <PostBuildEvent />
     <FxCompile>
       <ShaderModel>2.0</ShaderModel>
     </FxCompile>
