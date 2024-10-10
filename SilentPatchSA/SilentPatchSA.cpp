@@ -490,27 +490,27 @@ namespace ScalingInternals
 	// 1.0 - fast math uses a scaling multiplier
 	float ScaleX_Multiplier(float val)
 	{
-		static const float& ResolutionWidthMult = **(float**)(0x43CF57 + 2);
-		return val * RsGlobal->MaximumWidth * ResolutionWidthMult;
+		static float** ResolutionWidthMult = (float**)(0x5733FD + 2);
+		return val * RsGlobal->MaximumWidth * **ResolutionWidthMult;
 	}
 
 	float ScaleY_Multiplier(float val)
 	{
-		static const float& ResolutionHeightMult = **(float**)(0x43CF47 + 2);
-		return val * RsGlobal->MaximumHeight * ResolutionHeightMult;
+		static float** ResolutionHeightMult = (float**)(0x57342D + 2);
+		return val * RsGlobal->MaximumHeight * **ResolutionHeightMult;
 	}
 
 	// New binaries - precise math uses a scaling divisor
 	float ScaleX_Divisor(float val)
 	{
-		static const double& ResolutionWidthDiv = **hook::get_pattern<double*>("DC 35 ? ? ? ? DC 0D ? ? ? ? DE E9 D9 5D F0", 2);
-		return static_cast<float>(val * RsGlobal->MaximumWidth / ResolutionWidthDiv);
+		static double** ResolutionWidthDiv = hook::get_pattern<double*>("DC 35 ? ? ? ? DC 0D ? ? ? ? DE E9 D9 5D F0", 2);
+		return static_cast<float>(val * RsGlobal->MaximumWidth / **ResolutionWidthDiv);
 	}
 
 	float ScaleY_Divisor(float val)
 	{
-		static const double& ResolutionHeightDiv = **hook::get_pattern<double*>("50 DC 35 ? ? ? ? DC 0D", 1 + 2);
-		return static_cast<float>(val * RsGlobal->MaximumHeight / ResolutionHeightDiv);
+		static double** ResolutionHeightDiv = hook::get_pattern<double*>("50 DC 35 ? ? ? ? DC 0D", 1 + 2);
+		return static_cast<float>(val * RsGlobal->MaximumHeight / **ResolutionHeightDiv);
 	}
 }
 

@@ -74,14 +74,14 @@ int32_t& numModelInfos = *hook::get_pattern<int32_t>("81 FD ? ? ? ? 7C B7", 2);
 
 float GetWidthMult()
 {
-	static const float&		ResolutionWidthMult = **AddressByVersion<float**>(0x5FA15E, 0x5FA17E, 0x5F9DBE);
-	return ResolutionWidthMult;
+	static float**	ResolutionWidthMult = hook::get_pattern<float*>("D8 0D ? ? ? ? D1 F8 52", 2);
+	return **ResolutionWidthMult;
 }
 
 float GetHeightMult()
 {
-	static const float&		ResolutionHeightMult = **AddressByVersion<float**>(0x5FA148, 0x5FA168, 0x5F9DA8);
-	return ResolutionHeightMult;
+	static float**	ResolutionHeightMult = hook::get_pattern<float*>("D8 0D ? ? ? ? D1 F8 C7 44 24 ? 00 00 00 00 89 04 24", 2);
+	return **ResolutionHeightMult;
 }
 
 static bool bGameInFocus = true;

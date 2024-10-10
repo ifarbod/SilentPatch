@@ -101,14 +101,14 @@ auto 					WorldRemove = reinterpret_cast<void(*)(void*)>(hook::get_pattern("8A 4
 
 float GetWidthMult()
 {
-	static const float& ResolutionWidthMult = **AddressByVersion<float**>(0x57E956, 0x57ECA6, 0x57EBA6);
-	return ResolutionWidthMult;
+	static float** ResolutionWidthMult = hook::get_pattern<float*>("D8 0D ? ? ? ? 89 54 24 0C", 2);
+	return **ResolutionWidthMult;
 }
 
 float GetHeightMult()
 {
-	static const float& ResolutionHeightMult = **AddressByVersion<float**>(0x57E940, 0x57EC90, 0x57EB90);
-	return ResolutionHeightMult;
+	static float** ResolutionHeightMult = hook::get_pattern<float*>("D8 0D ? ? ? ? 89 44 24 04 50 D8 0D", 2);
+	return **ResolutionHeightMult;
 }
 
 void ShowRadarTrace(float fX, float fY, unsigned int nScale, BYTE r, BYTE g, BYTE b, BYTE a)
