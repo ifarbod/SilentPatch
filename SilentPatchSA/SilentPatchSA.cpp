@@ -322,6 +322,21 @@ struct AlphaObjectInfo
 	{ return a.fCompareValue < b.fCompareValue; }
 };
 
+struct PsGlobalType;
+
+struct RsGlobalType
+{
+	const char*		AppName;
+	signed int		MaximumWidth;
+	signed int		MaximumHeight;
+	unsigned int	frameLimit;
+	BOOL			quit;
+	PsGlobalType*	ps;
+	void*			keyboard;
+	void*			mouse;
+	void*			pad;
+};
+
 // Other wrappers
 void					(*GTAdelete)(void*) = AddressByVersion<void(*)(void*)>(0x82413F, 0x824EFF, 0x85E58C);
 const char*				(*GetFrameNodeName)(RwFrame*) = AddressByVersion<const char*(*)(RwFrame*)>(0x72FB30, 0x730360, 0x769C20);
@@ -344,6 +359,8 @@ auto 					WorldRemove = AddressByVersion<void(*)(CEntity*)>(0x563280, 0, 0x57D37
 
 // SA variables
 void**					rwengine = *AddressByVersion<void***>(0x58FFC0, 0x53F032, 0x48C194, { "8B 48 20 53 56 57 6A 01", -5 + 1 });
+
+RsGlobalType*			RsGlobal = *AddressByVersion<RsGlobalType**>(0x619602 + 2, { "33 C0 C7 05 ? ? ? ? ? ? ? ? C7 05", 2 + 2 });
 
 unsigned char&			nGameClockDays = **AddressByVersion<unsigned char**>(0x4E841D, 0x4E886D, 0x4F3871);
 unsigned char&			nGameClockMonths = **AddressByVersion<unsigned char**>(0x4E842D, 0x4E887D, 0x4F3861);
@@ -467,6 +484,39 @@ static CAEWaveDecoder* __stdcall CAEWaveDecoderInit(CAEDataStream* pStream)
 {
 	return new CAEWaveDecoder(pStream);
 }
+
+namespace ScalingInternals
+{
+	// 1.0 - fast math uses a scaling multiplier
+	float ScaleX_Multiplier(float val)
+	{
+		static const float& ResolutionWidthMult = **(float**)(0x43CF57 + 2);
+		return val * RsGlobal->MaximumWidth * ResolutionWidthMult;
+	}
+
+	float ScaleY_Multiplier(float val)
+	{
+		static const float& ResolutionHeightMult = **(float**)(0x43CF47 + 2);
+		return val * RsGlobal->MaximumHeight * ResolutionHeightMult;
+	}
+
+	// New binaries - precise math uses a scaling divisor
+	float ScaleX_Divisor(float val)
+	{
+		static const double& ResolutionWidthDiv = **hook::get_pattern<double*>("DC 35 ? ? ? ? DC 0D ? ? ? ? DE E9 D9 5D F0", 2);
+		return static_cast<float>(val * RsGlobal->MaximumWidth / ResolutionWidthDiv);
+	}
+
+	float ScaleY_Divisor(float val)
+	{
+		static const double& ResolutionHeightDiv = **hook::get_pattern<double*>("50 DC 35 ? ? ? ? DC 0D", 1 + 2);
+		return static_cast<float>(val * RsGlobal->MaximumHeight / ResolutionHeightDiv);
+	}
+}
+
+// Default to 1.0, update these pointers with a pointer to the new binaries function if needed
+auto ScaleX = &ScalingInternals::ScaleX_Multiplier;
+auto ScaleY = &ScalingInternals::ScaleY_Multiplier;
 
 namespace ScriptFixes
 {
@@ -2756,6 +2806,38 @@ namespace NewResolutionSelectionDialog
 		return result;
 	}
 	static auto* const pDialogBoxParamA_New = &DialogBoxParamA_New;
+}
+
+
+// ============= Fix credits not scaling to resolution =============
+// Also makes the shadow scale properly, as they haven't done that either...
+// But since this seems to be the only place, don't pull in the fix from Vice City,
+// fix it here instead
+namespace CreditsScalingFixes
+{
+	static const unsigned int FIXED_RES_HEIGHT_SCALE = 448;
+
+	template<std::size_t Index>
+	static void (*orgPrintString)(float,float,const wchar_t*);
+
+	template<std::size_t Index>
+	static void PrintString_ScaleY(float fX, float fY, const wchar_t* pText)
+	{
+		if constexpr (Index == 1)
+		{
+			// Fix the shadow X scale - the Y scale will be fixed below
+			fX = fX + 1.0f - ScaleX(1.0f);
+		}
+		orgPrintString<Index>(fX, ScaleY(fY), pText);
+	}
+
+	static void (*orgSetScale)(float X, float Y);
+	static void SetScale_ScaleToRes(float X, float Y)
+	{
+		orgSetScale(ScaleX(X), ScaleY(Y));
+	}
+
+	HOOK_EACH_INIT(PrintString, orgPrintString, PrintString_ScaleY);
 }
 
 
@@ -5614,6 +5696,29 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
+	// Fix credits not scaling to resolution
+	{
+		using namespace CreditsScalingFixes;
+
+		std::array<uintptr_t, 2> creditPrintString = { 0x5A8707, 0x5A8785 };
+
+		HookEach_PrintString(creditPrintString, InterceptCall);
+		InterceptCall(0x5A86C0, orgSetScale, SetScale_ScaleToRes);
+
+		// Fix the credits cutting off on the bottom early, they don't do that in III
+		// but it regressed in VC and SA
+		static const float topMargin = 1.0f;
+		static const float bottomMargin = -(**(float**)(0x5A869A + 2));
+
+		Patch(0x5A8689 + 2, &topMargin);
+		Patch(0x5A869A + 2, &bottomMargin);
+
+		// As we now scale everything on PrintString time, the resolution height checks need to be unscaled.
+		Patch(0x5A8660 + 2, &FIXED_RES_HEIGHT_SCALE);
+		Patch(0x5AF8C9 + 2, &FIXED_RES_HEIGHT_SCALE);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6373,6 +6478,9 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 {
 	using namespace Memory;
 	using namespace hook::txn;
+
+	ScaleX = &ScalingInternals::ScaleX_Divisor;
+	ScaleY = &ScalingInternals::ScaleY_Divisor;
 
 	try
 	{
@@ -7635,6 +7743,40 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InjectHook(rwEngineGetCurrentSubSystem, RwEngineGetCurrentSubSystem_FromSettings);
 	}
 	TXN_CATCH();
+
+
+	// Fix credits not scaling to resolution
+	{
+		using namespace CreditsScalingFixes;
+
+		std::array<void*, 2> creditPrintString = {
+			get_pattern("E8 ? ? ? ? 83 C4 0C 80 7D 1C 00"),
+			get_pattern("D9 1C 24 E8 ? ? ? ? DD 05 ? ? ? ? 83 C4 0C 5E", 3),
+		};
+
+		auto setScale = get_pattern("D9 1C 24 E8 ? ? ? ? 83 C4 08 68 FF 00 00 00 6A 00 6A 00 6A 00", 3);
+
+		// Fix the credits cutting off on the bottom early, they don't do that in III
+		// but it regressed in VC and SA
+		auto positionOffset = get_pattern("DE C2 D9 45 18 DE EA D9 C9 D9 5D 14 D9 05", 12 + 2);
+
+		// As we now scale everything on PrintString time, the resolution height checks need to be unscaled.
+		void* resHeightScales[] = {
+			get_pattern("DB 05 ? ? ? ? 57 8B 7D 14", 2),
+			get_pattern("A1 ? ? ? ? 03 45 FC 89 45 F4", 1)
+		};
+
+		static const float topMargin = 1.0f;
+		Patch(positionOffset, &topMargin);
+
+		HookEach_PrintString(creditPrintString, InterceptCall);
+		InterceptCall(setScale, orgSetScale, SetScale_ScaleToRes);
+
+		for (void* addr : resHeightScales)
+		{
+			Patch(addr, &FIXED_RES_HEIGHT_SCALE);
+		}
+	}
 }
 
 

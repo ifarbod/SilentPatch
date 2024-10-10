@@ -72,13 +72,13 @@ void* (*GetModelInfo)(const char*, int*);
 CVehicleModelInfo**& ms_modelInfoPtrs = *hook::get_pattern<CVehicleModelInfo**>("8B 15 ? ? ? ? 8D 04 24", 2);
 int32_t& numModelInfos = *hook::get_pattern<int32_t>("81 FD ? ? ? ? 7C B7", 2);
 
-inline float GetWidthMult()
+float GetWidthMult()
 {
 	static const float&		ResolutionWidthMult = **AddressByVersion<float**>(0x5FA15E, 0x5FA17E, 0x5F9DBE);
 	return ResolutionWidthMult;
 }
 
-inline float GetHeightMult()
+float GetHeightMult()
 {
 	static const float&		ResolutionHeightMult = **AddressByVersion<float**>(0x5FA148, 0x5FA168, 0x5F9DA8);
 	return ResolutionHeightMult;
@@ -168,6 +168,21 @@ namespace PrintStringShadows
 		static void PrintString(float fX, float fY, const wchar_t* pText)
 		{
 			PrintString_Internal(orgPrintString, fX, fY, **margin<pFltX>, 0.0f, pText);
+		}
+
+		static void Hook(uintptr_t addr)
+		{
+			Memory::DynBase::InterceptCall(addr, orgPrintString, PrintString);
+		}
+	};
+
+	template<uintptr_t pFltX>
+	struct XMinus
+	{
+		static inline void (*orgPrintString)(float,float,const wchar_t*);
+		static void PrintString(float fX, float fY, const wchar_t* pText)
+		{
+			PrintString_Internal(orgPrintString, fX, fY, -(**margin<pFltX>), 0.0f, pText);
 		}
 
 		static void Hook(uintptr_t addr)
@@ -384,7 +399,7 @@ namespace RadarTraceOutlineFixes
 }
 
 
-// ============= Fix the loading bar outline not scaling to resolution=============
+// ============= Fix the loading bar outline not scaling to resolution =============
 namespace LoadingBarOutlineFixes
 {
 	template<std::size_t Index>
@@ -429,6 +444,28 @@ namespace LoadingBarOutlineFixes
 	HOOK_EACH_INIT(YPos, orgYPos, YPos_Recalculated);
 }
 
+// ============= Fix credits not scaling to resolution =============
+namespace CreditsScalingFixes
+{
+	static const unsigned int FIXED_RES_HEIGHT_SCALE = 448;
+
+	template<std::size_t Index>
+	static void (*orgPrintString)(float,float,const wchar_t*);
+
+	template<std::size_t Index>
+	static void PrintString_ScaleY(float fX, float fY, const wchar_t* pText)
+	{
+		orgPrintString<Index>(fX, fY * GetHeightMult() * RsGlobal->MaximumHeight, pText);
+	}
+
+	static void (*orgSetScale)(float X, float Y);
+	static void SetScale_ScaleToRes(float X, float Y)
+	{
+		orgSetScale(X * GetWidthMult() * RsGlobal->MaximumWidth, Y * GetHeightMult() * RsGlobal->MaximumHeight);
+	}
+
+	HOOK_EACH_INIT(PrintString, orgPrintString, PrintString_ScaleY);
+}
 
 float FixedRefValue()
 {
@@ -1555,6 +1592,42 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	TXN_CATCH();
 
 
+	// Fix credits not scaling to resolution
+	try
+	{
+		using namespace CreditsScalingFixes;
+
+		std::array<void*, 2> creditPrintString = {
+			get_pattern("E8 ? ? ? ? 83 C4 0C 8D 4C 24 14"),
+			get_pattern("E8 ? ? ? ? 83 C4 0C 8B 03"),
+		};
+
+		auto setScale = get_pattern("E8 ? ? ? ? 59 59 8D 4C 24 10");
+
+		// Fix the credits cutting off on the bottom early, they don't do that in III
+		// but it regressed in VC and SA
+		auto positionOffset = pattern("D8 1D ? ? ? ? DF E0 F6 C4 45 0F 85 ? ? ? ? 89 4C 24 08 DB 44 24 08 D8 25").get_one();
+
+		// As we now scale everything on PrintString time, the resolution height checks need to be unscaled.
+		void* resHeightScales[] = {
+			get_pattern("8B 0D ? ? ? ? 8B 03", 2),
+			get_pattern("8B 0D ? ? ? ? C7 44 24 ? ? ? ? ? 03 4C 24 14 ", 2),
+		};
+
+		static const float floatStorage[2] = { 1.0f, -(**positionOffset.get<float*>(0x19 + 2)) };
+		Patch(positionOffset.get<void>(2), &floatStorage[0]);
+		Patch(positionOffset.get<void>(0x19 + 2), &floatStorage[0]);
+
+		HookEach_PrintString(creditPrintString, InterceptCall);
+		InterceptCall(setScale, orgSetScale, SetScale_ScaleToRes);
+
+		for (void* addr : resHeightScales)
+		{
+			Patch(addr, &FIXED_RES_HEIGHT_SCALE);
+		}
+	}
+	TXN_CATCH();
+
 	FLAUtils::Init(moduleList);
 }
 
@@ -1600,7 +1673,7 @@ void Patch_VC_10(uint32_t width, uint32_t height)
 		using namespace PrintStringShadows;
 
 		XY<0x5FA1F6, 0x5FA1D5>::Hook(0x5FA1FD);
-		XYMinus<0x544727, 0x544727>::Hook(0x54474D);
+		XMinus<0x544727/*, 0x544727*/>::Hook(0x54474D); // Don't patch Y as we're doing it in the credits scale fix
 	}
 
 	// Mouse fucking fix!
@@ -1688,7 +1761,7 @@ void Patch_VC_11(uint32_t width, uint32_t height)
 		using namespace PrintStringShadows;
 
 		XY<0x5FA216, 0x5FA1F5>::Hook(0x5FA21D);
-		XYMinus<0x544747, 0x544747>::Hook(0x54476D);
+		XMinus<0x544747/*, 0x544747*/>::Hook(0x54476D); // Don't patch Y as we're doing it in the credits scale fix
 	}
 
 	// Mouse fucking fix!
@@ -1775,7 +1848,7 @@ void Patch_VC_Steam(uint32_t width, uint32_t height)
 		using namespace PrintStringShadows;
 
 		XY<0x5F9E56, 0x5F9E35>::Hook(0x5F9E5D);
-		XYMinus<0x544617, 0x544617>::Hook(0x54463D);
+		XMinus<0x544617/*, 0x544617*/>::Hook(0x54463D); // Don't patch Y as we're doing it in the credits scale fix
 	}
 
 	// Mouse fucking fix!

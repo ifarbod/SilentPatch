@@ -99,15 +99,15 @@ static const void*		SubtitlesShadowFix_JumpBack;
 
 auto 					WorldRemove = reinterpret_cast<void(*)(void*)>(hook::get_pattern("8A 43 50 56 24 07", -5));
 
-static const float& ResolutionWidthMult = **AddressByVersion<float**>(0x57E956, 0x57ECA6, 0x57EBA6);
-inline float GetWidthMult()
+float GetWidthMult()
 {
+	static const float& ResolutionWidthMult = **AddressByVersion<float**>(0x57E956, 0x57ECA6, 0x57EBA6);
 	return ResolutionWidthMult;
 }
 
-static const float& ResolutionHeightMult = **AddressByVersion<float**>(0x57E940, 0x57EC90, 0x57EB90);
-inline float GetHeightMult()
+float GetHeightMult()
 {
+	static const float& ResolutionHeightMult = **AddressByVersion<float**>(0x57E940, 0x57EC90, 0x57EB90);
 	return ResolutionHeightMult;
 }
 
@@ -987,6 +987,29 @@ namespace OnscreenCounterBarFixes
 	HOOK_EACH_INIT(YPos, orgYPos, YPos_Recalculated);
 }
 
+// ============= Fix credits not scaling to resolution =============
+namespace CreditsScalingFixes
+{
+	static const unsigned int FIXED_RES_HEIGHT_SCALE = 448;
+
+	template<std::size_t Index>
+	static void (*orgPrintString)(float,float,const wchar_t*);
+
+	template<std::size_t Index>
+	static void PrintString_ScaleY(float fX, float fY, const wchar_t* pText)
+	{
+		orgPrintString<Index>(fX, fY * GetHeightMult() * RsGlobal->MaximumHeight, pText);
+	}
+
+	static void (*orgSetScale)(float X, float Y);
+	static void SetScale_ScaleToRes(float X, float Y)
+	{
+		orgSetScale(X * GetWidthMult() * RsGlobal->MaximumWidth, Y * GetHeightMult() * RsGlobal->MaximumHeight);
+	}
+
+	HOOK_EACH_INIT(PrintString, orgPrintString, PrintString_ScaleY);
+}
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -1249,6 +1272,41 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 		HookEach_XPos(XPositions, PatchFloat);
 
 		InterceptCall(atoiWrap, orgAtoi, atoi_RecalculatePositions<XPositions.size(), 0>);
+	}
+	TXN_CATCH();
+
+
+	// Fix credits not scaling to resolution
+	try
+	{
+		using namespace CreditsScalingFixes;
+
+		std::array<void*, 1> creditPrintString = {
+			get_pattern("D9 1C 24 E8 ? ? ? ? 83 C4 0C 8B 03", 3),
+		};
+
+		auto setScale = get_pattern("E8 ? ? ? ? 8B 44 24 28 59 59");
+
+		// Credits are timed for 640x480, but the PC version scales to 640x448 internally - speed credits up a bit,
+		// especially since ours are longer and even the PS2 version cuts them a bit late.
+		float** creditsSpeed = get_pattern<float*>("D8 0D ? ? ? ? D9 5D E8", 2);
+
+		// As we now scale everything on PrintString time, the resolution height checks need to be unscaled.
+		void* resHeightScales[] = {
+			get_pattern("DF 6C 24 08 DB 05 ? ? ? ? D8 05", 4 + 2),
+			get_pattern("8B 35 ? ? ? ? 03 75 F4", 2),
+		};
+
+		HookEach_PrintString(creditPrintString, InterceptCall);
+		InterceptCall(setScale, orgSetScale, SetScale_ScaleToRes);
+
+		static float newSpeed = **creditsSpeed * (480.0f/448.0f);
+		Patch(creditsSpeed, &newSpeed);
+
+		for (void* addr : resHeightScales)
+		{
+			Patch(addr, &FIXED_RES_HEIGHT_SCALE);
+		}
 	}
 	TXN_CATCH();
 
