@@ -2419,7 +2419,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 			else if ( version == 2 ) Patch_VC_Steam(width, height);
 
 			// Y axis sensitivity only
-			else if (*(DWORD*)0x601048 == 0x5E5F5D60) Patch_VC_JP();
+			else if (*(DWORD*)Memory::DynBaseAddress(0x601048) == 0x5E5F5D60) Patch_VC_JP();
 
 			Patch_VC_Common();
 			Common::Patches::III_VC_Common();
