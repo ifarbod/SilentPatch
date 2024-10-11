@@ -2841,6 +2841,65 @@ namespace CreditsScalingFixes
 }
 
 
+// ============= Fix some big messages staying on screen longer at high resolutions due to a cut sliding text feature =============
+namespace SlidingTextsScalingFixes
+{
+	static const unsigned int FIXED_RES_WIDTH_SCALE = 640;
+
+	static std::array<float, 6>* pBigMessageX;
+	static float* pOddJob2XOffset;
+
+	template<std::size_t BigMessageIndex>
+	struct BigMessageSlider
+	{
+		static inline bool bSlidingEnabled = false;
+
+		template<std::size_t Index>
+		static void (*orgPrintString)(float,float,const wchar_t*);
+
+		template<std::size_t Index>
+		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
+		{
+			// We divide by a constant 640.0, because the X position is meant to slide across the entire screen
+			orgPrintString<Index>(bSlidingEnabled ? (*pBigMessageX)[BigMessageIndex] * RsGlobal->MaximumWidth / 640.0f : fX, fY, pText);
+		}
+
+		template<std::size_t Index>
+		static void (*orgSetRightJustifyWrap)(float wrap);
+
+		template<std::size_t Index>
+		static void SetRightJustifyWrap_Slide(float wrap)
+		{
+			orgSetRightJustifyWrap<Index>(bSlidingEnabled ? ScaleX(-500.0f) : wrap);
+		}
+
+		HOOK_EACH_INIT(PrintString, orgPrintString, PrintString_Slide);
+		HOOK_EACH_INIT(RightJustifyWrap, orgSetRightJustifyWrap, SetRightJustifyWrap_Slide);
+	};
+
+	struct OddJob2Slider
+	{
+		static inline bool bSlidingEnabled = false;
+
+		template<std::size_t Index>
+		static void (*orgPrintString)(float,float,const wchar_t*);
+
+		template<std::size_t Index>
+		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
+		{
+			// We divide by a constant 640.0, because the X position is meant to slide across the entire screen
+			if (bSlidingEnabled)
+			{
+				fX -= *pOddJob2XOffset * RsGlobal->MaximumWidth / 640.0f;
+			}
+			orgPrintString<Index>(fX, fY, pText);
+		}
+
+		HOOK_EACH_INIT(PrintString, orgPrintString, PrintString_Slide);
+	};
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -4227,6 +4286,47 @@ BOOL InjectDelayedPatches_10()
 		}
 
 
+		// Fix some big messages staying on screen longer at high resolutions due to a cut sliding text feature
+		// Also since we're touching it, optionally allow to re-enable this feature.
+
+		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingMissionTitleText", -1, wcModulePath); INIoption != -1)
+		{
+			using namespace SlidingTextsScalingFixes;
+
+			pBigMessageX = *(std::array<float, 6>**)(0x58C919 + 2);
+
+			std::array<uintptr_t, 1> slidingMessage1 = { 0x58D470 };
+
+			std::array<uintptr_t, 1> textWrapFix = { 0x58D2A9 };
+
+			BigMessageSlider<1>::bSlidingEnabled = INIoption != 0;
+			BigMessageSlider<1>::HookEach_PrintString(slidingMessage1, InterceptCall);
+			BigMessageSlider<1>::HookEach_RightJustifyWrap(textWrapFix, InterceptCall);
+
+			if (bHasDebugMenu)
+			{
+				DebugMenuAddVar("SilentPatch", "Sliding mission title text", &BigMessageSlider<1>::bSlidingEnabled, nullptr);
+			}
+		}
+
+		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingOddJobText", -1, wcModulePath); INIoption != -1)
+		{
+			using namespace SlidingTextsScalingFixes;
+
+			pOddJob2XOffset = *(float**)(0x58D077 + 2);
+
+			std::array<uintptr_t, 1> slidingOddJob2 = { 0x58D21A };
+
+			OddJob2Slider::bSlidingEnabled = INIoption != 0;
+			OddJob2Slider::HookEach_PrintString(slidingOddJob2, InterceptCall);
+
+			if (bHasDebugMenu)
+			{
+				DebugMenuAddVar("SilentPatch", "Sliding odd job text", &OddJob2Slider::bSlidingEnabled, nullptr);
+			}
+		}
+
+
 #ifndef NDEBUG
 		if ( const int QPCDays = GetPrivateProfileIntW(L"Debug", L"AddDaysToQPC", 0, wcModulePath); QPCDays != 0 )
 		{
@@ -4589,7 +4689,7 @@ BOOL InjectDelayedPatches_Steam()
 	return TRUE;
 }
 
-BOOL InjectDelayedPatches_Newsteam()
+BOOL InjectDelayedPatches_NewBinaries()
 {
 	if ( !IsAlreadyRunning() )
 	{
@@ -4599,6 +4699,13 @@ BOOL InjectDelayedPatches_Newsteam()
 		const HINSTANCE hInstance = GetModuleHandle( nullptr );
 		std::unique_ptr<ScopedUnprotect::Unprotect> Protect = ScopedUnprotect::UnprotectSectionOrFullModule( hInstance, ".text" );
 		ScopedUnprotect::Section Protect2( hInstance, ".rdata" );
+
+		// Obtain a path to the ASI
+		wchar_t			wcModulePath[MAX_PATH];
+		GetModuleFileNameW(reinterpret_cast<HMODULE>(&__ImageBase), wcModulePath, _countof(wcModulePath) - 3); // Minus max required space for extension
+		PathRenameExtensionW(wcModulePath, L".ini");
+
+		const bool bHasDebugMenu = DebugMenuLoad();
 
 		// Race condition in CdStream fixed
 		// Not taking effect with modloader
@@ -4646,6 +4753,54 @@ BOOL InjectDelayedPatches_Newsteam()
 			}
 			TXN_CATCH();
 		}
+
+
+		// Fix some big messages staying on screen longer at high resolutions due to a cut sliding text feature
+		// Also since we're touching it, optionally allow to re-enable this feature.
+		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingMissionTitleText", -1, wcModulePath); INIoption != -1) try
+		{
+			using namespace SlidingTextsScalingFixes;
+
+			pBigMessageX = *get_pattern<std::array<float, 6>*>("8D 4E EC D9 05 ? ? ? ? 83 C4 04", 3 + 2);
+
+			std::array<void*, 1> slidingMessage1 = {
+				get_pattern("E8 ? ? ? ? 6A 00 E8 ? ? ? ? 83 C4 10 8B E5"),
+			};
+
+			std::array<void*, 1> textWrapFix = {
+				get_pattern("E8 ? ? ? ? 6A 02 E8 ? ? ? ? 6A 03"),
+			};
+
+			BigMessageSlider<1>::bSlidingEnabled = INIoption != 0;
+			BigMessageSlider<1>::HookEach_PrintString(slidingMessage1, InterceptCall);
+			BigMessageSlider<1>::HookEach_RightJustifyWrap(textWrapFix, InterceptCall);
+
+			if (bHasDebugMenu)
+			{
+				DebugMenuAddVar("SilentPatch", "Sliding mission title text", &BigMessageSlider<1>::bSlidingEnabled, nullptr);
+			}
+		}
+		TXN_CATCH();
+
+		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingOddJobText", -1, wcModulePath); INIoption != -1) try
+		{
+			using namespace SlidingTextsScalingFixes;
+
+			pOddJob2XOffset = *get_pattern<float*>("D9 05 ? ? ? ? DD 05 ? ? ? ? D8 F9", 2);
+
+			std::array<void*, 1> slidingOddJob2 = {
+				get_pattern("DB 45 08 D9 1C 24 E8 ? ? ? ? 83 C4 0C 8B E5 5D C3", 6),
+			};
+
+			OddJob2Slider::bSlidingEnabled = INIoption != 0;
+			OddJob2Slider::HookEach_PrintString(slidingOddJob2, InterceptCall);
+
+			if (bHasDebugMenu)
+			{
+				DebugMenuAddVar("SilentPatch", "Sliding odd job text", &OddJob2Slider::bSlidingEnabled, nullptr);
+			}
+		}
+		TXN_CATCH();
 
 
 		return FALSE;
@@ -5719,6 +5874,22 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
+	// Fix some big messages staying on screen longer at high resolutions due to a cut sliding text feature
+	// Also since we're touching it, optionally allow to re-enable this feature.
+	{
+		using namespace SlidingTextsScalingFixes;
+
+		// "Unscale" text sliding thresholds, so texts don't stay on screen longer at high resolutions
+		Patch(0x58D2E9 + 1, &FIXED_RES_WIDTH_SCALE);
+
+		// Replace dword ptr [esp+0Ch+X], eax \ dword ptr [esp+0Ch+X]
+		// with a constant fld [620.0]
+		static const float f620 = FIXED_RES_WIDTH_SCALE - 20.0f;
+		Patch(0x58C90E, { 0x90, 0x90, 0xD9, 0x05 });
+		Patch(0x58C90E + 4, &f620);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6486,7 +6657,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 	{
 		void* isAlreadyRunning = get_pattern( "85 C0 74 08 33 C0 8B E5 5D C2 10 00", -5 );
 		ReadCall( isAlreadyRunning, IsAlreadyRunning );
-		InjectHook(isAlreadyRunning, InjectDelayedPatches_Newsteam);
+		InjectHook(isAlreadyRunning, InjectDelayedPatches_NewBinaries);
 	}
 	TXN_CATCH();
 
@@ -7777,6 +7948,27 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 			Patch(addr, &FIXED_RES_HEIGHT_SCALE);
 		}
 	}
+
+
+	// Fix some big messages staying on screen longer at high resolutions due to a cut sliding text feature
+	// Also since we're touching it, optionally allow to re-enable this feature.
+	try
+	{
+		using namespace SlidingTextsScalingFixes;
+
+		// "Unscale" text sliding thresholds, so texts don't stay on screen longer at high resolutions
+		auto bigMessage0Threshold = pattern("83 C4 04 89 4D F4 DB 45 F4").get_one();
+		auto bigMessage1Threshold = get_pattern("A1 ? ? ? ? D9 05 ? ? ? ? 83 C0 EC", 1);
+
+		Patch(bigMessage1Threshold, &FIXED_RES_WIDTH_SCALE);
+
+		// Replace dword ptr [ebp+X], eax \ dword ptr [ebp+X]
+		// with a constant fld [620.0]
+		static const float f620 = FIXED_RES_WIDTH_SCALE - 20.0f;
+		Patch(bigMessage0Threshold.get<void>(3), { 0xD9, 0x05 });
+		Patch(bigMessage0Threshold.get<void>(3 + 2), &f620);
+	}
+	TXN_CATCH();
 }
 
 

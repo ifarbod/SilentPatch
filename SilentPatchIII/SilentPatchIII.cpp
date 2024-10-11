@@ -1010,6 +1010,67 @@ namespace CreditsScalingFixes
 	HOOK_EACH_INIT(PrintString, orgPrintString, PrintString_ScaleY);
 }
 
+
+// ============= Fix some big messages staying on screen longer at high resolutions due to a cut sliding text feature =============
+namespace SlidingTextsScalingFixes
+{
+	static const unsigned int FIXED_RES_WIDTH_SCALE = 640;
+
+	static std::array<float, 6>* pBigMessageX;
+	static float* pOddJob2XOffset;
+
+	template<std::size_t BigMessageIndex>
+	struct BigMessageSlider
+	{
+		static inline bool bSlidingEnabled = false;
+
+		static inline float** pHorShadowValue;
+
+		template<std::size_t Index>
+		static void (*orgPrintString)(float,float,const wchar_t*);
+
+		template<std::size_t Index>
+		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
+		{
+			if (bSlidingEnabled)
+			{
+				// We divide by a constant 640.0, because the X position is meant to slide across the entire screen
+				fX = (*pBigMessageX)[BigMessageIndex] * RsGlobal->MaximumWidth / 640.0f;
+				// The first draws are shadows, add the shadow offset manually. We know this function is called BEFORE the one fixing the shadow scale,
+				// so we're fine with this approach.
+				if constexpr (Index == 0)
+				{
+					fX += **pHorShadowValue;
+				}
+			}
+			orgPrintString<Index>(fX, fY, pText);
+		}
+
+		HOOK_EACH_INIT(PrintString, orgPrintString, PrintString_Slide);
+	};
+
+	struct OddJob2Slider
+	{
+		static inline bool bSlidingEnabled = false;
+
+		template<std::size_t Index>
+		static void (*orgPrintString)(float,float,const wchar_t*);
+
+		template<std::size_t Index>
+		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
+		{
+			// We divide by a constant 640.0, because the X position is meant to slide across the entire screen
+			if (bSlidingEnabled)
+			{
+				fX -= *pOddJob2XOffset * RsGlobal->MaximumWidth / 640.0f;
+			}
+			orgPrintString<Index>(fX, fY, pText);
+		}
+
+		HOOK_EACH_INIT(PrintString, orgPrintString, PrintString_Slide);
+	};
+}
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -1309,6 +1370,67 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 		}
 	}
 	TXN_CATCH();
+
+
+	// Fix some big messages staying on screen longer at high resolutions due to a cut sliding text feature
+	// Also since we're touching it, optionally allow to re-enable this feature.
+	try
+	{
+		using namespace SlidingTextsScalingFixes;
+
+		// "Unscale" text sliding thresholds, so texts don't stay on screen longer at high resolutions
+		auto scalingThreshold = pattern("A1 ? ? ? ? 59 83 C0 EC").count(2);
+
+		scalingThreshold.for_each_result([](pattern_match match)
+			{
+				Patch(match.get<void>(1), &FIXED_RES_WIDTH_SCALE);
+			});
+
+		// Optional sliding texts
+		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingMissionTitleText", -1, wcModulePath); INIoption != -1) try
+		{
+			// We need to manually add the shadow offset in this case
+			pBigMessageX = *get_pattern<std::array<float, 6>*>("DB 44 24 20 D8 1D ? ? ? ? DF E0", 4 + 2);
+
+			auto bigMessage1ShadowPrint = pattern("D8 05 ? ? ? ? D9 1C 24 DD D8 E8 ? ? ? ? D9 05 ? ? ? ? D9 7C 24 0C").get_one();
+
+			std::array<void*, 2> slidingMessage1 = {
+				bigMessage1ShadowPrint.get<void>(0xB),
+				get_pattern("E8 ? ? ? ? 83 C4 0C EB 0A C7 05 ? ? ? ? ? ? ? ? 83 C4 68"),
+			};
+
+			BigMessageSlider<1>::pHorShadowValue = bigMessage1ShadowPrint.get<float*>(2);
+			BigMessageSlider<1>::bSlidingEnabled = INIoption != 0;
+			BigMessageSlider<1>::HookEach_PrintString(slidingMessage1, InterceptCall);
+
+			if (bHasDebugMenu)
+			{
+				DebugMenuAddVar("SilentPatch", "Sliding mission title text", &BigMessageSlider<1>::bSlidingEnabled, nullptr);
+			}
+		}
+		TXN_CATCH();
+
+		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingOddJobText", -1, wcModulePath); INIoption != -1) try
+		{
+			pOddJob2XOffset = *get_pattern<float*>("D9 05 ? ? ? ? D8 E1 D9 1D ? ? ? ? E9", 2);
+
+			std::array<void*, 2> slidingOddJob2 = {
+				get_pattern("E8 ? ? ? ? 83 C4 0C 8D 4C 24 5C"),
+				get_pattern("E8 ? ? ? ? 83 C4 0C 66 83 3D ? ? ? ? ? 0F 84"),
+			};
+
+			OddJob2Slider::bSlidingEnabled = INIoption != 0;
+			OddJob2Slider::HookEach_PrintString(slidingOddJob2, InterceptCall);
+
+			if (bHasDebugMenu)
+			{
+				DebugMenuAddVar("SilentPatch", "Sliding odd job text", &OddJob2Slider::bSlidingEnabled, nullptr);
+			}
+		}
+		TXN_CATCH();
+	}
+	TXN_CATCH();
+
 
 	FLAUtils::Init(moduleList);
 }

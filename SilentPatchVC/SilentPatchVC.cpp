@@ -467,6 +467,65 @@ namespace CreditsScalingFixes
 	HOOK_EACH_INIT(PrintString, orgPrintString, PrintString_ScaleY);
 }
 
+
+// ============= Fix some big messages staying on screen longer at high resolutions due to a cut sliding text feature =============
+namespace SlidingTextsScalingFixes
+{
+	static const unsigned int FIXED_RES_WIDTH_SCALE = 640;
+
+	static std::array<float, 6>* pBigMessageX;
+	static float* pOddJob2XOffset;
+
+	template<std::size_t BigMessageIndex>
+	struct BigMessageSlider
+	{
+		static inline bool bSlidingEnabled = false;
+
+		template<std::size_t Index>
+		static void (*orgPrintString)(float,float,const wchar_t*);
+
+		template<std::size_t Index>
+		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
+		{
+			// We divide by a constant 640.0, because the X position is meant to slide across the entire screen
+			orgPrintString<Index>(bSlidingEnabled ? (*pBigMessageX)[BigMessageIndex] * RsGlobal->MaximumWidth / 640.0f : fX, fY, pText);
+		}
+
+		template<std::size_t Index>
+		static void (*orgSetRightJustifyWrap)(float wrap);
+
+		template<std::size_t Index>
+		static void SetRightJustifyWrap_Slide(float wrap)
+		{
+			orgSetRightJustifyWrap<Index>(bSlidingEnabled ? -500.0f * GetWidthMult() * RsGlobal->MaximumWidth : wrap);
+		}
+
+		HOOK_EACH_INIT(PrintString, orgPrintString, PrintString_Slide);
+		HOOK_EACH_INIT(RightJustifyWrap, orgSetRightJustifyWrap, SetRightJustifyWrap_Slide);
+	};
+
+	struct OddJob2Slider
+	{
+		static inline bool bSlidingEnabled = false;
+
+		template<std::size_t Index>
+		static void (*orgPrintString)(float,float,const wchar_t*);
+
+		template<std::size_t Index>
+		static void PrintString_Slide(float fX, float fY, const wchar_t* pText)
+		{
+			// We divide by a constant 640.0, because the X position is meant to slide across the entire screen
+			if (bSlidingEnabled)
+			{
+				fX -= *pOddJob2XOffset * RsGlobal->MaximumWidth / 640.0f;
+			}
+			orgPrintString<Index>(fX, fY, pText);
+		}
+
+		HOOK_EACH_INIT(PrintString, orgPrintString, PrintString_Slide);
+	};
+}
+
 float FixedRefValue()
 {
 	return 1.0f;
@@ -1250,7 +1309,7 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 			static const char * const str[] = { "Default", "Metric", "Imperial" };
 			DebugMenuEntry *e = DebugMenuAddVar( "SilentPatch", "Forced units", &forcedUnits, nullptr, 1, -1, 1, str );
 			DebugMenuEntrySetWrap(e, true);
-		}			
+		}
 	}
 
 	
@@ -1625,6 +1684,68 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		{
 			Patch(addr, &FIXED_RES_HEIGHT_SCALE);
 		}
+	}
+	TXN_CATCH();
+
+
+	// Fix some big messages staying on screen longer at high resolutions due to a cut sliding text feature
+	// Also since we're touching it, optionally allow to re-enable this feature.
+	try
+	{
+		using namespace SlidingTextsScalingFixes;
+
+		// "Unscale" text sliding thresholds, so texts don't stay on screen longer at high resolutions
+		void* scalingThreshold[] = {
+			get_pattern("A1 ? ? ? ? 59 83 C0 EC", 1),
+			get_pattern("59 A1 ? ? ? ? 83 C0 EC", 1 + 1)
+		};
+
+		for (void* addr : scalingThreshold)
+		{
+			Patch(addr, &FIXED_RES_WIDTH_SCALE);
+		}
+
+		// Optional sliding texts
+		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingMissionTitleText", -1, wcModulePath); INIoption != -1) try
+		{
+			pBigMessageX = *get_pattern<std::array<float, 6>*>("DB 44 24 68 D8 1D ? ? ? ? DF E0", 4 + 2);
+
+			std::array<void*, 1> slidingMessage1 = {
+				get_pattern("E8 ? ? ? ? 83 C4 0C EB 0A C7 05 ? ? ? ? ? ? ? ? 83 C4 60"),
+			};
+
+			std::array<void*, 1> textWrapFix = {
+				get_pattern("E8 ? ? ? ? 59 E8 ? ? ? ? 6A 00 E8 ? ? ? ? 59 8B 0D"),
+			};
+
+			BigMessageSlider<1>::bSlidingEnabled = INIoption != 0;
+			BigMessageSlider<1>::HookEach_PrintString(slidingMessage1, InterceptCall);
+			BigMessageSlider<1>::HookEach_RightJustifyWrap(textWrapFix, InterceptCall);
+
+			if (bHasDebugMenu)
+			{
+				DebugMenuAddVar("SilentPatch", "Sliding mission title text", &BigMessageSlider<1>::bSlidingEnabled, nullptr);
+			}
+		}
+		TXN_CATCH();
+
+		if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"SlidingOddJobText", -1, wcModulePath); INIoption != -1) try
+		{
+			pOddJob2XOffset = *get_pattern<float*>("D9 05 ? ? ? ? D8 E1 D9 1D ? ? ? ? E9", 2);
+
+			std::array<void*, 1> slidingOddJob2 = {
+				get_pattern("E8 ? ? ? ? 83 C4 0C 66 83 3D ? ? ? ? ? 0F 84"),
+			};
+
+			OddJob2Slider::bSlidingEnabled = INIoption != 0;
+			OddJob2Slider::HookEach_PrintString(slidingOddJob2, InterceptCall);
+
+			if (bHasDebugMenu)
+			{
+				DebugMenuAddVar("SilentPatch", "Sliding odd job text", &OddJob2Slider::bSlidingEnabled, nullptr);
+			}
+		}
+		TXN_CATCH();
 	}
 	TXN_CATCH();
 
