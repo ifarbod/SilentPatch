@@ -1840,7 +1840,7 @@ namespace LightbeamFix
 
 }
 
-namespace TrueInvicibility
+namespace TrueInvincibility
 {
 	static bool isEnabled = false;
 	static uintptr_t WillKillJumpBack;
@@ -4145,18 +4145,27 @@ BOOL InjectDelayedPatches_10()
 			}
 		}
 
-		// True invicibility - not being hurt by Police Maverick bullets anymore
-		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"TrueInvicibility", -1, wcModulePath); INIoption != -1 && !bSAMP )
+		// True invincibility - not being hurt by Police Maverick bullets anymore
+		if ( !bSAMP )
 		{
-			using namespace TrueInvicibility;
-
-			isEnabled = INIoption != 0;
-			WillKillJumpBack = 0x4B3238;
-			InjectHook( 0x4B322E, ComputeWillKillPedHook, HookType::Jump );
-
-			if ( bHasDebugMenu )
+			int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"TrueInvincibility", -1, wcModulePath);
+			if (INIoption == -1)
 			{
-				DebugMenuAddVar( "SilentPatch", "True invicibility", &isEnabled, nullptr );
+				// Minor spelling mistake, keep it for backwards compatibility with old INI files
+				INIoption = GetPrivateProfileIntW(L"SilentPatch", L"TrueInvicibility", -1, wcModulePath);
+			}
+			if (INIoption != -1)
+			{
+				using namespace TrueInvincibility;
+
+				isEnabled = INIoption != 0;
+				WillKillJumpBack = 0x4B3238;
+				InjectHook( 0x4B322E, ComputeWillKillPedHook, HookType::Jump );
+
+				if ( bHasDebugMenu )
+				{
+					DebugMenuAddVar( "SilentPatch", "True invincibility", &isEnabled, nullptr );
+				}
 			}
 		}
 
