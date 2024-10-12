@@ -2900,6 +2900,45 @@ namespace SlidingTextsScalingFixes
 }
 
 
+// ============= Fix post effects not scaling correctly =============
+// Heat haze not rescaling after changing resolution
+// Water ripple effect having too high wave frequency at higher resolutions
+namespace PostEffectsScalingFixes
+{
+	static int32_t* pHeatHazeFXTypeLast;
+
+	// Instead of NOPing the call to SetupBackBufferVertex, redirect it to an empty function,
+	// so other mods can chain with it fine
+	static void (*orgSetupBackBufferVertex)();
+	static void SetupBackBufferVertex_Nop()
+	{
+	}
+
+	template<std::size_t Index>
+	static void (*orgSetCurrentVideoMode)(int modeIndex);
+
+	template<std::size_t Index>
+	static void SetCurrentVideoMode_SetupPostFX(int modeIndex)
+	{
+		*pHeatHazeFXTypeLast = -1; // Force heat haze to reinit
+
+		orgSetCurrentVideoMode<Index>(modeIndex);
+		orgSetupBackBufferVertex();
+	}
+
+	HOOK_EACH_INIT(SetCurrentVideoMode, orgSetCurrentVideoMode, SetCurrentVideoMode_SetupPostFX);
+
+	static void (*orgUnderWaterRipple)(RwRGBA, float, float, int, float, float);
+	static void UnderWaterRipple_ScaleFrequency(RwRGBA a1, float xOffset, float yOffset, int a4, float a5, float frequency)
+	{
+		// Scale frequency counter-proportionally to the resolution height
+		// as the function already scales the sine wave frequency to that internally.
+		const float freqDivFactor = RsGlobal->MaximumHeight / 480.0f;
+		orgUnderWaterRipple(a1, xOffset, yOffset, a4, a5, frequency / freqDivFactor);
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -5899,6 +5938,31 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
+	// Fix post effects not scaling correctly
+	// Heat haze not rescaling after changing resolution
+	// Water ripple effect having too high wave frequency at higher resolutions
+	{
+		using namespace PostEffectsScalingFixes;
+
+		std::array<uintptr_t, 4> setCurrentVideoMode = { 0x574509, 0x57D096, 0x57D16E, 0x57D2B2 };
+
+		if (*(uint8_t*)0x701450 == 0xA1)
+		{
+			pHeatHazeFXTypeLast = *(int32_t**)(0x701450 + 1);
+		}
+		else
+		{
+			// Someone re-routed CPostEffects::HeatHazeFXInit and we can't read the variable, fall back to the 1.0 US address
+			pHeatHazeFXTypeLast = (int32_t*)0x8D50E4;
+		}
+
+		HookEach_SetCurrentVideoMode(setCurrentVideoMode, InterceptCall);
+		InterceptCall(0x745C7D, orgSetupBackBufferVertex, SetupBackBufferVertex_Nop);
+
+		InterceptCall(0x70529C, orgUnderWaterRipple, UnderWaterRipple_ScaleFrequency);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -7976,6 +8040,33 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		static const float f620 = FIXED_RES_WIDTH_SCALE - 20.0f;
 		Patch(bigMessage0Threshold.get<void>(3), { 0xD9, 0x05 });
 		Patch(bigMessage0Threshold.get<void>(3 + 2), &f620);
+	}
+	TXN_CATCH();
+
+	
+	// Fix post effects not scaling correctly
+	// Heat haze not rescaling after changing resolution
+	// Water ripple effect having too high wave frequency at higher resolutions
+	try
+	{
+		using namespace PostEffectsScalingFixes;
+
+		std::array<void*, 4> setCurrentVideoMode = {
+			get_pattern("E8 ? ? ? ? 83 C4 08 88 9E"),
+			get_pattern("89 86 D0 00 00 00 E8 ? ? ? ? 83 C4 04 8B CE", 6),
+			get_pattern("E8 ? ? ? ? 83 C4 08 8B CE E8 ? ? ? ? 8A 45 FF"),
+			get_pattern("8B 96 D0 00 00 00 52 E8 ? ? ? ? 83 C4 08", 7),
+		};
+
+		auto setupBackBufferVertex = get_pattern("E8 ? ? ? ? A1 ? ? ? ? 8B 48 60");
+		auto underWaterRipple = get_pattern("E8 ? ? ? ? 83 C4 18 80 3D ? ? ? ? ? 74 05");
+
+		pHeatHazeFXTypeLast = *get_pattern<int32_t*>("89 1D ? ? ? ? A1 ? ? ? ? 8B 48 0C", 2);
+
+		HookEach_SetCurrentVideoMode(setCurrentVideoMode, InterceptCall);
+		InterceptCall(setupBackBufferVertex, orgSetupBackBufferVertex, SetupBackBufferVertex_Nop);
+
+		InterceptCall(underWaterRipple, orgUnderWaterRipple, UnderWaterRipple_ScaleFrequency);
 	}
 	TXN_CATCH();
 }
