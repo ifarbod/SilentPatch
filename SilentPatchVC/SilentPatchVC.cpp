@@ -526,6 +526,59 @@ namespace SlidingTextsScalingFixes
 	};
 }
 
+
+// ============= Minimal HUD changes =============
+namespace MinimalHUD
+{
+	// Wanted level stars
+	static void (*orgSetDropShadowPosition)(short);
+	static void (*orgSetDropColor)(const CRGBA&);
+
+	static int8_t* pDropShadowSize;
+	static int8_t* pDropShadowR;
+	static int8_t* pDropShadowG;
+	static int8_t* pDropShadowB;
+
+	static void (*orgSetColor)(const CRGBA&);
+	static void SetColor_SetShadow(const CRGBA& color)
+	{
+		orgSetDropShadowPosition(*pDropShadowSize);
+		orgSetDropColor(CRGBA(*pDropShadowR, *pDropShadowG, *pDropShadowB, color.a));
+		orgSetColor(color);
+	}
+
+
+	// Show the energy values when losing armor
+	static uint8_t* pPlayerInFocus;
+	static uint32_t* pTimeLastArmorLoss;
+
+	static uint32_t LastTimeArmorLost;
+
+	static float (*orgDrawFadeState)(int state, int force);
+	static float DrawFadeState_CheckArmor(int state, int force)
+	{
+		// This is a bit hacky, but we don't necessarily need better right now
+		if (pTimeLastArmorLoss[92 * *pPlayerInFocus] != LastTimeArmorLost)
+		{
+			force = 1;
+			LastTimeArmorLost = pTimeLastArmorLoss[92 * *pPlayerInFocus];
+		}
+		return orgDrawFadeState(state, force);
+	}
+
+
+	// Fade the weapon icon - fix the render state and pass the alpha parameter
+	static void (*orgRenderOneXLUSprite)(float, float, float, float, float, uint8_t, uint8_t, uint8_t, int16_t, float, uint8_t);
+	static void RenderOneXLUSprite_FloatAlpha(float arg1, float arg2, float arg3, float arg4, float arg5, uint8_t red, uint8_t green, uint8_t blue, int16_t mult, float arg10, float alpha)
+	{
+		RwScopedRenderState<rwRENDERSTATEVERTEXALPHAENABLE> vertexAlpha;
+		RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, (void*)TRUE);
+
+		orgRenderOneXLUSprite(arg1, arg2, arg3, arg4, arg5, red, green, blue, mult, arg10, static_cast<uint8_t>(alpha));
+	}
+}
+
+
 float FixedRefValue()
 {
 	return 1.0f;
@@ -1683,6 +1736,116 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		for (void* addr : resHeightScales)
 		{
 			Patch(addr, &FIXED_RES_HEIGHT_SCALE);
+		}
+	}
+	TXN_CATCH();
+
+
+	// Minimal HUD
+	if (const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"MinimalHUD", -1, wcModulePath); INIoption != -1) try
+	{
+		using namespace MinimalHUD;
+
+		// Fix original bugs
+
+		// Wanted level stars losing their shadow if health/armour counters are off
+		auto setColor_WantedStars = get_pattern("E8 ? ? ? ? DB 05 ? ? ? ? 8D 84 24 ? ? ? ? 59 50 50 D8 0D ? ? ? ? D8 0D ? ? ? ? D9 1C 24 FF 74 24 24");
+
+		// Get SetDropShadowPosition and SetDropColor with their corresponding parameters straight from the armor counter,
+		// to preserve the current behaviour
+		auto setDropShadow = pattern("6A ? E8 ? ? ? ? 59 8D 8C 24 ? ? ? ? 68 ? ? ? ? 6A ? 6A ? 6A ? E8 ? ? ? ? 8D 84 24 ? ? ? ? 50 E8").get_one();
+
+
+		// Show the energy values when losing armor
+		auto drawFadeState_Energy = get_pattern("6A 01 E8 ? ? ? ? DD D8", 2);
+
+		auto timeLastArmorLoss = pattern("0F B6 15 ? ? ? ? A1 ? ? ? ? 6B D2 2E 89 04 D5 ? ? ? ? D9 83").get_one();
+
+
+		// Fade the weapon icon - fix the render state and pass the alpha parameter
+		auto drawWeaponIconAlphaPush = get_pattern("68 FF 00 00 00 D8 0D ? ? ? ? FF 35");
+		auto renderOneXLUSprite = get_pattern("E8 ? ? ? ? 83 C4 2C 6A 00 6A 08");
+
+
+		// Stuff to let us (re)initialize
+		static void (*HUDReInitialise)() = static_cast<decltype(HUDReInitialise)>(get_pattern("31 C0 53 0F EF C0 C6 05"));
+
+		// This pattern has 5 hits - first 2 are in Reinitialise, the rest is in Initialise
+		auto reinitialise1 = pattern("C7 05 ? ? ? ? 05 00 00 00 66 C7 05 ? ? ? ? 00 00 C7 05 ? ? ? ? 00 00 00 00").count(5);
+
+		// This one covers the rest of Reinitialise
+		auto reinitialise2 = pattern("C7 05 ? ? ? ? 05 00 00 00 C6 05 ? ? ? ? 00 C7 05 ? ? ? ? 00 00 00 00").count(2);
+
+		// This one we touch only once, no need for static
+		const std::array<uint32_t*, 4> hudInitialiseVariables = {
+			reinitialise1.get(2).get<uint32_t>(6),
+			reinitialise1.get(3).get<uint32_t>(6),
+			reinitialise1.get(4).get<uint32_t>(6),
+
+			get_pattern<uint32_t>("8B 83 ? ? ? ? C7 05 ? ? ? ? 05 00 00 00", 6 + 6),
+		};
+
+		static const std::array<uint32_t*, 4> hudReinitialiseVariables = {
+			reinitialise1.get(0).get<uint32_t>(6),
+			reinitialise1.get(1).get<uint32_t>(6),
+			
+			reinitialise2.get(0).get<uint32_t>(6),
+			reinitialise2.get(1).get<uint32_t>(6),
+		};
+
+
+		ReadCall(setDropShadow.get<void>(2), orgSetDropShadowPosition);
+		ReadCall(setDropShadow.get<void>(39), orgSetDropColor);
+		pDropShadowSize = setDropShadow.get<int8_t>(1);
+		pDropShadowB = setDropShadow.get<int8_t>(20 + 1);
+		pDropShadowG = setDropShadow.get<int8_t>(22 + 1);
+		pDropShadowR = setDropShadow.get<int8_t>(24 + 1);
+		InterceptCall(setColor_WantedStars, orgSetColor, SetColor_SetShadow);
+
+
+		pPlayerInFocus = *timeLastArmorLoss.get<uint8_t*>(3);
+		pTimeLastArmorLoss = *timeLastArmorLoss.get<uint32_t*>(0xF + 3);
+		InterceptCall(drawFadeState_Energy, orgDrawFadeState, DrawFadeState_CheckArmor);
+
+
+		// push 0FFh -> push dword ptr [esp+520h+var_4E0]
+		Patch(drawWeaponIconAlphaPush, { 0x90, 0xFF, 0x74, 0x24, 0x40 });
+		InterceptCall(renderOneXLUSprite, orgRenderOneXLUSprite, RenderOneXLUSprite_FloatAlpha);
+
+		if (INIoption != 0)
+		{
+			for (uint32_t* var : hudInitialiseVariables)
+			{
+				Patch<uint32_t>(var, 0);
+			}
+			for (uint32_t* var : hudReinitialiseVariables)
+			{
+				Patch<uint32_t>(var, 0);
+			}
+		}
+
+		if (bHasDebugMenu)
+		{
+			static bool bMinimalHUDEnabled = INIoption != 0;
+			DebugMenuAddVar("SilentPatch", "Minimal HUD", &bMinimalHUDEnabled, [] {
+				if (bMinimalHUDEnabled)
+				{
+					for (uint32_t* var : hudReinitialiseVariables)
+					{
+						Memory::VP::Patch<uint32_t>(var, 0);
+					}
+				}
+				else
+				{
+					for (uint32_t* var : hudReinitialiseVariables)
+					{
+						Memory::VP::Patch<uint32_t>(var, 5);
+					}
+				}
+
+				// Call CHud::ReInitialise
+				HUDReInitialise();
+			});
 		}
 	}
 	TXN_CATCH();

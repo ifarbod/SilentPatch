@@ -1457,8 +1457,8 @@ static int64_t AudioUtilsGetCurrentTimeInMs()
 	return ((currentTime.QuadPart - UtilsStartTime.QuadPart) * 1000) / UtilsFrequency.QuadPart;
 }
 
-// Minimal HUD changes
-namespace MinimalHud
+// ============= Minimal HUD changes =============
+namespace MinimalHUD
 {
 	static CRGBA* __fastcall SetRGBA_FloatAlpha( CRGBA* rgba, void*, uint8_t red, uint8_t green, uint8_t blue, float alpha )
 	{
@@ -4146,9 +4146,9 @@ BOOL InjectDelayedPatches_10()
 		}
 
 		// Minimal HUD
-		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"MinimalHud", -1, wcModulePath); INIoption != -1 )
+		if ( const int INIoption = GetPrivateProfileIntW(L"SilentPatch", L"MinimalHUD", -1, wcModulePath); INIoption != -1 )
 		{
-			using namespace MinimalHud;
+			using namespace MinimalHUD;
 
 			// Fix original bugs
 			Patch( 0x58950E, { 0x90, 0xFF, 0x74, 0x24, 0x1C } );
@@ -4159,14 +4159,14 @@ BOOL InjectDelayedPatches_10()
 			InjectHook( 0x58D8FD, &RenderXLUSprite_FloatAlpha );
 		
 			// Re-enable
-			if ( INIoption == 1 )
+			if ( INIoption != 0 )
 			{
 				Patch<int32_t>( 0x588905 + 1, 0 );
 			}
 		
 			if ( bHasDebugMenu )
 			{
-				static bool bMinimalHUDEnabled = INIoption == 1;
+				static bool bMinimalHUDEnabled = INIoption != 0;
 				DebugMenuAddVar( "SilentPatch", "Minimal HUD", &bMinimalHUDEnabled, []() {
 					if ( bMinimalHUDEnabled )
 					{
