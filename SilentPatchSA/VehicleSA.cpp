@@ -159,7 +159,7 @@ RwFrame* GetFrameFromName( RwFrame* topFrame, const char* name )
 				foundFrame = frame;
 				return nullptr;
 			}
-			RwFrameForAllChildren( frame, std::forward<GetFramePredicate>(*this) );
+			RwFrameForAllChildren(frame, std::ref(*this));
 			return foundFrame != nullptr ? nullptr : frame;
 		}
 	
@@ -189,7 +189,7 @@ RwFrame* GetFrameFromID( RwFrame* topFrame, int32_t ID )
 				foundFrame = frame;
 				return nullptr;
 			}
-			RwFrameForAllChildren( frame, std::forward<GetFramePredicate>(*this) );
+			RwFrameForAllChildren(frame, std::ref(*this));
 			return foundFrame != nullptr ? nullptr : frame;
 		}
 
