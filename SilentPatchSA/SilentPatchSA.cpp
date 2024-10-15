@@ -2939,6 +2939,58 @@ namespace PostEffectsScalingFixes
 }
 
 
+// ============= Fix heat seeking and gamepad crosshairs not scaling to resolution =============
+namespace CrosshairScalingFixes
+{
+	template<std::size_t Index>
+	static void (*orgRenderOneXLUSprite_Rotate_Aspect)(float, float, float, float, float, uint8_t, uint8_t, uint8_t, short, float, float, uint8_t);
+
+	template<std::size_t Index>
+	static void RenderOneXLUSprite_Rotate_Aspect_Scale(float a1, float a2, float a3, float width, float height, uint8_t a6, uint8_t a7, uint8_t a8, short a9, float a10, float a11, uint8_t a12)
+	{
+		orgRenderOneXLUSprite_Rotate_Aspect<Index>(a1, a2, a3, ScaleX(width), ScaleY(height), a6, a7, a8, a9, a10, a11, a12);
+	}
+
+	template<std::size_t Index>
+	static const float* orgSize_GamepadCrosshair;
+
+	template<std::size_t Index>
+	static float Size_Recalculated_GamepadCrosshair;
+
+	template<std::size_t... I>
+	static void RecalculateSizes_GamepadCrosshair(std::index_sequence<I...>)
+	{
+		((Size_Recalculated_GamepadCrosshair<I> = ScaleY(*orgSize_GamepadCrosshair<I>)), ...);
+	}
+
+	template<std::size_t Index>
+	static const double* orgSize_GamepadCrosshair_Double;
+
+	template<std::size_t Index>
+	static double Size_Recalculated_GamepadCrosshair_Double;
+
+	template<std::size_t... I>
+	static void RecalculateSizes_GamepadCrosshair_Double(std::index_sequence<I...>)
+	{
+		((Size_Recalculated_GamepadCrosshair_Double<I> = ScaleY(static_cast<float>(*orgSize_GamepadCrosshair_Double<I>))), ...);
+	}
+
+	static bool (*orgCalcScreenCoors)(const RwV3d&, RwV3d*, float*, float*, bool, bool);
+
+	template<std::size_t NumFloats, std::size_t NumDoubles>
+	static bool CalcScreenCoors_Recalculate(const RwV3d& a1, RwV3d* a2, float* a3, float* a4, bool a5, bool a6)
+	{
+		RecalculateSizes_GamepadCrosshair(std::make_index_sequence<NumFloats>{});
+		RecalculateSizes_GamepadCrosshair_Double(std::make_index_sequence<NumDoubles>{});
+		return orgCalcScreenCoors(a1, a2, a3, a4, a5, a6);
+	}
+
+	HOOK_EACH_INIT(RenderOneXLUSprite_Rotate_Aspect, orgRenderOneXLUSprite_Rotate_Aspect, RenderOneXLUSprite_Rotate_Aspect_Scale);
+	HOOK_EACH_INIT(GamepadCrosshair, orgSize_GamepadCrosshair, Size_Recalculated_GamepadCrosshair);
+	HOOK_EACH_INIT(GamepadCrosshair_Double, orgSize_GamepadCrosshair_Double, Size_Recalculated_GamepadCrosshair_Double);
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -4867,6 +4919,12 @@ void Patch_SA_10(HINSTANCE hInstance)
 	InstallMemValidator();
 #endif
 
+	auto PatchFloat = [](float** address, const float*& org, float& replaced)
+		{
+			org = *address;
+			Patch(address, &replaced);
+		};
+
 	// IsAlreadyRunning needs to be read relatively late - the later, the better
 	{
 		const uintptr_t pIsAlreadyRunning = AddressByRegion_10<uintptr_t>(0x74872D);
@@ -5963,6 +6021,36 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
+	// Fix heat seeking and gamepad crosshairs not scaling to resolution
+	{
+		using namespace CrosshairScalingFixes;
+
+		std::array<uintptr_t, 6> renderRotateAspect = {
+			// Heat seeking missile crosshair
+			0x742EAF, 0x742F45, 0x743073, 0x74311D,
+
+			// Co-op in-car crosshair
+			0x743A0A, 0x743BD4,
+		};
+
+		// Triangular gamepad crosshairs - their size needs to scale to screen *height*
+		std::array<float**, 11> triangleSizes = {
+			// Co-op offscreen crosshair
+			(float**)(0x7436F1 + 2), (float**)(0x7436FF + 2), (float**)(0x74370D + 2), (float**)(0x74374B + 2),
+			(float**)(0x743797 + 2), (float**)(0x7437D0 + 2), (float**)(0x7437FB + 2), (float**)(0x743819 + 2),
+			(float**)(0x74386F + 2),
+
+			// Regular crosshair
+			(float**)(0x743259 + 2), (float**)(0x743266 + 2),
+		};
+
+		HookEach_RenderOneXLUSprite_Rotate_Aspect(renderRotateAspect, InterceptCall);
+
+		InterceptCall(0x74318D, orgCalcScreenCoors, CalcScreenCoors_Recalculate<triangleSizes.size(), 0>);
+		HookEach_GamepadCrosshair(triangleSizes, PatchFloat);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -6725,6 +6813,17 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 	ScaleX = &ScalingInternals::ScaleX_Divisor;
 	ScaleY = &ScalingInternals::ScaleY_Divisor;
+
+	auto PatchFloat = [](float** address, const float*& org, float& replaced)
+		{
+			org = *address;
+			Patch(address, &replaced);
+		};
+	auto PatchDouble = [](double** address, const double*& org, double& replaced)
+		{
+			org = *address;
+			Patch(address, &replaced);
+		};
 
 	try
 	{
@@ -8067,6 +8166,51 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InterceptCall(setupBackBufferVertex, orgSetupBackBufferVertex, SetupBackBufferVertex_Nop);
 
 		InterceptCall(underWaterRipple, orgUnderWaterRipple, UnderWaterRipple_ScaleFrequency);
+	}
+	TXN_CATCH();
+
+
+	// Fix heat seeking and gamepad crosshairs not scaling to resolution
+	try
+	{
+		using namespace CrosshairScalingFixes;
+
+		auto heatSeekingCrosshair1 = pattern("E8 ? ? ? ? 47 83 C4 30 83 FF 02").count(2);
+		auto heatSeekingCrosshair2 = pattern("D9 1C 24 E8 ? ? ? ? 83 C4 30 A1").count(2);
+
+		std::array<void*, 6> renderRotateAspect = {
+			// Heat seeking missile crosshair
+			heatSeekingCrosshair1.get(0).get<void>(),
+			get_pattern("D9 1C 24 E8 ? ? ? ? 8B 15 ? ? ? ? 8B 02", 3),
+			heatSeekingCrosshair1.get(1).get<void>(),
+			heatSeekingCrosshair2.get(0).get<void>(3),
+
+			// Co-op in-car crosshair
+			get_pattern("D9 1C 24 E8 ? ? ? ? 8B 0D ? ? ? ? 8B 81", 3),
+			heatSeekingCrosshair2.get(1).get<void>(3),
+		};
+
+		auto calcScreenCoors = get_pattern("E8 ? ? ? ? DB 05 ? ? ? ? 83 C4 38");
+
+		// Triangular gamepad crosshairs - their size needs to scale to screen *height*
+		auto regularCrosshair = pattern("D8 0D ? ? ? ? D9 5D F4 D9 46 08 DC 0D ? ? ? ? D8 45 F4").get_one();
+		std::array<float**, 3> triangleSizes = {
+			// Co-op offscreen crosshair
+			get_pattern<float*>("D9 5D CC D9 05 ? ? ? ? D9 C0 D9 45 FC", 3 + 2),
+			get_pattern<float*>("D9 05 ? ? ? ? 83 C4 34 DD 05", 2),
+
+			// Regular crosshair (float)
+			regularCrosshair.get<float*>(2),
+		};
+		std::array<double**, 1> triangleSizesDouble = {
+			regularCrosshair.get<double*>(0xC + 2),
+		};
+
+		HookEach_RenderOneXLUSprite_Rotate_Aspect(renderRotateAspect, InterceptCall);
+
+		InterceptCall(calcScreenCoors, orgCalcScreenCoors, CalcScreenCoors_Recalculate<triangleSizes.size(), triangleSizesDouble.size()>);
+		HookEach_GamepadCrosshair(triangleSizes, PatchFloat);
+		HookEach_GamepadCrosshair_Double(triangleSizesDouble, PatchDouble);
 	}
 	TXN_CATCH();
 }
