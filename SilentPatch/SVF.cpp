@@ -192,7 +192,7 @@ namespace SVF
 				break;
 			}
 		}
-		return std::move(pred);
+		return pred;
 	}
 
 	void RegisterGetModelInfoCB(void*(*func)(const char*, int*))
