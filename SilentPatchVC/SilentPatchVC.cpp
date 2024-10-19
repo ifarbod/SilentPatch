@@ -2628,6 +2628,7 @@ void Patch_VC_Common()
 		GameVariablesToReset.emplace_back(*get_pattern<bool*>("7D 09 80 3D ? ? ? ? ? 74 32", 2 + 2)); // Free resprays
 		GameVariablesToReset.emplace_back(*get_pattern<int*>("7D 78 A1 ? ? ? ? 05", 2 + 1)); // LastTimeAmbulanceCreated
 		GameVariablesToReset.emplace_back(*get_pattern<int*>("A1 ? ? ? ? 05 ? ? ? ? 39 05 ? ? ? ? 0F 86 ? ? ? ? 8B 15", 1)); // LastTimeFireTruckCreated
+		GameVariablesToReset.emplace_back(*get_pattern<int*>("FF 0D ? ? ? ? EB 15 90", 2)); // CWeather::StreamAfterRainTimer
 	}
 	TXN_CATCH();
 
