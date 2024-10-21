@@ -1071,6 +1071,34 @@ namespace SlidingTextsScalingFixes
 	};
 }
 
+// ============= Rsstore the 'brakelights' dummy as it's vanished from the III PC code =============
+namespace BrakelightsDummy
+{
+	struct RwObjectNameIdAssocation
+	{
+		const char*	pName;
+		int32_t		hierId;
+		uint32_t	flags;
+	};
+
+	// This vector is "null terminated" with an empty entry
+	std::vector<RwObjectNameIdAssocation> carIds;
+
+	static CVector* (__thiscall* orgVectorCtor)(CVector* pThis, const CVector* vec);
+	static CVector* __fastcall VectorCtor_Brakelights(CVector* pThis, void*, const char* vec)
+	{
+		// We are given a pointer to CAR_POS_TAILLIGHTS (ID 1), but we want CAR_POS_BRAKELIGHTS (ID 4), synthesise one
+		const CVector* brakeLights = reinterpret_cast<const CVector*>(vec + 3*sizeof(CVector));
+		
+		// If all 3 components are 0.0, assume it's a modded vehicle and fall back to the stock dummy
+		if (brakeLights->x == 0.0f && brakeLights->y == 0.0f && brakeLights->z == 0.0f)
+		{
+			brakeLights = reinterpret_cast<const CVector*>(vec);
+		}
+		return orgVectorCtor(pThis, brakeLights);
+	}
+}
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -1431,6 +1459,39 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 	}
 	TXN_CATCH();
 
+
+	// Rsstore the 'brakelights' dummy as it's vanished from the III PC code
+	try
+	{
+		using namespace BrakelightsDummy;
+
+		auto preRenderBrakeLightsPos = get_pattern("50 E8 ? ? ? ? 8D 84 24 ? ? ? ? 8D 55 04", 1);
+
+		// Only patch the hierarchy if no other mod does it
+		RwObjectNameIdAssocation** vehicleDescs = *get_pattern<RwObjectNameIdAssocation**>("89 D9 8B 04 95 ? ? ? ? 50 E8 ? ? ? ? 89 D9", 2 + 3);
+		if (ModCompat::Utils::GetModuleHandleFromAddress(vehicleDescs) == hGameModule)
+		{
+			RwObjectNameIdAssocation* orgCarIds = vehicleDescs[0];
+			if (ModCompat::Utils::GetModuleHandleFromAddress(orgCarIds) == hGameModule)
+			{
+				// Copy the original hierarchy, then add ours
+				while (orgCarIds->pName != nullptr)
+				{
+					carIds.push_back(*orgCarIds++);
+				}
+
+				// Add ours, then null terminate
+				carIds.push_back({ "brakelights", 4, 9 });
+				carIds.push_back({});
+
+				Patch(&vehicleDescs[0], carIds.data());
+
+				InterceptCall(preRenderBrakeLightsPos, orgVectorCtor, VectorCtor_Brakelights);
+			}
+		}
+
+	}
+	TXN_CATCH();
 
 	FLAUtils::Init(moduleList);
 }
