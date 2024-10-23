@@ -2991,6 +2991,94 @@ namespace CrosshairScalingFixes
 }
 
 
+// ============= Fix Map screen boundaries and the cursor not scaling to resolution =============
+// Debugged by Wesser
+namespace MapScreenScalingFixes
+{	
+	void __declspec(naked) ScaleX_NewBinaries()
+	{
+		_asm
+		{
+			push	ecx
+			push	3F800000h // 1.0f
+			call	[ScaleX]
+			add		esp, 4
+
+			fsub    st(1), st
+			fxch    st(1)
+			pop		ecx
+			retn
+		}
+	}
+
+	void __declspec(naked) ScaleY_NewBinaries()
+	{
+		_asm
+		{
+			push	ecx
+			push	3F800000h // 1.0f
+			call	[ScaleY]
+			add		esp, 4
+
+			fsub    st(1), st
+			fxch    st(1)
+			pop		ecx
+			retn
+		}
+	}
+
+
+	template<std::size_t Index>
+	static const float* orgCursorXSize;
+
+	template<std::size_t Index>
+	static float CursorXSize_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateXSize(std::index_sequence<I...>)
+	{
+		((CursorXSize_Recalculated<I> = ScaleX(*orgCursorXSize<I>)), ...);
+	}
+
+	template<std::size_t Index>
+	static const float* orgCursorYSize;
+
+	template<std::size_t Index>
+	static float CursorYSize_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateYSize(std::index_sequence<I...>)
+	{
+		((CursorYSize_Recalculated<I> = ScaleY(*orgCursorYSize<I>)), ...);
+	}
+
+	static void (*orgLimitToMap)(float* x, float* y);
+
+	template<std::size_t NumXSize, std::size_t NumYSize>
+	static void LimitToMap_Scale(float* x, float* y)
+	{
+		// LimitToMap assumes it's given scaled coordinates, but then the caller assumes it returns unscaled coordinates.
+		// Need to scale them for the call, then unscale again, to save us from some assembly patching.
+		const float XScale = ScaleX(1.0f);
+		const float YScale = ScaleY(1.0f);
+
+		*x *= XScale;
+		*y *= YScale;
+		orgLimitToMap(x, y);
+		
+		*x /= XScale;
+		*y /= YScale;
+
+		// This is also a comfortable spot to scale the cursor dimensions
+		RecalculateXSize(std::make_index_sequence<NumXSize>{});
+		RecalculateYSize(std::make_index_sequence<NumYSize>{});
+	}
+
+	HOOK_EACH_INIT(CursorXSize, orgCursorXSize, CursorXSize_Recalculated);
+	HOOK_EACH_INIT(CursorYSize, orgCursorYSize, CursorYSize_Recalculated);
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -6051,6 +6139,20 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
+	// Fix Map screen boundaries and the cursor not scaling to resolution
+	// Debugged by Wesser
+	{
+		using namespace MapScreenScalingFixes;
+
+		std::array<float**, 2> cursorXSizes = { (float**)(0x588251 + 2), (float**)(0x588265 + 2) };
+		std::array<float**, 2> cursorYSizes = { (float**)(0x5882A8 + 2), (float**)(0x5882C6 + 2) };
+
+		HookEach_CursorXSize(cursorXSizes, PatchFloat);
+		HookEach_CursorYSize(cursorYSizes, PatchFloat);
+		InterceptCall(0x58822D, orgLimitToMap, LimitToMap_Scale<cursorXSizes.size(), cursorYSizes.size()>);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -8211,6 +8313,29 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InterceptCall(calcScreenCoors, orgCalcScreenCoors, CalcScreenCoors_Recalculate<triangleSizes.size(), triangleSizesDouble.size()>);
 		HookEach_GamepadCrosshair(triangleSizes, PatchFloat);
 		HookEach_GamepadCrosshair_Double(triangleSizesDouble, PatchDouble);
+	}
+	TXN_CATCH();
+
+
+	// Fix Map screen boundaries and the cursor not scaling to resolution
+	// Debugged by Wesser
+	try
+	{
+		using namespace MapScreenScalingFixes;
+
+		auto limitToMap = get_pattern("E8 ? ? ? ? DB 05 ? ? ? ? 83 C4 1C");
+
+		// Cursor X/Y scaling need to be done differently than in 1.0, as the game has one fld1 for width and one fld1 for height
+		auto scaleX = pattern("D9 E8 DC E9 D9 C9 D9 5D 94").get_one();
+		auto scaleY = pattern("D9 E8 DC E9 D9 C9 D9 5D B0").get_one();
+
+		InterceptCall(limitToMap, orgLimitToMap, LimitToMap_Scale<0, 0>);
+
+		Nop(scaleX.get<void>(), 1);
+		InjectHook(scaleX.get<void>(1), ScaleX_NewBinaries, HookType::Call);
+
+		Nop(scaleY.get<void>(), 1);
+		InjectHook(scaleY.get<void>(1), ScaleY_NewBinaries, HookType::Call);
 	}
 	TXN_CATCH();
 }
