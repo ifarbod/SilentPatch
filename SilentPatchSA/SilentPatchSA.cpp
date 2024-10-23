@@ -3079,6 +3079,69 @@ namespace MapScreenScalingFixes
 }
 
 
+// ============= Fix text background padding not scaling to resolution =============
+// Debugged by Wesser
+namespace TextRectPaddingScalingFixes
+{
+	template<std::size_t Index>
+	static const float* orgPaddingXSize;
+
+	template<std::size_t Index>
+	static float PaddingXSize_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateXSize(std::index_sequence<I...>)
+	{
+		((PaddingXSize_Recalculated<I> = ScaleX(*orgPaddingXSize<I>)), ...);
+	}
+
+	template<std::size_t Index>
+	static const float* orgPaddingYSize;
+
+	template<std::size_t Index>
+	static float PaddingYSize_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateYSize(std::index_sequence<I...>)
+	{
+		((PaddingYSize_Recalculated<I> = ScaleY(*orgPaddingYSize<I>)), ...);
+	}
+
+	template<std::size_t Index>
+	static const double* orgPaddingYSize_Double;
+
+	template<std::size_t Index>
+	static double PaddingYSize_Double_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateYSize_Double(std::index_sequence<I...>)
+	{
+		((PaddingYSize_Double_Recalculated<I> = ScaleY(static_cast<float>(*orgPaddingYSize_Double<I>))), ...);
+	}
+
+	static short (*orgProcessCurrentString)(uint8_t, float, float, void*);
+
+	template<std::size_t NumXSize, std::size_t NumYSize>
+	static short ProcessCurrentString_Scale(uint8_t a1, float a2, float a3, void* a4)
+	{
+		RecalculateXSize(std::make_index_sequence<NumXSize>{});
+		RecalculateYSize(std::make_index_sequence<NumYSize>{});
+		return orgProcessCurrentString(a1, a2, a3, a4);
+	}
+
+	template<std::size_t NumYSizeDouble>
+	static short ProcessCurrentString_Scale_NewBinaries(uint8_t a1, float a2, float a3, void* a4)
+	{
+		RecalculateYSize_Double(std::make_index_sequence<NumYSizeDouble>{});
+		return orgProcessCurrentString(a1, a2, a3, a4);
+	}
+	
+	HOOK_EACH_INIT(PaddingXSize, orgPaddingXSize, PaddingXSize_Recalculated);
+	HOOK_EACH_INIT(PaddingYSize, orgPaddingYSize, PaddingYSize_Recalculated);
+	HOOK_EACH_INIT(PaddingYSize_Double, orgPaddingYSize_Double, PaddingYSize_Double_Recalculated);
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -6153,6 +6216,25 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
+	// Fix text background padding not scaling to resolution
+	// Debugged by Wesser
+	{
+		using namespace TextRectPaddingScalingFixes;
+
+		std::array<float**, 4> paddingXSizes = {
+			(float**)(0x71A653 + 2), (float**)(0x71A66B + 2),
+			(float**)(0x71A69D + 2), (float**)(0x71A6AB + 2),
+		};
+		std::array<float**, 2> paddingYSizes = {
+			(float**)(0x71A6BF + 2), (float**)(0x71A6EC + 2),
+		};
+
+		HookEach_PaddingXSize(paddingXSizes, PatchFloat);
+		HookEach_PaddingYSize(paddingYSizes, PatchFloat);
+		InterceptCall(0x71A631, orgProcessCurrentString, ProcessCurrentString_Scale<paddingXSizes.size(), paddingYSizes.size()>);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -8336,6 +8418,29 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		Nop(scaleY.get<void>(), 1);
 		InjectHook(scaleY.get<void>(1), ScaleY_NewBinaries, HookType::Call);
+	}
+	TXN_CATCH();
+
+
+	// Fix text background padding not scaling to resolution
+	// Debugged by Wesser
+	try
+	{
+		using namespace TextRectPaddingScalingFixes;
+
+		auto processCurrentString = get_pattern("E8 ? ? ? ? DD 05 ? ? ? ? 8B 4D 08");
+
+		// In new binaries, 4.0f is shared for width and height.
+		// Make height determine the scale, so it works nicer in widescreen.
+		auto paddingSize = pattern("DD 05 ? ? ? ? DC E9 D9 C9 D9 19").count(2);
+		std::array<double**, 3> paddingYSizes = {
+			get_pattern<double*>("D8 CA DD 05 ? ? ? ? DC C1", 2 + 2),
+			paddingSize.get(0).get<double*>(2),
+			paddingSize.get(1).get<double*>(2),
+		};
+
+		HookEach_PaddingYSize_Double(paddingYSizes, PatchDouble);
+		InterceptCall(processCurrentString, orgProcessCurrentString, ProcessCurrentString_Scale_NewBinaries<paddingYSizes.size()>);
 	}
 	TXN_CATCH();
 }
