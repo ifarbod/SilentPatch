@@ -1,5 +1,9 @@
 # SilentPatch
 
+<p align="center">
+  <img height="350" src="https://i.imgur.com/sCDzq12.png" alt="Logo">
+</p>
+
 SilentPatch for the 3D-era Grand Theft Auto games is the first and flagship release of the "SilentPatch family", providing numerous fixes for this beloved franchise.
 SilentPatch addresses a wide range of issues, from critical fixes for crashes and other blockers to various major and minor improvements identified by
 the passionate community in these games over decades. SilentPatch does not alter the core gameplay experience, making it an optimal choice
