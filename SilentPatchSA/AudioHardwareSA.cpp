@@ -6,6 +6,28 @@ bool			CAEDataStream::m_bUseNewStruct;
 static void* CAEDataStream__Initialise = AddressByVersion<void*>(0x4DC2B0, 0x4DC7A0, 0x4E7550);
 WRAPPER bool CAEDataStream::Initialise() { VARJMP(CAEDataStream__Initialise); }
 
+// Work around libflac linking issues with older MSVC
+#if _MSC_VER < 1930
+
+extern "C" unsigned long __declspec(naked)  _dtoul3_legacy(const double x) {
+	_asm
+	{
+		cvtsd2si	eax, xmm0
+		xor			edx, edx
+		retn
+	}
+}
+
+extern "C" __declspec(naked) float _ltof3(long x) {
+	_asm
+	{
+		cvtsi2ss	xmm0, ecx
+		retn
+	}
+}
+
+#endif
+
 DWORD CAEDataStreamOld::Seek(LONG nToSeek, DWORD nPoint)
 {
 	LARGE_INTEGER filePosition;
