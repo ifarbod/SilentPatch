@@ -3142,6 +3142,50 @@ namespace TextRectPaddingScalingFixes
 }
 
 
+// ============= Fix nitrous recharging faster when reversing the car =============
+// By Wesser
+namespace NitrousReverseRechargeFix
+{
+	void __declspec(naked) NitrousControl_DontRechargeWhenReversing()
+	{
+		// x = 1.0f; \ if m_fGasPedal >= 0.0f x -= m_fGasPedal;
+		_asm
+		{
+			fld		[esi+49Ch]
+			fldz
+			fcomp   st(1)
+			fnstsw  ax
+			test    ah, 41h
+			jnz		BiggerOrEqual
+			fstp	st
+			retn
+
+		BiggerOrEqual:
+			fsubp   st(1), st
+			retn
+		}
+	}
+
+	void __declspec(naked) NitrousControl_DontRechargeWhenReversing_NewBinaries()
+	{
+		_asm
+		{
+			fld		[esi+49Ch]
+			fldz
+			fcomp   st(1)
+			fnstsw  ax
+			test    ah, 41h
+			jnz		BiggerOrEqual
+			fstp	st
+			fldz
+
+		BiggerOrEqual:
+			retn
+		}
+	}
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -6235,6 +6279,16 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
+	// Fix nitrous recharging faster when reversing the car
+	// By Wesser
+	{
+		using namespace NitrousReverseRechargeFix;
+
+		Nop(0x6A407B, 1);
+		InjectHook(0x6A407B + 1, &NitrousControl_DontRechargeWhenReversing, HookType::Call);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -8441,6 +8495,19 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		HookEach_PaddingYSize_Double(paddingYSizes, PatchDouble);
 		InterceptCall(processCurrentString, orgProcessCurrentString, ProcessCurrentString_Scale_NewBinaries<paddingYSizes.size()>);
+	}
+	TXN_CATCH();
+
+
+	// Fix nitrous recharging faster when reversing the car
+	// By Wesser
+	try
+	{
+		using namespace NitrousReverseRechargeFix;
+
+		auto getGasPedal = pattern("D9 86 9C 04 00 00 D9 E8 D9 C0").get_one();
+		Nop(getGasPedal.get<void>(), 1);
+		InjectHook(getGasPedal.get<void>(1), &NitrousControl_DontRechargeWhenReversing_NewBinaries, HookType::Call);
 	}
 	TXN_CATCH();
 }
