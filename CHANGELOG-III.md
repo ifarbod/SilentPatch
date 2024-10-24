@@ -25,7 +25,7 @@ All the remaining, non-critical fixes.
 * Mouse sensitivity is now properly saved - like in the 1.1 and Steam versions.
 * Headlight coronas now display properly (as they do on PS2, XBOX, and PC Steam versions).
 * Rhino spawned via a cheat code doesn't stay on the map forever anymore.
-* Blista now can be lifted by a car crusher crane - instead, it cannot lift Coach.
+* Blista can now be lifted by a car crusher crane - instead, it cannot lift Coach.
 * Shooting from M16 in 1st person mode now increments the bullets fired stat properly (so you can't make the Accuracy stat go over 100%).
 * Wet road reflections render properly again (just like with Road Reflections Fix).
 * Reintroduced light glows under weapon/health/armor pickups, bribes, hidden packages, and money pickups - they showed only on PS2 due to a bug in all PC versions.

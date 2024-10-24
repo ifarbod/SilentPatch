@@ -51,7 +51,7 @@ All the remaining, non-critical fixes.
 * ➕ Car generator counters now work properly for generators with a fixed number of spawns.
 * ➕ Randomizer error causing peds not to spawn in some areas has been fixed.
 * ➕ Randomizer error causing prostitutes to be quiet during solicitation has been fixed.
-* ➕ Text boxes now can show together with a Mission Passed text.
+* ➕ Text boxes can now show together with a Mission Passed text.
 * ➕ Mirror reflection doesn't break with Anti-Aliasing enabled anymore.
 * ➕ With Visual FX Quality set to Very High, mirror reflection quality has been bumped.
 * ➕ The Anti-Aliasing option has been altered - instead of listing 1, 2, and 3 options (which in fact are 2x/2x/4x MSAA), the game will now show proper MSAA values from 2x up to 16x (depending on max MSAA level supported by the graphics card).
@@ -99,13 +99,16 @@ All the remaining, non-critical fixes.
 * ➕ The heat haze effect now rescales correctly when changing the resolution in-game.
 * ➕ The underwater ripple effect is now consistent across all resolutions.
 * ➕ Heat-seeking missile crosshair and the weapon crosshair shown while aiming with a gamepad now properly scale to resolution.
+* ➕ The boundaries of the cursor on the Map screen, and the cursor itself now scale to resolution correctly (contributed by **Wesser**).
+* ➕ The inner padding of the text boxes with a background now scales to resolution correctly (contributed by **Wesser**).
+* ➕ Nitrous will no longer regenerate faster when reversing the car (contributed by **Wesser**).
 * Detached vehicle parts will now keep the same color and lighting as the vehicle they came from.
 * Detached vehicle parts are now rendered from both sides.
 * Resolved single-pixel wide seams showing on the Map screen with Anti-Aliasing enabled.
 * Several vehicles now have extra animated components: Phoenix hood scoops, Sweeper brushes, Newsvan antenna, radars on several boats, and extra flaps on Stuntplane and Beagle.
 * Animated engine components on Bandito, BF Injection, and Hotknife will not animate if the engine is off.
 * Firetruck (firela variant) now has a functional ladder - it can be raised by moving the right analog stick down/pressing <kbd>Num2</kbd>.
-* artict3 trailers now can be chained (as it was most likely intended since the model has a hook dummy which was not functional until now).
+* artict3 trailers can now be chained (as it was most likely intended since the model has a hook dummy which was not functional until now).
 * Tug now has a functional tow bar (the model has a hook dummy which was not functional until now).
 * DFT-30 left middle wheel now displays properly (the game now accepts a typo present in its hierarchy).
 * Dumper's suspension is now animated (the game now accepts a typo present in its hierarchy).
