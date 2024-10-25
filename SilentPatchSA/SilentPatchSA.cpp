@@ -3418,25 +3418,25 @@ void InstallMemValidator()
 	using namespace Memory;
 
 	// TEST: Validate memory
-	InjectHook( 0x824257, malloc_validator, HookType::Jump );
-	InjectHook( 0x824269, realloc_validator, HookType::Jump );
-	InjectHook( 0x824416, calloc_validator, HookType::Jump );
-	InjectHook( 0x82413F, free_validator, HookType::Jump );
-	InjectHook( 0x828C4A, _msize_validator, HookType::Jump );
+	InjectHook( AddressByRegion_10(0x824257), malloc_validator, HookType::Jump );
+	InjectHook( AddressByRegion_10(0x824269), realloc_validator, HookType::Jump );
+	InjectHook( AddressByRegion_10(0x824416), calloc_validator, HookType::Jump );
+	InjectHook( AddressByRegion_10(0x82413F), free_validator, HookType::Jump );
+	InjectHook( AddressByRegion_10(0x828C4A), _msize_validator, HookType::Jump );
 
-	InjectHook( 0x82119A, _new, HookType::Jump );
-	InjectHook( 0x8214BD, _delete, HookType::Jump );
+	InjectHook( AddressByRegion_10(0x82119A), _new, HookType::Jump );
+	InjectHook( AddressByRegion_10(0x8214BD), _delete, HookType::Jump );
 
-	InjectHook( 0x72F420, &CDebugMemoryMgr::Malloc, HookType::Jump );
-	InjectHook( 0x72F430, &CDebugMemoryMgr::Free, HookType::Jump );
-	InjectHook( 0x72F440, &CDebugMemoryMgr::Realloc, HookType::Jump );
-	InjectHook( 0x72F460, &CDebugMemoryMgr::Calloc, HookType::Jump );
-	InjectHook( 0x72F4C0, &CDebugMemoryMgr::MallocAlign, HookType::Jump );
-	InjectHook( 0x72F4F0, &CDebugMemoryMgr::AlignedFree, HookType::Jump );
+	InjectHook( AddressByRegion_10(0x72F420), &CDebugMemoryMgr::Malloc, HookType::Jump );
+	InjectHook( AddressByRegion_10(0x72F430), &CDebugMemoryMgr::Free, HookType::Jump );
+	InjectHook( AddressByRegion_10(0x72F440), &CDebugMemoryMgr::Realloc, HookType::Jump );
+	InjectHook( AddressByRegion_10(0x72F460), &CDebugMemoryMgr::Calloc, HookType::Jump );
+	InjectHook( AddressByRegion_10(0x72F4C0), &CDebugMemoryMgr::MallocAlign, HookType::Jump );
+	InjectHook( AddressByRegion_10(0x72F4F0), &CDebugMemoryMgr::AlignedFree, HookType::Jump );
 
 
-	PutStaticValidator( 0xAAE950, 0xB4C310 ); // CStore
-	PutStaticValidator( 0xA9AE00, 0xA9AE58 ); // fx_c
+	PutStaticValidator( AddressByRegion_10(0xAAE950), AddressByRegion_10(0xB4C310) ); // CStore
+	PutStaticValidator( AddressByRegion_10(0xA9AE00), AddressByRegion_10(0xA9AE58) ); // fx_c
 }
 
 #endif
@@ -4643,11 +4643,16 @@ BOOL InjectDelayedPatches_10()
 BOOL InjectDelayedPatches_11()
 {
 #ifdef NDEBUG
-	MessageBoxW( nullptr, L"You're using a 1.01 executable which is no longer supported by SilentPatch!\n\n"
+	const int messageResult = MessageBoxW( nullptr, L"You're using a 1.01 executable which is no longer supported by SilentPatch!\n\n"
 				L"Since this EXE is used by only a few people, I recommend downgrading back to 1.0 - you gain full compatibility with mods "
 				L"and any relevant fixes 1.01 brings are backported to 1.0 by SilentPatch anyway.\n\n"
-				L"To downgrade to 1.0, find a 1.0 EXE online and replace your current game executable with it.",
+				L"To downgrade to 1.0, find a 1.0 EXE online and replace your current game executable with it. Do you want to continue?\n\n"
+				L"Pressing No will close the game. Press Yes to proceed to the game anyway.",
 				L"SilentPatch", MB_OK | MB_ICONWARNING );
+	if (messageResult == IDNO)
+	{
+		return TRUE;
+	}
 #endif
 
 	if ( !IsAlreadyRunning() )
@@ -4815,11 +4820,10 @@ BOOL InjectDelayedPatches_Steam()
 	{
 		const int messageResult = MessageBoxW( nullptr, L"You're using a 3.0 executable which is no longer supported by SilentPatch!\n\n"
 			L"Since this is an old Steam EXE, by now you should have either downgraded to 1.0 or started using an up to date version. It is recommended to "
-			L"verify your game's cache on Steam and then downgrade it to 1.0. Do you want to download San Andreas Downgrader now?\n\n"
-			L"Pressing Yes will close the game and open your web browser. Press No to proceed to the game anyway.", L"SilentPatch", MB_YESNO | MB_ICONWARNING );
-		if ( messageResult == IDYES )
+			L"verify your game's cache on Steam and then downgrade it to 1.0. Do you want to continue?\n\n"
+			L"Pressing No will close the game. Press Yes to proceed to the game anyway.", L"SilentPatch", MB_YESNO | MB_ICONWARNING );
+		if (messageResult == IDNO)
 		{
-			ShellExecuteW( nullptr, L"open", L"http://gtaforums.com/topic/753764-/", nullptr, nullptr, SW_SHOWNORMAL );
 			return TRUE;
 		}
 	}
@@ -6140,15 +6144,15 @@ void Patch_SA_10(HINSTANCE hInstance)
 	{
 		using namespace NewResolutionSelectionDialog;
 
-		ppRWD3D9 = *(IDirect3D9***)(0x7F6312 + 1);
+		ppRWD3D9 = *AddressByRegion_10<IDirect3D9***>(0x7F6312 + 1);
 		FrontEndMenuManager = *(void**)(0x4054DB + 1);
 
-		orgGetDocumentsPath = (char*(*)())0x744FB0;
+		orgGetDocumentsPath = AddressByRegion_10<char*(*)()>(0x744FB0);
 
-		Patch(0x0746241 + 2, &pDialogBoxParamA_New);
+		Patch(AddressByRegion_10(0x746241 + 2), &pDialogBoxParamA_New);
 
-		InjectHook(0x7461D8, RwEngineGetSubSystemInfo_GetFriendlyNames);
-		InjectHook(0x7461ED, RwEngineGetCurrentSubSystem_FromSettings);
+		InjectHook(AddressByRegion_10(0x7461D8), RwEngineGetSubSystemInfo_GetFriendlyNames);
+		InjectHook(AddressByRegion_10(0x7461ED), RwEngineGetCurrentSubSystem_FromSettings);
 	}
 
 
