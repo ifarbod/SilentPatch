@@ -2276,10 +2276,10 @@ void Patch_III_Common()
 
 
 	// Fix dark car reflections in the Steam EXE
-	// Based off Sergenaur's fix
+	// Based off Sergeanur's fix
 	try
 	{
-		// This will only pass on the Steam EXE, and if Sergenaur's standalone fix isn't present
+		// This will only pass on the Steam EXE, and if Sergeanur's standalone fix isn't present
 		auto reflection = pattern("A1 ? ? ? ? 85 C0 74 34").get_one();
 
 		// xor eax, eax \ nop

@@ -40,6 +40,6 @@ SilentPatch includes code contributions from:
 * Fire_Head
 * Nick007J
 * NTAuthority
-* Sergenaur
+* Sergeanur
 * spaceeinstein
 * Wesser

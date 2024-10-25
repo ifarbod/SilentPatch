@@ -2634,7 +2634,7 @@ void Patch_VC_Common()
 
 
 	// Ped speech fix
-	// Based off Sergenaur's fix
+	// Based off Sergeanur's fix
 	try
 	{
 		// Remove the artificial 6s delay between any ped speech samples
