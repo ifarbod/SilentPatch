@@ -2730,14 +2730,15 @@ namespace NewResolutionSelectionDialog
 				// The game inits the selected resolution weirdly, and corrects it in the IDOK handler
 				// so let's invoke it manually (bleh)
 				data->lpDialogFunc(window, WM_COMMAND, IDOK, 0);
-				return TRUE;
+				return FALSE;
 			}
 
 			HMODULE hGameModule = GetModuleHandle(nullptr);
 			SendMessage(window, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(LoadIcon(hGameModule, MAKEINTRESOURCE(100))));
 			CreateNewButtonTooltip(hGameModule, window);
 
-			// Return TRUE instead of FALSE on init, we want keyboard focus
+			// Return TRUE instead of FALSE on init, as we removed a manual SetFocus from the init function
+			// and we want to rely on Windows to give us focus.
 			return TRUE;
 		}
 
@@ -2820,6 +2821,12 @@ namespace NewResolutionSelectionDialog
 		return result;
 	}
 	static auto* const pDialogBoxParamA_New = &DialogBoxParamA_New;
+
+	static HWND WINAPI SetFocus_NOP(HWND)
+	{
+		return nullptr;
+	}
+	static auto* const pSetFocus_NOP = &SetFocus_NOP;
 }
 
 
@@ -6164,6 +6171,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 		orgGetDocumentsPath = AddressByRegion_10<char*(*)()>(0x744FB0);
 
 		Patch(AddressByRegion_10(0x746241 + 2), &pDialogBoxParamA_New);
+		Patch(AddressByRegion_10(0x745DB3 + 2), &pSetFocus_NOP);
 
 		InterceptCall(AddressByRegion_10(0x7461D8), orgRwEngineGetSubSystemInfo, RwEngineGetSubSystemInfo_GetFriendlyNames);
 		InterceptCall(AddressByRegion_10(0x7461ED), orgRwEngineGetCurrentSubSystem, RwEngineGetCurrentSubSystem_FromSettings);
@@ -8326,6 +8334,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 				return get_pattern("53 FF 15 ? ? ? ? 85 C0", 1 + 2);
 			}
 		}();
+		auto setFocus = get_pattern("53 FF 15 ? ? ? ? 5F", 1 + 2);
 			
 		auto rRwEngineGetSubSystemInfo = get_pattern("E8 ? ? ? ? 46 83 C4 08 83 C7 50");
 		auto rwEngineGetCurrentSubSystem = get_pattern("7C EA E8 ? ? ? ? A3", 2);
@@ -8337,6 +8346,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		orgGetDocumentsPath = static_cast<char*(*)()>(get_pattern( "8D 45 FC 50 68 19 00 02 00", -6 ));
 
 		Patch(dialogBoxParam, &pDialogBoxParamA_New);
+		Patch(setFocus, &pSetFocus_NOP);
 
 		InterceptCall(rRwEngineGetSubSystemInfo, orgRwEngineGetSubSystemInfo, RwEngineGetSubSystemInfo_GetFriendlyNames);
 		InterceptCall(rwEngineGetCurrentSubSystem, orgRwEngineGetCurrentSubSystem, RwEngineGetCurrentSubSystem_FromSettings);
