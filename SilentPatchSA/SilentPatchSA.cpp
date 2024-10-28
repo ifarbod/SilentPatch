@@ -6255,14 +6255,14 @@ void Patch_SA_10(HINSTANCE hInstance)
 		};
 
 		// Triangular gamepad crosshairs - their size needs to scale to screen *height*
-		std::array<float**, 11> triangleSizes = {
+		std::array<float**, 13> triangleSizes = {
 			// Co-op offscreen crosshair
 			(float**)(0x7436F1 + 2), (float**)(0x7436FF + 2), (float**)(0x74370D + 2), (float**)(0x74374B + 2),
 			(float**)(0x743797 + 2), (float**)(0x7437D0 + 2), (float**)(0x7437FB + 2), (float**)(0x743819 + 2),
 			(float**)(0x74386F + 2),
 
 			// Regular crosshair
-			(float**)(0x743259 + 2), (float**)(0x743266 + 2),
+			(float**)(0x743212 + 2), (float**)(0x74321E + 2), (float**)(0x743259 + 2), (float**)(0x743266 + 2),
 		};
 
 		HookEach_RenderOneXLUSprite_Rotate_Aspect(renderRotateAspect, InterceptCall);
@@ -8460,6 +8460,7 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		// Triangular gamepad crosshairs - their size needs to scale to screen *height*
 		auto regularCrosshair = pattern("D8 0D ? ? ? ? D9 5D F4 D9 46 08 DC 0D ? ? ? ? D8 45 F4").get_one();
+		auto defaultCrosshairSize = pattern("DD 05 ? ? ? ? D8 C9 D9 5D F4 DC 0D ? ? ? ? D9 5D E8").get_one();
 		std::array<float**, 3> triangleSizes = {
 			// Co-op offscreen crosshair
 			get_pattern<float*>("D9 5D CC D9 05 ? ? ? ? D9 C0 D9 45 FC", 3 + 2),
@@ -8468,8 +8469,10 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 			// Regular crosshair (float)
 			regularCrosshair.get<float*>(2),
 		};
-		std::array<double**, 1> triangleSizesDouble = {
+		std::array<double**, 3> triangleSizesDouble = {
 			regularCrosshair.get<double*>(0xC + 2),
+			defaultCrosshairSize.get<double*>(2),
+			defaultCrosshairSize.get<double*>(0xB + 2),
 		};
 
 		HookEach_RenderOneXLUSprite_Rotate_Aspect(renderRotateAspect, InterceptCall);
