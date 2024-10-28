@@ -2719,7 +2719,7 @@ namespace NewResolutionSelectionDialog
 		if (msg == WM_INITDIALOG)
 		{
 			const WrappedDialocFunc* data = reinterpret_cast<WrappedDialocFunc*>(lParam);
-			SetWindowLongPtr(window, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(data->lpDialogFunc));
+			SetWindowLongPtr(window, DWLP_USER, reinterpret_cast<LONG_PTR>(data->lpDialogFunc));
 
 			data->lpDialogFunc(window, msg, wParam, data->dwInitParam);
 
@@ -2758,7 +2758,7 @@ namespace NewResolutionSelectionDialog
 			}
 		}
 
-		DLGPROC origProc = reinterpret_cast<DLGPROC>(GetWindowLongPtr(window, GWLP_USERDATA));
+		DLGPROC origProc = reinterpret_cast<DLGPROC>(GetWindowLongPtr(window, DWLP_USER));
 		if (origProc != nullptr)
 		{
 			return origProc(window, msg, wParam, lParam);
