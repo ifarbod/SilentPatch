@@ -2629,15 +2629,22 @@ namespace NewResolutionSelectionDialog
 		}
 	}
 
+	static RwSubSystemInfo* (*orgRwEngineGetSubSystemInfo)(RwSubSystemInfo *subSystemInfo, RwInt32 subSystemIndex);
 	static RwSubSystemInfo *RwEngineGetSubSystemInfo_GetFriendlyNames(RwSubSystemInfo *subSystemInfo, RwInt32 subSystemIndex)
 	{
-		static const auto friendlyNames = FriendlyMonitorNames::GetNamesForDevicePaths();
+		// If we can't do any our work, fall back to the original game functions that may already by customized by other mods
+		if (*ppRWD3D9 == nullptr)
+		{
+			return orgRwEngineGetSubSystemInfo(subSystemInfo, subSystemIndex);
+		}
 
 		D3DADAPTER_IDENTIFIER9 identifier;
 		if (FAILED((*ppRWD3D9)->GetAdapterIdentifier(subSystemIndex, 0, &identifier)))
 		{
-			return nullptr;
+			return orgRwEngineGetSubSystemInfo(subSystemInfo, subSystemIndex);
 		}
+
+		static const auto friendlyNames = FriendlyMonitorNames::GetNamesForDevicePaths();
 
 		// If we can't find the friendly name, either because it doesn't exist or we're on an ancient Windows, fall back to the device name
 		auto it = friendlyNames.find(identifier.DeviceName);
@@ -2654,8 +2661,15 @@ namespace NewResolutionSelectionDialog
 	}
 
 	static size_t MenuManagerAdapterOffset = 0xDC;
+	static RwInt32 (*orgRwEngineGetCurrentSubSystem)();
 	static RwInt32 RwEngineGetCurrentSubSystem_FromSettings()
 	{
+		// If we can't do any our work, fall back to the original game functions that may already by customized by other mods
+		if (*ppRWD3D9 == nullptr)
+		{
+			return orgRwEngineGetCurrentSubSystem();
+		}
+
 		RwInt32 subSystem = *reinterpret_cast<RwInt32*>(static_cast<char*>(FrontEndMenuManager) + MenuManagerAdapterOffset);
 		if (subSystem > 0)
 		{
@@ -6151,8 +6165,8 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 		Patch(AddressByRegion_10(0x746241 + 2), &pDialogBoxParamA_New);
 
-		InjectHook(AddressByRegion_10(0x7461D8), RwEngineGetSubSystemInfo_GetFriendlyNames);
-		InjectHook(AddressByRegion_10(0x7461ED), RwEngineGetCurrentSubSystem_FromSettings);
+		InterceptCall(AddressByRegion_10(0x7461D8), orgRwEngineGetSubSystemInfo, RwEngineGetSubSystemInfo_GetFriendlyNames);
+		InterceptCall(AddressByRegion_10(0x7461ED), orgRwEngineGetCurrentSubSystem, RwEngineGetCurrentSubSystem_FromSettings);
 	}
 
 
@@ -8324,8 +8338,8 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 
 		Patch(dialogBoxParam, &pDialogBoxParamA_New);
 
-		InjectHook(rRwEngineGetSubSystemInfo, RwEngineGetSubSystemInfo_GetFriendlyNames);
-		InjectHook(rwEngineGetCurrentSubSystem, RwEngineGetCurrentSubSystem_FromSettings);
+		InterceptCall(rRwEngineGetSubSystemInfo, orgRwEngineGetSubSystemInfo, RwEngineGetSubSystemInfo_GetFriendlyNames);
+		InterceptCall(rwEngineGetCurrentSubSystem, orgRwEngineGetCurrentSubSystem, RwEngineGetCurrentSubSystem_FromSettings);
 	}
 	TXN_CATCH();
 
