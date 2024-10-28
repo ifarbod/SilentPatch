@@ -1167,10 +1167,10 @@ void DrawScriptSpritesAndRectangles( uint8_t arg )
 bool ReadDoubleRearWheels(const wchar_t* pPath);
 bool __stdcall CheckDoubleRWheelsList( void* modelInfo, uint8_t* handlingData );
 
-CVehicleModelInfo* (__thiscall *orgVehicleModelInfoCtor)(CVehicleModelInfo*);
-CVehicleModelInfo* __fastcall VehicleModelInfoCtor(CVehicleModelInfo* me)
+CVehicleModelInfo* (__thiscall *orgVehicleModelInfoInit)(CVehicleModelInfo*);
+CVehicleModelInfo* __fastcall VehicleModelInfoInit(CVehicleModelInfo* me)
 {
-	orgVehicleModelInfoCtor(me);
+	orgVehicleModelInfoInit(me);
 	
 	// Hack to satisfy some null checks
 	static uintptr_t DUMMY;
@@ -5604,9 +5604,7 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 
 	// Properly initialize all CVehicleModelInfo fields
-	ReadCall( 0x4C75E4, orgVehicleModelInfoCtor );
-	InjectHook( 0x4C75E4, VehicleModelInfoCtor );
-
+	InterceptCall(0x4C7633, orgVehicleModelInfoInit, VehicleModelInfoInit);
 
 	// Animated Phoenix hood scoop
 	{
