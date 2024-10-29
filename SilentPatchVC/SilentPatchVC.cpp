@@ -884,6 +884,9 @@ namespace RemoveDriverStatusFix
 // ============= Apply the environment mapping on extra components =============
 namespace EnvMapsOnExtras
 {
+	static RpMaterial* (*RpMatFXMaterialSetEnvMapCoefficient)(RpMaterial* material, RwReal coef);
+	static int (*RpMatFXMaterialGetEffects)(const RpMaterial* material);
+
 	static void RemoveSpecularityFromAtomic(RpAtomic* atomic)
 	{
 		RpGeometry* geometry = RpAtomicGetGeometry(atomic);
@@ -907,6 +910,10 @@ namespace EnvMapsOnExtras
 
 					if (bRemoveSpecularity)
 					{
+						if (RpMatFXMaterialGetEffects(material) == 2) // rpMATFXEFFECTENVMAP
+						{
+							RpMatFXMaterialSetEnvMapCoefficient(material, 0.0f);
+						}
 						RpMaterialGetSurfaceProperties(material)->specular = 0.0f;
 					}
 					return material;
@@ -2495,10 +2502,15 @@ void Patch_VC_Common()
 		using namespace EnvMapsOnExtras;
 
 		auto forAllAtomics = pattern("50 E8 ? ? ? ? 66 8B 4B 44").get_one();
+		auto setEnvMapCoefficient = reinterpret_cast<decltype(RpMatFXMaterialSetEnvMapCoefficient)>(get_pattern("8B 44 24 14 81 E2 FF 00 00 00 8D 14 52 8D 0C D6 89 41 08", -0x48));
+		auto getEffects = reinterpret_cast<decltype(RpMatFXMaterialGetEffects)>(get_pattern("8B 04 01 85 C0 75 01", -0xA));
 
 		// push eax -> push ebx
 		Patch<uint8_t>(forAllAtomics.get<void>(), 0x53);
 		InterceptCall(forAllAtomics.get<void>(1), orgRpClumpForAllAtomics, RpClumpForAllAtomics_ExtraComps);
+
+		RpMatFXMaterialSetEnvMapCoefficient = setEnvMapCoefficient;
+		RpMatFXMaterialGetEffects = getEffects;
 	}
 	TXN_CATCH();
 
