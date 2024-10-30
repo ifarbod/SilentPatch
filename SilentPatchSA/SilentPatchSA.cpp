@@ -3073,9 +3073,7 @@ namespace MapScreenScalingFixes
 		((CursorYSize_Recalculated<I> = ScaleY(*orgCursorYSize<I>)), ...);
 	}
 
-	static void (*orgLimitToMap)(float* x, float* y);
-
-	template<std::size_t NumXSize, std::size_t NumYSize>
+	static void (*orgLimitToMap_Scale)(float* x, float* y);
 	static void LimitToMap_Scale(float* x, float* y)
 	{
 		// LimitToMap assumes it's given scaled coordinates, but then the caller assumes it returns unscaled coordinates.
@@ -3085,12 +3083,17 @@ namespace MapScreenScalingFixes
 
 		*x *= XScale;
 		*y *= YScale;
-		orgLimitToMap(x, y);
+		orgLimitToMap_Scale(x, y);
 		
 		*x /= XScale;
 		*y /= YScale;
+	}
 
-		// This is also a comfortable spot to scale the cursor dimensions
+	static void (*orgLimitToMap_RecalculateSizes)(float* x, float* y);
+	template<std::size_t NumXSize, std::size_t NumYSize>
+	static void LimitToMap_RecalculateSizes(float* x, float* y)
+	{
+		orgLimitToMap_RecalculateSizes(x, y);
 		RecalculateXSize(std::make_index_sequence<NumXSize>{});
 		RecalculateYSize(std::make_index_sequence<NumYSize>{});
 	}
@@ -4181,6 +4184,12 @@ BOOL InjectDelayedPatches_10()
 
 		const bool bHasDebugMenu = DebugMenuLoad();
 
+		auto PatchFloat = [](float** address, const float*& org, float& replaced)
+			{
+				org = *address;
+				Patch(address, &replaced);
+			};
+
 #ifdef _DEBUG
 		if ( bHasDebugMenu )
 		{
@@ -4643,6 +4652,62 @@ BOOL InjectDelayedPatches_10()
 		}
 
 
+		// Fix Map screen boundaries and the cursor not scaling to resolution
+		// Debugged by Wesser
+		// Moved here for compatibility with wshps.asi
+		{
+			using namespace MapScreenScalingFixes;
+
+			// Even though those two patch the same function, treating them as separate patches makes retaining compatibility
+			// with the widescreen fix easy.
+			std::array<float**, 2> cursorXSizes = { (float**)(0x588251 + 2), (float**)(0x588265 + 2) };
+			std::array<float**, 2> cursorYSizes = { (float**)(0x5882A8 + 2), (float**)(0x5882C6 + 2) };
+
+			HookEach_CursorXSize(cursorXSizes, PatchFloat);
+			HookEach_CursorYSize(cursorYSizes, PatchFloat);
+			InterceptCall(0x58822D, orgLimitToMap_RecalculateSizes, LimitToMap_RecalculateSizes<cursorXSizes.size(), cursorYSizes.size()>);
+
+			// Only patch this function if wshps.asi hasn't changed the way it's being called
+			// The expected code:
+			// lea edx, [esp+70h+a1.y]
+			// push edx
+			// lea eax, [esp+74h+a1]
+			// push eax
+			if (MemEquals(0x588223, {0x8D, 0x54, 0x24, 0x4C, 0x52, 0x8D, 0x44, 0x24, 0x4C, 0x50 }))
+			{
+				InterceptCall(0x58822D, orgLimitToMap_Scale, LimitToMap_Scale);
+			}
+		}
+
+
+		// Fix text background padding not scaling to resolution
+		// Debugged by Wesser
+		// Moved here for compatibility with wshps.asi
+		{
+			using namespace TextRectPaddingScalingFixes;
+
+			// Verify that all fadd and fsub instructions are intact
+			// Patterns would do it for us for free, but 1.0 does not use them...
+			const std::initializer_list<uint8_t> fadd = { 0xD8, 0x05 };
+			const std::initializer_list<uint8_t> fsub = { 0xD8, 0x25 };
+			if (MemEquals(0x71A653, fadd) && MemEquals(0x71A66B, fadd) && MemEquals(0x71A69D, fsub) && MemEquals(0x71A6AB, fadd) &&
+				MemEquals(0x71A6BF, fsub) && MemEquals(0x71A6EC, fadd))
+			{
+				std::array<float**, 4> paddingXSizes = {
+					(float**)(0x71A653 + 2), (float**)(0x71A66B + 2),
+					(float**)(0x71A69D + 2), (float**)(0x71A6AB + 2),
+				};
+				std::array<float**, 2> paddingYSizes = {
+					(float**)(0x71A6BF + 2), (float**)(0x71A6EC + 2),
+				};
+
+				HookEach_PaddingXSize(paddingXSizes, PatchFloat);
+				HookEach_PaddingYSize(paddingYSizes, PatchFloat);
+				InterceptCall(0x71A631, orgProcessCurrentString, ProcessCurrentString_Scale<paddingXSizes.size(), paddingYSizes.size()>);
+			}
+		}
+
+
 #ifndef NDEBUG
 		if ( const int QPCDays = GetPrivateProfileIntW(L"Debug", L"AddDaysToQPC", 0, wcModulePath); QPCDays != 0 )
 		{
@@ -5027,6 +5092,12 @@ BOOL InjectDelayedPatches_NewBinaries()
 
 		const bool bHasDebugMenu = DebugMenuLoad();
 
+		auto PatchDouble = [](double** address, const double*& org, double& replaced)
+			{
+				org = *address;
+				Patch(address, &replaced);
+			};
+
 		// Race condition in CdStream fixed
 		// Not taking effect with modloader
 		//if ( !ModCompat::ModloaderCdStreamRaceConditionAware( modloaderModule ) )
@@ -5119,6 +5190,61 @@ BOOL InjectDelayedPatches_NewBinaries()
 			{
 				DebugMenuAddVar("SilentPatch", "Sliding odd job text", &OddJob2Slider::bSlidingEnabled, nullptr);
 			}
+		}
+		TXN_CATCH();
+
+
+		// Fix Map screen boundaries and the cursor not scaling to resolution
+		// Debugged by Wesser
+		// Moved here for compatibility with wshps.asi
+		{
+			using namespace MapScreenScalingFixes;
+
+			// These two are entirely separate fixes
+			try
+			{
+				// Updated the pattern to also ensure this function's arguments are not changed by other mods
+				auto limitToMap = get_pattern("8D 45 F0 50 8B CA 51 E8 ? ? ? ? DB 05 ? ? ? ? 83 C4 1C", 7);
+				InterceptCall(limitToMap, orgLimitToMap_Scale, LimitToMap_Scale);
+			}
+			TXN_CATCH();
+
+			// Cursor X/Y scaling need to be done differently than in 1.0, as the game has one fld1 for width and one fld1 for height
+			try
+			{
+				auto scaleX = pattern("D9 E8 DC E9 D9 C9 D9 5D 94").get_one();
+				auto scaleY = pattern("D9 E8 DC E9 D9 C9 D9 5D B0").get_one();
+
+				Nop(scaleX.get<void>(), 1);
+				InjectHook(scaleX.get<void>(1), ScaleX_NewBinaries, HookType::Call);
+
+				Nop(scaleY.get<void>(), 1);
+				InjectHook(scaleY.get<void>(1), ScaleY_NewBinaries, HookType::Call);
+			}
+			TXN_CATCH();
+		}
+
+
+		// Fix text background padding not scaling to resolution
+		// Debugged by Wesser
+		// Moved here for compatibility with wshps.asi
+		try
+		{
+			using namespace TextRectPaddingScalingFixes;
+
+			auto processCurrentString = get_pattern("E8 ? ? ? ? DD 05 ? ? ? ? 8B 4D 08");
+
+			// In new binaries, 4.0f is shared for width and height.
+			// Make height determine the scale, so it works nicer in widescreen.
+			auto paddingSize = pattern("DD 05 ? ? ? ? DC E9 D9 C9 D9 19").count(2);
+			std::array<double**, 3> paddingYSizes = {
+				get_pattern<double*>("D8 CA DD 05 ? ? ? ? DC C1", 2 + 2),
+				paddingSize.get(0).get<double*>(2),
+				paddingSize.get(1).get<double*>(2),
+			};
+
+			HookEach_PaddingYSize_Double(paddingYSizes, PatchDouble);
+			InterceptCall(processCurrentString, orgProcessCurrentString, ProcessCurrentString_Scale_NewBinaries<paddingYSizes.size()>);
 		}
 		TXN_CATCH();
 
@@ -6267,39 +6393,6 @@ void Patch_SA_10(HINSTANCE hInstance)
 
 		InterceptCall(0x74318D, orgCalcScreenCoors, CalcScreenCoors_Recalculate<triangleSizes.size(), 0>);
 		HookEach_GamepadCrosshair(triangleSizes, PatchFloat);
-	}
-
-
-	// Fix Map screen boundaries and the cursor not scaling to resolution
-	// Debugged by Wesser
-	{
-		using namespace MapScreenScalingFixes;
-
-		std::array<float**, 2> cursorXSizes = { (float**)(0x588251 + 2), (float**)(0x588265 + 2) };
-		std::array<float**, 2> cursorYSizes = { (float**)(0x5882A8 + 2), (float**)(0x5882C6 + 2) };
-
-		HookEach_CursorXSize(cursorXSizes, PatchFloat);
-		HookEach_CursorYSize(cursorYSizes, PatchFloat);
-		InterceptCall(0x58822D, orgLimitToMap, LimitToMap_Scale<cursorXSizes.size(), cursorYSizes.size()>);
-	}
-
-
-	// Fix text background padding not scaling to resolution
-	// Debugged by Wesser
-	{
-		using namespace TextRectPaddingScalingFixes;
-
-		std::array<float**, 4> paddingXSizes = {
-			(float**)(0x71A653 + 2), (float**)(0x71A66B + 2),
-			(float**)(0x71A69D + 2), (float**)(0x71A6AB + 2),
-		};
-		std::array<float**, 2> paddingYSizes = {
-			(float**)(0x71A6BF + 2), (float**)(0x71A6EC + 2),
-		};
-
-		HookEach_PaddingXSize(paddingXSizes, PatchFloat);
-		HookEach_PaddingYSize(paddingYSizes, PatchFloat);
-		InterceptCall(0x71A631, orgProcessCurrentString, ProcessCurrentString_Scale<paddingXSizes.size(), paddingYSizes.size()>);
 	}
 
 
@@ -8478,52 +8571,6 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		InterceptCall(calcScreenCoors, orgCalcScreenCoors, CalcScreenCoors_Recalculate<triangleSizes.size(), triangleSizesDouble.size()>);
 		HookEach_GamepadCrosshair(triangleSizes, PatchFloat);
 		HookEach_GamepadCrosshair_Double(triangleSizesDouble, PatchDouble);
-	}
-	TXN_CATCH();
-
-
-	// Fix Map screen boundaries and the cursor not scaling to resolution
-	// Debugged by Wesser
-	try
-	{
-		using namespace MapScreenScalingFixes;
-
-		auto limitToMap = get_pattern("E8 ? ? ? ? DB 05 ? ? ? ? 83 C4 1C");
-
-		// Cursor X/Y scaling need to be done differently than in 1.0, as the game has one fld1 for width and one fld1 for height
-		auto scaleX = pattern("D9 E8 DC E9 D9 C9 D9 5D 94").get_one();
-		auto scaleY = pattern("D9 E8 DC E9 D9 C9 D9 5D B0").get_one();
-
-		InterceptCall(limitToMap, orgLimitToMap, LimitToMap_Scale<0, 0>);
-
-		Nop(scaleX.get<void>(), 1);
-		InjectHook(scaleX.get<void>(1), ScaleX_NewBinaries, HookType::Call);
-
-		Nop(scaleY.get<void>(), 1);
-		InjectHook(scaleY.get<void>(1), ScaleY_NewBinaries, HookType::Call);
-	}
-	TXN_CATCH();
-
-
-	// Fix text background padding not scaling to resolution
-	// Debugged by Wesser
-	try
-	{
-		using namespace TextRectPaddingScalingFixes;
-
-		auto processCurrentString = get_pattern("E8 ? ? ? ? DD 05 ? ? ? ? 8B 4D 08");
-
-		// In new binaries, 4.0f is shared for width and height.
-		// Make height determine the scale, so it works nicer in widescreen.
-		auto paddingSize = pattern("DD 05 ? ? ? ? DC E9 D9 C9 D9 19").count(2);
-		std::array<double**, 3> paddingYSizes = {
-			get_pattern<double*>("D8 CA DD 05 ? ? ? ? DC C1", 2 + 2),
-			paddingSize.get(0).get<double*>(2),
-			paddingSize.get(1).get<double*>(2),
-		};
-
-		HookEach_PaddingYSize_Double(paddingYSizes, PatchDouble);
-		InterceptCall(processCurrentString, orgProcessCurrentString, ProcessCurrentString_Scale_NewBinaries<paddingYSizes.size()>);
 	}
 	TXN_CATCH();
 
