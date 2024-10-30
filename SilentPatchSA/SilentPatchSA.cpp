@@ -4190,6 +4190,10 @@ BOOL InjectDelayedPatches_10()
 				Patch(address, &replaced);
 			};
 
+		const std::initializer_list<uint8_t> fadd = { 0xD8, 0x05 };
+		const std::initializer_list<uint8_t> fsub = { 0xD8, 0x25 };
+		const std::initializer_list<uint8_t> fld = { 0xD9, 0x05 };
+
 #ifdef _DEBUG
 		if ( bHasDebugMenu )
 		{
@@ -4660,12 +4664,15 @@ BOOL InjectDelayedPatches_10()
 
 			// Even though those two patch the same function, treating them as separate patches makes retaining compatibility
 			// with the widescreen fix easy.
-			std::array<float**, 2> cursorXSizes = { (float**)(0x588251 + 2), (float**)(0x588265 + 2) };
-			std::array<float**, 2> cursorYSizes = { (float**)(0x5882A8 + 2), (float**)(0x5882C6 + 2) };
+			if (MemEquals(0x588251, fld) && MemEquals(0x588265, fadd) && MemEquals(0x5882A8, fld) && MemEquals(0x5882C6, fadd))
+			{
+				std::array<float**, 2> cursorXSizes = { (float**)(0x588251 + 2), (float**)(0x588265 + 2) };
+				std::array<float**, 2> cursorYSizes = { (float**)(0x5882A8 + 2), (float**)(0x5882C6 + 2) };
 
-			HookEach_CursorXSize(cursorXSizes, PatchFloat);
-			HookEach_CursorYSize(cursorYSizes, PatchFloat);
-			InterceptCall(0x58822D, orgLimitToMap_RecalculateSizes, LimitToMap_RecalculateSizes<cursorXSizes.size(), cursorYSizes.size()>);
+				HookEach_CursorXSize(cursorXSizes, PatchFloat);
+				HookEach_CursorYSize(cursorYSizes, PatchFloat);
+				InterceptCall(0x58822D, orgLimitToMap_RecalculateSizes, LimitToMap_RecalculateSizes<cursorXSizes.size(), cursorYSizes.size()>);
+			}
 
 			// Only patch this function if wshps.asi hasn't changed the way it's being called
 			// The expected code:
@@ -4688,8 +4695,6 @@ BOOL InjectDelayedPatches_10()
 
 			// Verify that all fadd and fsub instructions are intact
 			// Patterns would do it for us for free, but 1.0 does not use them...
-			const std::initializer_list<uint8_t> fadd = { 0xD8, 0x05 };
-			const std::initializer_list<uint8_t> fsub = { 0xD8, 0x25 };
 			if (MemEquals(0x71A653, fadd) && MemEquals(0x71A66B, fadd) && MemEquals(0x71A69D, fsub) && MemEquals(0x71A6AB, fadd) &&
 				MemEquals(0x71A6BF, fsub) && MemEquals(0x71A6EC, fadd))
 			{
