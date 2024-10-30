@@ -1,7 +1,7 @@
 # SilentPatch
 
 <p align="center">
-  <img height="350" src="https://i.imgur.com/sCDzq12.png" alt="Logo">
+  <img src="https://i.imgur.com/sCDzq12.png" alt="Logo">
 </p>
 
 SilentPatch for the 3D-era Grand Theft Auto games is the first and flagship release of the "SilentPatch family", providing numerous fixes for this beloved franchise.
