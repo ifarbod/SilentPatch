@@ -582,66 +582,56 @@ void CAutomobile::AfterPreRender()
 	}
 }
 
-void CAutomobile::HideDestroyedWheels_SilentPatch(void (CAutomobile::*spawnFlyingComponentCB)(int, unsigned int), int nodeID, unsigned int modelID)
+void CAutomobile::HideDestroyedWheels_SilentPatch(void (CAutomobile::*spawnFlyingComponentCB)(int, unsigned int), int, unsigned int modelID)
 {
-	auto hideWheel = [this](int nodeID)
+	auto trySpawnAndHideWheel = [this, spawnFlyingComponentCB, modelID](int nodeID)
 		{
-			bool bHasWheel = false;
-
 			RwFrame* wheelNode = m_pCarNode[nodeID];
 			if (wheelNode != nullptr)
 			{
-				RwFrameForAllObjects(wheelNode, [&bHasWheel](RwObject* object)
+				bool bWheelVisible = false;
+				RwFrameForAllObjects(wheelNode, [&bWheelVisible](RwObject* object) -> RwObject*
 					{
 						if ((rwObjectGetFlags(object) & rpATOMICRENDER) != 0)
 						{
-							rwObjectSetFlags(object, 0);
-							bHasWheel = true;
+							bWheelVisible = true;
+							return nullptr;
 						}
 						return object;
 					});
+
+				if (bWheelVisible)
+				{
+					std::invoke(spawnFlyingComponentCB, this, nodeID, modelID);
+					RwFrameForAllObjects(wheelNode, [](RwObject* object)
+						{
+							rwObjectSetFlags(object, 0);
+							return object;
+						});
+				}
 			}
-			return bHasWheel;
 		};
 
 
 	if (m_DamageManager.GetWheelStatus(0) == 2)
 	{
-		if (hideWheel(5))
-		{
-			std::invoke(spawnFlyingComponentCB, this, 5, modelID);
-		}
+		trySpawnAndHideWheel(5);
 	}
 	if (m_DamageManager.GetWheelStatus(2) == 2)
 	{
-		if (hideWheel(2))
-		{
-			std::invoke(spawnFlyingComponentCB, this, 2, modelID);
-		}
+		trySpawnAndHideWheel(2);
 	}
 
 	// For rear wheels, also hide and spawn the middle wheel (if it exists)
 	if (m_DamageManager.GetWheelStatus(1) == 2)
 	{
-		if (hideWheel(6))
-		{
-			std::invoke(spawnFlyingComponentCB, this, 6, modelID);
-		}
-		if (hideWheel(7))
-		{
-			std::invoke(spawnFlyingComponentCB, this, 7, modelID);
-		}
+		trySpawnAndHideWheel(6);
+		trySpawnAndHideWheel(7);
 	}
 	if (m_DamageManager.GetWheelStatus(3) == 2)
 	{
-		if (hideWheel(3))
-		{
-			std::invoke(spawnFlyingComponentCB, this, 3, modelID);
-		}
-		if (hideWheel(4))
-		{
-			std::invoke(spawnFlyingComponentCB, this, 4, modelID);
-		}
+		trySpawnAndHideWheel(3);
+		trySpawnAndHideWheel(4);
 	}
 }
 
