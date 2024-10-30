@@ -211,32 +211,9 @@ namespace PrintStringShadows
 namespace RadardiscFixes
 {
 	static const float RADARDISC_SHRINK = 2.0f; // We are shrinking the radardisc by that
-	
-	template<std::size_t Index>
-	static const float* orgRadarXPos;
 
-	template<std::size_t Index>
-	static float RadarXPos_Recalculated;
-
-	template<std::size_t... I>
-	static void RecalculateXPositions(std::index_sequence<I...>)
-	{
-		const float multiplier = GetWidthMult() * RsGlobal->MaximumWidth;
-		((RadarXPos_Recalculated<I> = *orgRadarXPos<I> * multiplier), ...);
-	}
-
-	template<std::size_t Index>
-	static const float* orgRadarYPos;
-
-	template<std::size_t Index>
-	static float RadarYPos_Recalculated;
-
-	template<std::size_t... I>
-	static void RecalculateYPositions(std::index_sequence<I...>)
-	{
-		const float multiplier = GetHeightMult() * RsGlobal->MaximumHeight;
-		((RadarYPos_Recalculated<I> = *orgRadarYPos<I> * multiplier), ...);
-	}
+	static float orgRadarXPosVal;
+	static float* orgRadarXPosPtr;
 
 	template<std::size_t Index>
 	static const float* orgRadarXPos_RadardiscShrink;
@@ -265,18 +242,15 @@ namespace RadardiscFixes
 	}
 
 	static void (*orgDrawMap)();
-	template<std::size_t NumXPos, std::size_t NumYPos, std::size_t NumXPosRadardisc, std::size_t NumYPosRadardisc>
+	template<std::size_t NumXPosRadardisc, std::size_t NumYPosRadardisc>
 	static void DrawMap_RecalculatePositions()
 	{
-		RecalculateXPositions(std::make_index_sequence<NumXPos>{});
-		RecalculateYPositions(std::make_index_sequence<NumYPos>{});
+		*orgRadarXPosPtr = orgRadarXPosVal * GetWidthMult() * RsGlobal->MaximumWidth;
 		RecalculateXPositions_RadardiscShrink(std::make_index_sequence<NumXPosRadardisc>{});
 		RecalculateYPositions_RadardiscShrink(std::make_index_sequence<NumYPosRadardisc>{});
 		orgDrawMap();
 	}
 
-	HOOK_EACH_INIT(CalculateRadarXPos, orgRadarXPos, RadarXPos_Recalculated);
-	HOOK_EACH_INIT(CalculateRadarYPos, orgRadarYPos, RadarYPos_Recalculated);
 	HOOK_EACH_INIT(CalculateRadarXPos_RadardiscShrink, orgRadarXPos_RadardiscShrink, RadarXPos_Recalculated_RadardiscShrink);
 	HOOK_EACH_INIT(CalculateRadarYPos_RadardiscShrink, orgRadarYPos_RadardiscShrink, RadarYPos_Recalculated_RadardiscShrink);
 
@@ -1537,20 +1511,8 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 	{
 		using namespace RadardiscFixes;
 
-		auto draw_entity_coord_blip = pattern("D8 0D ? ? ? ? D8 05 ? ? ? ? DE C1 D9 5C 24 18").count(2);
 		auto draw_radar_disc1 = pattern("D8 25 ? ? ? ? DD DB D9 C2 D9 9C 24 ? ? ? ? DB 05 ? ? ? ? D8 0D ? ? ? ? D8 0D ? ? ? ? D8 05 ? ? ? ? D8 05").count(2);
 		auto draw_radar_disc2 = pattern("D8 C1 D8 05 ? ? ? ? D9 9C 24 ? ? ? ? DE D9 DD D8").count(2);
-
-		std::array<float**, 8> radarXPos = {
-			get_pattern<float*>("D8 05 ? ? ? ? DE C1 D9 5C 24 28", 2),
-			get_pattern<float*>("D8 05 ? ? ? ? DE C1 D9 5C EC 30", 2),
-			get_pattern<float*>("D8 0D ? ? ? ? D8 05 ? ? ? ? DE C1 D9 9C C4", 6 + 2),
-			get_pattern<float*>("D8 0D ? ? ? ? D8 05 ? ? ? ? DE C1 D9 5C 24 08", 6 + 2),
-			get_pattern<float*>("D8 0D ? ? ? ? D8 05 ? ? ? ? DE C1 DD D9 DB 44 24 18", 6 + 2),
-			get_pattern<float*>("D8 0D ? ? ? ? D8 05 ? ? ? ? DE C1 DD DB DB 44 24 18", 6 + 2),
-			draw_entity_coord_blip.get(0).get<float*>(6 + 2),
-			draw_entity_coord_blip.get(1).get<float*>(6 + 2),
-		};
 
 		std::array<float**, 4> radarXPos_RadardiscShrink = {
 			draw_radar_disc1.get(0).get<float*>(35 + 2),
@@ -1574,13 +1536,18 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 			drawRadarDiscSprite.get(1).get<void>(17),
 		};
 
+		// Use exactly the same patterns as widescreen fix
+		float* radarPos = *get_pattern<float*>("D8 05 ? ? ? ? DE C1 D9 5C 24 28", 2);
+		std::array<float**, 2> youAreHereSize = {
+			get_pattern<float*>("DD D9 D9 05 ? ? ? ? D8 C9 D9 7C 24 04", 2 + 2),
+			get_pattern<float*>("8B 5C 24 18 D8 0D ? ? ? ? D8 0D ? ? ? ? D9 7C 24 04", 10 + 2),
+		};
+
 		// Undo the damage caused by IVRadarScaling from the widescreen fix moving the radar way too far to the right
 		// It's moved from 40.0f to 71.0f, which is way too much now that we're scaling the horizontal placement correctly!
 		// This is removed from the most up-to-date widescreen fix, but keep it so we don't break with older builds.
 		try
 		{
-			// Use exactly the same patterns as widescreen fix
-			float* radarPos = *get_pattern<float*>("D8 05 ? ? ? ? DE C1 D9 5C 24 28", 2);
 			// No need to undo CRadar::DrawYouAreHereSprite, as wsfix keeps it as 40.0f
 
 			// This hardcodes a patched constant inside so the pattern will fail to match without IV radar scaling
@@ -1604,11 +1571,33 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 		}
 		TXN_CATCH();
 
-		HookEach_CalculateRadarXPos(radarXPos, PatchFloat);
-		HookEach_CalculateRadarXPos_RadardiscShrink(radarXPos_RadardiscShrink, PatchFloat);
-		HookEach_CalculateRadarYPos_RadardiscShrink(radarYPos_RadardiscShrink, PatchFloat);
-		HookEach_DrawRadarDisc(spriteDraw, InterceptCall);
-		InterceptCall(drawMap, orgDrawMap, DrawMap_RecalculatePositions<radarXPos.size(), 0, radarXPos_RadardiscShrink.size(), radarYPos_RadardiscShrink.size()>);
+		// Normally we would "wrap" the global variable 40.0f used as a X radar position, but that causes issues with plugin-sdk.
+		// Vice City inlined CRadar::TransformRadarPointToScreenSpace and plugin-sdk reimplements it using this global directly, so we need to patch it.
+		// Therefore, we instead do the following:
+		// 1. Patch the float directly, reading the original value once and rescaling as usual in-place.
+		// 2. If CRadar::DrawYouAreHereSprite still points at the same global variable, give it a dedicated one.
+		//    Otherwise do nothing, as some other mod (like the wsfix above) may have already done it.
+		// 3. If we can't safely change the radar position because it was relocated, bail out of the fix entirely, just to be safe.
+		//    Missing out on a fix is better than breaking something.
+		if (hGameModule == ModCompat::Utils::GetModuleHandleFromAddress(radarPos))
+		{
+			static float fYouAreHereSize;
+			orgRadarXPosVal = fYouAreHereSize = *radarPos;
+			orgRadarXPosPtr = radarPos;
+
+			for (float** val : youAreHereSize)
+			{
+				if (*val == radarPos)
+				{
+					Patch(val, &fYouAreHereSize);
+				}
+			}
+
+			HookEach_CalculateRadarXPos_RadardiscShrink(radarXPos_RadardiscShrink, PatchFloat);
+			HookEach_CalculateRadarYPos_RadardiscShrink(radarYPos_RadardiscShrink, PatchFloat);
+			HookEach_DrawRadarDisc(spriteDraw, InterceptCall);
+			InterceptCall(drawMap, orgDrawMap, DrawMap_RecalculatePositions<radarXPos_RadardiscShrink.size(), radarYPos_RadardiscShrink.size()>);
+		}
 	}
 	TXN_CATCH();
 
