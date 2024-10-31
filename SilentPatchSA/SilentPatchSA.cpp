@@ -3210,6 +3210,30 @@ namespace NitrousReverseRechargeFix
 }
 
 
+// ============= Fix Hydra's jet thrusters not displaying due to an uninitialized variable in RwMatrix =============
+// By B1ack_Wh1te
+namespace JetThrustersFix
+{
+	// These are technically CMatrix, but for simplicity we use RwMatrix here
+	template<std::size_t Index>
+	static RwMatrix* (*orgMatrixMultiply)(RwMatrix* out, const RwMatrix* lhs, const RwMatrix* rhs);
+
+	template<std::size_t Index>
+	static RwMatrix* MatrixMultiply_ZeroFlags(RwMatrix* out, const RwMatrix* lhs, const RwMatrix* rhs)
+	{
+		RwMatrix* result = orgMatrixMultiply<Index>(out, lhs, rhs);
+
+		// Technically, this should be the same as RwMatrixUpdate, but this variable is on the stack
+		// and completely uninitialized, so zero it completely for consistent results.
+		rwMatrixSetFlags(result, 0);
+
+		return result;
+	}
+
+	HOOK_EACH_INIT(MatrixMultiply, orgMatrixMultiply, MatrixMultiply_ZeroFlags);
+}
+
+
 // ============= LS-RP Mode stuff =============
 namespace LSRPMode
 {
@@ -6411,6 +6435,16 @@ void Patch_SA_10(HINSTANCE hInstance)
 	}
 
 
+	// Fix Hydra's jet thrusters not displaying due to an uninitialized variable in RwMatrix
+	// By B1ack_Wh1te
+	{
+		using namespace JetThrustersFix;
+
+		std::array<uintptr_t, 4> matrixMult = { 0x6CA09F, 0x6CA122, 0x6CA1B2, 0x6CA242 };
+		HookEach_MatrixMultiply(matrixMult, InterceptCall);
+	}
+
+
 #if FULL_PRECISION_D3D
 	// Test - full precision D3D device
 	Patch<uint8_t>( 0x7F672B+1, *(uint8_t*)(0x7F672B+1) | D3DCREATE_FPU_PRESERVE );
@@ -8589,6 +8623,25 @@ void Patch_SA_NewBinaries_Common(HINSTANCE hInstance)
 		auto getGasPedal = pattern("D9 86 9C 04 00 00 D9 E8 D9 C0").get_one();
 		Nop(getGasPedal.get<void>(), 1);
 		InjectHook(getGasPedal.get<void>(1), &NitrousControl_DontRechargeWhenReversing_NewBinaries, HookType::Call);
+	}
+	TXN_CATCH();
+
+
+	// Fix Hydra's jet thrusters not displaying due to an uninitialized variable in RwMatrix
+	// By B1ack_Wh1te
+	try
+	{
+		using namespace JetThrustersFix;
+
+		auto thrust = pattern("D9 5D DC E8 ? ? ? ? 83 C4 0C").count(4);
+
+		std::array<void*, 4> matrixMult = {
+			thrust.get(0).get<void>(3),
+			thrust.get(1).get<void>(3),
+			thrust.get(2).get<void>(3),
+			thrust.get(3).get<void>(3),
+		};
+		HookEach_MatrixMultiply(matrixMult, InterceptCall);
 	}
 	TXN_CATCH();
 }
