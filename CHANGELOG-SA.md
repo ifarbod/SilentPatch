@@ -102,6 +102,7 @@ All the remaining, non-critical fixes.
 * ➕ The boundaries of the cursor on the Map screen, and the cursor itself now scale to resolution correctly (contributed by **Wesser**).
 * ➕ The inner padding of the text boxes with a background now scales to resolution correctly (contributed by **Wesser**).
 * ➕ Nitrous will no longer regenerate faster when reversing the car (contributed by **Wesser**).
+* ➕ Hydra's jet thrusters no longer randomly fail to appear (contributed by **B1ack_Wh1te**).
 * Detached vehicle parts will now keep the same color and lighting as the vehicle they came from.
 * Detached vehicle parts are now rendered from both sides.
 * Resolved single-pixel wide seams showing on the Map screen with Anti-Aliasing enabled.

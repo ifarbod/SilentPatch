@@ -603,7 +603,7 @@ static hook::pattern MakeScriptPattern(bool isMission, std::string_view bytes)
 		begin = uintptr_t(ScriptSpace);
 		end = begin + ScriptFileSize;
 	}
-	return hook::make_range_pattern(begin, end, bytes).count_hint(100);
+	return hook::make_range_pattern(begin, end, bytes);
 }
 
 static void MountainCloudBoysFix()
@@ -631,7 +631,10 @@ static void SupplyLinesFix( bool isBeefyBaron )
 static void DrivingSchoolConesFix()
 {
 	auto pattern = MakeScriptPattern(true, "04 00 02 20 03 04 00 D6 00 04 00 1A 00 04 2E 02 20 03 4D 00 01 60 75 FF FF BE 00 08 01 07 24 03 20 03 2E 80 08 00 02 20 03 04 01");
-	if (pattern.size() == 1) // Only destroy as many cones as were created
+	auto coneCoilConeCount = MakeScriptPattern(true, "1A 00 04 17 02 20 03");
+	auto burnAndLapConeCount = MakeScriptPattern(true, "1A 00 04 23 02 20 03");
+	// Only destroy as many cones as were created, and correct trafficcone_counter for "Cone Coil" and "Burn and Lap"
+	if (pattern.size() == 1 && coneCoilConeCount.size() == 1 && burnAndLapConeCount.size() == 1)
 	{
 		const uint8_t gotoSkipAssignment[] = { 0x02, 0x00, 0x01, 0x8B, 0x75, 0xFF, 0xFF };
 		memcpy(pattern.get(0).get<void>(0), gotoSkipAssignment, sizeof(gotoSkipAssignment));
@@ -646,6 +649,15 @@ static void DrivingSchoolConesFix()
 		// Also set trafficcone_counter to 0 so the first destruction doesn't happen
 		int32_t* trafficcone_counter = reinterpret_cast<int32_t*>(ScriptSpace+800);
 		*trafficcone_counter = 0;
+
+		// Correct the final trafficcone_counter in Cone Coil
+		// 23 -> 30
+		*coneCoilConeCount.get(0).get<int8_t>(3) = 30;
+
+
+		// Correct the final trafficcone_counter in Burn and Lap
+		// 35 -> 42
+		*burnAndLapConeCount.get(0).get<int8_t>(3) = 42;
 	}
 }
 
