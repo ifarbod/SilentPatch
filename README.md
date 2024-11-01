@@ -36,6 +36,7 @@ for both first-time players and the old guard returning for yet another playthro
 
 SilentPatch includes code contributions from:
 * aap
+* B1ack_Wh1te
 * DK22Pac
 * Fire_Head
 * Nick007J

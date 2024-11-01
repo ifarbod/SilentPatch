@@ -1099,6 +1099,72 @@ namespace BrakelightsDummy
 	}
 }
 
+
+// ============= Fix text background padding not scaling to resolution =============
+namespace TextRectPaddingScalingFixes
+{
+	template<std::size_t Index>
+	static const float* orgPaddingXSize;
+
+	template<std::size_t Index>
+	static float PaddingXSize_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateXSize(std::index_sequence<I...>)
+	{
+		const float multiplier = GetWidthMult() * RsGlobal->MaximumWidth;
+		((PaddingXSize_Recalculated<I> = *orgPaddingXSize<I> * multiplier), ...);
+	}
+
+	template<std::size_t Index>
+	static const float* orgPaddingYSize;
+
+	template<std::size_t Index>
+	static float PaddingYSize_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateYSize(std::index_sequence<I...>)
+	{
+		const float multiplier = GetHeightMult() * RsGlobal->MaximumHeight;
+		((PaddingYSize_Recalculated<I> = *orgPaddingYSize<I> * multiplier), ...);
+	}
+
+	static void (*orgGetTextRect)(CRect*, float, float, void*);
+	template<std::size_t NumXPadding, std::size_t NumYPadding>
+	static void GetTextRect_Recalculate(CRect* a1, float a2, float a3, void* a4)
+	{
+		RecalculateXSize(std::make_index_sequence<NumXPadding>{});
+		RecalculateYSize(std::make_index_sequence<NumYPadding>{});
+		orgGetTextRect(a1, a2, a3, a4);
+	}
+
+	HOOK_EACH_INIT(PaddingXSize, orgPaddingXSize, PaddingXSize_Recalculated);
+	HOOK_EACH_INIT(PaddingYSize, orgPaddingYSize, PaddingYSize_Recalculated);
+
+	template<std::size_t Index>
+	static const float* orgWrapX;
+
+	template<std::size_t Index>
+	static float WrapX_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateWrapX(std::index_sequence<I...>)
+	{
+		const float multiplier = GetWidthMult() * RsGlobal->MaximumWidth;
+		((WrapX_Recalculated<I> = *orgWrapX<I> * multiplier), ...);
+	}
+
+	static void (*orgSetJustifyOff)();
+	template<std::size_t NumXWrap>
+	static void SetJustifyOff_Recalculate()
+	{
+		RecalculateWrapX(std::make_index_sequence<NumXWrap>{});
+		orgSetJustifyOff();
+	}
+
+	HOOK_EACH_INIT(WrapX, orgWrapX, WrapX_Recalculated);
+}
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -1490,6 +1556,54 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 			}
 		}
 
+	}
+	TXN_CATCH();
+
+
+	// Fix text background padding not scaling to resolution
+	try
+	{
+		using namespace TextRectPaddingScalingFixes;
+
+		auto getTextRect = get_pattern("FF 74 24 54 FF 74 24 54 50 E8 ? ? ? ? 83 C4 10", 9);
+		auto rectWidth1 = pattern("D8 25 ? ? ? ? D9 18 89 54 24 18 8B 44 24 34 DB 44 24 18 D8 44 24 38 D8 05").get_one();
+		auto rectWidth2 = pattern("D8 25 ? ? ? ? D9 18 D9 05 ? ? ? ? D8 0D ? ? ? ? 8B 44 24 34 D8 44 24 38 D8 05").get_one();
+		auto rectWidth3 = get_pattern<float*>("D8 25 ? ? ? ? 8B 44 24 34 D9 18", 2);
+
+		auto rectHeight1 = pattern("D8 05 ? ? ? ? D9 58 04 D9 44 24 3C D8 25").count(2);
+		auto rectHeight2 = pattern("D9 05 ? ? ? ? D8 44 24 3C DE C1 D8 05").get_one();
+
+		// SetWrapx on the help boxes includes an unscaled -4.0f probably to work together with this padding,
+		// so treat it as part of the same fix
+		auto setJustifyOff_helpBox = get_pattern("59 E8 ? ? ? ? D9 EE", 1);
+
+		std::array<float**, 5> paddingXSizes = {
+			rectWidth1.get<float*>(2),
+			rectWidth1.get<float*>(0x18 + 2),
+			rectWidth2.get<float*>(2),
+			rectWidth2.get<float*>(0x1C + 2),
+			rectWidth3
+		};
+
+		std::array<float**, 6> paddingYSizes = {
+			rectHeight1.get(0).get<float*>(2),
+			rectHeight1.get(0).get<float*>(0xD + 2),
+			rectHeight1.get(1).get<float*>(2),
+			rectHeight1.get(1).get<float*>(0xD + 2),
+			rectHeight2.get<float*>(2),
+			rectHeight2.get<float*>(0xC + 2),
+		};
+
+		std::array<float**, 1> wrapxWidth = {
+			get_pattern<float*>("D8 25 ? ? ? ? D9 1C 24 DD D8", 2),
+		};
+
+		HookEach_PaddingXSize(paddingXSizes, PatchFloat);
+		HookEach_PaddingYSize(paddingYSizes, PatchFloat);
+		InterceptCall(getTextRect, orgGetTextRect, GetTextRect_Recalculate<paddingXSizes.size(), paddingYSizes.size()>);
+
+		HookEach_WrapX(wrapxWidth, PatchFloat);
+		InterceptCall(setJustifyOff_helpBox, orgSetJustifyOff, SetJustifyOff_Recalculate<wrapxWidth.size()>);
 	}
 	TXN_CATCH();
 
