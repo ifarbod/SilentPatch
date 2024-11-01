@@ -68,14 +68,14 @@ RwBool RwRenderStateSet(RwRenderState state, void *value)
 }
 
 // Unreachable stub
-RwBool RwMatrixDestroy(RwMatrix* mpMat) { assert(!"Unreachable!"); return TRUE; }
+RwBool RwMatrixDestroy(RwMatrix* /*mpMat*/) { assert(!"Unreachable!"); return TRUE; }
 
 bool RWGTA::Patches::TryLocateRwD3D8() try
 {
 	using namespace Memory;
 	using namespace hook::txn;
 
-	auto fnRwD3D8SetRenderState = [] {
+	auto pfnRwD3D8SetRenderState = [] {
 		try {
 			// Everything except for III Steam
 			return static_cast<decltype(RwD3D8SetRenderState)*>(get_pattern("39 0C C5 ? ? ? ? 74 31", -8));
@@ -84,7 +84,7 @@ bool RWGTA::Patches::TryLocateRwD3D8() try
 			return static_cast<decltype(RwD3D8SetRenderState)*>(get_pattern("8B 0C C5 ? ? ? ? 3B CA", -8));
 		}
 	}();
-	auto fnRwD3D8GetRenderState = [] {
+	auto pfnRwD3D8GetRenderState = [] {
 		try {
 			// Everything except for III Steam
 			return static_cast<decltype(RwD3D8GetRenderState)*>(get_pattern("8B 0C C5 ? ? ? ? 89 0A C3", -8));
@@ -94,8 +94,8 @@ bool RWGTA::Patches::TryLocateRwD3D8() try
 		}
 	}();
 
-	::fnRwD3D8SetRenderState = fnRwD3D8SetRenderState;
-	::fnRwD3D8GetRenderState = fnRwD3D8GetRenderState;
+	fnRwD3D8SetRenderState = pfnRwD3D8SetRenderState;
+	fnRwD3D8GetRenderState = pfnRwD3D8GetRenderState;
 	return true;
 }
 catch (const hook::txn_exception&)
