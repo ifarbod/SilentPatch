@@ -4,6 +4,7 @@
 #define RwEngineInstance (*rwengine)
 
 #include <rwcore.h>
+#include "RWGTA.h"
 
 // GTA versions of RenderWare functions/macros for GTA III/Vice City
 // since we cannot use RwEngineInstance directly
@@ -39,14 +40,16 @@ void** rwengine = []() -> void** {
 	return nullptr;
 }();
 
-static void* varRwD3D8SetRenderState = Memory::ReadCallFrom( hook::get_pattern( "0F 8C ? ? ? ? 6A 05 6A 19", 10 ) );
-WRAPPER RwBool RwD3D8SetRenderState(RwUInt32 state, RwUInt32 value) { VARJMP(varRwD3D8SetRenderState); }
+static decltype(::RwD3D8SetRenderState)* fnRwD3D8SetRenderState;
+RwBool RwD3D8SetRenderState(RwUInt32 state, RwUInt32 value)
+{
+	return fnRwD3D8SetRenderState(state, value);
+}
 
-static RwUInt32* _rwD3D8RenderStates = *static_cast<RwUInt32**>(Memory::ReadCallFrom( hook::get_pattern( "0F 8C ? ? ? ? 6A 05 6A 19", 10 ), 8 + 3 ));
+static decltype(::RwD3D8GetRenderState)* fnRwD3D8GetRenderState;
 void RwD3D8GetRenderState(RwUInt32 state, void* value)
 {
-	RwUInt32* valuePtr = static_cast<RwUInt32*>(value);
-	*valuePtr = _rwD3D8RenderStates[ 2 * state ];
+	fnRwD3D8GetRenderState(state, value);
 }
 
 RwReal RwIm2DGetNearScreenZ()
@@ -66,3 +69,36 @@ RwBool RwRenderStateSet(RwRenderState state, void *value)
 
 // Unreachable stub
 RwBool RwMatrixDestroy(RwMatrix* mpMat) { assert(!"Unreachable!"); return TRUE; }
+
+bool RWGTA::Patches::TryLocateRwD3D8() try
+{
+	using namespace Memory;
+	using namespace hook::txn;
+
+	auto fnRwD3D8SetRenderState = [] {
+		try {
+			// Everything except for III Steam
+			return static_cast<decltype(RwD3D8SetRenderState)*>(get_pattern("39 0C C5 ? ? ? ? 74 31", -8));
+		} catch (const hook::txn_exception&) {
+			// III Steam
+			return static_cast<decltype(RwD3D8SetRenderState)*>(get_pattern("8B 0C C5 ? ? ? ? 3B CA", -8));
+		}
+	}();
+	auto fnRwD3D8GetRenderState = [] {
+		try {
+			// Everything except for III Steam
+			return static_cast<decltype(RwD3D8GetRenderState)*>(get_pattern("8B 0C C5 ? ? ? ? 89 0A C3", -8));
+		} catch (const hook::txn_exception&) {
+			// III Steam
+			return static_cast<decltype(RwD3D8GetRenderState)*>(get_pattern("8B 04 C5 ? ? ? ? 89 02 C3", -8));
+		}
+	}();
+
+	::fnRwD3D8SetRenderState = fnRwD3D8SetRenderState;
+	::fnRwD3D8GetRenderState = fnRwD3D8GetRenderState;
+	return true;
+}
+catch (const hook::txn_exception&)
+{
+	return false;
+}

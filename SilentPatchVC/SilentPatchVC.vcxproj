@@ -166,6 +166,7 @@
     <ClInclude Include="..\SilentPatch\Maths.h" />
     <ClInclude Include="..\SilentPatch\ParseUtils.hpp" />
     <ClInclude Include="..\SilentPatch\Random.h" />
+    <ClInclude Include="..\SilentPatch\RWGTA.h" />
     <ClInclude Include="..\SilentPatch\RWUtils.hpp" />
     <ClInclude Include="..\SilentPatch\StdAfx.h" />
     <ClInclude Include="..\SilentPatch\StoredCar.h" />

@@ -75,6 +75,9 @@
     <ClInclude Include="EntityVC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\SilentPatch\RWGTA.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\SilentPatch\Timer.cpp">

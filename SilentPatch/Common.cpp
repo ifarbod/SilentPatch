@@ -7,6 +7,7 @@
 #include "SVF.h"
 #include "ParseUtils.hpp"
 #include "Random.h"
+#include "RWGTA.h"
 
 #include "Utils/DelimStringReader.h"
 
@@ -195,6 +196,8 @@ namespace Common {
 			using namespace Memory;
 			using namespace hook::txn;
 
+			const bool HasRwD3D8 = RWGTA::Patches::TryLocateRwD3D8();
+
 			// Delayed patching
 			try
 			{
@@ -249,7 +252,7 @@ namespace Common {
 
 
 			// Fixed static shadows not rendering under fire and pickups
-			try
+			if (HasRwD3D8) try
 			{
 				using namespace StaticShadowAlphaFix;
 
