@@ -1165,6 +1165,18 @@ namespace TextRectPaddingScalingFixes
 	HOOK_EACH_INIT(WrapX, orgWrapX, WrapX_Recalculated);
 }
 
+
+// ============= Fix menu texts not scaling to resolution =============
+namespace MenuManagerScalingFixes
+{
+	static void (*orgPrintString)(float,float,const wchar_t*);
+	static void PrintString_Scale(float fX, float fY, const wchar_t* pText)
+	{
+		orgPrintString(fX * GetWidthMult() * RsGlobal->MaximumWidth, fY * GetHeightMult() * RsGlobal->MaximumHeight, pText);
+	}
+}
+
+
 namespace ModelIndicesReadyHook
 {
 	static void (*orgInitialiseObjectData)(const char*);
@@ -1604,6 +1616,17 @@ void InjectDelayedPatches_III_Common( bool bHasDebugMenu, const wchar_t* wcModul
 
 		HookEach_WrapX(wrapxWidth, PatchFloat);
 		InterceptCall(setJustifyOff_helpBox, orgSetJustifyOff, SetJustifyOff_Recalculate<wrapxWidth.size()>);
+	}
+	TXN_CATCH();
+
+
+	// ============= Fix menu texts not scaling to resolution =============
+	try
+	{
+		using namespace MenuManagerScalingFixes;
+
+		auto printStringMenuText = get_pattern("E8 ? ? ? ? 83 C4 0C DB 05 ? ? ? ? 50");
+		InterceptCall(printStringMenuText, orgPrintString, PrintString_Scale);
 	}
 	TXN_CATCH();
 

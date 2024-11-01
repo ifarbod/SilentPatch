@@ -619,6 +619,35 @@ namespace TextRectPaddingScalingFixes
 }
 
 
+// ============= Fix ammunation text (big message type 3) Y position offset not scaling to resolution =============
+namespace BigMessage3ScalingFixes
+{
+	template<std::size_t Index>
+	static const float* orgOffsetY;
+
+	template<std::size_t Index>
+	static float OffsetY_Recalculated;
+
+	template<std::size_t... I>
+	static void RecalculateYOffset(std::index_sequence<I...>)
+	{
+		const float multiplier = GetHeightMult() * RsGlobal->MaximumHeight;
+		((OffsetY_Recalculated<I> = *orgOffsetY<I> * multiplier), ...);
+	}
+
+	static void (*orgSetDropColor)(const CRGBA&);
+
+	template<std::size_t NumXOffsets>
+	static void SetDropColor_Scale(const CRGBA& color)
+	{
+		RecalculateYOffset(std::make_index_sequence<NumXOffsets>{});
+		orgSetDropColor(color);
+	}
+
+	HOOK_EACH_INIT(MessageYOffset, orgOffsetY, OffsetY_Recalculated);
+}
+
+
 float FixedRefValue()
 {
 	return 1.0f;
@@ -2019,6 +2048,22 @@ void InjectDelayedPatches_VC_Common( bool bHasDebugMenu, const wchar_t* wcModule
 
 		HookEach_WrapX(wrapxWidth, PatchFloat);
 		InterceptCall(setJustifyOff_helpBox, orgSetJustifyOff, SetJustifyOff_Recalculate<wrapxWidth.size()>);
+	}
+	TXN_CATCH();
+
+
+	// Fix ammunation text (big message type 3) Y position offset not scaling to resolution
+	try
+	{
+		using namespace BigMessage3ScalingFixes;
+
+		auto setDropColor = get_pattern("E8 ? ? ? ? 59 8D 4C 24 40");
+		std::array<float**, 1> YOffset = {
+			get_pattern<float*>("D8 25 ? ? ? ? D9 1C 24 A1", 2),
+		};
+
+		HookEach_MessageYOffset(YOffset, PatchFloat);
+		InterceptCall(setDropColor, orgSetDropColor, SetDropColor_Scale<YOffset.size()>);
 	}
 	TXN_CATCH();
 
