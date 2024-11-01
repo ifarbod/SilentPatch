@@ -57,7 +57,7 @@ struct CVehicleFlags
     // Is player vehicle using special collision model, stored in player strucure
     unsigned char bOccupantsHaveBeenGenerated : 1; // Is true if the occupants have already been generated. (Shouldn't happen again)
     unsigned char bGunSwitchedOff: 1; // Level designers can use this to switch off guns on boats
-    
+
 	//0x42B
     unsigned char bVehicleColProcessed : 1;// Has ProcessEntityCollision been processed for this car?
     unsigned char bIsCarParkVehicle: 1; // Car has been created using the special CAR_PARK script command
@@ -208,7 +208,7 @@ protected:
 	RwTexture*		m_pRemapTexture;
 
 public:
-	CVehicleFlags&	GetVehicleFlags() 
+	CVehicleFlags&	GetVehicleFlags()
 						{ return m_nVehicleFlags; }
 	CEntity*		GetDamagingEntity()
 						{ return pDamagingEntity; }
@@ -302,7 +302,7 @@ public:
 
 private:
 	template<std::size_t Index>
-	static void (CVehicle::*orgDoHeadLightBeam)(int type, CMatrix& m, bool right);
+	static inline void (CVehicle::*orgDoHeadLightBeam)(int type, CMatrix& m, bool right);
 
 	template<std::size_t Index>
 	void DoHeadLightBeam_LightBeamFixSaveObj(int type, CMatrix& m, bool right)
@@ -333,11 +333,11 @@ public:
 	float			m_fGunElevation;
 	float			m_fUnknown;
 	float			m_fSpecialComponentAngle;
-	BYTE			__pad3[44];	
+	BYTE			__pad3[44];
 
 public:
 	template<std::size_t Index>
-	static void (CAutomobile::*orgAutomobilePreRender)();
+	static inline void (CAutomobile::*orgAutomobilePreRender)();
 
 	template<std::size_t Index>
 	void		PreRender_SilentPatch()
@@ -352,7 +352,7 @@ public:
 	void HideDestroyedWheels_SilentPatch(void (CAutomobile::*spawnFlyingComponentCB)(int, unsigned int), int nodeID, unsigned int modelID);
 
 	template<std::size_t Index>
-	static void (CAutomobile::*orgSpawnFlyingComponent)(int, unsigned int);
+	static inline void (CAutomobile::*orgSpawnFlyingComponent)(int, unsigned int);
 
 	template<std::size_t Index>
 	void		SpawnFlyingComponent_HideWheels(int nodeID, unsigned int modelID)
@@ -448,8 +448,8 @@ private:
 
 private:
 	template<std::size_t Index>
-	static CVehicle* (CStoredCar::*orgRestoreCar)();
-	
+	static inline CVehicle* (CStoredCar::*orgRestoreCar)();
+
 	template<std::size_t Index>
 	CVehicle* RestoreCar_SilentPatch()
 	{
